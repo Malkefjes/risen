@@ -25,10 +25,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       # Ship only the game, not the tests/tools that measure it.
+      # Pages serves everything with a 10-minute browser cache; stamping the
+      # commit onto each css/js URL makes a fresh index.html pull matching
+      # fresh files — a refresh can lag a few minutes behind a push, but it
+      # can never mix files from two different versions of the game.
       - name: Stage site
         run: |
           mkdir _site
           cp -r index.html css js assets _site/
+          V="${GITHUB_SHA::7}"
+          sed -i "s|href=\"css/risen.css\"|href=\"css/risen.css?v=$V\"|; s|src=\"js/\([a-z]*\)\.js\"|src=\"js/\1.js?v=$V\"|g" _site/index.html
+          grep -c "?v=$V" _site/index.html
       - uses: actions/configure-pages@v5
         with:
           enablement: true
