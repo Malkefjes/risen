@@ -13,6 +13,18 @@ A turn-based browser roguelite. Personal project, built for enjoyment.
 - Verification is yours to do: `npm test` (all suites must pass) plus, for
   balance-relevant changes, the instruments in `tools/`. The owner should
   never be the one to discover a regression.
+- **Tests come in two speeds, pick by what broke historically.** Browser
+  suites (clicking real buttons) guard UI seams — every early bug was a gap
+  between the rules and the screen. Pure-rules behaviour (statuses, skills,
+  banks, damage math) should instead get fast suites through `simulateRun`:
+  hundreds of assertions in seconds, no browser. Don't unit-test private
+  internals in either style; drive the game through its real surfaces.
+- **The balance header's rules are defaults with named levers, not laws.**
+  "Strains share one baseline", "damage is linear in Strength" bind the
+  BASE sheet so feel stays judgeable — but talents and mutations may
+  deliberately break them; assembled, broken-feeling combos are where the
+  fun lives. Break loudly (a visible pick doing a visible thing), never by
+  accident of stacking, and update the header comment when a default moves.
 
 ## Layout
 
@@ -53,6 +65,9 @@ A turn-based browser roguelite. Personal project, built for enjoyment.
 
 - Psy's Momentum drains faster than it fills (net −1 per exchange at the
   1:1 anchor); the owner wants a full overhaul someday, on their timing.
+  Note: the tools' bot cannot manage a bank, so until it learns to at
+  least attempt Momentum play, its psy numbers measure the bot, not the
+  class.
 - Instinct feeds crit chance and nothing else; cooldown reduction is a live
   seam with no source.
 - Sym barely responds to stat allocation; Unmutated's bot numbers are
