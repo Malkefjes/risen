@@ -330,7 +330,10 @@ const ELITES = {
   // it the affix was a tag and an XP multiplier attached to nothing.
   frenzied: { id:'frenzied', tag:'FRENZIED', xp:1.7, apsMult:1.60 },
   vampiric: { id:'vampiric', tag:'VAMPIRIC', xp:1.7, lifesteal:0.30 },
-  colossal: { id:'colossal', tag:'COLOSSAL', xp:2.0, hpMult:2.20, apsMult:0.80 },
+  // COLOSSAL went the way of ARMORED: x2.2 HP at x0.8 rate changed nothing the
+  // player DOES, only how long it takes — a sponge, not a question. The test
+  // for this table: an affix must change the correct play, not the duration.
+  // "Big" as an IDEA belongs to a future bespoke enemy with moves to match.
   venomous: { id:'venomous', tag:'VENOMOUS', xp:1.7, poison:true },
   volatile: { id:'volatile', tag:'VOLATILE', xp:1.8, deathNova:0.14 }
 };
