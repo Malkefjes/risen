@@ -262,7 +262,7 @@ const CLASSES = {
       { id:'slash', name:'Slash', desc:'Attack the enemy for {power!} damage. +{poison} POISON', type:'attack', power:1.0, poison:1, target:'enemy', basic:true },
       { id:'infest', name:'Infest', desc:'Attack the enemy for {power!} damage. +{poison} POISON', type:'attack', power:0.50, poison:4, target:'enemy', cdTurns:3 },
       { id:'chitin', name:'Chitin', desc:'For {duration#turn}: take −{power%} damage. POISON on the enemy ticks twice per turn', type:'buff', buff:'chitin', duration:3, power:0.40, target:'self', cdTurns:5 },
-      { id:'miasma', name:'Miasma', desc:'For {duration#turn}: regenerate {power%} of max HP each turn. The enemy is WEAK for {weak.duration#turn}, dealing −{weak.power%} damage', type:'buff', buff:'regen', duration:4, power:0.10, applies:[{ id:'weak', power:0.25, duration:3 }], target:'self', cdTurns:5 }
+      { id:'miasma', name:'Miasma', desc:'For {duration#turn}: regenerate {power%} of max HP each turn. The enemy is WEAK for {weak.duration#turn}', type:'buff', buff:'regen', duration:4, power:0.10, applies:[{ id:'weak', power:0.25, duration:3 }], target:'self', cdTurns:5 }
     ]
   },
   psy: {
@@ -514,7 +514,7 @@ const STATUSES = {
   chitin: {
     id:'chitin', name:'CHITIN', tone:'buff', kind:'buff',
     stacking:'longest', defaults:{ duration:3, power:0.40 },
-    label: st => 'CHITIN −' + Math.round((st.power||0)*100) + '%  ' + Math.ceil(st.duration) + 't',
+    label: st => 'CHITIN ' + Math.ceil(st.duration) + 't',
     incomingMult: (u, st) => 1 - (st.power || 0)
   },
 
@@ -551,7 +551,7 @@ const STATUSES = {
     // Spines is x2.2 * x1.5 = x3.3, not a downgrade to x1.5. The duration is
     // shorter than Spines' cooldown, so it can't ladder on itself forever.
     stacking:'amplify', defaults:{ duration:3, power:2.2 }, persists:true,
-    label: st => 'SPINES ×' + (st.power||2).toFixed(1) + '  ' + Math.ceil(st.duration) + 't',
+    label: st => 'SPINES ' + Math.ceil(st.duration) + 't',
     thornsMult: (u, st) => st.power || 1,
     // Sym: a hit landed while the spines are up plants a Spore for later
     // Bloom, and a big hit plants more.
@@ -594,7 +594,7 @@ const STATUSES = {
   flow: {
     id:'flow', name:'FLOW', tone:'flow', kind:'buff',
     stacking:'replace', defaults:{ duration:3, power:2 },
-    label: st => 'FLOW ×' + (st.power||2) + ' ' + Math.ceil(st.duration) + 't',
+    label: st => 'FLOW ' + Math.ceil(st.duration) + 't',
     // Its two effects stay as reads at their sites rather than hooks, because
     // both touch psy's Momentum bank rather than a generic damage number:
     // applyEnemyDamage skips the loss while it is up, and applyPlayerDamage
@@ -627,43 +627,43 @@ const STATUSES = {
   weak: {
     id:'weak', name:'WEAK', tone:'weak', kind:'debuff',
     stacking:'longest', defaults:{ duration:2, power:0.25 },
-    label: st => 'WEAK −' + Math.round((st.power||0)*100) + '%  ' + Math.ceil(st.duration) + 't',
+    label: st => 'WEAK ' + Math.ceil(st.duration) + 't',
     outgoingMult: (u, st) => 1 - (st.power || 0)
   },
   vulnerable: {
     id:'vulnerable', name:'VULNERABLE', tone:'debuff', kind:'debuff',
     stacking:'longest', defaults:{ duration:2, power:0.30 },
-    label: st => 'VULN +' + Math.round((st.power||0)*100) + '%  ' + Math.ceil(st.duration) + 't',
+    label: st => 'VULN ' + Math.ceil(st.duration) + 't',
     incomingMult: (u, st) => 1 + (st.power || 0)
   },
   empower: {
     id:'empower', name:'EMPOWER', tone:'buff', kind:'buff',
     stacking:'longest', defaults:{ duration:2, power:0.25 },
-    label: st => 'EMPOWER +' + Math.round((st.power||0)*100) + '%  ' + Math.ceil(st.duration) + 't',
+    label: st => 'EMPOWER ' + Math.ceil(st.duration) + 't',
     outgoingMult: (u, st) => 1 + (st.power || 0)
   },
   fortify: {
     id:'fortify', name:'FORTIFY', tone:'buff', kind:'buff',
     stacking:'longest', defaults:{ duration:2, power:0.25 },
-    label: st => 'FORTIFY −' + Math.round((st.power||0)*100) + '%  ' + Math.ceil(st.duration) + 't',
+    label: st => 'FORTIFY ' + Math.ceil(st.duration) + 't',
     incomingMult: (u, st) => 1 - (st.power || 0)
   },
   haste: {
     id:'haste', name:'HASTE', tone:'buff', kind:'buff',
     stacking:'longest', defaults:{ duration:2, power:0.30 },
-    label: st => 'HASTE +' + Math.round((st.power||0)*100) + '%  ' + Math.ceil(st.duration) + 't',
+    label: st => 'HASTE ' + Math.ceil(st.duration) + 't',
     apsMult: (u, st) => 1 + (st.power || 0)
   },
   slow: {
     id:'slow', name:'SLOW', tone:'debuff', kind:'debuff',
     stacking:'longest', defaults:{ duration:2, power:0.30 },
-    label: st => 'SLOW −' + Math.round((st.power||0)*100) + '%  ' + Math.ceil(st.duration) + 't',
+    label: st => 'SLOW ' + Math.ceil(st.duration) + 't',
     apsMult: (u, st) => 1 - (st.power || 0)
   },
   regen: {
     id:'regen', name:'REGEN', tone:'buff', kind:'buff',
     stacking:'longest', defaults:{ duration:3, power:0.05 },
-    label: st => 'REGEN ' + Math.round((st.power||0)*100) + '%  ' + Math.ceil(st.duration) + 't',
+    label: st => 'REGEN ' + Math.ceil(st.duration) + 't',
     onTurnStart(unit, st) {
       if (unit.hp <= 0 || unit.hp >= unit.maxHp) return false;
       const heal = Math.max(1, Math.floor(unit.maxHp * (st.power||0)));
