@@ -2650,34 +2650,21 @@ body {
 //    and on level-up — since regen and the door's RECOVER both went.
 // ============================================================
 
-// ============================================================
-// BUILD
+// ---- Build ----------------------------------------------------
+// A date, because the only question it has to answer is "which of these files
+// is the newer one". No changelog and no semantic versioning: this is a
+// personal project under heavy change, nothing is settled, and a list of every
+// tweak would be a chore to write and a thing nobody reads. Git already holds
+// the detail. For a second build on the same day, suffix a letter.
 //
-// Bump `version` on anything that ships. It is shown under the logo on the
-// title screen, written as the first line of every run's combat log, and
-// stored in the save — so a file can always say what it is, and a bug report
-// can name a build instead of "the one I downloaded yesterday".
+// Shown under the logo, written as the first line of every run's combat log,
+// and stored in the save — so a file, a pasted transcript and a save can each
+// say what produced them.
 //
-// DELIBERATELY NOT TIED TO BALANCE.saveKey. The two answer different
-// questions: this one is "which build is this", saveKey is "are saved runs
-// still valid". Deriving one from the other would wipe every save on a
-// typo-fix. Bump saveKey only when a change makes an old sheet wrong, and say
-// so in the changelog line when you do.
-//
-// CHANGELOG, newest first. One line each; the git history holds the detail.
-//   0.5.0  Strain select fixed: a run could start as the wrong strain when a
-//          loaded save's class leaked into the menu's pending choice.
-//          Saves bumped to v4 — older runs are dropped, not migrated.
-//   0.4.0  Turn rate became a pure stat: no per-strain base, 5 Speed = 1.00,
-//          +0.20 per point, points cap at x4. Cooldown reduction retired as a
-//          stat (still a live seam). Mutations and refinements cleared —
-//          the system stays, the content went.
-//   0.3.0  Default turn rate anchored at one turn each. A baseline enemy now
-//          acts at the player's starting rate; enemy damage refit to match.
-//   0.2.0  Combat log rebuilt as a technical transcript.
-//   0.1.0  Two save slots, and run state fully reset between runs.
-// ============================================================
-const BUILD = { version: '0.5.0', date: '2026-07-29' };
+// KEEP THIS SEPARATE FROM BALANCE.saveKey. That one answers "are saved runs
+// still valid" and is bumped only when a change makes an old sheet wrong.
+// Deriving it from this would wipe every save on a typo fix.
+const BUILD = '2026-07-29';
 
 const BALANCE = {
   player: {
@@ -3931,7 +3918,7 @@ function resetRunState(classId) {
   clearFloaters();
   // First line of every transcript. A log pasted into a bug report then carries
   // the build that produced it without anyone having to remember to add it.
-  log('RISEN v' + BUILD.version + '  ·  ' + BUILD.date, 'important');
+  log('RISEN · build ' + BUILD, 'important');
 }
 
 // `classId` is optional: the EVOLVE button omits it and the menu's pending
@@ -5397,7 +5384,7 @@ let SETTINGS = Object.assign({}, DEFAULT_SETTINGS);
 
 function showBuildVersion() {
   const el = document.getElementById('build-tag');
-  if (el) el.textContent = 'v' + BUILD.version;
+  if (el) el.textContent = BUILD;
 }
 
 function loadSettings() {
@@ -5484,7 +5471,7 @@ document.addEventListener('keydown', ev => {
 // ---- Save / load ----------------------------------------------
 function serializeRun() {
   const p = state.player; if (!p) return null;
-  return { v:2, build:BUILD.version, classId:state.classId, wave:state.wave, kills:state.kills,
+  return { v:2, build:BUILD, classId:state.classId, wave:state.wave, kills:state.kills,
     overkillCarry:state.overkillCarry, talentQueue:state.talentQueue,
     bestCombo:state.bestCombo, damageDealt:state.damageDealt, runStart:state.runStart,
     // An unconfirmed allocation is not saved — it is refunded. The stats
