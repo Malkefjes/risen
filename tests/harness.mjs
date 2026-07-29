@@ -13,7 +13,8 @@ import { chromium } from 'playwright';
 export const REPO = resolve(fileURLToPath(new URL('../', import.meta.url)));
 
 const MIME = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css',
-               '.png':'image/png', '.json':'application/json' };
+               '.png':'image/png', '.webp':'image/webp', '.woff2':'font/woff2',
+               '.json':'application/json' };
 
 // file:// would be closer to how the game is actually played, but browsers
 // restrict localStorage there and every suite here exercises saves.

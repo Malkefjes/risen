@@ -643,16 +643,17 @@ body {
 .arena-backdrop {
   background:
     /* clarity pocket: darkest at the floor, behind the fight */
-    radial-gradient(ellipse 130% 60% at 50% 100%, rgba(4,6,10,0.85) 0%, rgba(4,6,10,0.35) 45%, transparent 75%),
-    /* distant glow spots: portholes and a console, dim by contract */
-    radial-gradient(circle 90px at 16% 28%, rgba(0,240,208,0.055), transparent 70%),
-    radial-gradient(circle 55px at 79% 22%, rgba(0,240,208,0.045), transparent 70%),
-    radial-gradient(circle 75px at 54% 15%, rgba(255,45,106,0.035), transparent 70%),
-    /* hull ribs: structure you sense rather than read */
-    repeating-linear-gradient(90deg, transparent 0 120px, rgba(255,255,255,0.022) 120px 126px),
-    /* ceiling-to-floor depth */
+    radial-gradient(ellipse 130% 62% at 50% 100%, rgba(4,6,10,0.85) 0%, rgba(4,6,10,0.38) 45%, rgba(4,6,10,0.05) 78%),
+    /* value band, pinched at BOTH ends: the sky is suppressed so it cannot
+       compete with the unit names, the floor is suppressed so the fighters
+       pop, and the scene breathes through the middle where the neon lives */
+    linear-gradient(180deg, rgba(6,9,14,0.45) 0%, rgba(6,9,14,0.18) 45%, rgba(6,9,14,0.58) 100%),
+    /* ZONE ART. To go back to the pure-CSS room, delete this one line —
+       the gradients above and the layers below stand on their own. */
+    url('../assets/backdrops/ship.webp') center 46% / cover no-repeat,
+    /* floor under everything, in case the art ever fails to load */
     linear-gradient(180deg, #0c1119 0%, #0a0e16 55%, #070a10 100%);
-  filter: blur(1.2px) saturate(0.8);
+  filter: blur(1.4px) saturate(0.9) brightness(1.08);
 }
 .arena-haze {
   background:
