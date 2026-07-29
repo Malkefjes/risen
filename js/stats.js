@@ -10,7 +10,7 @@ function statusStacks(unit, id) { const s = getStatus(unit, id); return s ? (s.s
 function statusPower(unit, id) { const s = getStatus(unit, id); return s ? (s.power || 0) : 0; }
 
 // `why` names whatever stripped it. Without a line here a status could vanish
-// mid-fight with nothing in the transcript to show for it — Fester eating a
+// mid-fight with nothing in the transcript to show for it — a purge eating a
 // four-stack POISON looked like the rot simply stopped existing.
 function removeStatus(unit, id, why) {
   const st = getStatus(unit, id);
@@ -99,7 +99,7 @@ function skillStatusOpts(skill) {
 // caller can stop rather than resolve a turn for a corpse.
 function tickStatuses(unit) {
   if (!unit || !unit.statuses || !unit.statuses.length) return false;
-  // Snapshot: a hook may add or remove statuses mid-loop (poison spawns toxin).
+  // Snapshot: a hook may add or remove statuses mid-loop.
   for (const st of unit.statuses.slice()) {
     const def = STATUSES[st.type];
     if (def && def.onTurnStart && def.onTurnStart(unit, st)) return true;
@@ -233,7 +233,7 @@ function formatNum(n) {
 // The value is the CSS variable suffix, so an entry and a matching `.kw-<x>`
 // rule are the whole cost of adding MOMENTUM ('psy'), SPORES ('sym') or
 // POISON ('bio') when their cards get the same treatment.
-const DESC_KEYWORDS = { RESOLVE: 'base', POISON: 'bio', TOXIN: 'bio', WEAK: 'weak' };
+const DESC_KEYWORDS = { RESOLVE: 'base', POISON: 'bio', CHITIN: 'bio', WEAK: 'weak' };
 const KEYWORD_RE = new RegExp('\\b(' + Object.keys(DESC_KEYWORDS).join('|') + ')\\b', 'g');
 function highlightKeywords(html) {
   return html.replace(KEYWORD_RE, w => '<span class="kw kw-' + DESC_KEYWORDS[w] + '">' + w + '</span>');
@@ -347,7 +347,6 @@ function applyDerivedStats(p) {
   // Rounded rather than floored: at these fractions the result is exact, and
   // rounding keeps it exact if the anchors ever stop being multiples of 5.
   const ailmentDmg = Math.max(1, Math.round(attackDamage(p) * B.ailmentDamageFrac));
-  p.poisonStackCap = p.class === 'bio' ? B.poisonStackCap + (t.poisonStackBonus||0) : 0;
   p.poisonPerStack = p.class === 'bio'
     ? Math.max(1, Math.round(ailmentDmg * (t.poisonMult||1))) : 0;
   p.thorns = p.class === 'sym'

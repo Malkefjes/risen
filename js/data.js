@@ -79,7 +79,7 @@
 // KEEP THIS SEPARATE FROM BALANCE.saveKey. That one answers "are saved runs
 // still valid" and is bumped only when a change makes an old sheet wrong.
 // Deriving it from this would wipe every save on a typo fix.
-const BUILD = '2026-07-29';
+const BUILD = '2026-07-29b';
 
 const BALANCE = {
   player: {
@@ -160,11 +160,15 @@ const BALANCE = {
     // retune damage or HP and the ailments follow instead of drifting.
     ailmentDamageFrac: 0.20,
     thornsFrac: 0.05,
-    poisonStackCap: 6,      // POISON has no duration — it is permanent once applied
+    // POISON is permanent and UNCAPPED — the stack count is bio's ramp, and
+    // the ramp is the class: no burst, the enemy's remaining life is a clock.
+    // (It was capped at 6 with an overflow-to-TOXIN amplifier; the cap
+    // flatlined the ramp by turn 3 and TOXIN was an invisible 8%-of-a-
+    // modifier. Both retired in favor of the visible number going up.
+    // Chitin's numbers live on the skill card, like Miasma's.)
     // Bleed: the same damage-over-time shape as poison, its own knobs so the
     // two can be tuned apart. Nothing applies bleed yet.
     bleedStackCap: 6, bleedDuration: 4,      // TURNS
-    toxinPerStack: 0.08,   // bio: each stack applied past the cap = +8% poison damage, permanent for the fight
     reflectFrac: 0.20, reflectSpinesMult: 2,   // sym: share of damage taken reflected back; doubled while Spines is up
     sporeBigHitFrac: 0.15, sporeHitMax: 3,     // sym: every 15% of max HP lost in one hit plants an extra Spore (cap per hit)
     levelUpHealFrac: 0.08, recoverHpFrac: 0.08,
@@ -257,7 +261,7 @@ const CLASSES = {
     skills: [
       { id:'slash', name:'Slash', desc:'Attack the enemy for {power!} damage. +{poison} POISON', type:'attack', power:1.0, poison:1, target:'enemy', basic:true },
       { id:'infest', name:'Infest', desc:'Attack the enemy for {power!} damage. +{poison} POISON', type:'attack', power:0.50, poison:4, target:'enemy', cdTurns:3 },
-      { id:'fester', name:'Fester', desc:'Attack the enemy for {power!} damage, then every POISON stack on it becomes a permanent TOXIN stack', type:'attack', power:0.50, festers:true, target:'enemy', cdTurns:4 },
+      { id:'chitin', name:'Chitin', desc:'For {duration#turn}: take −{power%} damage. POISON on the enemy ticks twice per turn', type:'buff', buff:'chitin', duration:3, power:0.40, target:'self', cdTurns:5 },
       { id:'miasma', name:'Miasma', desc:'For {duration#turn}: regenerate {power%} of max HP each turn. The enemy is WEAK for {weak.duration#turn}, dealing −{weak.power%} damage', type:'buff', buff:'regen', duration:4, power:0.10, applies:[{ id:'weak', power:0.25, duration:3 }], target:'self', cdTurns:5 }
     ]
   },
@@ -443,7 +447,7 @@ const TALENTS = {
 //   maxStacks      ceiling for 'stack'; a number, or fn(unit) for a target-
 //                  dependent cap
 //   defaults       field values used when applyStatus leaves them out
-//   permanent      never expires on its own; duration is ignored (toxin)
+//   permanent      never expires on its own; duration is ignored (poison)
 //   manual         the generic turn tick does NOT count it down — the system
 //                  that owns it spends it instead (stun, spent by the turn
 //                  engine when it eats a turn)
@@ -480,38 +484,38 @@ const STATUSES = {
     // if its damage can be waited out — the class trades every other advantage
     // for the fact that what it has already done keeps happening.
     stacking:'stack', permanent:true, defaults:{ stacks:1, perStack:1 },
-    // Bio's cap is the player's stat; anything landing on the player (a
-    // VENOMOUS elite) is uncapped, exactly as it was before.
-    maxStacks: unit => unit.isPlayer ? 99 : ((state.player && state.player.poisonStackCap) || 99),
     // No timer on the badge — there is nothing left to count down.
     label: st => 'POISON ×' + (st.stacks||1),
-    // Bio: rot applied past the cap doesn't vanish, it festers. Toxin is
-    // permanent for the fight and amplifies every future tick.
-    onOverflow(unit, st, extra) {
-      if (unit.isPlayer || !state.player || state.player.class !== 'bio') return;
-      const n = applyStatus(unit, 'toxin', { stacks: extra });
-      logEvent('FESTER', unit, extra + ' POISON over cap → TOXIN ×' + n.stacks,
-               ['+' + Math.round(n.stacks * P().toxinPerStack * 100) + '% poison damage'], 'damage');
-    },
     onTurnStart(unit, st) {
-      const toxin = statusStacks(unit, 'toxin');
-      const dmg = Math.max(1, Math.floor((st.perStack||1) * (st.stacks||1) * (1 + toxin * P().toxinPerStack)));
-      unit.hp = Math.max(0, unit.hp - dmg);
-      floatText(unit, dmg, 'poison');
-      logDamage('POISON', unit, dmg, [
-        '×' + (st.stacks||1) + ' @ ' + logNum(st.perStack||1) + '/stack',
-        toxin ? 'TOXIN +' + Math.round(toxin * P().toxinPerStack * 100) + '%' : null,
-        logNum(unit.hp) + '/' + logNum(unit.maxHp) + ' left'
-      ]);
+      // CHITIN on the opponent quickens the rot: the poison runs its tick
+      // twice on this unit's turn — two full ticks, two floaters, two log
+      // lines, so what was paid is exactly what shows.
+      const foe = unit.isPlayer ? null : state.player;
+      const ticks = (foe && foe.hp > 0 && hasStatus(foe, 'chitin')) ? 2 : 1;
+      for (let i = 0; i < ticks; i++) {
+        if (unit.hp <= 0) break;
+        const dmg = Math.max(1, Math.floor((st.perStack||1) * (st.stacks||1)));
+        unit.hp = Math.max(0, unit.hp - dmg);
+        floatText(unit, dmg, 'poison');
+        logDamage('POISON', unit, dmg, [
+          '×' + (st.stacks||1) + ' @ ' + logNum(st.perStack||1) + '/stack',
+          ticks === 2 ? 'CHITIN: second tick' : null,
+          logNum(unit.hp) + '/' + logNum(unit.maxHp) + ' left'
+        ]);
+      }
       updateUnitCard(unit);
       return unit.hp <= 0;
     }
   },
 
-  toxin: {
-    id:'toxin', name:'TOXIN', tone:'poison', kind:'debuff',
-    stacking:'stack', permanent:true, defaults:{ stacks:1 },
-    label: st => 'TOXIN +' + Math.round(st.stacks * P().toxinPerStack * 100) + '%'
+  // Bio: harden to outlast — the sustain half and the rot half of the class
+  // in one decision. Reuses fortify's shape; its own entry so poison can ask
+  // "is the player hardened" by name and the badge reads CHITIN.
+  chitin: {
+    id:'chitin', name:'CHITIN', tone:'buff', kind:'buff',
+    stacking:'longest', defaults:{ duration:3, power:0.40 },
+    label: st => 'CHITIN −' + Math.round((st.power||0)*100) + '%  ' + Math.ceil(st.duration) + 't',
+    incomingMult: (u, st) => 1 - (st.power || 0)
   },
 
   // Bleed is poison with different flavour: a stacking tick on whatever you hit.
@@ -519,7 +523,7 @@ const STATUSES = {
   // independently and be raised by different sources — an AILMENT is the shared
   // idea, not the shared object.
   //
-  // Deliberately plainer than poison: no toxin on overflow (that is bio's
+  // Deliberately plainer than poison: no double-tick interaction (that is bio's
   // trick, not a property of damage-over-time) and it does not persist between
   // fights. Nothing applies it yet; applyStatus(e, 'bleed', {...}) is all it
   // takes when something should.

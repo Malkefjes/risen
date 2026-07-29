@@ -457,20 +457,6 @@ function applyPlayerDamage(p, e, skill) {
   if (skill.poison && p.class === 'bio')
     applyStatus(e, 'poison', { stacks: skill.poison, perStack: p.poisonPerStack });
 
-  // Every POISON stack still on the target becomes a permanent TOXIN stack.
-  // Deliberately NOT a detonation: it trades damage you were going to get for
-  // damage you keep for the rest of the fight. The class that cannot burst
-  // needs a spender that makes it weaker now, not stronger now.
-  if (skill.festers) {
-    const stacks = statusStacks(e, 'poison');
-    if (stacks > 0) {
-      // removeStatus and applyStatus each log, so the conversion reads as the
-      // two halves it actually is rather than a summary line on top of them.
-      removeStatus(e, 'poison', 'converted by ' + skill.name);
-      applyStatus(e, 'toxin', { stacks });
-    } else logEvent(skill.name, e, 'no effect', ['no POISON on target'], '');
-  }
-
   applySkillStatuses(p, skill, e);
 
   // Basic-attack riders (see the TALENTS block). They resolve here, after the
