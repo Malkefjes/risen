@@ -1338,12 +1338,38 @@ body {
   height: auto;
   min-height: 0;
 }
-.log-entry { padding: 1px 0; border-left: 2px solid transparent; padding-left: 6px; margin-left: -2px; }
+.log-entry { padding: 1px 0; border-left: 2px solid transparent; padding-left: 6px; margin-left: -2px; white-space: pre-wrap; }
 .log-entry.important { border-left-color: rgba(0,240,208,0.45); }
 .log-entry.damage { border-left-color: rgba(251,113,133,0.4); }
 .log-entry.heal { border-left-color: rgba(125,255,160,0.4); }
 .log-entry.xp { border-left-color: rgba(251,191,36,0.4); }
 .log-entry.level { border-left-color: rgba(251,191,36,0.7); }
+
+/* The log is a transcript with two levels: headers that say WHOSE turn or
+   WHICH wave, and the events that happened inside them. Events are indented
+   under their header so a glance down the column separates the two without
+   reading a word — which is the whole reason the turn markers exist. */
+/* Hanging indent: the sidebar is narrow enough that a qualifier list wraps
+   often, and a wrapped line starting level with the first reads as a new
+   event. The negative text-indent puts the first line at 20px and every
+   continuation at 28px, so one event stays visibly one block. */
+.log-entry.ev { padding-left: 28px; text-indent: -8px; }
+.log-entry.turn, .log-entry.wave {
+  margin-top: 7px;
+  letter-spacing: 1.5px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+/* Whose turn it is is carried by the rail colour, the same white/red split the
+   turn-info strip above the skills uses, so the two never have to be reconciled. */
+.log-entry.turn.you { border-left-color: rgba(238,242,255,0.55); color: var(--text); }
+.log-entry.turn.foe { border-left-color: rgba(251,113,133,0.55); color: #fb7185; }
+.log-entry.wave { border-left-color: rgba(0,240,208,0.6); color: var(--accent); margin-top: 12px; }
+.log-entry.wave.boss { border-left-color: var(--accent2); color: var(--accent2); }
+/* The wave header's second line: the enemy's actual numbers. Muted because it
+   is reference material, not an event. */
+.log-entry.spec { padding-left: 20px; font-size: 0.74rem; }
+.log-entry:first-child { margin-top: 0; }
 
 /* ===== COMBAT LAYOUT + SIDEBAR ===== */
 .combat-layout {
@@ -2916,7 +2942,10 @@ const REFINEMENTS = [
 //                  that owns it spends it instead (stun, spent by the turn
 //                  engine when it eats a turn)
 //   persists       survives into the next fight and is written to the save
-//   applyMsg       log line for fireSkill's buff branch: "<unit> <applyMsg>"
+//   (applyMsg was a prose log line for fireSkill's buff branch. It is gone:
+//    applyStatus logs every status through logStatus using label() below, so a
+//    buff is reported by the same text as its badge instead of a second,
+//    hand-written sentence that could drift from it.)
 //   label(st,unit) badge text; defaults to NAME ×stacks  Nt
 //
 // HOOKS — all optional, all reached through the helpers below, so no caller
@@ -2955,13 +2984,19 @@ const STATUSES = {
     onOverflow(unit, st, extra) {
       if (unit.isPlayer || !state.player || state.player.class !== 'bio') return;
       const n = applyStatus(unit, 'toxin', { stacks: extra });
-      log('The rot festers — TOXIN +' + Math.round(n.stacks * P().toxinPerStack * 100) + '% poison', 'important');
+      logEvent('FESTER', unit, extra + ' POISON over cap → TOXIN ×' + n.stacks,
+               ['+' + Math.round(n.stacks * P().toxinPerStack * 100) + '% poison damage'], 'damage');
     },
     onTurnStart(unit, st) {
       const toxin = statusStacks(unit, 'toxin');
       const dmg = Math.max(1, Math.floor((st.perStack||1) * (st.stacks||1) * (1 + toxin * P().toxinPerStack)));
       unit.hp = Math.max(0, unit.hp - dmg);
       floatText(unit, dmg, 'damage');
+      logDamage('POISON', unit, dmg, [
+        '×' + (st.stacks||1) + ' @ ' + logNum(st.perStack||1) + '/stack',
+        toxin ? 'TOXIN +' + Math.round(toxin * P().toxinPerStack * 100) + '%' : null,
+        logNum(unit.hp) + '/' + logNum(unit.maxHp) + ' left'
+      ]);
       updateUnitCard(unit);
       return unit.hp <= 0;
     }
@@ -2991,6 +3026,10 @@ const STATUSES = {
       const dmg = Math.max(1, Math.floor((st.perStack||1) * (st.stacks||1)));
       unit.hp = Math.max(0, unit.hp - dmg);
       floatText(unit, dmg, 'damage');
+      logDamage('BLEED', unit, dmg, [
+        '×' + (st.stacks||1) + ' @ ' + logNum(st.perStack||1) + '/stack',
+        logNum(unit.hp) + '/' + logNum(unit.maxHp) + ' left'
+      ]);
       updateUnitCard(unit);
       return unit.hp <= 0;
     }
@@ -3002,7 +3041,6 @@ const STATUSES = {
     // Spines is x2.2 * x1.5 = x3.3, not a downgrade to x1.5. The duration is
     // shorter than Spines' cooldown, so it can't ladder on itself forever.
     stacking:'amplify', defaults:{ duration:3, power:2.2 }, persists:true,
-    applyMsg:'raises living spines',
     label: st => 'SPINES ×' + (st.power||2).toFixed(1) + '  ' + Math.ceil(st.duration) + 't',
     thornsMult: (u, st) => st.power || 1,
     // Sym: a hit landed while the spines are up plants a Spore for later
@@ -3010,14 +3048,13 @@ const STATUSES = {
     onHitTaken(unit, st, ctx) {
       if (unit.class !== 'sym' || !(ctx.damage > 0)) return;
       const planted = Math.min(P().sporeHitMax, 1 + Math.floor(ctx.damage / Math.max(1, unit.maxHp * P().sporeBigHitFrac)));
-      bankAdjust(unit, planted, planted > 1 ? 'Pain sinks deep — ' + planted + ' spores take root' : 'A spore takes root (+1)');
+      bankAdjust(unit, planted, 'SPINES, hit taken' + (planted > 1 ? ' (big hit)' : ''));
     }
   },
 
   brace: {
     id:'brace', name:'BRACE', tone:'brace', kind:'buff',
     stacking:'replace', defaults:{ duration:1, power:0.60, counter:1.20 },
-    applyMsg:'braces for impact',
     label: st => 'BRACE ' + Math.ceil(st.duration) + 't',
     // Deliberately NOT an incomingMult: Unmutated adds Brace to held Resolve
     // and caps the sum (applyEnemyDamage), so 18% Resolve + 60% Brace is one
@@ -3036,6 +3073,10 @@ const STATUSES = {
       state.damageDealt += cdmg;
       if (e.hp <= 0) state._lastOverkill = Math.max(0, cdmg - before);
       floatText(e, cdmg, 'damage');
+      logDamage('COUNTER', e, cdmg, [
+        'BRACE ×' + (st.counter||1.2).toFixed(2) + ' Attack Damage',
+        logNum(e.hp) + '/' + logNum(e.maxHp) + ' left'
+      ]);
       playAttackAnim(unit, e, true, 'counter');
     }
   },
@@ -3043,7 +3084,6 @@ const STATUSES = {
   flow: {
     id:'flow', name:'FLOW', tone:'flow', kind:'buff',
     stacking:'replace', defaults:{ duration:3, power:2 },
-    applyMsg:'enters Flow State — the streak cannot break',
     label: st => 'FLOW ×' + (st.power||2) + ' ' + Math.ceil(st.duration) + 't',
     // Its two effects stay as reads at their sites rather than hooks, because
     // both touch psy's Momentum bank rather than a generic damage number:
@@ -3054,7 +3094,6 @@ const STATUSES = {
   predator: {
     id:'predator', name:'PREDATOR', tone:'predator', kind:'buff',
     stacking:'replace', defaults:{ duration:5, power:1.45 }, persists:true,
-    applyMsg:'enters Predator Form',
     label: st => 'PREDATOR ' + Math.ceil(st.duration) + 't',
     outgoingMult: (u, st) => st.power || 1
   },
@@ -3118,8 +3157,13 @@ const STATUSES = {
     onTurnStart(unit, st) {
       if (unit.hp <= 0 || unit.hp >= unit.maxHp) return false;
       const heal = Math.max(1, Math.floor(unit.maxHp * (st.power||0)));
+      const before = unit.hp;
       unit.hp = Math.min(unit.maxHp, unit.hp + heal);
       floatText(unit, heal, 'heal');
+      logHeal('REGEN', unit, unit.hp - before, [
+        Math.round((st.power||0)*100) + '% max HP',
+        logNum(unit.hp) + '/' + logNum(unit.maxHp)
+      ]);
       updateUnitCard(unit);
       return false;
     }
@@ -3136,11 +3180,15 @@ function hasStatus(unit, id) { return !!getStatus(unit, id); }
 function statusStacks(unit, id) { const s = getStatus(unit, id); return s ? (s.stacks || 0) : 0; }
 function statusPower(unit, id) { const s = getStatus(unit, id); return s ? (s.power || 0) : 0; }
 
-function removeStatus(unit, id) {
+// `why` names whatever stripped it. Without a line here a status could vanish
+// mid-fight with nothing in the transcript to show for it — Fester eating a
+// four-stack POISON looked like the rot simply stopped existing.
+function removeStatus(unit, id, why) {
   const st = getStatus(unit, id);
   if (!st) return false;
   unit.statuses = unit.statuses.filter(s => s !== st);
   const def = STATUSES[id];
+  if (def) logEvent('− ' + statusLabel(def, st, unit) + ' removed', unit, null, [why], '');
   if (def && def.onExpire) def.onExpire(unit, st);
   return true;
 }
@@ -3194,6 +3242,11 @@ function applyStatus(unit, id, opts) {
         Object.assign(st, fresh);
     }
   }
+  // Logged HERE, at the one choke point every status passes through, rather
+  // than at each caller. That is what makes the transcript complete: a rider,
+  // an elite affix and a skill all report the same way, on either side of the
+  // fight, and a status added later is logged without touching this at all.
+  logStatus(unit, st);
   if (def.onApply) def.onApply(unit, st);
   return st;
 }
@@ -3233,6 +3286,7 @@ function tickStatuses(unit) {
   });
   expired.forEach(st => {
     const def = STATUSES[st.type];
+    logStatus(unit, st, true);
     if (def && def.onExpire) def.onExpire(unit, st);
   });
   return false;
@@ -3258,6 +3312,24 @@ function statusSum(unit, hook, ctx) {
   }
   return n;
 }
+// Which statuses actually moved a number, phrased as log qualifiers. It folds
+// the SAME hooks the damage pipeline folds, so a line can name the reason a hit
+// landed for what it did instead of just asserting the total — and a status
+// added later shows up here for free. Anything that resolved to ×1 is dropped:
+// a modifier that changed nothing is not an explanation.
+function statusNotes(unit, hook, ctx) {
+  const out = [];
+  if (!unit || !unit.statuses) return out;
+  for (const st of unit.statuses) {
+    const def = STATUSES[st.type];
+    if (!def || !def[hook]) continue;
+    const m = def[hook](unit, st, ctx);
+    if (!isFinite(m) || Math.abs(m - 1) < 1e-9) continue;
+    out.push(def.name + ' ' + (m > 1 ? '+' : '−') + Math.round(Math.abs(m - 1) * 100) + '%');
+  }
+  return out;
+}
+
 function statusEach(unit, hook, ctx) {
   if (!unit || !unit.statuses) return;
   for (const st of unit.statuses.slice()) {
@@ -3290,6 +3362,10 @@ let state = {
   saveSlot:1,
   awaitingSpawn:false, awaitingInput:false, active:null, pendingEnemyAct:false,
   combo:0, fightTurns:0, enemyActions:0, bestCombo:0,
+  // Turns taken by EITHER side this fight, purely so the log can number them.
+  // fightTurns counts only the player's, which makes it the wrong clock for a
+  // transcript that has to interleave both.
+  turnNo:0,
   runStart:0, damageDealt:0, _defeatLock:false, _lastOverkill:0
 };
 
@@ -3706,6 +3782,7 @@ function resetRunState(classId) {
   state.bestCombo = 0;
   state.fightTurns = 0;
   state.enemyActions = 0;
+  state.turnNo = 0;
   state.damageDealt = 0;
   state.runStart = Date.now();
   state._defeatLock = false;
@@ -3796,37 +3873,60 @@ function spawnEnemy() {
   state.enemy = makeEnemy(state.wave);
   const p = state.player;
 
-  if (p.talents.bloodMemory && state.kills > 0)
-    state.enemy.hp = Math.max(1, Math.floor(state.enemy.maxHp * p.talents.bloodMemory));
-
-  if (state.overkillCarry > 0) {
-    const carry = state.overkillCarry; state.overkillCarry = 0;
-    const before = state.enemy.hp;
-    state.enemy.hp = Math.max(0, state.enemy.hp - carry);
-    log('Overflow carries ' + formatNum(carry) + ' into the next body', 'important');
-    if (state.enemy.hp <= 0) state._lastOverkill = Math.max(0, carry - before);
-  }
-
-  if (state.kills > 0) {
-    p.hp = Math.min(p.maxHp, p.hp + Math.floor(p.maxHp * P().recoverHpFrac));
-    p.statuses = survivingStatuses(p);
-  }
-
   const zn = document.getElementById('zone-name');
   if (zn) zn.textContent = getZoneName(state.wave);
   const an = document.getElementById('act-name');
   if (an) an.textContent = getActLabel(state.wave);
 
-  const tags = enemyTags(state.enemy);
-  if (state.enemy.isBoss) log('■ ' + state.enemy.name + ' — BOSS', 'level');
-  else if (state.enemy.elite) log(state.enemy.elite.tag + ' ' + state.enemy.name + ' (+' + Math.round((state.enemy.xpMult-1)*100) + '% XP)', 'important');
-  else if (state.wave <= 3 || state.wave % 5 === 1) log('Wave ' + state.wave + ': ' + state.enemy.name, 'important');
+  // Every wave gets a header, not just bosses and elites. A transcript with
+  // silent waves in it cannot be read back — the reader has no way to tell
+  // which fight a turn belonged to. The second line is the enemy's actual
+  // sheet, which is the thing you want when asking why a fight went badly and
+  // the only place those numbers are ever visible.
+  const e = state.enemy;
+  const tags = enemyTags(e);
+  log('WAVE ' + state.wave + ' · ' + e.name + (tags.length ? ' · ' + tags.join(' ') : ''),
+      'wave' + (e.isBoss ? ' boss' : ''));
+  log('HP ' + logNum(e.maxHp) + ' · DMG ' + logNum(e.damage)
+    + ' · RATE ' + e.attackSpeed.toFixed(2) + '×'
+    + (e.evadeChance ? ' · EVADE ' + Math.round(e.evadeChance*100) + '%' : '')
+    + (e.windupEvery ? ' · WINDUP every ' + e.windupEvery + ' (×' + BALANCE.enemy.windupMult + ')' : '')
+    + (e.xpMult !== 1 ? ' · XP ×' + e.xpMult.toFixed(1) : ''), 'spec');
+
+  // Everything that lands on the fight before the first turn is logged under
+  // that header, in the order it applies, so an enemy that arrives already
+  // wounded is explained rather than just odd.
+  if (p.talents.bloodMemory && state.kills > 0) {
+    e.hp = Math.max(1, Math.floor(e.maxHp * p.talents.bloodMemory));
+    logEvent('BLOOD MEMORY', e, 'starts at ' + Math.round(p.talents.bloodMemory*100) + '% HP', null, 'damage');
+  }
+
+  if (state.overkillCarry > 0) {
+    const carry = state.overkillCarry; state.overkillCarry = 0;
+    const before = e.hp;
+    e.hp = Math.max(0, e.hp - carry);
+    logDamage('OVERFLOW', e, carry, ['carried from last kill']);
+    if (e.hp <= 0) state._lastOverkill = Math.max(0, carry - before);
+  }
+
+  if (state.kills > 0) {
+    const before = p.hp;
+    p.hp = Math.min(p.maxHp, p.hp + Math.floor(p.maxHp * P().recoverHpFrac));
+    if (p.hp > before) logHeal('RECOVER', p, p.hp - before,
+      [Math.round(P().recoverHpFrac*100) + '% max HP between fights']);
+    // Statuses that do not persist are dropped here; say which, or a buff
+    // silently missing from the next fight looks like it stopped working.
+    const lost = p.statuses.filter(s => { const dd = STATUSES[s.type]; return !(dd && dd.persists); });
+    p.statuses = survivingStatuses(p);
+    lost.forEach(s => { const dd = STATUSES[s.type]; if (dd) logEvent('− ' + dd.name + ' ended', p, 'fight over', null, ''); });
+  }
 
   // Fresh gauges each fight; ties go to the player so you open the exchange.
   state.player.meter = 0;
   state.enemy.meter = 0;
   state.fightTurns = 0;
   state.enemyActions = 0;
+  state.turnNo = 0;
   state.awaitingSpawn = false;
   state.awaitingInput = false;
   state.pendingEnemyAct = false;
@@ -3889,7 +3989,8 @@ function gainXP(amount) {
     p.xp -= p.xpNext; p.level++; p.xpNext = xpForLevel(p.level); p.points += grant;
     recalcPlayerStats();
     p.hp = Math.min(p.maxHp, p.hp + Math.floor(p.maxHp * P().levelUpHealFrac));
-    log('LEVEL ' + p.level + '  (+' + grant + ' points)', 'level');
+    logEvent('LEVEL ' + p.level, null, '+' + grant + ' points',
+             ['next at ' + logNum(p.xpNext) + ' XP'], 'level');
     gained.push(p.level);
   }
   if (gained.length) {
@@ -3951,7 +4052,7 @@ function queueTalentOffer(level) {
   const picks = rollTalentOffers(p);
   if (!picks.length) return false;
   state.talentOffers = { level, picks };
-  log('Mutation ready — open the TALENTS tab', 'level');
+  logEvent('MUTATION available', null, 'level ' + level, ['pick one in MUTATIONS'], 'level');
   return true;
 }
 
@@ -3962,7 +4063,7 @@ function promoteQueuedTalent() {
   if (!picks.length) { if (state.talentQueue.length) promoteQueuedTalent(); return; }
   state.talentOffers = { level, picks };
   refreshTalentUI();
-  log('Mutation ready — open the TALENTS tab', 'level');
+  logEvent('MUTATION available', null, 'level ' + level, ['pick one in MUTATIONS'], 'level');
 }
 
 // Always returns three options. Unique talents first, refinements fill the rest.
@@ -4000,7 +4101,7 @@ function pickTalent(id) {
   recalcPlayerStats();
   p.hp = Math.min(p.maxHp, p.hp);
   state.talentOffers = null;
-  log('Mutation: ' + t.name, 'level');
+  logEvent('MUTATION taken', null, t.name, [t.tag], 'level');
   promoteQueuedTalent();
   updateHud(); refreshTalentUI(); renderCombat(); renderSkills(); saveRun();
 }
@@ -4131,9 +4232,13 @@ function pendingView(p, extraStat) {
 // permanent, and the only place combat can see the change.
 function commitStats() {
   const p = state.player; if (!p || !canConfirmStats(p)) return;
+  // Read the allocation BEFORE folding it in — pendingOf is zero afterwards,
+  // which is what made this line print an empty list.
+  const placed = STAT_KEYS.filter(k => pendingOf(p, k))
+    .map(k => k.toUpperCase() + ' +' + pendingOf(p, k)).join(' ');
   STAT_KEYS.forEach(k => { p[k] += pendingOf(p, k); p.pending[k] = 0; });
   recalcPlayerStats();
-  log('Mutation stabilised — stats locked in', 'level');
+  logEvent('STATS committed', null, placed, ['ATK ' + logNum(attackDamage(p)) + ' · HP ' + logNum(p.maxHp)], 'level');
   updateHud(); renderSkills(); saveRun();
 }
 
@@ -4373,6 +4478,11 @@ function nextTurn() {
   if (!actor) return;
   state.active = actor;
 
+  // Header BEFORE the start-of-turn tick, so a poison that kills lands under
+  // the turn it belonged to instead of orphaned above the next one.
+  state.turnNo++;
+  logTurn(actor);
+
   if (tickTurnStart(actor)) return;          // poison finished someone off
 
   // Stun is spent here rather than by the generic duration tick above: the turn
@@ -4381,8 +4491,11 @@ function nextTurn() {
   const stun = getStatus(actor, 'stun');
   if (stun) {
     stun.duration--;
-    if (stun.duration <= 0) removeStatus(actor, 'stun');
-    log(actor.name + ' is stunned and loses the turn', 'important');
+    // The event before the removal it causes, so the transcript reads in the
+    // order things happened rather than reporting the consequence first.
+    logEvent('STUNNED', actor, 'turn lost',
+             [stun.duration > 0 ? Math.ceil(stun.duration) + 't left' : 'last turn'], 'damage');
+    if (stun.duration <= 0) removeStatus(actor, 'stun', 'duration spent');
     updateUnitCard(actor); updateTurnInfo(); renderSkills();
     scheduleTurn(nextTurn, turnDelay(480));
     return;
@@ -4454,7 +4567,8 @@ function enemyAct() {
     e.actionCount = (e.actionCount || 0) + 1;
     if (e.actionCount % (e.windupEvery || BALANCE.enemy.windupEvery) === 0) {
       e.windup = true;
-      log(e.name + ' gathers itself — next strike hits ×' + BALANCE.enemy.windupMult, 'level');
+      logEvent('WINDUP', e, 'next strike ×' + BALANCE.enemy.windupMult,
+               ['action ' + e.actionCount + ' of every ' + e.windupEvery], 'damage');
       const fig = getFigureForUnit(e);
       if (fig) fig.style.filter = 'brightness(1.35)';
       shake(6);
@@ -4520,31 +4634,47 @@ function applyEnemyDamage(e, p, mult) {
   // Anything on the attacker that changes what it hits for (weak, empower)
   // lands before the roll; anything on the defender that changes what it takes
   // (vulnerable, fortify) lands after the crit, alongside the other mitigation.
+  const notes = [];
+  const label = (mult && mult > 1) ? 'HEAVY ×' + mult : 'Attack';
+  notes.push(...statusNotes(e, 'outgoingMult', { target: p }));
   let dmg = Math.max(1, Math.floor(e.damage * (mult || 1) * statusMult(e, 'outgoingMult', { target: p })));
   if (Math.random() < p.evadeChance) {
-    if (p.class === 'psy') bankAdjust(p, 1, 'Momentum rises — evaded (+1)');   // speed → evade → streak
+    logMiss(label, p, 'EVADED (' + Math.round(p.evadeChance * 100) + '%)');
+    if (p.class === 'psy') bankAdjust(p, 1, 'attack evaded');   // speed → evade → streak
     floatText(p, 'EVADE', 'xp'); playAttackAnim(e, p, false); return 0;
   }
-  if (Math.random() < e.critChance) dmg = Math.floor(dmg * e.critMult);
+  if (Math.random() < e.critChance) { dmg = Math.floor(dmg * e.critMult); notes.push('CRIT ×' + e.critMult.toFixed(1)); }
+  notes.push(...statusNotes(p, 'incomingMult', { attacker: e }));
   dmg = Math.floor(dmg * statusMult(p, 'incomingMult', { attacker: e }));
   let blocked = false;
-  if (Math.random() < p.blockChance) { blocked = true; dmg = Math.floor(dmg * (1 - p.blockReduction)); }
+  if (Math.random() < p.blockChance) {
+    blocked = true;
+    dmg = Math.floor(dmg * (1 - p.blockReduction));
+    notes.push('BLOCK −' + Math.round(p.blockReduction * 100) + '%');
+  }
   // Unmutated: held Resolve is flat mitigation and Counterpunch braces on top
   // of it. The two are summed under one cap on purpose — see the note on the
   // brace status for why it is not a generic incomingMult.
   if (p.class === 'base') {
     const dr = Math.min(0.85, (p.resolve||0)*P().resolveDR + statusPower(p, 'brace'));
-    if (dr > 0) dmg = Math.floor(dmg * (1 - dr));
+    if (dr > 0) {
+      dmg = Math.floor(dmg * (1 - dr));
+      // Reported as one number because it IS one number — the sum is what the
+      // cap applies to, so splitting it in the log would imply two reductions.
+      notes.push('GUARD −' + Math.round(dr * 100) + '%'
+        + ' (RESOLVE ×' + (p.resolve || 0) + (hasStatus(p, 'brace') ? ' + BRACE' : '') + ')');
+    }
   }
   dmg = Math.max(1, dmg);
   p.hp = Math.max(0, p.hp - dmg);
+  logDamage(label, p, dmg, notes.concat([logNum(p.hp) + '/' + logNum(p.maxHp) + ' left']));
   // Psy: a landed hit trims Momentum by 2 — a slip, not a reset.
   if (p.class === 'psy') {
-    if (hasStatus(p, 'flow')) log('Flow holds — Momentum unshaken', 'important');
-    else bankAdjust(p, -P().momentumLossPerHit, 'Momentum slips (−2)');
+    if (hasStatus(p, 'flow')) logEvent('MOMENTUM', p, 'held', ['FLOW blocks the loss'], 'heal');
+    else bankAdjust(p, -P().momentumLossPerHit, 'hit taken');
   }
   // Unmutated: every hit taken steadies you, and Brace banks an extra.
-  if (p.class === 'base') bankAdjust(p, (P().resolvePerHit||1) + statusSum(p, 'bankOnHitTaken'));
+  if (p.class === 'base') bankAdjust(p, (P().resolvePerHit||1) + statusSum(p, 'bankOnHitTaken'), 'hit taken');
   // Whatever the player is carrying that answers a hit — Spines planting a
   // Spore, Brace punching back — fires here, in one place, for any status.
   statusEach(p, 'onHitTaken', { attacker: e, damage: dmg });
@@ -4553,10 +4683,17 @@ function applyEnemyDamage(e, p, mult) {
   shake(Math.min(10, 2 + dmg/Math.max(1,p.maxHp)*40));
 
   let thorns = getThornsDamage(p);
+  const tNotes = [];
+  if (thorns > 0) tNotes.push('thorns ' + logNum(thorns));
   // Sym: pain is fuel — a share of the damage actually taken comes back,
   // doubled while Spines is up. A windup eaten on purpose is the harvest.
   if (p.class === 'sym' && dmg > 0) {
-    thorns += Math.floor(dmg * P().reflectFrac * (hasStatus(p, 'spines') ? P().reflectSpinesMult : 1));
+    const spined = hasStatus(p, 'spines');
+    const reflected = Math.floor(dmg * P().reflectFrac * (spined ? P().reflectSpinesMult : 1));
+    thorns += reflected;
+    tNotes.push('reflect ' + logNum(reflected)
+      + ' (' + Math.round(P().reflectFrac * (spined ? P().reflectSpinesMult : 1) * 100) + '% taken'
+      + (spined ? ', SPINES doubled' : '') + ')');
   }
   if (thorns > 0 && e.hp > 0) {
     const tBefore = e.hp;
@@ -4564,9 +4701,12 @@ function applyEnemyDamage(e, p, mult) {
     state.damageDealt += thorns;
     if (e.hp <= 0) state._lastOverkill = Math.max(0, thorns - tBefore);
     floatText(e, thorns, 'damage');
+    logDamage('THORNS', e, thorns, tNotes);
     const healPct = p.talents.thornsHeal || 0.25;
     const feed = Math.max(1, Math.floor(thorns * healPct));
+    const hpBefore = p.hp;
     p.hp = Math.min(p.maxHp, p.hp + feed);
+    if (p.hp > hpBefore) logHeal('THORNS FEED', p, p.hp - hpBefore, [Math.round(healPct * 100) + '% of thorns']);
   }
   return dmg;
 }
@@ -4574,29 +4714,62 @@ function applyEnemyDamage(e, p, mult) {
 // Player -> enemy.
 function applyPlayerDamage(p, e, skill) {
   let dmg = p.atkPower * (skill.power || 1);
+  // Qualifiers for the log line, collected as the number is built so each one
+  // is recorded by the branch that actually applied it. A modifier that does
+  // not fire adds nothing, so the line only ever lists real contributors.
+  const notes = [];
+  if ((skill.power || 1) !== 1) notes.push('power ×' + (skill.power || 1).toFixed(2));
 
   // Held Momentum is offense: psy deals more while the streak is alive, and
   // Flow multiplies what each held charge is worth.
   if (p.class === 'psy' && (p.charges || 0) > 0) {
     const flow = getStatus(p, 'flow');
-    dmg *= (1 + (p.charges || 0) * P().momentumDmg * (flow ? (flow.power || 2) : 1));
+    const bonus = (p.charges || 0) * P().momentumDmg * (flow ? (flow.power || 2) : 1);
+    dmg *= (1 + bonus);
+    notes.push('MOMENTUM ×' + p.charges + ' +' + Math.round(bonus * 100) + '%');
   }
   // Resolve (base): Last Stand scales with everything you endured.
   const resolveSpent = skill.consumesResolve ? (p.resolve || 0) : 0;
-  if (resolveSpent > 0) dmg += p.atkPower * (skill.perResolvePower || 0) * resolveSpent;
+  if (resolveSpent > 0) {
+    dmg += p.atkPower * (skill.perResolvePower || 0) * resolveSpent;
+    notes.push('RESOLVE ×' + resolveSpent + ' spent');
+  }
   // Spores (sym): Bloom Eruption scales with the harvest.
   const sporesSpent = skill.consumesSpores ? (p.spores || 0) : 0;
-  if (sporesSpent > 0) dmg += p.atkPower * (skill.perSporePower || 0) * sporesSpent;
+  if (sporesSpent > 0) {
+    dmg += p.atkPower * (skill.perSporePower || 0) * sporesSpent;
+    notes.push('SPORES ×' + sporesSpent + ' spent');
+  }
 
   // Both sides' statuses meet here: what the player is carrying that raises the
   // hit (Predator, Empower) and what the enemy is carrying that softens or
   // opens it up (Fortify, Vulnerable).
+  notes.push(...statusNotes(p, 'outgoingMult', { target: e }));
+  notes.push(...statusNotes(e, 'incomingMult', { attacker: p }));
   dmg *= statusMult(p, 'outgoingMult', { target: e }) * statusMult(e, 'incomingMult', { attacker: p });
-  if (p.talents.adrenaline && p.hp/p.maxHp < 0.35) dmg *= (1 + p.talents.adrenaline);
-  if (p.talents.execute && e.hp/e.maxHp < 0.30) dmg *= (1 + p.talents.execute);
-  if (p.talents.momentum) dmg *= (1 + Math.min(0.40, state.combo * p.talents.momentum));
-  if (skill.thornsBurst) dmg += getThornsDamage(p) * skill.thornsBurst;
-  if (skill.thornsScale) dmg += getThornsDamage(p) * skill.thornsScale;   // Latch: thorns floor
+  if (p.talents.adrenaline && p.hp/p.maxHp < 0.35) {
+    dmg *= (1 + p.talents.adrenaline);
+    notes.push('ADRENALINE +' + Math.round(p.talents.adrenaline * 100) + '%');
+  }
+  if (p.talents.execute && e.hp/e.maxHp < 0.30) {
+    dmg *= (1 + p.talents.execute);
+    notes.push('EXECUTE +' + Math.round(p.talents.execute * 100) + '%');
+  }
+  if (p.talents.momentum) {
+    const m = Math.min(0.40, state.combo * p.talents.momentum);
+    dmg *= (1 + m);
+    if (m > 0) notes.push('CHAIN +' + Math.round(m * 100) + '%');
+  }
+  if (skill.thornsBurst) {
+    const t = getThornsDamage(p) * skill.thornsBurst;
+    dmg += t;
+    notes.push('THORNS +' + logNum(t));
+  }
+  if (skill.thornsScale) {                                  // Latch: thorns floor
+    const t = getThornsDamage(p) * skill.thornsScale;
+    dmg += t;
+    notes.push('THORNS +' + logNum(t));
+  }
 
   // Nothing misses. An attack is only ever avoided by the target getting out of
   // the way, so this is the enemy's evade and nothing else — there is no
@@ -4604,13 +4777,16 @@ function applyPlayerDamage(p, e, skill) {
   if (Math.random() < e.evadeChance) {
     playAttackAnim(p, e, false, skill);
     floatText(e, 'EVADE', 'xp');
+    // The evade chance is named because it is the whole explanation, and it is
+    // the one number the player cannot see on the enemy anywhere else.
+    logMiss(skill.name, e, 'EVADED (' + Math.round(e.evadeChance * 100) + '%)');
     // Psy's nemesis made visible: an evade starves the streak.
-    if (p.class === 'psy') log('It slips aside — no Momentum gained', 'important');
+    if (p.class === 'psy') logEvent('MOMENTUM', p, 'not gained', ['attack evaded'], '');
     return false;
   }
 
   let isCrit = Math.random() < p.critChance;
-  if (isCrit) dmg *= p.critMult;
+  if (isCrit) { dmg *= p.critMult; notes.push('CRIT ×' + p.critMult.toFixed(1)); }
 
   dmg = Math.max(1, Math.floor(dmg));
   const before = e.hp;
@@ -4618,18 +4794,22 @@ function applyPlayerDamage(p, e, skill) {
   state.damageDealt += dmg;
   if (e.hp <= 0 && before > 0) state._lastOverkill = Math.max(0, dmg - before);
 
+  // The hit itself, with the remaining HP: the number that says whether the
+  // next one finishes it, which is the decision the player is actually making.
+  logDamage(skill.name, e, dmg, notes.concat([logNum(e.hp) + '/' + logNum(e.maxHp) + ' left']));
+
   floatText(e, dmg, 'damage', isCrit);
   if (isCrit) shake(7);
 
   if (skill.consumesResolve && resolveSpent > 0)
-    bankAdjust(p, -resolveSpent, 'Last Stand spends ' + resolveSpent + ' Resolve');
+    bankAdjust(p, -resolveSpent, 'spent by ' + skill.name);
   if (skill.consumesSpores && sporesSpent > 0)
-    bankAdjust(p, -sporesSpent, 'Bloom consumes ' + sporesSpent + ' spore' + (sporesSpent === 1 ? '' : 's'));
-  if (skill.consumesSpines) removeStatus(p, 'spines');
+    bankAdjust(p, -sporesSpent, 'spent by ' + skill.name);
+  if (skill.consumesSpines) removeStatus(p, 'spines', 'consumed by ' + skill.name);
   // Build the bank: every landed hit builds Momentum.
-  if (p.class === 'psy') bankAdjust(p, 1);
+  if (p.class === 'psy') bankAdjust(p, 1, 'attack landed');
   // Resolve (base): landing a hit steadies you.
-  if (skill.buildsResolve) bankAdjust(p, skill.buildsResolve);
+  if (skill.buildsResolve) bankAdjust(p, skill.buildsResolve, skill.name);
 
   if (skill.poison && p.class === 'bio')
     applyStatus(e, 'poison', { stacks: skill.poison, perStack: p.poisonPerStack });
@@ -4641,10 +4821,11 @@ function applyPlayerDamage(p, e, skill) {
   if (skill.festers) {
     const stacks = statusStacks(e, 'poison');
     if (stacks > 0) {
-      removeStatus(e, 'poison');
-      const t = applyStatus(e, 'toxin', { stacks });
-      log('The rot sets in — TOXIN +' + Math.round(t.stacks * P().toxinPerStack * 100) + '% poison', 'important');
-    } else log('Nothing to fester — no poison on the target', 'important');
+      // removeStatus and applyStatus each log, so the conversion reads as the
+      // two halves it actually is rather than a summary line on top of them.
+      removeStatus(e, 'poison', 'converted by ' + skill.name);
+      applyStatus(e, 'toxin', { stacks });
+    } else logEvent(skill.name, e, 'no effect', ['no POISON on target'], '');
   }
 
   applySkillStatuses(p, skill, e);
@@ -4667,10 +4848,11 @@ function applyPlayerDamage(p, e, skill) {
     // and consumes them. Mashing the spender leaves nothing for the windup.
     if (skill.stunCost) {
       if ((p.charges || 0) < skill.stunCost) {
-        log('Not enough momentum to stun', 'important');
+        logEvent('STUN', null, 'not paid',
+                 ['needs ' + skill.stunCost + ' MOMENTUM, have ' + (p.charges || 0)], '');
         return dmg;
       }
-      bankAdjust(p, -skill.stunCost);
+      bankAdjust(p, -skill.stunCost, 'spent to stun');
     }
     if (e.windup && !e.stunImmune) {
       // Interrupt: breaks the charge instead of stunning, and ARMS stagger
@@ -4681,17 +4863,17 @@ function applyPlayerDamage(p, e, skill) {
       const fig = getFigureForUnit(e);
       if (fig) fig.style.filter = '';
       e.stunImmune = true;
-      log(e.name + '\'s charge is broken!', 'level');
+      logEvent('INTERRUPT', e, 'windup broken', ['stagger resist now armed'], 'heal');
     } else if (e.windup && e.stunImmune) {
       // The shrug clears the resist but the strike still comes.
       e.stunImmune = false;
-      log(e.name + ' powers through the stagger — the strike is coming', 'level');
+      logEvent('STAGGER RESISTED', e, 'windup holds', ['resist consumed'], 'damage');
     } else {
       if (e.stunImmune) {
         // Without this, a 1-turn stun on a ~3-turn cooldown locks an enemy that acts
         // once per 3-4 of your turns out of the fight entirely.
         e.stunImmune = false;
-        log(e.name + ' shrugs off the stagger', 'important');
+        logEvent('STAGGER RESISTED', e, 'no stun', ['resist consumed'], 'damage');
       } else {
         applyStatus(e, 'stun', { duration: stunTurns });
         e.stunImmune = true;
@@ -4738,31 +4920,45 @@ function fireSkill(caster, skill, target) {
   let bankLanded = true;   // heal/buff always resolve; attacks must connect
   if (skill.type === 'heal') {
     let frac = skill.healFrac || 0.1;
+    const notes = [];
     // Unmutated: Bandage patches better the deeper you're dug in.
-    if (skill.resolveHealBonus) frac += skill.resolveHealBonus * (caster.resolve || 0);
+    if (skill.resolveHealBonus) {
+      const bonus = skill.resolveHealBonus * (caster.resolve || 0);
+      frac += bonus;
+      if (bonus > 0) notes.push('RESOLVE ×' + (caster.resolve || 0) + ' +' + Math.round(bonus * 100) + '%');
+    }
     // Sym: Feed runs on the harvest — a Spore buys the real heal and the
     // thorns boost; starved, it's a thin patch and nothing more.
     let fed = true;
     if (skill.sporeFuel) {
       fed = (caster.spores || 0) > 0;
-      if (fed) { bankAdjust(caster, -1, 'Feed consumes a spore'); frac = skill.healFracFed || frac; }
-      else log('No spores to feed on — a thin meal', 'important');
+      if (fed) { bankAdjust(caster, -1, 'spent by ' + skill.name); frac = skill.healFracFed || frac; }
+      else notes.push('STARVED, no spore');
     }
+    notes.push(Math.round(frac * 100) + '% max HP');
     const amount = Math.max(1, Math.floor(caster.maxHp * frac));
     const before = caster.hp;
     caster.hp = Math.min(caster.maxHp, caster.hp + amount);
     const restored = caster.hp - before;
     floatText(caster, amount, 'heal');
+    // The amount RESTORED, not the amount rolled: healing into a nearly-full
+    // bar is the case where those two differ, and the restored number is the
+    // one that actually happened. The overheal is named so the gap is not a
+    // mystery.
+    logHeal(skill.name, caster, restored,
+      notes.concat([restored < amount ? 'overheal ' + logNum(amount - restored) : null,
+                    logNum(caster.hp) + '/' + logNum(caster.maxHp)]));
     playCastAnim(caster, skill);
     if (skill.thornsBoost && fed)
       applyStatus(caster, 'spines', { power: skill.thornsBoost, duration: skill.thornsBoostDur || 3 });
   } else if (skill.type === 'buff') {
     // Any buff at all: the skill names a status id and hands over whichever
-    // fields it wants to override. Stacking, duration and the log line come
-    // from the definition, so a new buff skill needs no code here.
-    const def = statusDef(skill.buff);
+    // fields it wants to override. Stacking and duration come from the
+    // definition, so a new buff skill needs no code here — and applyStatus
+    // logs it, so there is no line to write either. The old applyMsg prose
+    // ("raises living spines") said less than the status badge it produced.
+    logEvent(skill.name, null, 'cast', null, '');
     applyStatus(caster, skill.buff, skillStatusOpts(skill));
-    log(caster.name + ' ' + ((def && def.applyMsg) || 'gains ' + skill.buff), 'important');
     applySkillStatuses(caster, skill);
     playCastAnim(caster, skill);
   } else {
@@ -4774,17 +4970,23 @@ function fireSkill(caster, skill, target) {
         // Priced lifesteal: the hit always lands, but the heal only fires if the
         // bank can pay for it (Nerve Drain feeds on Momentum).
         if (skill.healCost && (caster.charges || 0) < skill.healCost) {
-          log('Not enough momentum to feed on the wound', 'important');
+          logEvent('LIFESTEAL', null, 'not paid',
+                   ['needs ' + skill.healCost + ' MOMENTUM, have ' + (caster.charges || 0)], '');
         } else {
-          if (skill.healCost) bankAdjust(caster, -skill.healCost);
+          if (skill.healCost) bankAdjust(caster, -skill.healCost, 'spent to drain');
           const heal = Math.max(1, Math.floor(dealt * skill.lifesteal));
+          const before = caster.hp;
           caster.hp = Math.min(caster.maxHp, caster.hp + heal);
           floatText(caster, heal, 'heal');
+          logHeal('LIFESTEAL', caster, caster.hp - before,
+                  [Math.round(skill.lifesteal * 100) + '% of ' + logNum(dealt) + ' dealt',
+                   logNum(caster.hp) + '/' + logNum(caster.maxHp)]);
         }
       }
     } else if (fullCd) {
       // A miss already cost the turn; don't also charge the full cooldown.
       skill.cd = 1;
+      logEvent(skill.name, null, 'cooldown reduced to 1t', ['attack missed'], '');
     }
   }
 
@@ -4810,30 +5012,56 @@ function onEnemyDefeated() {
   state.kills++;
   // A chain is "killed it fast", measured in the enemy's actions — counting the
   // player's own turns biased chains by attack speed. Windup/stun turns don't count.
-  if ((state.enemyActions || 0) <= BALANCE.combo.maxEnemyActionsPerKill) state.combo++;
+  const chained = (state.enemyActions || 0) <= BALANCE.combo.maxEnemyActionsPerKill;
+  if (chained) state.combo++;
   else state.combo = 1;
   if (state.combo > state.bestCombo) state.bestCombo = state.combo;
   updateCombo();
+
+  // The kill itself. Turns and enemy actions are on the line because they are
+  // exactly what the chain rule reads, so a chain that broke explains itself
+  // instead of looking arbitrary.
+  logEvent('DEFEATED', e, null, [
+    state.turnNo + ' turns',
+    state.enemyActions + ' enemy actions',
+    chained ? 'CHAIN ' + state.combo + '×'
+            : 'CHAIN reset (over ' + BALANCE.combo.maxEnemyActionsPerKill + ')',
+    overkill > 0 ? 'overkill ' + logNum(overkill) : null
+  ], 'xp');
 
   if (e.elite && e.elite.deathNova) {
     const nova = Math.max(1, Math.floor(p.maxHp * e.elite.deathNova));
     p.hp = Math.max(0, p.hp - nova);
     floatText(p, nova, 'damage');
-    log(e.name + ' detonates on death for ' + formatNum(nova), 'important');
+    logDamage('DEATH NOVA', p, nova, [
+      'VOLATILE ' + Math.round(e.elite.deathNova * 100) + '% max HP',
+      logNum(p.hp) + '/' + logNum(p.maxHp) + ' left'
+    ]);
     shake(12);
   }
 
-  if (p.talents.overflow && overkill > 0) state.overkillCarry = Math.floor(overkill * p.talents.overflow);
+  if (p.talents.overflow && overkill > 0) {
+    state.overkillCarry = Math.floor(overkill * p.talents.overflow);
+    if (state.overkillCarry > 0)
+      logEvent('OVERFLOW', null, logNum(state.overkillCarry) + ' carried',
+               [Math.round(p.talents.overflow * 100) + '% of overkill'], 'xp');
+  }
   if (p.talents.harvest) {
     const heal = Math.floor(p.maxHp * p.talents.harvest);
+    const before = p.hp;
     p.hp = Math.min(p.maxHp, p.hp + heal);
     floatText(p, heal, 'heal');
+    if (p.hp > before) logHeal('HARVEST', p, p.hp - before, [Math.round(p.talents.harvest * 100) + '% max HP']);
   }
 
   const tier = Math.floor((state.wave-1)/5);
   const comboBonus = 1 + Math.min(BALANCE.combo.maxStack, state.combo) * BALANCE.combo.xpPerStack;
   const xp = Math.floor((BALANCE.xp.killBase + state.wave*BALANCE.xp.killWave + tier*BALANCE.xp.killTier)
     * e.xpMult * comboBonus);
+  logEvent('XP', null, '+' + logNum(xp), [
+    e.xpMult !== 1 ? 'enemy ×' + e.xpMult.toFixed(1) : null,
+    comboBonus > 1 ? 'chain ×' + comboBonus.toFixed(2) : null
+  ], 'xp');
 
   killFlash(e);
   const killedWave = state.wave;
@@ -5281,7 +5509,7 @@ function continueRun(slot){
   state.combatActive = true;
   spawnEnemy();
   startCombatLoop();
-  log('Run continued.', 'important');
+  log('RUN RESUMED · slot ' + n + ' · wave ' + state.wave + ' · level ' + p.level, 'important');
 }
 
 // ---- Rendering ------------------------------------------------
@@ -5307,7 +5535,12 @@ function bankOf(cls) {
   if (cls === 'base') return { field:'resolve', name:'RESOLVE',  cap:P().resolveCap, tone:'resolve'  };
   return null;
 }
-function bankAdjust(unit, delta, msg) {
+// `why` is the REASON, not a replacement line. It used to be the whole message,
+// which let each caller invent its own wording and drop the numbers — "Momentum
+// slips (−2)" never said what you were left holding. Now the amount and the
+// new total are always printed the same way and `why` is appended as a
+// qualifier, so every bank line is comparable and the cap is always in view.
+function bankAdjust(unit, delta, why) {
   if (!unit || !unit.isPlayer) return 0;
   const b = bankOf(unit.class); if (!b || !delta) return 0;
   const before = unit[b.field] || 0;
@@ -5316,7 +5549,10 @@ function bankAdjust(unit, delta, msg) {
   if (d === 0) return 0;
   unit[b.field] = after;
   floatText(unit, (d > 0 ? '+' : '') + d + ' ' + b.name, 'bank');
-  log(msg || (b.name + ' ' + (d > 0 ? '+' : '') + d + '  (' + after + '/' + b.cap + ')'), 'important');
+  // No "→ You": banks are the player's only, so naming the target every time
+  // would be a column of the same word.
+  logEvent(b.name + ' ' + (d > 0 ? '+' : '−') + Math.abs(d),
+           null, '(' + after + '/' + b.cap + ')', [why], d > 0 ? 'heal' : '');
   updateUnitCard(unit);
   return d;
 }
@@ -5574,14 +5810,97 @@ function clearFloaters() {
   _floaters = 0;
 }
 
+// ---- Combat log -----------------------------------------------
+// The log is the fight's TRANSCRIPT, not its narration. It exists so that a
+// turn which has already scrolled past can be reconstructed exactly: what
+// acted, what it hit, for how much, and which modifiers were in play. Damage
+// numbers otherwise live for 1.3s as a floater and are gone, which makes
+// "why did that hit for 198?" unanswerable after the fact.
+//
+// THE RULES, so a new line cannot invent its own dialect:
+//
+//  1. STRUCTURE. Two levels only — headers (wave, turn) and the events
+//     underneath them. Every event goes through logEvent and comes out
+//     indented; a header is the only thing flush to the rail.
+//
+//  2. GRAMMAR. Every event line is
+//         <what> → <to whom>   <amount>   <qualifiers>
+//     in that order, always, so a column of them reads down like a table.
+//     The ACTOR is deliberately absent: the turn header above already says
+//     who is acting, and repeating it on every line doubles the width for
+//     nothing. Only the target moves between lines, so only the target is
+//     named.
+//
+//  3. NUMBERS ARE THE ONES THE FIGHT USED. Every amount is the exact integer
+//     applied to hp, taken from the same variable the damage pipeline wrote —
+//     never recomputed for display, because a recomputed number is a number
+//     that can disagree.
+//
+//  4. QUALIFIERS EXPLAIN THE AMOUNT. CRIT ×2.0, BLOCK −50%, WEAK −25% — the
+//     things that made the number what it is, not commentary about it. If a
+//     qualifier did not move the number, it does not belong on the line.
+//
+//  5. NO PROSE. "The rot festers" told the player nothing they could act on;
+//     "POISON ×4 → TOXIN +32%" tells them the trade they just made. Flavour
+//     belongs on the skill cards, which have room for it.
+const LOG_MAX = 400;
+
 function log(msg, type) {
   const el = document.getElementById('combat-log'); if (!el) return;
   const entry = document.createElement('div');
-  entry.className = 'log-entry ' + (type||'');
-  entry.textContent = '▸ ' + msg;
+  entry.className = 'log-entry ' + (type || '');
+  entry.textContent = msg;
   el.appendChild(entry);
-  while (el.children.length > 80) el.removeChild(el.firstChild);
+  while (el.children.length > LOG_MAX) el.removeChild(el.firstChild);
   el.scrollTop = el.scrollHeight;
+}
+
+// Units name themselves the same way everywhere in the log. The player is
+// "You" rather than "Sonny" because the log is read from behind their eyes,
+// and it is two characters instead of five on every line that mentions them.
+function logName(u) { return !u ? '—' : (u.isPlayer ? 'You' : u.name); }
+
+// Amounts are integers, formatted the way every other number in the game is.
+function logNum(n) { return formatNum(Math.max(0, Math.floor(n))); }
+
+// The one event-line builder. `notes` is the qualifier list; anything falsy in
+// it is dropped, so a caller can pass conditions inline without assembling the
+// array first.
+function logEvent(what, target, amount, notes, type) {
+  const parts = [what];
+  if (target) parts.push('→ ' + logName(target));
+  if (amount != null && amount !== '') parts.push(' ' + amount);
+  const q = (notes || []).filter(Boolean);
+  if (q.length) parts.push(' ' + q.join(', '));
+  log(parts.join(' '), 'ev ' + (type || ''));
+}
+
+// Damage and healing are the two events with a fixed shape, so they get their
+// own front doors rather than every call site remembering the sign convention.
+function logDamage(what, target, amount, notes) {
+  logEvent(what, target, logNum(amount), notes, 'damage');
+}
+function logHeal(what, target, amount, notes) {
+  logEvent(what, target, '+' + logNum(amount) + ' HP', notes, 'heal');
+}
+// An action that resolved without dealing damage still costs a turn, so it is
+// still an event worth a line.
+function logMiss(what, target, why) { logEvent(what, target, why, null, ''); }
+
+// A status arriving or leaving. The text comes from the registry's own
+// label() — the same string the badge on the unit shows — so the log and the
+// badge cannot describe the same effect two different ways.
+function logStatus(unit, st, gone) {
+  const def = STATUSES[st.type]; if (!def) return;
+  logEvent(gone ? '− ' + def.name + ' ended' : '+ ' + statusLabel(def, st, unit),
+           unit, null, null, gone ? '' : (def.kind === 'buff' ? 'heal' : 'damage'));
+}
+
+// Turn header. Everything logged after it belongs to that unit's turn, which
+// is what lets the event lines drop the actor entirely.
+function logTurn(unit) {
+  log('T' + state.turnNo + ' · ' + logName(unit).toUpperCase(),
+      'turn ' + (unit && unit.isPlayer ? 'you' : 'foe'));
 }
 function clearLog(){ const el=document.getElementById('combat-log'); if(el) el.innerHTML=''; }
 
