@@ -623,7 +623,53 @@ body {
   --fig: clamp(110px, calc(var(--vh) * 30.7 - 110px), 200px);
 }
 
-/* Battleground floor — feet rest on this plane */
+/* ---- Zone backdrop (SETTINGS.backdrop) ----
+   Scenery on its own layers, opacity-gated by .backdrop-on so OFF is exactly
+   the clean arena. The readability contract, in order of importance:
+     1. VALUE BAND — nothing back here gets brighter than the floor plane;
+        sprites keep the full range, so contrast alone sorts the depth.
+     2. FOCUS — the whole layer is slightly blurred and desaturated;
+        the fight is the only thing in focus.
+     3. CLARITY POCKET — darkest directly behind the fighters and at the
+        floor line, haziest at the top, so the eye lands where the game is.
+   This is the CSS prototype of THE SHIP; real zone art drops into
+   .arena-backdrop as a background-image later and inherits the same stack. */
+.arena-backdrop, .arena-haze {
+  position: absolute; inset: 0; z-index: 0;
+  pointer-events: none;
+  opacity: 0; transition: opacity 0.6s ease;
+}
+.backdrop-on .arena-backdrop, .backdrop-on .arena-haze { opacity: 1; }
+.arena-backdrop {
+  background:
+    /* clarity pocket: darkest at the floor, behind the fight */
+    radial-gradient(ellipse 130% 60% at 50% 100%, rgba(4,6,10,0.85) 0%, rgba(4,6,10,0.35) 45%, transparent 75%),
+    /* distant glow spots: portholes and a console, dim by contract */
+    radial-gradient(circle 90px at 16% 28%, rgba(0,240,208,0.055), transparent 70%),
+    radial-gradient(circle 55px at 79% 22%, rgba(0,240,208,0.045), transparent 70%),
+    radial-gradient(circle 75px at 54% 15%, rgba(255,45,106,0.035), transparent 70%),
+    /* hull ribs: structure you sense rather than read */
+    repeating-linear-gradient(90deg, transparent 0 120px, rgba(255,255,255,0.022) 120px 126px),
+    /* ceiling-to-floor depth */
+    linear-gradient(180deg, #0c1119 0%, #0a0e16 55%, #070a10 100%);
+  filter: blur(1.2px) saturate(0.8);
+}
+.arena-haze {
+  background:
+    radial-gradient(ellipse 40% 30% at 30% 55%, rgba(122,134,153,0.055), transparent 70%),
+    radial-gradient(ellipse 50% 35% at 75% 40%, rgba(122,134,153,0.045), transparent 70%);
+  filter: blur(14px);
+  animation: hazeDrift 26s ease-in-out infinite alternate;
+}
+@keyframes hazeDrift {
+  from { transform: translateX(-2.5%); }
+  to   { transform: translateX(2.5%); }
+}
+@media (prefers-reduced-motion: reduce) { .arena-haze { animation: none; } }
+
+/* Battleground floor — feet rest on this plane. z-index 1: the floor sits
+   above the backdrop layers (still under the fighters at their own z 1,
+   which follow it in DOM order). */
 .arena-card::before {
   content: '';
   position: absolute;
@@ -638,7 +684,7 @@ body {
     0 0 40px rgba(0,240,208,0.04),
     inset 0 1px 0 rgba(255,255,255,0.05);
   pointer-events: none;
-  z-index: 0;
+  z-index: 1;
 }
 
 .arena-card::after {

@@ -101,6 +101,10 @@
 
         <div class="battlefield">
           <div class="arena-card" id="arena-card">
+            <!-- Zone scenery, on its own layers so the clean arena is one
+                 SETTINGS toggle away (backdrop-on class, see syncSettingsUI). -->
+            <div class="arena-backdrop"></div>
+            <div class="arena-haze"></div>
             <div class="combo-meter" id="combo-meter" style="display:none"></div>
             <div class="arena-side" id="player-side">
               <div id="player-slot"></div>
@@ -281,6 +285,14 @@
           <div class="setting-desc">Impact shake on heavy hits and kills.</div>
         </div>
         <button class="toggle" id="set-shake" onclick="toggleSetting('shake')"></button>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-name">BACKDROP</div>
+          <div class="setting-desc">Scenery behind the fight. Off is the clean arena.</div>
+        </div>
+        <button class="toggle" id="set-backdrop" onclick="toggleSetting('backdrop')"></button>
       </div>
 
       <div class="setting-row">

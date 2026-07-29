@@ -18,7 +18,7 @@ const Store = (function () {
 
 // ---- Settings -------------------------------------------------
 const SETTINGS_KEY = 'risen_settings_v1';
-const DEFAULT_SETTINGS = { shake: true, floaters: true, fastTurns: false };
+const DEFAULT_SETTINGS = { shake: true, floaters: true, fastTurns: false, backdrop: true };
 let SETTINGS = Object.assign({}, DEFAULT_SETTINGS);
 
 function showBuildVersion() {
@@ -44,6 +44,10 @@ function syncSettingsUI() {
     const el = document.getElementById('set-' + k);
     if (el) el.classList.toggle('on', !!SETTINGS[k]);
   });
+  // The backdrop is a class on the arena, not a re-render: toggling scenery
+  // must never touch the fight.
+  const arena = document.getElementById('arena-card');
+  if (arena) arena.classList.toggle('backdrop-on', !!SETTINGS.backdrop);
 }
 
 // ---- Menu / pause navigation ----------------------------------
