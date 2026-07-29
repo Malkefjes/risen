@@ -324,10 +324,10 @@ function updateCombo() {
   }
 }
 
-function gainXP(amount) {
+function gainXP(amount, bonus) {
   const p = state.player;
   p.xp += amount;
-  floatText(p, amount, 'xp');
+  floatText(p, amount, bonus ? 'xp-bonus' : 'xp');
   const gained = [];
   while (p.xp >= p.xpNext) {
     // The grant reads off BALANCE rather than being typed here and again in the

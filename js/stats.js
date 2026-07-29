@@ -324,9 +324,14 @@ function applyDerivedStats(p) {
   // thorns numbers, not a hidden discount on the shared rule.
   const newMax = Math.max(1, Math.floor(p.vit * B.hpPerVit * p.hpMult));
   if (p.maxHp > 0 && p.hp != null) {
-    const ratio = p.hp / Math.max(1, p.maxHp);
+    // Raising max HP raises current HP with it: what you are MISSING stays
+    // constant, so a Vitality point (or an HP mutation) is felt the moment it
+    // is taken instead of arriving as empty headroom. It used to preserve the
+    // RATIO, which quietly taxed the grant by your missing fraction. A shrink
+    // subtracts the same way and clamps at 1. Reloads pass through unchanged:
+    // the recomputed max equals the saved max, so the delta is zero.
+    p.hp = Math.min(newMax, Math.max(1, p.hp + (newMax - p.maxHp)));
     p.maxHp = newMax;
-    p.hp = Math.min(newMax, Math.max(1, Math.floor(newMax * ratio)));
   } else p.maxHp = newMax;
 
   p.evadeChance = Math.min(B.evadeCap, B.evadeBase + p.speed*B.evadePerSpeed + (t.evadeFlat||0));

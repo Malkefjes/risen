@@ -1128,6 +1128,13 @@ body {
 .float-dmg.heal { color: #7dffa0; }
 .float-dmg.poison { color: #7dffa0; }
 .float-dmg.xp { color: var(--xp); font-size: 1.05rem; }
+/* A multiplied payout (elite, boss, chain) lands like a crit lands: the juice
+   an elite pays IS the XP, so the bonus number is the celebration. */
+.float-dmg.xp-bonus {
+  color: var(--xp); font-size: 1.7rem; font-weight: 900;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.9), 0 0 16px currentColor;
+  animation: floatUpCrit 1.3s ease forwards;
+}
 .float-dmg.bank { color: #eaf2ff; font-size: 0.95rem; letter-spacing: 0.5px; }
 /* EVADE / BLOCK: quiet gray notes — information, not a reward, so they must
    not compete with damage numbers or read as XP the way they used to. */

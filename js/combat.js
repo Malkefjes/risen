@@ -690,7 +690,9 @@ function onEnemyDefeated() {
   killFlash(e);
   const killedWave = state.wave;
   state.wave++;
-  gainXP(xp);
+  // A multiplied payout (elite, boss, chain) floats as the big gold number —
+  // the elite's "juice" is XP, so the bonus must be unmissable when it lands.
+  gainXP(xp, e.xpMult !== 1 || comboBonus > 1);
 
   if (p.hp <= 0) { state._defeatLock = false; stopCombatLoop(); endRun(); return; }
 

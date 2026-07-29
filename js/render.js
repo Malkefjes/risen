@@ -300,7 +300,8 @@ function floatText(unit, value, type, isCrit) {
   if (typeof value === 'string') el.textContent = value;
   else {
     const n = formatNum(value);
-    el.textContent = (type==='heal'||type==='xp') ? '+'+n+(type==='xp'?' XP':'') : '-'+n;
+    const isXp = type === 'xp' || type === 'xp-bonus';
+    el.textContent = (type==='heal'||isXp) ? '+'+n+(isXp?' XP':'') : '-'+n;
     // Crits read as class-colored number + a small yellow CRIT tag, not an outline.
     if (isCrit) {
       const tag = document.createElement('span');
