@@ -30,6 +30,11 @@ behaviour that regressed rather than an internal detail:
 | `refinements` | refinements stay removed, and drafting still works without them |
 | `build` | the build stamp reaches the title, the log and the save |
 
+## Where things stand
+
+`ROADMAP.md` — what is next, what is known-broken, and the working notes worth
+not rediscovering.
+
 ## Measuring
 
 The game can run itself with no DOM and no timers — `simulateRun(classId, opts)`
