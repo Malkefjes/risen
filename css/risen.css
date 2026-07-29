@@ -1,4 +1,14 @@
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap');
+/* Fonts are self-hosted — the Google Fonts @import was the game's ONLY
+   external request, and as a render-blocking fetch it could hold the whole
+   page in a washed-out "still loading" state on reload whenever the CDN or
+   the network was slow. font-display: swap means even a missing font file
+   can only ever cost the fallback typeface, never a blank or frozen frame. */
+@font-face { font-family: 'Orbitron'; font-style: normal; font-weight: 400; font-display: swap; src: url('../assets/fonts/orbitron-400.woff2') format('woff2'); }
+@font-face { font-family: 'Orbitron'; font-style: normal; font-weight: 600; font-display: swap; src: url('../assets/fonts/orbitron-600.woff2') format('woff2'); }
+@font-face { font-family: 'Orbitron'; font-style: normal; font-weight: 700; font-display: swap; src: url('../assets/fonts/orbitron-700.woff2') format('woff2'); }
+@font-face { font-family: 'Orbitron'; font-style: normal; font-weight: 900; font-display: swap; src: url('../assets/fonts/orbitron-900.woff2') format('woff2'); }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 400; font-display: swap; src: url('../assets/fonts/jetbrainsmono-400.woff2') format('woff2'); }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 500; font-display: swap; src: url('../assets/fonts/jetbrainsmono-500.woff2') format('woff2'); }
 
 :root {
   /* One unit of viewport height, indirected so it can be overridden.
