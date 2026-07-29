@@ -3618,6 +3618,37 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
+// KNOWN BUG (unresolved): a new run sometimes starts as the WRONG STRAIN —
+// reported as picking bio and getting an Unmutated run instead. Not reliably
+// reproduced yet, so this is a record of the ground covered rather than a
+// diagnosis.
+//
+// Ruled out by driving the real UI: base run -> quit -> load the base save ->
+// quit -> NEW GAME -> MUTATE -> bio -> EVOLVE starts bio correctly, with the
+// RESIST transition skipped. Untested: the same path letting the full ~7.1s
+// transition play, and leaving that transition part-way through.
+//
+// Two things to look at first, both structural rather than observed failures:
+//
+//  * state.classId DOES DOUBLE DUTY. It is both "the strain picked in the
+//    menu" and "the strain of the run that is loaded" — resistMutation() and
+//    continueRun() both write 'base' into it, while startGame() reads it back
+//    at the moment EVOLVE is pressed. A stale value from a loaded run is
+//    therefore indistinguishable from a fresh menu choice. The fix, if this is
+//    it, is a separate pending-choice variable (the way _pendingSlot works for
+//    save slots) so a loaded run can never leak into the next one.
+//
+//  * resistMutation() ARMS A ~7.1s setTimeout THAT CALLS startGame(), and only
+//    the SKIP button's closure clears it. Nothing else — not leaveMenuTab(),
+//    not goToMenu(), not stopCombatLoop() — cancels it, so if there is any way
+//    to leave the resist transition early, that timer can still fire later and
+//    start a run on whatever state.classId happens to hold by then.
+//
+// Related and definitely true, though not confirmed as the cause: #start-btn is
+// enabled by selectClass and never disabled again, and .class-card.selected is
+// never cleared. So on a second visit the class screen can show a strain as
+// selected while state.classId says something else entirely — the screen and
+// the value it is supposed to reflect are free to disagree.
 function selectClass(id) {
   state.classId = id;
   document.querySelectorAll('.class-card').forEach(c => c.classList.remove('selected'));
