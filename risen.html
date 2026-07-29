@@ -2778,10 +2778,21 @@ const BALANCE = {
   talentEvery: 5,        // choose a mutation every Nth level
   finalWave: 15,         // beating this wave's boss wins the run
   spawnDelay: 0.16,
-  // saveKey is a PREFIX now, not a key: each slot stores under
-  // `<saveKey>_s<n>`. The bare key is still read once, to migrate a run written
-  // before slots existed — see migrateLegacySave.
-  saveKey: 'risen_run_v3',
+  // saveKey is a PREFIX, not a key: each slot stores under `<saveKey>_s<n>`.
+  //
+  // BUMP THE VERSION WHENEVER A CHANGE INVALIDATES A SAVED SHEET. A save stores
+  // raw stats and recomputes everything derived on load, so a rules change does
+  // not corrupt an old run — it silently RE-READS it under economics it was
+  // never allocated for. v3 -> v4 covers the 1:1 turn anchor, turn rate
+  // becoming a pure stat, and the mutation pool being cleared: a sheet with 7
+  // Speed saved under v3 loaded back at 1.40x where it was built at ~1.06x.
+  //
+  // Bumping also gives every player empty slots on the next load, which is the
+  // honest outcome — those runs are not playable as the game now works.
+  saveKey: 'risen_run_v4',
+  // Storage keys from older versions, cleared once on load so they cannot
+  // accumulate invisibly. Oldest first; add the outgoing prefix here on a bump.
+  oldSaveKeys: ['risen_run_v3', 'risen_run_v3_s1', 'risen_run_v3_s2'],
   saveSlots: 2
 };
 
@@ -5448,15 +5459,21 @@ function serializeRun() {
 const slotKey = n => BALANCE.saveKey + '_s' + n;
 const slotNumbers = () => Array.from({ length: BALANCE.saveSlots }, (_, i) => i + 1);
 
-// One-time move off the single-slot key, so a run in progress when this shipped
-// is not stranded. The old key is removed only after the copy is written: an
-// interrupted migration then retries on the next load instead of losing the run.
-// Guarded on slot 1 being empty so it can never overwrite a newer run.
-function migrateLegacySave() {
-  const legacy = Store.get(BALANCE.saveKey);
-  if (!legacy) return;
-  if (!Store.get(slotKey(1))) Store.set(slotKey(1), legacy);
-  Store.remove(BALANCE.saveKey);
+// Saves from a previous version are DROPPED, not migrated.
+//
+// Migrating them was the obvious thing and is the wrong thing: a save holds raw
+// stats and recomputes the derived sheet on load, so carrying one across a
+// rules change hands the player a character allocated under economics that no
+// longer exist — a build that was correct and now is not, with nothing on
+// screen to say so. An empty slot is honest; a silently rebalanced run is not.
+//
+// This also answers a confusing symptom: localStorage is keyed by ORIGIN, not
+// by file, and every file:// page shares one bucket in Chrome and Firefox. So
+// downloading a fresh copy of the game does NOT give a fresh start — the new
+// file reads the same two slots the old one wrote. Clearing on a version bump
+// is what makes a new build actually feel new.
+function purgeOldSaves() {
+  (BALANCE.oldSaveKeys || []).forEach(k => Store.remove(k));
 }
 
 // A slot counts as occupied only if what is in it can actually be loaded, so a
@@ -6204,7 +6221,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderPreview('preview-psy', 'psy');
   renderPreview('preview-sym', 'sym');
   loadSettings();
-  migrateLegacySave();
+  purgeOldSaves();
   refreshContinueButton();
 });
 
