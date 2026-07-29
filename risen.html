@@ -2312,7 +2312,7 @@ body {
     </div>
     <div style="display:flex;gap:14px;justify-content:center;align-items:center;flex-wrap:wrap">
       <button class="btn btn-ghost" onclick="goToMenu()">BACK</button>
-      <button class="btn btn-evolve" onclick="showScreen('class-screen')">MUTATE</button>
+      <button class="btn btn-evolve" onclick="openClassSelect()">MUTATE</button>
       <button class="btn btn-resist" onclick="resistMutation()">RESIST MUTATION</button>
     </div>
   </div>
@@ -3765,39 +3765,50 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
-// KNOWN BUG (unresolved): a new run sometimes starts as the WRONG STRAIN —
-// reported as picking bio and getting an Unmutated run instead. Not reliably
-// reproduced yet, so this is a record of the ground covered rather than a
-// diagnosis.
+// THE STRAIN A NEW RUN WILL USE, kept separate from state.classId.
 //
-// Ruled out by driving the real UI: base run -> quit -> load the base save ->
-// quit -> NEW GAME -> MUTATE -> bio -> EVOLVE starts bio correctly, with the
-// RESIST transition skipped. Untested: the same path letting the full ~7.1s
-// transition play, and leaving that transition part-way through.
+// This pair used to be one field, and that was a bug you could hit in ordinary
+// play: pick BIO once, later load an Unmutated save, then NEW GAME -> MUTATE
+// and press EVOLVE. The run started as Unmutated while the screen showed BIO.
 //
-// Two things to look at first, both structural rather than observed failures:
+// Three things had to line up, which is why it looked intermittent:
+//   1. state.classId meant two different things — "the strain picked in the
+//      menu" and "the strain of the run that is loaded". continueRun and
+//      resistMutation write the second; startGame read it as the first.
+//   2. selectClass enabled #start-btn and nothing ever disabled it again, so
+//      a later visit to strain select arrived with EVOLVE already live.
+//   3. .class-card.selected was never cleared either, so the screen still
+//      showed the strain chosen earlier in the session.
+// Together: the screen displayed BIO, EVOLVE was lit, and pressing it read a
+// state.classId that a save had quietly overwritten. Nothing about the input
+// was wrong — the screen was lying.
 //
-//  * state.classId DOES DOUBLE DUTY. It is both "the strain picked in the
-//    menu" and "the strain of the run that is loaded" — resistMutation() and
-//    continueRun() both write 'base' into it, while startGame() reads it back
-//    at the moment EVOLVE is pressed. A stale value from a loaded run is
-//    therefore indistinguishable from a fresh menu choice. The fix, if this is
-//    it, is a separate pending-choice variable (the way _pendingSlot works for
-//    save slots) so a loaded run can never leak into the next one.
-//
-//  * resistMutation() ARMS A ~7.1s setTimeout THAT CALLS startGame(), and only
-//    the SKIP button's closure clears it. Nothing else — not leaveMenuTab(),
-//    not goToMenu(), not stopCombatLoop() — cancels it, so if there is any way
-//    to leave the resist transition early, that timer can still fire later and
-//    start a run on whatever state.classId happens to hold by then.
-//
-// Related and definitely true, though not confirmed as the cause: #start-btn is
-// enabled by selectClass and never disabled again, and .class-card.selected is
-// never cleared. So on a second visit the class screen can show a strain as
-// selected while state.classId says something else entirely — the screen and
-// the value it is supposed to reflect are free to disagree.
+// The fix is to stop sharing the field. _pendingClass is the MENU's answer and
+// nothing else writes it; state.classId is the LOADED RUN's answer and the
+// menu never reads it. openClassSelect clears the selection on every visit, so
+// a choice belongs to the visit that made it rather than to the session.
+let _pendingClass = null;
+
+function claimPendingClass() {
+  const id = _pendingClass;
+  _pendingClass = null;
+  return id;
+}
+
+// Entering strain select always starts from nothing chosen. Re-disabling
+// EVOLVE is the load-bearing half: while it stayed enabled between visits it
+// was possible to start a run without making a choice at all.
+function openClassSelect() {
+  _pendingClass = null;
+  document.querySelectorAll('.class-card').forEach(c => c.classList.remove('selected'));
+  const btn = document.getElementById('start-btn');
+  if (btn) btn.disabled = true;
+  showScreen('class-screen');
+}
+
 function selectClass(id) {
-  state.classId = id;
+  if (!CLASSES[id]) return;
+  _pendingClass = id;
   document.querySelectorAll('.class-card').forEach(c => c.classList.remove('selected'));
   document.querySelector('.class-card.' + id).classList.add('selected');
   document.getElementById('start-btn').disabled = false;
@@ -3867,10 +3878,20 @@ function resetRunState(classId) {
   clearFloaters();
 }
 
-function startGame(skipReveal) {
-  resetRunState(state.classId);
+// `classId` is optional: the EVOLVE button omits it and the menu's pending
+// choice is used, while resistMutation passes 'base' outright so its delayed
+// start cannot depend on a variable something else might have cleared in the
+// seconds it was waiting.
+//
+// If neither yields a real strain the run does NOT start. Falling back to
+// state.classId is exactly the behaviour that produced the wrong-strain bug —
+// better to do nothing visible than to silently start the wrong run.
+function startGame(skipReveal, classId) {
+  const cls = classId || claimPendingClass();
+  if (!CLASSES[cls]) return;
+  resetRunState(cls);
   state.saveSlot = claimSaveSlot();
-  state.player = freshPlayer(state.classId);
+  state.player = freshPlayer(cls);
   recalcPlayerStats();
   state.player.hp = state.player.maxHp;
   clearSavedRun();
@@ -5355,16 +5376,18 @@ function newGame() {
 // RESIST MUTATION: a quiet transition beat, then drop into the run as base Sonny.
 function resistMutation() {
   leaveMenuTab(); closeSettings();
-  state.classId = 'base';
   showScreen('resist-screen');
   // Restart the fade each time (the animation only plays once with fill: forwards).
   const line = document.querySelector('#resist-screen .resist-line');
   if (line) { line.style.animation = 'none'; void line.offsetWidth; line.style.animation = ''; }
   // Black hold 1.8s, then fade in / hold / fade out over 5s, then a beat -> run.
-  const t = setTimeout(() => { offerSkip(null); startGame(); }, 7100);
+  // Both start points name 'base' outright rather than leaning on a stored
+  // choice. This one waits ~7 seconds before it fires, and a delayed start that
+  // reads shared state is precisely how the wrong strain got launched.
+  const t = setTimeout(() => { offerSkip(null); startGame(false, 'base'); }, 7100);
   // Skipping here goes straight into a playable fight: cancel the transition
   // and start the run with its reveal already finished.
-  offerSkip(() => { clearTimeout(t); startGame(true); });
+  offerSkip(() => { clearTimeout(t); startGame(true, 'base'); });
 }
 
 function goToMenu() {
