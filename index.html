@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RISEN</title>
+<link rel="stylesheet" href="css/risen.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- TITLE -->
+  <div id="title-screen" class="screen active">
+    <div class="logo">RISEN</div>
+    <!-- Filled by showBuildVersion() so the string lives in one place. -->
+    <div class="build-tag" id="build-tag"></div>
+    <div class="menu-stack">
+      <button class="btn" onclick="newGame()">NEW GAME</button>
+      <button class="btn is-disabled" id="continue-btn" onclick="openLoadScreen()">LOAD GAME</button>
+      <button class="btn" onclick="openSettings()">SETTINGS</button>
+    </div>
+  </div>
+
+  <!-- LOAD GAME (save browser) -->
+  <div id="load-screen" class="screen">
+    <h2>LOAD GAME</h2>
+    <p class="class-desc">Choose a run to continue.</p>
+    <div id="save-list" class="save-list"></div>
+    <p class="save-hint">Runs save automatically to their own slot.</p>
+    <div style="text-align:center;margin-top:30px">
+      <button class="btn btn-ghost" onclick="goToMenu()">BACK</button>
+    </div>
+  </div>
+
+  <!-- OVERWRITE PICKER — shown by newGame() only when every slot is taken, so
+       starting a run can never quietly end one. -->
+  <div id="slot-screen" class="screen">
+    <h2>OVERWRITE A RUN</h2>
+    <p class="class-desc">Every slot is in use. Choose which run the new one replaces.</p>
+    <div id="slot-list" class="save-list"></div>
+    <div style="text-align:center;margin-top:30px">
+      <button class="btn btn-ghost" onclick="goToMenu()">BACK</button>
+    </div>
+  </div>
+
+  <!-- INTRO / STORY (shown once on NEW GAME, before strain select) -->
+  <div id="intro-screen" class="screen">
+    <div class="intro-story">
+      <p class="intro-lead">You are Sonny.</p>
+      <p>You survived a lethal laboratory infection that should have killed you — or turned you into one of the mindless, aggressive mutants now roaming the containment zones. Instead, your mind stayed intact. As far as you know, you are the only one.</p>
+      <p>Mutant Pest Control has orders to eradicate every infected individual. They do not care that you can still think. To them, a lucid mutant is simply a more dangerous pest.</p>
+      <p>The infection is still rewriting you. Your body is changing. The hunters are closing in.</p>
+      <p class="intro-final">Evolve… or die.</p>
+    </div>
+    <div style="display:flex;gap:14px;justify-content:center;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-ghost" onclick="goToMenu()">BACK</button>
+      <button class="btn btn-evolve" onclick="openClassSelect()">MUTATE</button>
+      <button class="btn btn-resist" onclick="resistMutation()">RESIST MUTATION</button>
+    </div>
+  </div>
+
+  <!-- RESIST MUTATION transition (line fades in/out, then eases into the run) -->
+  <div id="resist-screen" class="screen">
+    <p class="resist-line">You have chosen to resist your new powers…</p>
+  </div>
+
+  <!-- CLASS SELECT -->
+  <div id="class-screen" class="screen">
+    <h2>SELECT STRAIN</h2>
+    <div class="classes">
+      <div class="class-card bio" onclick="selectClass('bio')">
+        <div class="class-preview" id="preview-bio"></div>
+        <div class="class-name">BIOLOGICAL</div>
+        <div class="class-role">STRENGTH · POISON</div>
+        <div class="class-info">Your enhanced musculature and dense bone structure grant crushing physical strength to overwhelm enemies in close combat. Your body continuously generates potent toxins, letting you dominate as a relentless predator who leaves foes both poisoned and broken.</div>
+      </div>
+      <div class="class-card psy" onclick="selectClass('psy')">
+        <div class="class-preview" id="preview-psy"></div>
+        <div class="class-name">PSYCHOLOGICAL</div>
+        <div class="class-role">SPEED · MOMENTUM</div>
+        <div class="class-info">Your mutated mind and physical prowess allow you to slip through the battlefield at unnatural speeds while sowing fear. As a fast psychological predator, your approach feels inevitable and inescapable, leaving enemies broken both from within and without.</div>
+      </div>
+      <div class="class-card sym" onclick="selectClass('sym')">
+        <div class="class-preview" id="preview-sym"></div>
+        <div class="class-name">SYMBIOTIC</div>
+        <div class="class-role">VITALITY · THORNS</div>
+        <div class="class-info">Your body hosts a living symbiote that pulses with shared vitality. Every wound you suffer feeds it, regenerating you while its thorns lash back at attackers — making you a resilient, retaliatory predator who thrives on the very damage meant to kill you.</div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:36px;display:flex;gap:14px;justify-content:center;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-ghost" onclick="goToMenu()">BACK</button>
+      <button class="btn" id="start-btn" onclick="startGame()" disabled>EVOLVE</button>
+    </div>
+  </div>
+
+  <!-- COMBAT -->
+  <div id="combat-screen" class="screen">
+    <div class="combat-layout">
+      <div class="combat-main">
+        <div class="combat-header">
+          <div class="zone-name" id="zone-name">THE ABYSS</div>
+        </div>
+
+        <div class="battlefield">
+          <div class="arena-card" id="arena-card">
+            <div class="combo-meter" id="combo-meter" style="display:none"></div>
+            <div class="arena-side" id="player-side">
+              <div id="player-slot"></div>
+            </div>
+            <div class="arena-side" id="enemy-side">
+              <div id="enemy-slot"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="action-panel">
+          <div class="turn-info" id="turn-info">IN COMBAT</div>
+          <div class="skills" id="skills"></div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT SIDEBAR -->
+      <aside class="sidebar">
+        <div class="sidebar-tabs">
+          <button class="sidebar-tab active" data-tab="stats" onclick="switchTab('stats')">STATS</button>
+          <button class="sidebar-tab" data-tab="talents" onclick="switchTab('talents')" id="tab-btn-talents">MUTATIONS</button>
+          <button class="sidebar-tab" data-tab="log" onclick="switchTab('log')" id="tab-btn-log">LOG</button>
+          <button class="sidebar-tab" data-tab="menu" onclick="switchTab('menu')">MENU</button>
+        </div>
+        <div class="sidebar-body">
+          <div class="sidebar-panel active" id="tab-stats">
+            <div class="stats-progress">
+              <div class="stats-progress-head">
+                <div class="level-badge" id="level-badge">LEVEL 1</div>
+                <div class="strain-word" id="strain-word"></div>
+              </div>
+              <div class="xp-block">
+                <div class="xp-track"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div>
+              </div>
+            </div>
+            <div class="side-stat-row">
+              <div class="side-stat-info" title="Attack damage · poison (Biological)">
+                <div class="side-stat-name">STRENGTH</div>
+                <div class="stat-preview" id="preview-str"></div>
+              </div>
+              <div class="side-stat-controls">
+                <button class="stat-btn minus" data-stat="str" onclick="adjustStat('str', -1)">−</button>
+                <div class="side-stat-value" id="stat-str" data-stat="str">10</div>
+                <button class="stat-btn plus" data-stat="str" onclick="adjustStat('str', 1)" onmouseenter="previewStat('str', true)" onmouseleave="previewStat('str', false)">+</button>
+              </div>
+            </div>
+            <div class="side-stat-row">
+              <div class="side-stat-info" title="Crit chance">
+                <div class="side-stat-name">INSTINCT</div>
+                <div class="stat-preview" id="preview-instinct"></div>
+              </div>
+              <div class="side-stat-controls">
+                <button class="stat-btn minus" data-stat="instinct" onclick="adjustStat('instinct', -1)">−</button>
+                <div class="side-stat-value" id="stat-instinct" data-stat="instinct">10</div>
+                <button class="stat-btn plus" data-stat="instinct" onclick="adjustStat('instinct', 1)" onmouseenter="previewStat('instinct', true)" onmouseleave="previewStat('instinct', false)">+</button>
+              </div>
+            </div>
+            <div class="side-stat-row">
+              <div class="side-stat-info" title="Turn rate · evade · cooldowns">
+                <div class="side-stat-name">SPEED</div>
+                <div class="stat-preview" id="preview-speed"></div>
+              </div>
+              <div class="side-stat-controls">
+                <button class="stat-btn minus" data-stat="speed" onclick="adjustStat('speed', -1)">−</button>
+                <div class="side-stat-value" id="stat-speed" data-stat="speed">10</div>
+                <button class="stat-btn plus" data-stat="speed" onclick="adjustStat('speed', 1)" onmouseenter="previewStat('speed', true)" onmouseleave="previewStat('speed', false)">+</button>
+              </div>
+            </div>
+            <div class="side-stat-row">
+              <div class="side-stat-info" title="Health · block · thorns (Symbiotic)">
+                <div class="side-stat-name">VITALITY</div>
+                <div class="stat-preview" id="preview-vit"></div>
+              </div>
+              <div class="side-stat-controls">
+                <button class="stat-btn minus" data-stat="vit" onclick="adjustStat('vit', -1)">−</button>
+                <div class="side-stat-value" id="stat-vit" data-stat="vit">10</div>
+                <button class="stat-btn plus" data-stat="vit" onclick="adjustStat('vit', 1)" onmouseenter="previewStat('vit', true)" onmouseleave="previewStat('vit', false)">+</button>
+              </div>
+            </div>
+            <!-- Exact values only. Every row is a number the fight actually
+                 uses, and carries a .delta the hover preview fills in with the
+                 value it would become. One group is shown at a time so the
+                 panel never outgrows the sidebar; a sub-tab lights up when a
+                 pending stat point would change something inside it. -->
+            <div class="stat-subtabs">
+              <button class="stat-subtab active" data-group="combat" onclick="showStatGroup('combat')">COMBAT</button>
+              <button class="stat-subtab" data-group="other" onclick="showStatGroup('other')">OTHER</button>
+            </div>
+            <!-- COMBAT holds the numbers a fight is decided by, offence above
+                 defence. They share a pane rather than a tab each because they
+                 are read together — what you kill with against what keeps you
+                 alive — and splitting them meant switching panes to compare. -->
+            <div class="derived-block" id="group-combat">
+              <div class="derived-subhead">OFFENCE</div>
+              <div class="derived-grid">
+                <div class="derived-item"><span>Attack Damage</span><span><b id="d-hit">—</b><i class="delta" id="p-hit"></i></span></div>
+                <div class="derived-item"><span>Crit chance</span><span><b id="d-crit">—</b><i class="delta" id="p-crit"></i></span></div>
+                <div class="derived-item"><span>Crit damage</span><span><b id="d-critmult">—</b><i class="delta" id="p-critmult"></i></span></div>
+                <div class="derived-item"><span>Turn rate</span><span><b id="d-turns">—</b><i class="delta" id="p-turns"></i></span></div>
+                <div class="derived-item" id="row-strain"><span id="label-strain">—</span><span><b id="d-strain">—</b><i class="delta" id="p-strain"></i></span></div>
+              </div>
+              <div class="derived-subhead">DEFENCE</div>
+              <div class="derived-grid">
+                <div class="derived-item"><span>Health</span><span><b id="d-hp">—</b><i class="delta" id="p-hp"></i></span></div>
+                <div class="derived-item"><span>Evade</span><span><b id="d-evade">—</b><i class="delta" id="p-evade"></i></span></div>
+                <div class="derived-item"><span>Block</span><span><b id="d-block">—</b><i class="delta" id="p-block"></i></span></div>
+                <div class="derived-item" id="row-guard"><span id="label-guard">—</span><span><b id="d-guard">—</b><i class="delta" id="p-guard"></i></span></div>
+              </div>
+            </div>
+            <!-- OTHER is everything that is not yet load-bearing: the ailment
+                 pair, which nothing but bio applies, and cooldown reduction,
+                 which currently has no source at all. -->
+            <div class="derived-block" id="group-other">
+              <div class="derived-subhead">AILMENTS</div>
+              <div class="derived-grid">
+                <div class="derived-item"><span>Bleed chance</span><span><b id="d-bleedchance">—</b><i class="delta" id="p-bleedchance"></i></span></div>
+                <div class="derived-item"><span>Bleed damage</span><span><b id="d-bleeddmg">—</b><i class="delta" id="p-bleeddmg"></i></span></div>
+                <div class="derived-item"><span>Poison chance</span><span><b id="d-poisonchance">—</b><i class="delta" id="p-poisonchance"></i></span></div>
+                <div class="derived-item"><span>Poison damage</span><span><b id="d-poisondmg">—</b><i class="delta" id="p-poisondmg"></i></span></div>
+              </div>
+              <!-- UTILITY holds only cooldown reduction, which has no source
+                   yet. The subhead and its grid are hidden together with the
+                   row (see refreshSidebarStats) so the pane never shows a
+                   heading over nothing, or a stat frozen at 0% that no amount
+                   of play can move. -->
+              <div id="row-cdr">
+                <div class="derived-subhead">UTILITY</div>
+                <div class="derived-grid">
+                  <div class="derived-item"><span>Cooldown reduction</span><span><b id="d-cdr">—</b><i class="delta" id="p-cdr"></i></span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="sidebar-panel" id="tab-talents">
+            <div class="talent-pick-inline" id="talent-pick-inline" style="display:none">
+              <div class="talent-pick-header" id="talent-pick-header">Mutation available — choose one</div>
+              <div class="talent-choices-inline" id="talent-choices-inline"></div>
+            </div>
+            <div class="talent-list" id="talent-list">
+              <div class="talent-empty">You have not mutated further yet</div>
+            </div>
+          </div>
+          <div class="sidebar-panel" id="tab-log">
+            <div class="combat-log" id="combat-log"></div>
+          </div>
+          <div class="sidebar-panel" id="tab-menu">
+            <div class="menu-panel">
+              <div class="menu-panel-note">Your run saves automatically.</div>
+              <button class="btn" onclick="openSettings()">SETTINGS</button>
+              <button class="btn btn-ghost" onclick="quitToMenu()">SAVE &amp; QUIT TO MENU</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div id="result-screen" class="screen">
+    <div class="result-title" id="result-title">DEFEATED</div>
+    <div class="result-stats" id="result-stats"></div>
+    <div class="menu-stack" style="margin-top:8px">
+      <button class="btn" onclick="newGame()">NEW RUN</button>
+      <button class="btn btn-ghost" onclick="goToMenu()">MAIN MENU</button>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="modal-overlay" id="settings-modal">
+    <div class="modal">
+      <h3>SETTINGS</h3>
+      <div class="modal-sub">Changes save automatically.</div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-name">SCREEN SHAKE</div>
+          <div class="setting-desc">Impact shake on heavy hits and kills.</div>
+        </div>
+        <button class="toggle" id="set-shake" onclick="toggleSetting('shake')"></button>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-name">DAMAGE NUMBERS</div>
+          <div class="setting-desc">Floating damage, healing and XP popups.</div>
+        </div>
+        <button class="toggle" id="set-floaters" onclick="toggleSetting('floaters')"></button>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-name">FAST TURNS</div>
+          <div class="setting-desc">Shorter pause between turns.</div>
+        </div>
+        <button class="toggle" id="set-fastTurns" onclick="toggleSetting('fastTurns')"></button>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn" onclick="closeSettings()">BACK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Offered only while an intro sequence is running (see offerSkip). -->
+  <button class="btn small skip-btn" id="skip-btn" onclick="skipIntro()" style="display:none">SKIP &rsaquo;&rsaquo;</button>
+
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/stats.js"></script>
+<script src="js/screens.js"></script>
+<script src="js/sim.js"></script>
+<script src="js/combat.js"></script>
+<script src="js/saves.js"></script>
+<script src="js/render.js"></script>
+<script src="js/sprites.js"></script>
+</body>
+</html>

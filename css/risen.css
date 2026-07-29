@@ -1,0 +1,2270 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  /* One unit of viewport height, indirected so it can be overridden.
+     Everything that sizes itself against the screen — the app's minimum
+     height, the arena card, the sprite scale, the sidebar and modal ceilings —
+     goes through this instead of using `vh` directly.
+
+     `vh` assumes the page owns a window whose height means something. That
+     holds in a browser tab and breaks inside a frame that resizes itself to
+     fit its own content: there `vh` resolves against the frame, the frame's
+     height comes from the content, and the content is sized in `vh` — a loop
+     that settles at some arbitrary height and stops tracking the real screen,
+     pinning the arena and the sprites to the bottom of their clamps.
+
+     Set this to a fixed length (e.g. `--vh: 9px`, a 900px design height) in
+     any embed that self-sizes, and the whole layout resolves against that one
+     number instead. Left as 1vh, nothing changes. */
+  --vh: 1vh;
+
+  --bg: #07090f;
+  --panel: #0e121b;
+  --panel2: #141a26;
+  --border: #1c2433;
+  --accent: #00f0d0;
+  --accent2: #ff2d6a;
+  --text: #eef2ff;
+  --muted: #7a8699;
+  --bio: #7dffa0;
+  --psy: #c084fc;
+  --sym: #fb923c;
+  /* Unmutated has no strain tint — it is the plain white the unit names use,
+     which is the point of the class. Aliased rather than copied so it cannot
+     drift from --text. */
+  --base: var(--text);
+  --enemy: #fb7185;
+  --xp: #fbbf24;
+  /* WEAK's own blue. Its own variable rather than a reused strain colour so the
+     status and the keyword in a description can never drift apart. */
+  --weak: #60a5fa;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* The browser's default focus ring is `outline: auto` — a 3px two-tone ring
+   whose outer band is white, which reads as a stray white border on these dark
+   panels. Replace it rather than delete it: :focus-visible only fires for
+   keyboard focus, so the mouse leaves nothing behind while tabbing still shows
+   where you are. Negative offset keeps the ring inside the element so an
+   ancestor with overflow:hidden (the arena card, skill buttons) can't clip it. */
+button:focus { outline: none; }
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+html { font-size: 17.5px; } /* was ~16px — scales all rem text up slightly */
+
+/* Below the width where the two-column combat layout starts to crowd, shrink
+   the whole UI rather than let it collapse. The sidebar staying beside the
+   arena — the fight and your stats on one screen — is worth more than absolute
+   text size, and this is what keeps the game playable in a narrow window or an
+   embedded frame instead of pushing the STATS tab below the fold. */
+@media (max-width: 1200px) {
+  html { font-size: clamp(11.5px, 1.45vw, 17.5px); }
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  min-height: calc(var(--vh) * 100);
+  overflow-x: hidden;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0,240,208,0.07), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(255,45,106,0.05), transparent);
+}
+
+#app {
+  max-width: min(1680px, 96vw);
+  margin: 0 auto;
+  padding: 20px 24px 28px;
+  min-height: calc(var(--vh) * 100);
+}
+
+/* Content-sized, not viewport-filling. The arena card has a definite height
+   now, so forcing 100vh here would just pool dead space under the action
+   panel — the screen simply ends where the UI ends. */
+#combat-screen.active {
+  display: flex;
+  flex-direction: column;
+}
+
+#combat-screen .combat-layout {
+  flex: 1;
+}
+
+/* Fresh-run reveal: the arena card fades in first; a beat later the rest of
+   the UI eases in. Classes toggled by stageCombatReveal() on a new run. */
+#combat-screen.staged .hud,
+#combat-screen.staged .combat-header,
+#combat-screen.staged .action-panel,
+#combat-screen.staged .combat-log,
+#combat-screen.staged .sidebar { opacity: 0; }
+#combat-screen.staged.reveal .hud,
+#combat-screen.staged.reveal .combat-header,
+#combat-screen.staged.reveal .action-panel,
+#combat-screen.staged.reveal .combat-log,
+#combat-screen.staged.reveal .sidebar { opacity: 1; transition: opacity 1s ease; }
+/* Hold black ~1s, then a slow arena fade-in. */
+#combat-screen.staged .battlefield { opacity: 0; animation: fadeIn 1.3s ease 1s forwards; }
+
+.screen { display: none; animation: fadeIn 0.35s ease; }
+.screen.active { display: block; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* TITLE */
+#title-screen { text-align: center; padding-top: 70px; }
+#intro-screen { text-align: center; padding-top: 70px; }
+#load-screen { text-align: center; padding-top: 70px; }
+#slot-screen { text-align: center; padding-top: 70px; }
+#resist-screen.active { display: flex; align-items: center; justify-content: center; min-height: calc(var(--vh) * 100); text-align: center; }
+.resist-line {
+  max-width: 640px;
+  color: var(--text);
+  font-size: 1.45rem;
+  letter-spacing: 1px;
+  line-height: 1.6;
+  opacity: 0;
+  text-shadow: 0 0 26px rgba(192,132,252,0.4);
+  /* Hold black for 1.8s first, then a slow fade in / long hold / fade out. */
+  animation: resistFade 5s ease 1.8s forwards;
+}
+@keyframes resistFade {
+  0%   { opacity: 0; transform: translateY(10px); }
+  28%  { opacity: 1; transform: translateY(0); }
+  74%  { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-8px); }
+}
+#load-screen h2, #slot-screen h2 {
+  font-family: 'Orbitron', sans-serif;
+  text-align: center;
+  font-size: 1.7rem;
+  margin-bottom: 8px;
+  letter-spacing: 3px;
+}
+.save-list { display: flex; flex-direction: column; gap: 12px; max-width: 460px; margin: 0 auto; }
+/* A slot is a row, not a button: the body selects the run and the delete
+   control sits beside it, so neither can swallow the other's click. */
+.save-slot {
+  display: flex;
+  align-items: stretch;
+  text-align: left;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.15s ease, transform 0.1s ease, background 0.15s ease;
+}
+.save-slot-body {
+  flex: 1;
+  min-width: 0;
+  padding: 15px 18px;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+.save-slot:has(.save-slot-body:hover) { border-color: var(--accent); background: var(--panel2); transform: translateY(-1px); }
+/* :has() is recent enough to be worth a fallback — without it the row simply
+   doesn't lift, and the body still highlights on its own. */
+.save-slot-body:hover { background: var(--panel2); }
+/* An empty slot on the LOAD screen has nothing to open. It stays listed so the
+   count of slots is visible at a glance rather than inferred from what is
+   missing, but it does not pretend to be clickable. */
+.save-slot.empty { border-style: dashed; }
+.save-slot.empty .save-slot-body { cursor: default; }
+.save-slot.empty:has(.save-slot-body:hover) { border-color: var(--border); background: var(--panel); transform: none; }
+.save-slot.empty .save-slot-body:hover { background: none; }
+.save-slot.empty .save-slot-title { color: var(--muted); }
+.save-slot-title { display: block; font-family: 'Orbitron', sans-serif; font-weight: 600; font-size: 1.05rem; margin-bottom: 4px; }
+.save-slot-num { color: var(--muted); font-size: 0.7rem; letter-spacing: 2px; margin-left: 10px; font-weight: 400; }
+.save-slot-meta { display: block; color: var(--muted); font-size: 0.82rem; letter-spacing: 0.4px; }
+.save-slot-del {
+  flex: none;
+  padding: 0 16px;
+  background: none;
+  border: 0;
+  border-left: 1px solid var(--border);
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1rem;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.save-slot-del:hover { color: var(--accent2); background: rgba(255, 45, 106, 0.08); }
+/* Armed state: the first click asks, the second deletes. See deleteSlot. */
+.save-slot-del.armed { color: var(--accent2); background: rgba(255, 45, 106, 0.12); font-size: 0.72rem; }
+/* No ".save-empty" any more: an empty slot is listed as a slot (.save-slot.empty)
+   rather than replaced by a "no saved runs" line, so the number of slots is
+   visible whether or not any of them are in use. */
+.save-hint { color: var(--muted); font-size: 0.8rem; text-align: center; margin-top: 18px; letter-spacing: 0.4px; }
+
+/* Sits under the logo, quiet enough to ignore and present enough to quote in
+   a bug report. The logo's 54px bottom margin is moved here so the tag tucks
+   under it rather than pushing the menu down. */
+.build-tag {
+  font-size: 0.72rem;
+  letter-spacing: 3px;
+  color: var(--muted);
+  opacity: 0.55;
+  margin-top: -42px;
+  margin-bottom: 46px;
+}
+.logo {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 4.8rem;
+  letter-spacing: 14px;
+  background: linear-gradient(135deg, #00f0d0 0%, #67e8f9 40%, #ff2d6a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 28px rgba(0,240,208,0.35));
+  margin-bottom: 54px;
+  animation: logoGlow 4.5s ease-in-out infinite;
+}
+@keyframes logoGlow {
+  0%, 100% { filter: drop-shadow(0 0 22px rgba(0,240,208,0.28)); }
+  50% { filter: drop-shadow(0 0 36px rgba(0,240,208,0.48)); }
+}
+
+.intro-story {
+  max-width: 600px;
+  margin: 0 auto 44px;
+  color: var(--muted);
+  font-size: 0.98rem;
+  line-height: 1.65;
+  text-align: center;
+}
+.intro-story p { margin: 0 0 14px; }
+.intro-story .intro-lead {
+  color: var(--text);
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+.intro-story .intro-final {
+  margin: 22px 0 0;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 5px;
+  font-size: 1.05rem;
+  text-align: center;
+}
+
+.btn {
+  background: transparent;
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 13px 40px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.3, 1);
+  letter-spacing: 2px;
+  position: relative;
+}
+
+.btn:hover {
+  background: var(--accent);
+  color: #07090f;
+  box-shadow: 0 0 32px rgba(0,240,208,0.45);
+  transform: translateY(-2px);
+}
+.btn:active {
+  transform: translateY(0);
+  box-shadow: 0 0 16px rgba(0,240,208,0.3);
+}
+
+.btn.danger { border-color: var(--accent2); color: var(--accent2); }
+.btn.danger:hover {
+  background: var(--accent2);
+  color: #fff;
+  box-shadow: 0 0 32px rgba(255,45,106,0.45);
+}
+
+.btn.small {
+  padding: 8px 18px;
+  font-size: 0.8rem;
+}
+
+.btn:disabled {
+  opacity: 0.32;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  border-color: var(--border);
+  color: var(--muted);
+}
+.btn:disabled:hover {
+  background: transparent;
+  color: var(--muted);
+  box-shadow: none;
+  transform: none;
+}
+
+/* CLASS SELECT */
+#class-screen h2 {
+  font-family: 'Orbitron', sans-serif;
+  text-align: center;
+  font-size: 1.7rem;
+  margin-bottom: 44px;
+  letter-spacing: 3px;
+}
+
+.class-desc { text-align: center; color: var(--muted); margin-bottom: 36px; font-size: 0.9rem; }
+
+.classes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+.class-card {
+  background: var(--panel);
+  border: 2px solid var(--border);
+  padding: 24px 18px 22px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s;
+  position: relative;
+  overflow: hidden;
+}
+
+.class-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 0%, var(--glow, transparent) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.class-card:hover::before, .class-card.selected::before { opacity: 1; }
+
+.class-card:hover, .class-card.selected {
+  border-color: var(--class-color);
+  transform: translateY(-5px);
+  box-shadow: 0 12px 36px rgba(0,0,0,0.5), 0 0 24px var(--glow);
+}
+.class-card.selected {
+  border-width: 2px;
+  box-shadow: 0 12px 36px rgba(0,0,0,0.55), 0 0 32px var(--glow), inset 0 0 0 1px var(--class-color);
+}
+.class-card.selected::after {
+  content: 'SELECTED';
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  color: var(--class-color);
+  background: rgba(0,0,0,0.45);
+  border: 1px solid var(--class-color);
+  padding: 3px 7px;
+  border-radius: 2px;
+  z-index: 2;
+}
+
+.class-card.bio { --class-color: var(--bio); --glow: rgba(125,255,160,0.18); }
+.class-card.psy { --class-color: var(--psy); --glow: rgba(192,132,252,0.18); }
+.class-card.sym { --class-color: var(--sym); --glow: rgba(251,146,60,0.18); }
+
+.class-preview {
+  width: 140px;
+  height: 170px;
+  margin: 0 auto 16px;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: visible;
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.class-card:hover .class-preview,
+.class-card.selected .class-preview {
+  transform: translateY(-4px) scale(1.04);
+}
+
+.class-preview .char-figure {
+  /* Matches the 155px preview sprite below, so the ground shadow (which is
+     derived from --sprite-h) doesn't inherit the arena's much larger scale. */
+  --sprite-h: 155px;
+  width: 160px;
+  height: 160px;
+}
+
+.class-preview .char-svg {
+  width: auto;
+  height: 155px;
+  /* 155 x 1.9, matching the arena's clamp — the strain art is ~1.83:1 and the
+     old 215px cap letterboxed it down to ~117px inside a 155px box. */
+  max-width: 295px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  object-fit: contain;
+}
+
+.class-name {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 1.15rem;
+  margin-bottom: 4px;
+  position: relative;
+}
+
+.class-role {
+  font-size: 0.75rem;
+  color: var(--class-color);
+  letter-spacing: 1.5px;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.class-info {
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.5;
+  position: relative;
+}
+
+/* ===== TOP HUD ===== */
+.hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 14px;
+  padding: 12px 16px;
+  background: var(--panel);
+  border: 2px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.hud-left, .hud-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.level-badge {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--accent);
+  letter-spacing: 1px;
+  transition: color 0.2s, text-shadow 0.2s, transform 0.2s;
+}
+.level-badge.level-up {
+  color: var(--xp);
+  text-shadow: 0 0 18px rgba(251,191,36,0.65);
+  transform: scale(1.12);
+}
+
+.xp-block {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 160px;
+}
+
+.xp-track {
+  height: 8px;
+  background: #151b28;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.xp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+  transition: width 0.4s ease;
+  border-radius: 2px;
+}
+/* Level + XP header at the top of the STATS tab. */
+.stats-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 14px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.stats-progress .xp-block { min-width: 0; }
+.stats-progress-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+
+/* Sits at the right end of the level row, opposite LEVEL n. Matches the level
+   badge's type exactly so the two read as one line of the same text; only the
+   strain word carries the class colour. */
+.strain-word {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;   /* matches .side-stat-name, the STRENGTH/SPEED labels */
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.strain-word.bio  { color: var(--bio); }
+.strain-word.psy  { color: var(--psy); }
+.strain-word.sym  { color: var(--sym); }
+.strain-word.base { color: var(--base); }
+
+/* COMBAT HEADER */
+.combat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.act-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 2.5px;
+  color: var(--muted);
+}
+.zone-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1rem;
+  letter-spacing: 2px;
+}
+
+.turn-info {
+  color: var(--accent);
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 10px;
+  /* A flex row so the pieces space themselves; the line is assembled from
+     separate coloured spans rather than one string. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-height: 1.2em;
+}
+.turn-now { font-weight: 700; }
+/* Your half is always white, whatever the strain — the line is about whose turn
+   it is, and one steady colour reads faster than one that changes per run. */
+.turn-side.you   { color: var(--text); }
+.turn-side.enemy { color: var(--enemy); }
+.turn-sep { color: var(--muted); opacity: 0.5; }
+.turn-upcoming { color: var(--muted); font-size: 0.92em; }
+.turn-arrow { color: var(--muted); opacity: 0.65; }
+.turn-warn {
+  color: var(--xp);
+  font-weight: 700;
+  border: 1px solid rgba(251,191,36,0.45);
+  border-radius: 3px;
+  padding: 1px 7px;
+}
+
+/* Arena — one shared card */
+.battlefield {
+  margin-bottom: 0;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.arena-card {
+  background:
+    linear-gradient(180deg, rgba(14,18,27,0.2) 0%, transparent 40%),
+    radial-gradient(ellipse 90% 50% at 50% 100%, rgba(0,0,0,0.55) 0%, transparent 70%),
+    var(--panel);
+  border: 2px solid var(--border);
+  padding: 16px 28px 22px;
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 48px;
+  align-items: end;
+  /* Definite height instead of "absorb whatever the viewport left over",
+     which grew forever on a tall monitor. 520px is what seats the tallest
+     fighter in the game (a boss stack) with a little air; everything smaller
+     leaves headroom above, and that gap IS the effect, since the card is
+     bottom-anchored to the floor plane. Deliberately a share of the viewport
+     rather than "viewport minus the chrome": the action panel changes height
+     with window width, so subtracting a fixed chrome constant went stale and
+     pushed the page into a scroll on laptops. */
+  flex: 0 0 auto;
+  height: clamp(340px, calc(var(--vh) * 52), 520px);
+  /* Master sprite scale for the arena; every tier below is a ratio of it.
+     A boss is 1.56x this and sits under ~150px of name, bars and padding, so
+     the usable scale is (card - 190) / 1.56 — that fixed overhead is why this
+     is an affine expression and not a plain percentage. The vh term is unchanged
+     from when the boss was 1.69x, so it now carries extra margin. */
+  --fig: clamp(110px, calc(var(--vh) * 30.7 - 110px), 200px);
+}
+
+/* Battleground floor — feet rest on this plane */
+.arena-card::before {
+  content: '';
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  bottom: 10px;
+  height: 22px;
+  background:
+    linear-gradient(180deg, rgba(28,36,51,0.0) 0%, rgba(28,36,51,0.7) 45%, rgba(12,16,24,0.95) 100%);
+  border-radius: 50% / 100%;
+  box-shadow:
+    0 0 40px rgba(0,240,208,0.04),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.arena-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.015)),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 48px,
+      rgba(255,255,255,0.012) 48px,
+      rgba(255,255,255,0.012) 49px
+    );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.arena-vs {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 1.15rem;
+  color: var(--muted);
+  opacity: 0.22;
+  letter-spacing: 6px;
+  text-align: center;
+  user-select: none;
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  pointer-events: none;
+  text-shadow: 0 0 24px rgba(0,0,0,0.8);
+}
+
+.arena-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+  height: 100%;
+}
+
+.arena-side.dead {
+  opacity: 0.35;
+  filter: grayscale(0.85);
+}
+
+/* Fighter panels — info on top, sprite planted on the floor */
+.fighter {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  justify-content: flex-end;
+}
+
+.fighter .bars {
+  width: 100%;
+  max-width: 340px;
+}
+
+.unit { position: relative; }
+
+/* Info stack sits above the sprite */
+.fighter-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  margin-bottom: 4px;
+}
+
+.char-figure {
+  /* Set by .arena-card; the fallback covers the class-select preview, which
+     lives outside the arena. */
+  --sprite-h: var(--fig, 200px);
+  /* Tracks .char-svg's max-width so the box always bounds the art — a wide
+     strike pose used to overflow the old fixed 200px. */
+  width: calc(var(--sprite-h) * 1.9);
+  height: calc(var(--sprite-h) + 2px);
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  transition: transform 0.12s ease-out;
+  will-change: transform;
+  z-index: 2;
+  margin-bottom: 0;
+  /* feet sit on the floor plane */
+  padding-bottom: 0;
+}
+
+.char-svg {
+  width: auto;
+  height: var(--sprite-h);
+  /* Must clear the widest sprite's aspect ratio (the strain art is ~1.83:1).
+     If this clamps, object-fit:contain letterboxes the art — it renders
+     shorter than --sprite-h and, being centred, lifts the feet off the floor
+     plane. Raise this before adding art wider than 1.9:1. */
+  max-width: calc(var(--sprite-h) * 1.9);
+  overflow: visible;
+  transition: transform 0.1s ease-out;
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  object-fit: contain;
+}
+
+/* Size carries threat. A rank-and-file Enforcer is Sonny's equal and stands eye
+   to eye with him; only elites and the Captain loom.
+   Every sprite's solid body fills 98.9-100% of its own canvas, so these ratios
+   are literally how tall each character reads on screen. */
+.char-figure.foe       { --sprite-h: var(--fig, 200px); }                 /* eye to eye */
+.char-figure.foe-elite { --sprite-h: calc(var(--fig, 200px) * 1.15); }
+.char-figure.foe-boss  { --sprite-h: calc(var(--fig, 200px) * 1.56); }   /* the MCP Captain looms */
+
+.char-figure.alive .char-svg {
+  animation: idleBob 3.2s ease-in-out infinite;
+}
+
+.char-figure.lunging .char-svg,
+.char-figure.recoiling .char-svg {
+  animation: none;
+}
+
+/* Very subtle weight shift — stays planted on the floor */
+@keyframes idleBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+/* Ground shadow under each fighter — aligns with feet on the floor */
+.ground-shadow {
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(var(--sprite-h) * 0.473);
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(0,0,0,0.6) 0%, transparent 72%);
+  pointer-events: none;
+  z-index: 1;
+  transition: transform 0.12s ease-out, opacity 0.12s;
+}
+
+.char-figure.lunging .ground-shadow {
+  opacity: 0.65;
+  transform: translateX(-50%) scaleX(0.9);
+}
+
+/* Attack lunges — player (left) lunges right, enemy (right) lunges left */
+.char-figure.lunge-right {
+  animation: lungeRight 0.28s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+}
+.char-figure.lunge-left {
+  animation: lungeLeft 0.28s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+}
+
+@keyframes lungeRight {
+  0%   { transform: translateX(0) translateY(0); }
+  35%  { transform: translateX(22px) translateY(-3px); }
+  100% { transform: translateX(0) translateY(0); }
+}
+@keyframes lungeLeft {
+  0%   { transform: translateX(0) translateY(0); }
+  35%  { transform: translateX(-22px) translateY(-3px); }
+  100% { transform: translateX(0) translateY(0); }
+}
+
+/* Subtle hit recoil */
+.char-figure.recoil-left {
+  animation: recoilLeft 0.22s ease-out forwards;
+}
+.char-figure.recoil-right {
+  animation: recoilRight 0.22s ease-out forwards;
+}
+
+@keyframes recoilLeft {
+  0%   { transform: translateX(0); }
+  40%  { transform: translateX(-10px) translateY(1px); }
+  100% { transform: translateX(0); }
+}
+@keyframes recoilRight {
+  0%   { transform: translateX(0); }
+  40%  { transform: translateX(10px) translateY(1px); }
+  100% { transform: translateX(0); }
+}
+
+/* Weapon swing (applied to .weapon group inside SVG) */
+.char-svg .weapon {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.08s ease-out;
+}
+.char-figure.swing-right .char-svg .weapon {
+  animation: swingRight 0.28s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+.char-figure.swing-left .char-svg .weapon {
+  animation: swingLeft 0.28s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+
+@keyframes swingRight {
+  0%   { transform: rotate(-28deg); }
+  40%  { transform: rotate(58deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes swingLeft {
+  0%   { transform: rotate(28deg); }
+  40%  { transform: rotate(-58deg); }
+  100% { transform: rotate(0deg); }
+}
+
+/* Impact mark — appears between fighters on contact */
+.impact-mark {
+  position: absolute;
+  top: 58%;
+  left: 50%;
+  width: 56px;
+  height: 28px;
+  margin-left: -28px;
+  margin-top: -14px;
+  pointer-events: none;
+  z-index: 30;
+  opacity: 0;
+  animation: impactPop 0.38s ease-out forwards;
+}
+
+.impact-mark svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+@keyframes impactPop {
+  0%   { opacity: 0; transform: scale(0.4) rotate(-8deg); }
+  25%  { opacity: 1; transform: scale(1.15) rotate(2deg); }
+  100% { opacity: 0; transform: scale(1.4) rotate(0deg); }
+}
+
+.aura {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 56px;
+  height: 10px;
+  border-radius: 50%;
+  filter: blur(6px);
+  opacity: 0.5;
+  animation: auraPulse 2.4s ease-in-out infinite;
+  z-index: 1;
+}
+
+@keyframes auraPulse {
+  0%, 100% { opacity: 0.4; transform: translateX(-50%) scaleX(1); }
+  50% { opacity: 0.75; transform: translateX(-50%) scaleX(1.18); }
+}
+
+.aura.bio { background: var(--bio); }
+.aura.psy { background: var(--psy); }
+.aura.sym { background: var(--sym); }
+.aura.enemy { background: var(--enemy); }
+
+.unit-name {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 1.2rem;
+  text-align: center;
+}
+
+.unit-class {
+  font-size: 0.72rem;
+  letter-spacing: 1.2px;
+  padding: 3px 10px;
+  border-radius: 2px;
+}
+
+.unit-class.bio { background: rgba(125,255,160,0.12); color: var(--bio); }
+.unit-class.psy { background: rgba(192,132,252,0.12); color: var(--psy); }
+.unit-class.sym { background: rgba(251,146,60,0.12); color: var(--sym); }
+.unit-class.enemy { background: rgba(251,113,133,0.12); color: var(--enemy); }
+
+.bars {
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.bar-row {
+  width: 100%;
+}
+
+.bar-track {
+  position: relative;
+  height: 22px;
+  background: #0c1018;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.bar-fill {
+  height: 100%;
+  transition: width 0.3s linear;
+  border-radius: 2px;
+  min-width: 0;
+}
+
+.bar-fill.hp { background: linear-gradient(90deg, #c41e4a, #ff2d6a 40%, #fb7185); }
+.bar-fill.hp.player-hp { background: linear-gradient(90deg, #15803d, #22c55e 40%, #4ade80); }
+
+.bar-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.85);
+  pointer-events: none;
+  letter-spacing: 0.5px;
+  z-index: 2;
+}
+
+.status-effects {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  justify-content: center;
+  min-height: 20px;
+}
+
+/* Enemy intent — always-visible telegraph of the next move. */
+.intent-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 4px;
+  background: rgba(7,9,15,0.82);
+  border: 1px solid var(--border);
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 0.82rem;
+  line-height: 1;
+  white-space: nowrap;
+  margin-bottom: 2px;
+}
+.intent-badge.empty { display: none; }
+.intent-badge .intent-icon { font-size: 0.95rem; }
+.intent-badge .intent-txt { letter-spacing: 0.5px; }
+.intent-badge .intent-riders { font-size: 0.8rem; }
+.intent-badge.tone-attack  { color: var(--enemy); border-color: rgba(251,113,133,0.45); }
+.intent-badge.tone-charge  { color: var(--xp);    border-color: rgba(251,191,36,0.55); }
+.intent-badge.tone-stunned { color: var(--muted); }
+.intent-badge.tone-heavy {
+  color: #ff6b6b;
+  border-color: rgba(255,60,60,0.7);
+  background: rgba(48,10,10,0.9);
+  animation: intentPulse 1.1s ease-in-out infinite;
+}
+@keyframes intentPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,70,70,0); }
+  50%      { box-shadow: 0 0 12px 1px rgba(255,70,70,0.55); }
+}
+@media (prefers-reduced-motion: reduce) { .intent-badge.tone-heavy { animation: none; } }
+
+.status {
+  font-size: 0.58rem;
+  padding: 2px 6px;
+  border-radius: 2px;
+  background: #151b28;
+  letter-spacing: 0.4px;
+  font-weight: 500;
+}
+
+/* On the ENEMY, a status is just the word in its own colour — no chip, no
+   border, no ground. The foe's card carries an intent badge, tags and a health
+   bar already, and boxing every condition on top turned the space under the bar
+   into a row of competing labels. Colour alone is enough to tell them apart,
+   and it is the same colour the skill that applied it used.
+
+   Scoped by the panel rather than by a class on each badge: buildStatusesHtml
+   is shared by both sides, so the side it is rendered into is the one thing
+   that already knows which is which. The player keeps its chips — its statuses
+   sit beside the bank pips and need the edge to read as separate things. */
+#enemy-side .status {
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 2px 0;
+  font-weight: 600;
+}
+
+/* One tone per status, named by the `tone` field of its STATUSES entry. The
+   generic buff/debuff pair is the fallback every new entry can use without
+   touching this file — green-ish for something you want, red-ish for something
+   done to you — so adding a status is a data edit, never a CSS edit. */
+.status.buff { color: var(--bio); border: 1px solid rgba(125,255,160,0.45); }
+.status.debuff { color: var(--enemy); border: 1px solid rgba(251,113,133,0.45); }
+
+.status.weak { color: var(--weak); border: 1px solid rgba(96,165,250,0.45); }
+.status.poison { color: var(--bio); border: 1px solid rgba(125,255,160,0.35); }
+.status.bleed { color: var(--enemy); border: 1px solid rgba(251,113,133,0.35); }
+.status.stun { color: var(--psy); border: 1px solid rgba(192,132,252,0.35); }
+.status.predator { color: var(--accent); border: 1px solid rgba(0,240,208,0.35); }
+.status.spines { color: var(--sym); border: 1px solid rgba(251,146,60,0.4); }
+.status.resolve { color: #ffffff; border: 1px solid rgba(255,255,255,0.5); }
+.status.flow { color: var(--psy); border: 1px solid rgba(192,132,252,0.55); }
+.status.brace { color: var(--base); border: 1px solid rgba(255,255,255,0.55); background: rgba(255,255,255,0.1); }
+
+/* Class bank pips (Momentum / Spores / Resolve) */
+.bank-row { display: flex; justify-content: center; min-height: 18px; margin-bottom: 2px; }
+.bank { display: inline-flex; align-items: center; gap: 7px; }
+.bank-label {
+  font-family: 'Orbitron', sans-serif; font-weight: 700;
+  font-size: 0.58rem; letter-spacing: 1px;
+}
+.bank-pips { display: inline-flex; gap: 3px; }
+.bank .pip {
+  width: 9px; height: 9px; border-radius: 50%;
+  border: 1px solid var(--bank-color, var(--muted));
+  background: transparent;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.bank .pip.full {
+  background: var(--bank-color, var(--muted));
+  box-shadow: 0 0 6px var(--bank-glow, transparent);
+}
+.bank-momentum { --bank-color: var(--psy); --bank-glow: rgba(192,132,252,0.6); }
+.bank-spores   { --bank-color: var(--sym); --bank-glow: rgba(251,146,60,0.6); }
+.bank-resolve  { --bank-color: #ffffff;    --bank-glow: rgba(255,255,255,0.6); }
+.bank-momentum .bank-label { color: var(--psy); }
+.bank-spores   .bank-label { color: var(--sym); }
+.bank-resolve  .bank-label { color: #ffffff; }
+
+.float-dmg {
+  position: absolute;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 1.3rem;
+  pointer-events: none;
+  animation: floatUp 1.3s ease forwards;
+  z-index: 20;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.85);
+}
+
+.float-dmg.damage { color: #ff6b8a; }
+.float-dmg.heal { color: #7dffa0; }
+.float-dmg.xp { color: var(--xp); font-size: 1.05rem; }
+.float-dmg.bank { color: #eaf2ff; font-size: 0.95rem; letter-spacing: 0.5px; }
+/* Enemy damage numbers tinted to the player's strain (crits stay white). */
+.float-dmg.cc-bio { color: var(--bio); }
+.float-dmg.cc-psy { color: var(--psy); }
+.float-dmg.cc-sym { color: var(--sym); }
+.float-dmg.cc-base { color: #fff; }
+
+@keyframes floatUp {
+  0% { opacity: 1; transform: translateY(0) scale(0.9); }
+  20% { transform: translateY(-10px) scale(1.18); }
+  100% { opacity: 0; transform: translateY(-52px) scale(1); }
+}
+
+/* Action panel */
+.action-panel {
+  background: var(--panel);
+  border: 2px solid var(--border);
+  padding: 16px 18px;
+}
+
+.action-title {
+  font-size: 0.78rem;
+  letter-spacing: 2px;
+  color: var(--muted);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+.action-title b {
+  color: var(--accent);
+  font-weight: 700;
+  padding: 1px 5px;
+  border: 1px solid rgba(0,240,208,0.35);
+  border-radius: 3px;
+  margin: 0 1px;
+}
+
+.skills {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.skill-btn {
+  background: var(--panel2);
+  border: 2px solid #252d3d;
+  color: var(--text);
+  /* Deeper at the bottom than the sides because the strain strip lives in that
+     padding: 6px of it is the glow, so an even 11px left the longest card
+     (bio's Fester) with 14px of clear air where the shorter ones had 34. */
+  padding: 11px 9px 18px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, transform 0.2s, opacity 0.2s;
+  text-align: left;
+  font-family: 'JetBrains Mono', monospace;
+  /* A <button> vertically centres its own content, so a card with less text
+     used to sit its name ~17px lower than a full one. Flex column pins the
+     name to the top of every card regardless of description length. */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  /* A floor, not a fixed height: the row stays put across strains and states
+     (bio's cards are naturally the tallest at ~141px, the rest ~124px), but a
+     longer description in future grows the row rather than being clipped. */
+  min-height: 150px;
+}
+
+/* No accent outline on hover. The neon strip along the bottom already answers
+   "can I press this", in the strain's own colour — an accent border on top of
+   it was a second, differently-coloured answer to the same question. The lift
+   and the lighter ground carry the hover on their own. */
+.skill-btn:hover:not(:disabled) {
+  background: #1a2233;
+  transform: translateY(-2px);
+}
+
+.skill-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.skill-btn.basic {
+  opacity: 1;
+  cursor: pointer;
+  border-style: solid;
+  border-color: #252d3d;
+}
+.skill-btn.basic:hover {
+  background: #1a2233;
+  transform: translateY(-2px);
+}
+.skill-btn.basic.auto-off {
+  opacity: 0.55;
+}
+.skill-btn.basic.auto-off:hover {
+  opacity: 0.8;
+}
+
+.skill-btn.on-cd {
+  opacity: 0.5;
+  cursor: not-allowed;
+  position: relative;
+}
+
+/* The turns-remaining number, centred over the whole card while it recharges.
+   Sits above the card text (z-index 2) and the sweep (1). */
+.skill-btn .cd-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(7, 9, 15, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 1.8rem;
+  color: var(--accent);
+  text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.skill-btn.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 18px rgba(0,240,208,0.2);
+  background: #15202b;
+}
+
+/* ===== The neon strip along the bottom of a skill card =====
+   Removing the status word left the card unresolved: a name, some text, and
+   then dead space to the 150px floor with nothing closing the shape. This
+   closes it in the strain's own colour, and doubles as a wordless readiness
+   tell — the card's own opacity dims the strip along with everything else when
+   the skill cannot be used, so it is bright exactly when the skill is live.
+
+   Two parts, because one would not read. A hard 6px line, plus a bloom rising
+   off it INTO the card: .skill-btn is `overflow: hidden` for the cooldown
+   sweep, so an outward box-shadow gets clipped flat against the card edge and
+   the glow never appears. The gradient lives inside the clip and does the work.
+
+   The strain hook is data-built-for, which renderSkills already sets to the
+   class as its rebuild key — the value is exactly the strain, so styling off
+   it needs no second attribute saying the same thing. */
+.skills[data-built-for="bio"]  { --strain: var(--bio); --strain-glow: rgba(125,255,160,0.55); }
+.skills[data-built-for="psy"]  { --strain: var(--psy); --strain-glow: rgba(192,132,252,0.55); }
+.skills[data-built-for="sym"]  { --strain: var(--sym); --strain-glow: rgba(251,146,60,0.55); }
+/* Unmutated's white carries further than a tint at the same alpha, so its
+   bloom is pulled back to sit at the weight of the other three. */
+.skills[data-built-for="base"] { --strain: var(--base); --strain-glow: rgba(238,242,255,0.32); }
+
+.skill-btn::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 6px;
+  background: var(--strain, var(--accent));
+  box-shadow: 0 0 8px var(--strain-glow), 0 0 16px var(--strain-glow);
+  pointer-events: none;
+  transition: box-shadow 0.2s;
+  /* Above the cooldown scrim (3) so a recharging card keeps a defined edge
+     instead of dissolving into the dark. */
+  z-index: 4;
+}
+.skill-btn::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 18px;
+  background: linear-gradient(to top, var(--strain-glow), transparent);
+  opacity: 0.6;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  /* Same layer as .cd-sweep, and painted before it, so the sweep covers the
+     bloom as it drains rather than glowing through it. */
+  z-index: 1;
+}
+.skill-btn:hover:not(:disabled)::after {
+  box-shadow: 0 0 14px var(--strain-glow), 0 0 30px var(--strain-glow);
+}
+.skill-btn:hover:not(:disabled)::before { opacity: 1; }
+
+.skill-name {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  font-size: 0.92rem;
+  margin-bottom: 3px;
+  line-height: 1.25;
+}
+
+/* Pinned to the bottom of the card so every status line sits on one baseline
+   across the row, whatever length the description above it happens to be.
+   The whitespace that leaves on short cards is the point: it reads as spacing
+   rather than as a card that came up short. */
+.skill-cost {
+  font-size: 0.72rem;
+  color: var(--accent);
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+/* Mechanic names inside a description, coloured by DESC_KEYWORDS. Only the
+   colour changes — the name has to stand out from the sentence around it
+   without becoming a second heading inside the card. */
+.kw-base { color: var(--base); }
+.kw-bio { color: var(--bio); }
+.kw-weak { color: var(--weak); }
+
+.skill-desc {
+  font-size: 0.72rem;
+  color: #a8b4c8; /* lighter than --muted for readability */
+  margin-top: 4px;
+  line-height: 1.35;
+}
+
+.target-hint {
+  text-align: center;
+  color: var(--accent);
+  margin-top: 12px;
+  font-size: 0.82rem;
+  letter-spacing: 1px;
+  display: none;
+  animation: pulseText 1.2s ease infinite;
+}
+
+.target-hint.show { display: block; }
+
+@keyframes pulseText {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+.combat-log {
+  margin-top: 0;
+  background: #0a0d14;
+  border: 1px solid var(--border);
+  height: 120px;
+  min-height: 100px;
+  overflow-y: auto;
+  padding: 10px 14px;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.combat-log::-webkit-scrollbar { width: 6px; }
+.combat-log::-webkit-scrollbar-track { background: transparent; }
+.combat-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Log lives in the sidebar tab now — let it fill the panel. */
+#tab-log .combat-log {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+}
+.log-entry { padding: 1px 0; border-left: 2px solid transparent; padding-left: 6px; margin-left: -2px; white-space: pre-wrap; }
+.log-entry.important { border-left-color: rgba(0,240,208,0.45); }
+.log-entry.damage { border-left-color: rgba(251,113,133,0.4); }
+.log-entry.heal { border-left-color: rgba(125,255,160,0.4); }
+.log-entry.xp { border-left-color: rgba(251,191,36,0.4); }
+.log-entry.level { border-left-color: rgba(251,191,36,0.7); }
+
+/* The log is a transcript with two levels: headers that say WHOSE turn or
+   WHICH wave, and the events that happened inside them. Events are indented
+   under their header so a glance down the column separates the two without
+   reading a word — which is the whole reason the turn markers exist. */
+/* Hanging indent: the sidebar is narrow enough that a qualifier list wraps
+   often, and a wrapped line starting level with the first reads as a new
+   event. The negative text-indent puts the first line at 20px and every
+   continuation at 28px, so one event stays visibly one block. */
+.log-entry.ev { padding-left: 28px; text-indent: -8px; }
+.log-entry.turn, .log-entry.wave {
+  margin-top: 7px;
+  letter-spacing: 1.5px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+/* Whose turn it is is carried by the rail colour, the same white/red split the
+   turn-info strip above the skills uses, so the two never have to be reconciled. */
+.log-entry.turn.you { border-left-color: rgba(238,242,255,0.55); color: var(--text); }
+.log-entry.turn.foe { border-left-color: rgba(251,113,133,0.55); color: #fb7185; }
+.log-entry.wave { border-left-color: rgba(0,240,208,0.6); color: var(--accent); margin-top: 12px; }
+.log-entry.wave.boss { border-left-color: var(--accent2); color: var(--accent2); }
+/* The wave header's second line: the enemy's actual numbers. Muted because it
+   is reference material, not an event. */
+.log-entry.spec { padding-left: 20px; font-size: 0.74rem; }
+.log-entry:first-child { margin-top: 0; }
+
+/* ===== COMBAT LAYOUT + SIDEBAR ===== */
+.combat-layout {
+  display: grid;
+  /* The floor is in rem, not px, so it shrinks with the root font above —
+     a hard 360px floor stayed put while everything in it got smaller, which
+     is what forced the collapse to one column earlier than it needed to. */
+  grid-template-columns: 1fr minmax(20.5rem, 28%);
+  gap: 20px;
+  align-items: stretch;
+  flex: 1;
+}
+
+.combat-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sidebar {
+  background: var(--panel);
+  border: 2px solid var(--border);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: calc(var(--vh) * 100 - 48px);
+  align-self: stretch;
+}
+
+.sidebar-tabs {
+  display: flex;
+  border-bottom: 2px solid var(--border);
+  flex-shrink: 0;
+}
+
+.sidebar-tab {
+  /* Sized by its own label, not an equal quarter: MUTATIONS needs three times
+     the room LOG does, and splitting the row evenly pushed MENU off the edge
+     once the sidebar got narrow. Padding and tracking are in rem so they shrink
+     with the text instead of holding four fixed gutters at any width. */
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.086rem;
+  padding: 0.91rem 0.57rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+}
+
+.sidebar-tab:hover { color: var(--text); }
+
+.sidebar-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  background: rgba(0,240,208,0.04);
+}
+
+/* Floats over whichever intro is running, out of the way in the corner. Sits
+   above the staged fades, which is why it carries its own z-index. */
+.skip-btn {
+  position: fixed;
+  right: 26px;
+  bottom: 26px;
+  z-index: 60;
+  opacity: 0.5;
+  letter-spacing: 2px;
+}
+.skip-btn:hover { opacity: 1; }
+
+.menu-panel { display: flex; flex-direction: column; gap: 12px; }
+.menu-panel .btn { width: 100%; }
+.menu-panel-note {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  margin-bottom: 4px;
+}
+
+.sidebar-body {
+  padding: 18px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.sidebar-panel { display: none; }
+.sidebar-panel.active {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.sidebar-panel h4 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.85rem;
+  letter-spacing: 1.5px;
+  margin-bottom: 4px;
+  color: var(--muted);
+}
+
+.side-stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.side-stat-row:last-child { border-bottom: none; }
+
+.side-stat-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.side-stat-name {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.side-stat-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.side-stat-value {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 1.15rem;
+  min-width: 32px;
+  text-align: center;
+  color: var(--accent);
+}
+
+.derived-block {
+  margin-top: 10px;
+}
+.derived-block[hidden] { display: none; }
+
+/* Quieter than the sidebar's own tabs, but only by a step: these switch a
+   readout inside a panel, they do not change what the panel is. Quieter is a
+   RATIO, not a small absolute size — at 0.56rem against the tab row's 0.85rem
+   these read as an afterthought rather than a control, and the label filled
+   under half the button it sat in. 0.78rem keeps them clearly below the tabs
+   above without making them work to read.
+
+   Everything that decides their footprint is in rem, matching .sidebar-tab, so
+   the row shrinks with the root font at narrow widths instead of holding a
+   fixed size and forcing the labels to collide. */
+.stat-subtabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-top: 14px;
+  padding-top: 11px;
+  border-top: 1px solid var(--border);
+}
+.stat-subtab {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 0.34rem 0.28rem;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.05rem;
+  color: var(--muted);
+  /* Muted is already dim; 0.55 on top of it was what made these hard to read
+     rather than merely secondary. */
+  opacity: 0.72;
+  cursor: pointer;
+  transition: opacity 0.15s, color 0.15s, border-color 0.15s;
+}
+.stat-subtab:hover { opacity: 0.92; }
+.stat-subtab.active {
+  opacity: 1;
+  color: var(--text);
+  border-color: var(--border);
+  background: var(--panel2);
+}
+/* A point is waiting and it would move something in this group — say so, so
+   switching panes is never the only way to find out. */
+.stat-subtab.has-delta { color: var(--accent); opacity: 1; }
+.stat-subtab.has-delta::after { content: ' \2022'; }
+
+.derived-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.4rem;
+}
+
+/* Groups a related set inside a pane without spending a whole sub-tab on it.
+   Quieter than .stat-subtab because it labels rows rather than switching them.
+   Now that a pane opens on one, the first in each block drops its rule: the
+   sub-tab row above already draws a line, and two together read as a boxed-in
+   header rather than a divider between groups. */
+.derived-block > .derived-subhead:first-child {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0.2rem;
+}
+.derived-subhead {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.06rem;
+  color: var(--muted);
+  opacity: 0.75;
+  margin: 0.7rem 0 0.4rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+/* These are the numbers the panel exists to show, so they sit a step under the
+   stat names they explain rather than three. One row per line means there is
+   width to spare — the constraint here is legibility, not fit. */
+.derived-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.84rem;
+  color: var(--muted);
+}
+
+.derived-item span:last-child {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+}
+/* The value a point would buy, shown beside the value it replaces so the two
+   can be read against each other rather than remembered. */
+.derived-item .delta {
+  font-style: normal;
+  color: var(--accent);
+  margin-left: 7px;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.derived-item .delta.on { opacity: 1; }
+
+.log-entry { color: var(--muted); }
+.log-entry.important { color: var(--accent); }
+.log-entry.damage { color: #fb7185; }
+.log-entry.heal { color: var(--bio); }
+.log-entry.xp { color: var(--xp); }
+.log-entry.level { color: #fbbf24; font-weight: 600; }
+/* border accents are defined earlier with the combat-log block */
+
+/* ===== TALENTS ===== */
+.talent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  padding-right: 4px;
+}
+.talent-owned {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+  border-left: 3px solid var(--accent);
+}
+.talent-owned-name {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  font-size: 0.82rem;
+  letter-spacing: 0.5px;
+  margin-bottom: 3px;
+}
+.talent-owned-desc {
+  font-size: 0.7rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+/* The only thing in the panel when it shows, so it is centred rather than
+   hanging off the left edge like a list item with nothing under it. */
+.talent-empty {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  padding: 8px 0;
+  text-align: center;
+}
+.willpower-vow {
+  border: 1px solid rgba(201,169,120,0.35);
+  background: rgba(201,169,120,0.06);
+  border-radius: 3px;
+  padding: 14px;
+}
+.willpower-vow .vow-title {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 2px;
+  color: var(--base);
+  margin-bottom: 10px;
+}
+.willpower-vow p {
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.willpower-vow p:last-child { margin-bottom: 0; }
+.willpower-vow .vow-emph { color: var(--base); }
+
+/* In-tab talent picker (no modal) */
+.talent-pick-inline {
+  flex-shrink: 0;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.talent-pick-header {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 1.5px;
+  color: var(--accent);
+  margin-bottom: 10px;
+  text-align: center;
+  animation: pulsePoints 1.5s ease infinite;
+}
+.talent-choices-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.talent-card {
+  background: var(--panel2);
+  border: 2px solid var(--border);
+  padding: 12px 12px 12px 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  position: relative;
+}
+.talent-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.35), 0 0 12px rgba(0,240,208,0.12);
+  background: #1a2233;
+}
+/* A one-word category chip with the whole card width to sit in, so nothing was
+   forcing it down to 12px — the same mistake the stat sub-tabs were making.
+   Still clearly under the name below it; just no longer the smallest thing on
+   screen. Tracking in rem so it shrinks with the root font at narrow widths. */
+.talent-card-tag {
+  font-size: 0.7rem;
+  letter-spacing: 0.075rem;
+  color: var(--accent);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+.talent-card-name {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 0.88rem;
+  margin-bottom: 5px;
+  padding-right: 22px;
+}
+.talent-card-desc {
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+/* This is a keybind, not decoration — 1/2/3 actually pick the mutation — so it
+   has to be readable at a glance. It sits in the corner with nothing competing
+   for the space; .talent-card-name reserves 22px of padding-right to clear it,
+   which still holds at this size. */
+.talent-card-key {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 6px;
+}
+
+/* ===== STATS MODAL ===== */
+/* ---- Main menu ---- */
+.menu-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+.menu-stack .btn { width: 290px; }
+
+.btn:disabled, .btn.is-disabled {
+  opacity: 0.32;
+  cursor: not-allowed;
+  border-color: var(--border);
+  color: var(--muted);
+  filter: none;
+}
+.btn:disabled:hover, .btn.is-disabled:hover { background: transparent; }
+
+.menu-meta {
+  color: var(--muted);
+  margin-top: 18px;
+  font-size: 0.78rem;
+  letter-spacing: 0.5px;
+  min-height: 1.1em;
+}
+
+.btn-ghost {
+  border-color: var(--border);
+  color: var(--muted);
+  padding: 9px 26px;
+  font-size: 0.76rem;
+  letter-spacing: 1.5px;
+}
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Intro fork: EVOLVE is the bold, obvious primary; RESIST MUTATION is the
+   tempting alternative in strain-purple. */
+.btn-evolve {
+  background: var(--accent);
+  color: #07090f;
+  border-color: var(--accent);
+  padding: 15px 48px;
+  font-size: 1rem;
+  box-shadow: 0 0 30px rgba(0,240,208,0.42);
+}
+.btn-evolve:hover {
+  background: var(--accent);
+  color: #07090f;
+  box-shadow: 0 0 46px rgba(0,240,208,0.72);
+  transform: translateY(-2px);
+}
+.btn-resist {
+  border-color: var(--psy);
+  color: var(--psy);
+  padding: 15px 40px;
+  box-shadow: 0 0 22px rgba(192,132,252,0.20);
+}
+.btn-resist:hover {
+  background: var(--psy);
+  color: #07090f;
+  border-color: var(--psy);
+  box-shadow: 0 0 42px rgba(192,132,252,0.55);
+  transform: translateY(-2px);
+}
+
+.hud-menu-btn {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.7rem;
+  letter-spacing: 1.5px;
+  padding: 6px 14px;
+  background: transparent;
+  border: 2px solid var(--border);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.hud-menu-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ---- Settings ---- */
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+}
+.setting-row:last-of-type { border-bottom: none; }
+.setting-info { display: flex; flex-direction: column; gap: 3px; }
+.setting-name {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  font-size: 0.88rem;
+  letter-spacing: 0.5px;
+}
+.setting-desc { font-size: 0.7rem; color: var(--muted); max-width: 240px; line-height: 1.45; }
+
+.toggle {
+  width: 52px; height: 26px;
+  border: 2px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: border-color 0.2s;
+}
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 18px; height: 18px;
+  background: var(--muted);
+  transition: left 0.2s cubic-bezier(0.2,0.8,0.3,1), background 0.2s;
+}
+.toggle.on { border-color: var(--accent); }
+.toggle.on::after { left: 28px; background: var(--accent); }
+
+.modal-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; }
+.modal-actions .btn { width: 100%; padding: 12px 20px; }
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+}
+
+.modal-overlay.show { display: flex; }
+
+.modal {
+  background: var(--panel);
+  border: 2px solid var(--border);
+  padding: 24px;
+  max-width: 420px;
+  width: 100%;
+  max-height: calc(var(--vh) * 90);
+  overflow-y: auto;
+}
+
+.modal h3 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.3rem;
+  margin-bottom: 6px;
+  letter-spacing: 2px;
+}
+
+.modal-sub {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-bottom: 20px;
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.stat-row:last-of-type { border-bottom: none; }
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat-name {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.stat-desc {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.stat-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stat-value {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 1.15rem;
+  min-width: 36px;
+  text-align: center;
+  color: var(--accent);
+}
+
+.stat-btn {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--border);
+  background: var(--panel2);
+  color: var(--text);
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.stat-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Gold outline, same footprint as the minus — the treatment the old MAX button
+   carried, applied to the button that inherited its job. */
+.stat-btn.plus {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  color: var(--xp);
+  border-color: rgba(251,191,36,0.4);
+  /* Optical centring. Flexbox centres the FONT BOX, but Orbitron's ascent and
+     descent are not symmetric about its plus, so the glyph lands ~0.066em low
+     — 1.5px here, which reads as visibly off against the minus beside it.
+     Trimming the content box from the bottom lifts the centred line by half
+     the trim, so the padding is twice the error. In em so it survives the root
+     font changing with screen size; box-sizing is border-box, so the button
+     itself does not grow. */
+  padding-bottom: 0.132em;
+}
+
+.stat-btn.plus:hover:not(:disabled) {
+  border-color: var(--xp);
+  color: var(--xp);
+  background: rgba(251,191,36,0.1);
+}
+
+/* Nothing to spend: drop the gold so a coloured plus always means a point is
+   waiting. This is the only thing that reports the pool now — how many are
+   left is deliberately not shown anywhere. */
+.stat-btn.plus:disabled {
+  border-color: var(--border);
+  color: var(--muted);
+  opacity: 0.5;
+}
+
+/* Every point placed, nothing left to spend: the plus becomes the commit. It
+   goes green rather than gold because it is a different verb — gold has meant
+   "you have something to spend" everywhere else, and this spends nothing.
+   A V, not a check mark: Orbitron has no glyph for U+2713 and would silently
+   fall back to another face, landing a differently-weighted tick beside a
+   button that is still drawing its minus from elsewhere. */
+.stat-btn.plus.confirm {
+  color: var(--bio);
+  border-color: rgba(125,255,160,0.55);
+  background: rgba(125,255,160,0.10);
+  /* A V is not a +, so it does not want the plus's optical nudge. */
+  padding-bottom: 0;
+  animation: pulsePoints 1.5s ease infinite;
+}
+.stat-btn.plus.confirm:hover:not(:disabled) {
+  color: var(--bio);
+  border-color: var(--bio);
+  background: rgba(125,255,160,0.18);
+}
+
+/* Gold marks the stat lines you have actually moved. The combat values below
+   are deliberately NOT tinted: they keep showing the committed number and put
+   the staged gain beside it as a delta, so only rows that changed draw the eye
+   — tinting every value gold said "something is pending" in nine places when
+   two of them had moved. */
+.side-stat-value.pending { color: var(--xp); }
+
+.modal-footer {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Result / Game Over */
+#result-screen { text-align: center; padding-top: 80px; }
+
+.result-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2.5rem;
+  margin-bottom: 14px;
+  letter-spacing: 3px;
+}
+
+.result-title.win {
+  background: linear-gradient(135deg, var(--accent), var(--bio));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.result-title.lose { color: var(--accent2); }
+
+.result-stats {
+  color: var(--muted);
+  margin-bottom: 36px;
+  line-height: 1.8;
+  font-size: 0.95rem;
+}
+
+/* Last resort. Everything above exists so this fires as late as possible:
+   once the sidebar drops below the arena the fight no longer fits on one
+   screen and you have to scroll to reach your stats mid-turn. */
+@media (max-width: 820px) {
+  .combat-layout { grid-template-columns: 1fr; }
+  .sidebar { min-height: 320px; }
+  #app { max-width: 100%; padding: 12px; }
+}
+
+/* ===== DESKTOP SCALE =====
+   The mirror of the 1200px rule at the top of the file. That one shrinks the UI
+   so a narrow window still fits; this one grows it, because a desktop monitor is
+   not just a bigger laptop screen — it sits further away, so the same 17.5px
+   reads smaller on it — and the layout was leaving room on the table in both
+   axes. Measured on a 2048x1010 viewport: the app used 1680 of the width, and
+   the column ran out of content ~140px short of the fold.
+
+   Gated on HEIGHT as well as width on purpose. A laptop is fine as it is, and
+   height is what separates the two: 1536x864 never matches this, 2048x1010
+   does. Nothing here touches the sub-1200px path.
+
+   It grows through the same two knobs the rest of the file already turns — the
+   root font (every rem of text and padding) and --vh (the arena and the sprite
+   master scale) — so nothing needs its own scaling rule. The font tracks
+   whichever axis is tighter, so a wide-but-short window can't order text it has
+   no room to show. */
+@media (min-width: 1700px) and (min-height: 950px) {
+  html { font-size: clamp(17.5px, min(2.05vh, 1.02vw), 22px); }
+
+  #app { max-width: min(1980px, 96vw); }
+
+  .arena-card {
+    height: clamp(340px, calc(var(--vh) * 58), 620px);
+    /* Same affine shape as the base rule, opened up to match the taller card.
+       The ceiling is set by the ART, not by the layout: the boss is the one
+       sprite with no resolution headroom (219x256 native, drawn at 1.56x this)
+       and it is already upscaled rather than down. 230 puts him at 359px —
+       1.40x native, against 1.22x today. Everything else still downsamples at
+       this size (strains ~348px native, the Enforcer 460), so the boss is what
+       this number is protecting, and raising it further wants new art rather
+       than a bigger clamp. */
+    --fig: clamp(110px, calc(var(--vh) * 32 - 110px), 230px);
+  }
+}
+
+@media (max-width: 900px) {
+  .classes { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 700px) {
+  .logo { font-size: 2.8rem; letter-spacing: 6px; }
+  .classes { grid-template-columns: 1fr; }
+  .arena-card { grid-template-columns: 1fr; gap: 16px; }
+  .arena-vs { padding-top: 0; }
+  .skills { grid-template-columns: 1fr 1fr; }
+  .hud { flex-direction: column; align-items: flex-start; }
+}
+
+/* ===== Phase 2 additions: readouts, enemy tags, combo, feedback ===== */
+
+/* The two numbers that decide a build get visual priority over the rest */
+.stat-preview {
+  font-size: 0.66rem; color: var(--accent); letter-spacing: 0.4px;
+  min-height: 12px; margin-top: 3px; opacity: 0; transition: opacity 0.12s ease;
+}
+.stat-preview.on { opacity: 1; }
+
+/* Enemy identity: archetype and elite modifiers are readable at a glance */
+.unit-tags { display: flex; gap: 5px; flex-wrap: wrap; margin: 5px 0 2px; }
+.unit-tag {
+  font-family: 'Orbitron', sans-serif; font-size: 0.55rem; font-weight: 700;
+  letter-spacing: 1px; padding: 2px 6px; border-radius: 3px;
+  border: 1px solid currentColor; color: var(--muted);
+}
+.unit-tag.boss     { color: var(--accent2); border-width: 1.5px; }
+.unit-tag.swift    { color: #c084fc; }
+.unit-tag.heavy    { color: #fbbf24; }
+.unit-tag.plated   { color: #94a3b8; }
+.unit-tag.frenzied { color: #fb7185; }
+.unit-tag.vampiric { color: #f472b6; }
+.unit-tag.colossal { color: #fbbf24; }
+.unit-tag.venomous { color: #7dffa0; }
+.unit-tag.volatile { color: #fb923c; }
+
+.fighter.boss .unit-name {
+  color: var(--accent2);
+  text-shadow: 0 0 14px rgba(255,45,106,0.5);
+  font-size: 1.05em;
+}
+
+/* Health bars get a ghost trail so damage reads as an event, not a number swap */
+.bar-ghost {
+  position: absolute; top: 0; left: 0; height: 100%;
+  background: rgba(255,255,255,0.28); border-radius: inherit;
+  transition: width 0.34s cubic-bezier(0.4,0,0.2,1); pointer-events: none;
+}
+.bar-fill { position: relative; z-index: 1; }
+.bar-text { position: relative; z-index: 2; }
+
+.combo-meter {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 0.95rem;
+  letter-spacing: 2px; color: var(--xp); z-index: 6; pointer-events: none;
+  text-shadow: 0 0 16px rgba(251,191,36,0.5);
+  animation: comboPop 0.25s ease;
+}
+.combo-meter.hot { color: var(--accent2); text-shadow: 0 0 20px rgba(255,45,106,0.6); }
+@keyframes comboPop { from { transform: translateX(-50%) scale(1.35); } to { transform: translateX(-50%) scale(1); } }
+
+.arena-card { position: relative; }
+.arena-card.shaking { animation: arenaShake 0.18s ease; }
+@keyframes arenaShake {
+  0%,100% { transform: translate(0,0); }
+  25%     { transform: translate(calc(var(--shake, 4px) * -1), 1px); }
+  50%     { transform: translate(var(--shake, 4px), -1px); }
+  75%     { transform: translate(calc(var(--shake, 4px) * -0.5), 0); }
+}
+.arena-card.hitstop { filter: brightness(1.5) saturate(0.6); }
+
+.kill-burst {
+  position: absolute; inset: 0; pointer-events: none; z-index: 5;
+  background: radial-gradient(circle at 72% 50%, rgba(255,255,255,0.30), transparent 42%);
+  animation: killFade 0.4s ease forwards;
+}
+@keyframes killFade { from { opacity: 1; } to { opacity: 0; } }
+.fighter.killed .char-figure { animation: killCollapse 0.3s ease forwards; }
+@keyframes killCollapse {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.82) translateY(6px); }
+}
+
+.float-dmg.crit {
+  font-size: 1.6rem; font-weight: 900;
+  /* Fill keeps the strain color (from the cc-* rule); a soft glow in the number's
+     own color + a small yellow CRIT tag mark it, no muddy outline. */
+  text-shadow: 0 2px 8px rgba(0,0,0,0.9), 0 0 12px currentColor;
+}
+.float-dmg .crit-tag {
+  font-size: 0.55em;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: var(--xp);
+  margin-left: 5px;
+  vertical-align: 0.18em;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+}
+
+/* Cooldowns read as a draining well rather than just a number */
+.skill-btn { position: relative; overflow: hidden; }
+.cd-sweep {
+  position: absolute; left: 0; bottom: 0; width: 100%; height: 0%;
+  background: rgba(0,0,0,0.55); pointer-events: none;
+  transition: height 0.1s linear; z-index: 1;
+}
+/* Lifts the card's TEXT above the sweep. .cd-overlay is excluded on purpose:
+   it is a layer, not content, and this rule used to override its
+   `position: absolute` (same specificity, declared later), which dropped it
+   into the flow as a block under the description and grew every card by 31px
+   the moment any skill went on cooldown. */
+.skill-btn > *:not(.cd-sweep):not(.cd-overlay) { position: relative; z-index: 2; }
+/* Every skill rests like the basic attack: one plain border, hover and all.
+   The strain strip is what marks a card as live now. */
+.skill-btn.ready {
+  border-color: #252d3d;
+}
+.skill-btn.ready:hover {
+  background: #1a2233;
+}
+
+/* The yellow is the notification on its own — no dot marker. */
+.sidebar-tab.alert { color: var(--xp); border-color: var(--xp); }
+.sidebar-tab.points-alert { color: var(--xp); }
+
+.talent-stack { color: var(--xp); font-size: 0.85em; }
+.result-build { color: var(--muted); font-size: 0.82rem; letter-spacing: 0.5px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .arena-card.shaking, .combo-meter, .fighter.killed .char-figure,
+  .logo, .skill-btn.ready, .level-badge.level-up { animation: none; }
+  .bar-ghost { transition: none; }
+  .level-badge.level-up { transform: none; }
+}
+

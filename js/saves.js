@@ -1,0 +1,316 @@
+// Storage, settings, menu navigation, save slots
+// ---- Storage --------------------------------------------------
+// Falls back to an in-memory store when localStorage is blocked (e.g. a
+// sandboxed preview frame), so nothing throws and the run still persists
+// for the current session.
+const Store = (function () {
+  let ok = true;
+  try { localStorage.setItem('__risen_t', '1'); localStorage.removeItem('__risen_t'); }
+  catch (e) { ok = false; }
+  const mem = {};
+  return {
+    persistent: ok,
+    get(k)    { try { return ok ? localStorage.getItem(k) : (k in mem ? mem[k] : null); } catch (e) { return k in mem ? mem[k] : null; } },
+    set(k, v) { try { if (ok) localStorage.setItem(k, v); else mem[k] = v; } catch (e) { mem[k] = v; } },
+    remove(k) { try { if (ok) localStorage.removeItem(k); else delete mem[k]; } catch (e) { delete mem[k]; } }
+  };
+})();
+
+// ---- Settings -------------------------------------------------
+const SETTINGS_KEY = 'risen_settings_v1';
+const DEFAULT_SETTINGS = { shake: true, floaters: true, fastTurns: false };
+let SETTINGS = Object.assign({}, DEFAULT_SETTINGS);
+
+function showBuildVersion() {
+  const el = document.getElementById('build-tag');
+  if (el) el.textContent = BUILD;
+}
+
+function loadSettings() {
+  try {
+    const raw = Store.get(SETTINGS_KEY);
+    if (raw) SETTINGS = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(raw));
+  } catch (e) { SETTINGS = Object.assign({}, DEFAULT_SETTINGS); }
+  syncSettingsUI();
+}
+function saveSettings() { Store.set(SETTINGS_KEY, JSON.stringify(SETTINGS)); }
+function toggleSetting(key) {
+  SETTINGS[key] = !SETTINGS[key];
+  saveSettings();
+  syncSettingsUI();
+}
+function syncSettingsUI() {
+  Object.keys(DEFAULT_SETTINGS).forEach(k => {
+    const el = document.getElementById('set-' + k);
+    if (el) el.classList.toggle('on', !!SETTINGS[k]);
+  });
+}
+
+// ---- Menu / pause navigation ----------------------------------
+function newGame() {
+  leaveMenuTab(); closeSettings();
+  // With a slot free the choice is not worth a screen — the run takes it.
+  // Only when every slot is occupied does starting a run mean ending one, and
+  // that is a decision to put in front of the player rather than make for them.
+  // Asked here, before the intro, so it is settled before any time is invested.
+  _pendingSlot = firstFreeSlot();
+  if (_pendingSlot) { showScreen('intro-screen'); return; }
+  _armedDelete = null;
+  renderSlotList('slot-list', 'overwrite');
+  showScreen('slot-screen');
+}
+
+// RESIST MUTATION: a quiet transition beat, then drop into the run as base Sonny.
+function resistMutation() {
+  leaveMenuTab(); closeSettings();
+  showScreen('resist-screen');
+  // Restart the fade each time (the animation only plays once with fill: forwards).
+  const line = document.querySelector('#resist-screen .resist-line');
+  if (line) { line.style.animation = 'none'; void line.offsetWidth; line.style.animation = ''; }
+  // Black hold 1.8s, then fade in / hold / fade out over 5s, then a beat -> run.
+  // Both start points name 'base' outright rather than leaning on a stored
+  // choice. This one waits ~7 seconds before it fires, and a delayed start that
+  // reads shared state is precisely how the wrong strain got launched.
+  const t = setTimeout(() => { offerSkip(null); startGame(false, 'base'); }, 7100);
+  // Skipping here goes straight into a playable fight: cancel the transition
+  // and start the run with its reveal already finished.
+  offerSkip(() => { clearTimeout(t); startGame(true, 'base'); });
+}
+
+function goToMenu() {
+  leaveMenuTab(); closeSettings();
+  stopCombatLoop();
+  showScreen('title-screen');
+  refreshContinueButton();
+}
+
+function quitToMenu() {
+  saveRun();
+  goToMenu();
+}
+
+// Still a modal: SETTINGS is reachable from the title screen too, where there
+// is no sidebar to host it.
+function openSettings() {
+  syncSettingsUI();
+  document.getElementById('settings-modal').classList.add('show');
+}
+function closeSettings() {
+  document.getElementById('settings-modal').classList.remove('show');
+}
+
+// ESC toggles the MENU tab during combat, and steps back out of SETTINGS first.
+document.addEventListener('keydown', ev => {
+  if (ev.key !== 'Escape') return;
+  if (document.getElementById('settings-modal').classList.contains('show')) { closeSettings(); return; }
+  if (!document.getElementById('combat-screen').classList.contains('active')) return;
+  switchTab(activeTabId() === 'menu' ? _tabBeforeMenu : 'menu');
+});
+
+// ---- Save / load ----------------------------------------------
+function serializeRun() {
+  const p = state.player; if (!p) return null;
+  return { v:2, build:BUILD, classId:state.classId, wave:state.wave, kills:state.kills,
+    overkillCarry:state.overkillCarry, talentQueue:state.talentQueue,
+    bestCombo:state.bestCombo, damageDealt:state.damageDealt, runStart:state.runStart,
+    // An unconfirmed allocation is not saved — it is refunded. The stats
+    // written here are the committed ones, so the points sitting in pending
+    // would otherwise vanish with it; reloading puts you back at "N to place,
+    // nothing placed", which is the one state that cannot be half-applied.
+    player:{ level:p.level, xp:p.xp, xpNext:p.xpNext, points:p.points + pendingTotal(p),
+      str:p.str, instinct:p.instinct, speed:p.speed, vit:p.vit,
+      dmgMult:p.dmgMult, hpMult:p.hpMult, apsMult:p.apsMult,
+      talents:p.talents, talentIds:p.talentIds, hp:p.hp, maxHp:p.maxHp,
+      charges:p.charges||0, resolve:p.resolve||0, spores:p.spores||0,
+      // Only the statuses marked to persist — the same set that survives into
+      // the next fight, so a reload lands you in the shape a kill left you in.
+      statuses:survivingStatuses(p),
+      skillCds:p.skills.map(s => s.cd) } };
+}
+// ---- Save slots -----------------------------------------------
+// A slot is nothing but its own storage key. No part of a run knows or cares
+// which slot it lives in — the key IS the identity, so the saved payload needs
+// no slot field and BALANCE.saveSlots is the only thing a third slot would
+// change.
+const slotKey = n => BALANCE.saveKey + '_s' + n;
+const slotNumbers = () => Array.from({ length: BALANCE.saveSlots }, (_, i) => i + 1);
+
+// Saves from a previous version are DROPPED, not migrated.
+//
+// Migrating them was the obvious thing and is the wrong thing: a save holds raw
+// stats and recomputes the derived sheet on load, so carrying one across a
+// rules change hands the player a character allocated under economics that no
+// longer exist — a build that was correct and now is not, with nothing on
+// screen to say so. An empty slot is honest; a silently rebalanced run is not.
+//
+// This also answers a confusing symptom: localStorage is keyed by ORIGIN, not
+// by file, and every file:// page shares one bucket in Chrome and Firefox. So
+// downloading a fresh copy of the game does NOT give a fresh start — the new
+// file reads the same two slots the old one wrote. Clearing on a version bump
+// is what makes a new build actually feel new.
+function purgeOldSaves() {
+  (BALANCE.oldSaveKeys || []).forEach(k => Store.remove(k));
+}
+
+// A slot counts as occupied only if what is in it can actually be loaded, so a
+// truncated or stale-class payload reads as empty everywhere at once rather
+// than listing as a run that fails when clicked.
+function slotData(n) {
+  let d = null;
+  try { const r = Store.get(slotKey(n)); d = r ? JSON.parse(r) : null; } catch (e) { return null; }
+  return (d && d.player && CLASSES[d.classId]) ? d : null;
+}
+function occupiedSlots() { return slotNumbers().filter(n => !!slotData(n)); }
+function firstFreeSlot() { return slotNumbers().find(n => !slotData(n)) || null; }
+
+// The slot the next run will take. newGame sets it — to the first free slot, or
+// to whichever one the player chose to overwrite — and startGame claims it. The
+// fallbacks matter because startGame is reachable without newGame in a reload
+// or a test: prefer a free slot, and only then slot 1.
+let _pendingSlot = null;
+function claimSaveSlot() {
+  const n = _pendingSlot || firstFreeSlot() || 1;
+  _pendingSlot = null;
+  return n;
+}
+
+function saveRun(){ if (HEADLESS.on) return; try { const d=serializeRun(); if(d) Store.set(slotKey(state.saveSlot), JSON.stringify(d)); } catch(e){} }
+function clearSavedRun(){ if (HEADLESS.on) return; clearSlot(state.saveSlot); }
+function clearSlot(n){
+  Store.remove(slotKey(n));
+  refreshContinueButton();
+}
+function refreshContinueButton(){
+  const b=document.getElementById('continue-btn');
+  if(!b) return;
+  const has = occupiedSlots().length > 0;
+  b.classList.toggle('is-disabled', !has);
+  b.disabled = !has;
+}
+
+// LOAD GAME screen: lists the slots so each save's identity lives here, not on
+// the main menu.
+function openLoadScreen(){
+  _armedDelete = null;
+  renderSlotList('save-list', 'load');
+  showScreen('load-screen');
+}
+function slotSummary(d){
+  return 'LV ' + d.player.level + ' · Wave ' + d.wave + ' · ' + getZoneName(d.wave) +
+    ' · ' + d.kills + ' kills' + (d.bestCombo ? ' · best chain ' + d.bestCombo + '×' : '');
+}
+
+// Deleting is two clicks rather than a window.confirm(): a run is hours of play,
+// and native modals are blocked outright in a sandboxed embed frame — which
+// would turn the guard into a silent delete on the first click. The armed slot
+// resets whenever the list is re-rendered or the screen is opened.
+let _armedDelete = null;
+
+// The LOAD screen and the overwrite picker are the same list of slots read two
+// ways, so they share one renderer. `mode` decides only what a click does:
+//   'load'       open a filled slot; empty slots are inert; delete is offered
+//   'overwrite'  every slot is a target for the run about to start
+function renderSlotList(listId, mode){
+  const list = document.getElementById(listId);
+  if(!list) return;
+  list.innerHTML = '';
+  slotNumbers().forEach(n => {
+    const d = slotData(n);
+    const row = document.createElement('div');
+    row.className = 'save-slot' + (d ? '' : ' empty');
+
+    const body = document.createElement('button');
+    body.type = 'button';
+    body.className = 'save-slot-body';
+    // An empty slot is only a target while choosing where a new run goes; on
+    // the LOAD screen there is nothing behind it to open.
+    body.disabled = !d && mode === 'load';
+    const colorVar = d ? (d.classId === 'base' ? 'var(--text)' : 'var(--' + d.classId + ')') : '';
+    // Spans, not divs: the body is a <button>, whose content model is phrasing
+    // content. The two are blocks by CSS instead.
+    body.innerHTML =
+      '<span class="save-slot-title"' + (d ? ' style="color:' + colorVar + '"' : '') + '>' +
+        (d ? CLASSES[d.classId].name : 'EMPTY') +
+        '<span class="save-slot-num">SLOT ' + n + '</span>' +
+      '</span>' +
+      '<span class="save-slot-meta">' +
+        (d ? slotSummary(d) : (mode === 'overwrite' ? 'Start the new run here' : 'No run saved')) +
+      '</span>';
+    if (mode === 'overwrite') body.addEventListener('click', () => chooseSlot(n));
+    else if (d) body.addEventListener('click', () => continueRun(n));
+    row.appendChild(body);
+
+    // Delete belongs to the LOAD screen only. In the picker, choosing a slot
+    // already replaces what is in it, so a second way to destroy the same run
+    // would just be a way to do it by accident.
+    if (d && mode === 'load') {
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'save-slot-del' + (_armedDelete === n ? ' armed' : '');
+      del.textContent = _armedDelete === n ? 'SURE?' : '×';
+      del.title = _armedDelete === n ? 'Click again to delete this run' : 'Delete this run';
+      del.addEventListener('click', () => deleteSlot(n));
+      row.appendChild(del);
+    }
+    list.appendChild(row);
+  });
+}
+
+function deleteSlot(n){
+  if(!slotData(n)) return;
+  if(_armedDelete !== n){ _armedDelete = n; renderSlotList('save-list', 'load'); return; }
+  _armedDelete = null;
+  clearSlot(n);
+  renderSlotList('save-list', 'load');
+}
+
+// Picked a slot to overwrite; the run itself does not start until startGame
+// claims it, so backing out of the intro leaves the existing save untouched.
+function chooseSlot(n){
+  _pendingSlot = n;
+  showScreen('intro-screen');
+}
+
+function continueRun(slot){
+  const n = slot || occupiedSlots()[0];
+  const d = n ? slotData(n) : null;
+  if(!d){ refreshContinueButton(); renderSlotList('save-list', 'load'); return; }
+  leaveMenuTab(); closeSettings();
+  resetRunState(d.classId);
+  state.saveSlot = n;
+  const p=freshPlayer(d.classId), sp=d.player;
+  Object.assign(p,{ level:sp.level||1, xp:sp.xp||0, xpNext:sp.xpNext||xpForLevel(sp.level||1),
+    points:sp.points||0, str:sp.str, instinct:sp.instinct, speed:sp.speed, vit:sp.vit,
+    dmgMult:sp.dmgMult||1, hpMult:sp.hpMult||1, apsMult:sp.apsMult||1,
+    talents:sp.talents||{}, talentIds:sp.talentIds||[],
+    charges:sp.charges||0, resolve:sp.resolve||0, spores:sp.spores||0 });
+  state.player=p;
+  // Saves written before statuses were persisted simply have none; anything
+  // whose definition has since been removed is dropped rather than trusted.
+  // A permanent status gets its duration restored because JSON turns the
+  // Infinity it was saved with into null.
+  if (Array.isArray(sp.statuses))
+    p.statuses = sp.statuses
+      .filter(s => s && STATUSES[s.type])
+      .map(s => STATUSES[s.type].permanent ? Object.assign({}, s, { duration: Infinity }) : s);
+  if (Array.isArray(sp.skillCds))
+    p.skills.forEach((s,i) => { if (!s.basic) s.cd = sp.skillCds[i] || 0; });
+  // Only what the save carries; everything else is already at its starting
+  // value from resetRunState above. The chain is deliberately not restored —
+  // it is not serialized, and a chain is a property of an unbroken streak of
+  // kills rather than of a run.
+  state.overkillCarry=d.overkillCarry||0;
+  state.talentQueue=d.talentQueue||[]; state.wave=d.wave||1; state.kills=d.kills||0;
+  state.bestCombo=d.bestCombo||0; state.damageDealt=d.damageDealt||0;
+  state.runStart=d.runStart||Date.now();
+  recalcPlayerStats();
+  p.hp = (sp.hp && sp.maxHp) ? Math.max(1, Math.floor(p.maxHp * Math.min(1, Math.max(P().reloadHpFloor, sp.hp/sp.maxHp)))) : p.maxHp;
+  updateHud(); refreshTalentUI();
+  showScreen('combat-screen');
+  document.getElementById('combat-screen').classList.remove('staged', 'reveal');
+  state.combatActive = true;
+  spawnEnemy();
+  startCombatLoop();
+  log('RUN RESUMED · slot ' + n + ' · wave ' + state.wave + ' · level ' + p.level, 'important');
+}
+

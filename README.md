@@ -6,10 +6,12 @@ see how far the run goes.
 
 ## The game
 
-`risen.html` — one self-contained file. No build step, no dependencies, no
-server. Open it in a browser and it runs; the sprites are embedded.
+`index.html` plus `css/`, `js/` and `assets/` — plain files, no build step, no
+dependencies. Serve the directory (or play the published GitHub Pages URL) and
+it runs. The js files are ordinary scripts sharing one global scope, loaded in
+order; they are chapters of one program, not modules.
 
-Everything else in this repo exists only to test and measure that one file.
+Everything else in this repo exists only to test and measure the game.
 
 ## Tests
 
@@ -29,11 +31,6 @@ behaviour that regressed rather than an internal detail:
 | `mutations` | the mutation system works while its content pool is empty |
 | `refinements` | refinements stay removed, and drafting still works without them |
 | `build` | the build stamp reaches the title, the log and the save |
-
-## Where things stand
-
-`ROADMAP.md` — what is next, what is known-broken, and the working notes worth
-not rediscovering.
 
 ## Measuring
 

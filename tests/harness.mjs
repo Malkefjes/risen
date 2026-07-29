@@ -33,15 +33,17 @@ export async function serve() {
   });
   await new Promise(r => server.listen(0, '127.0.0.1', r));
   const port = server.address().port;
-  return { url: `http://127.0.0.1:${port}/risen.html`,
+  return { url: `http://127.0.0.1:${port}/index.html`,
            close: () => new Promise(r => server.close(r)) };
 }
 
 export async function launch() {
-  // No executablePath: let playwright resolve its own browser, so this runs on
-  // any machine with `npx playwright install chromium` rather than only where
-  // someone hardcoded a path.
-  return chromium.launch();
+  // No executablePath by default: let playwright resolve its own browser, so
+  // this runs on any machine with `npx playwright install chromium` rather
+  // than only where someone hardcoded a path. RISEN_CHROMIUM overrides it for
+  // environments that ship a browser at a known path instead.
+  const exe = process.env.RISEN_CHROMIUM;
+  return chromium.launch(exe ? { executablePath: exe } : {});
 }
 
 // One suite's results. `ok` records rather than throws, so a failing assertion
