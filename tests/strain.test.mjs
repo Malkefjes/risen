@@ -35,8 +35,6 @@ export default async function ({ page, ctx, ok }) {
   await quit();
   // 4. NEW GAME -> MUTATE
   await page.click('#title-screen .menu-stack .btn:nth-child(1)');
-  if (await page.evaluate(()=>document.querySelector('.screen.active')?.id)==='slot-screen')
-    await page.click('#slot-list .save-slot:nth-child(1) .save-slot-body');
   await page.click('#intro-screen .btn-evolve');
   const scr = await seeClassScreen();
   ok('class screen opens with NO card selected', scr.selected===null, JSON.stringify(scr));

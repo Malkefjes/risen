@@ -1105,8 +1105,10 @@ body {
 .bank.brim .bank-label { text-shadow: 0 0 9px var(--bank-glow, transparent); }
 
 /* Floater color is a fixed vocabulary — the color names the EVENT, never the
-   class: dealt damage white, taken damage red, healing green (green is
-   reserved: nothing else may use it), crits gold, XP amber, bank/notes muted.
+   class: dealt damage white, taken damage red, crits gold, XP amber,
+   bank/notes muted. Green is nature's: healing ticks up (+) and poison ticks
+   down (−) in the same green — the sign carries the meaning, and the pairing
+   is deliberate (poison IS bio's identity). Nothing else may use green.
    Class identity lives in the banks and the UI tint, not in the numbers. */
 .float-dmg {
   position: absolute;
@@ -1122,6 +1124,7 @@ body {
 .float-dmg.damage { color: #ff6b8a; }
 .float-dmg.damage.dealt { color: #f2f6ff; }
 .float-dmg.heal { color: #7dffa0; }
+.float-dmg.poison { color: #7dffa0; }
 .float-dmg.xp { color: var(--xp); font-size: 1.05rem; }
 .float-dmg.bank { color: #eaf2ff; font-size: 0.95rem; letter-spacing: 0.5px; }
 /* EVADE / BLOCK: quiet gray notes — information, not a reward, so they must

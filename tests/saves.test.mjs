@@ -118,26 +118,22 @@ export default async function ({ page, ctx, ok }) {
   ok('both slots are filled', await page.locator('#save-list .save-slot.empty').count() === 0);
   ok('load screen labels slots', (await page.locator('#save-list .save-slot-num').allTextContents()).join('|') === 'SLOT 1|SLOT 2');
 
-  // Both full -> picker
+  // Both full -> NEW GAME asks nothing and silently targets slot 1
   await page.click('#load-screen .btn-ghost');
   await page.click('#title-screen .menu-stack .btn:nth-child(1)');
-  ok('both slots full -> overwrite picker', await screen() === 'slot-screen');
-  ok('picker lists both runs', await page.locator('#slot-list .save-slot').count() === 2);
-  ok('picker offers no delete', await page.locator('#slot-list .save-slot-del').count() === 0);
-
-  // Back out of the picker: nothing should be destroyed
-  await page.click('#slot-screen .btn-ghost');
+  ok('both slots full -> straight to intro, no picker', await screen() === 'intro-screen');
   s = await slots();
-  ok('backing out of picker destroys nothing', s[0]?.wave === 4 && s[1]?.wave === 9);
+  ok('reaching the intro destroys nothing', s[0]?.wave === 4 && s[1]?.wave === 9);
 
-  // Choose slot 1 to overwrite
+  // Backing out of the intro must also destroy nothing — the slot is only
+  // claimed when the run actually starts.
+  await page.click('#intro-screen .btn-ghost');
+  s = await slots();
+  ok('backing out of the intro destroys nothing', s[0]?.wave === 4 && s[1]?.wave === 9);
+
   await page.click('#title-screen .menu-stack .btn:nth-child(1)');
-  await page.click('#slot-list .save-slot:nth-child(1) .save-slot-body');
-  ok('choosing a slot goes to intro', await screen() === 'intro-screen');
-  s = await slots();
-  ok('choosing a slot alone destroys nothing', s[0]?.wave === 4, JSON.stringify(s[0]));
   await startRun('psy');
-  ok('new run claimed the chosen slot', await S('saveSlot') === 1);
+  ok('new run claimed slot 1', await S('saveSlot') === 1);
   s = await slots();
   ok('slot 1 overwritten by the new run', s[0]?.classId === 'psy' && s[0]?.wave === 1, JSON.stringify(s[0]));
   ok('slot 2 untouched by the overwrite', s[1]?.classId === 'sym' && s[1]?.wave === 9, JSON.stringify(s[1]));

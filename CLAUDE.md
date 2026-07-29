@@ -15,9 +15,10 @@ A turn-based browser roguelite. Personal project, built for enjoyment.
   spend the juice budget on visuals instead. Revisit only if the owner
   raises it themselves.
 - **Floater colors are a fixed vocabulary** — color names the event, never
-  the class: dealt damage white, taken damage red, healing green (reserved),
-  crits gold, XP amber, notes muted gray. See the comment above `.float-dmg`
-  in `css/risen.css` before adding a floater type.
+  the class: dealt damage white, taken damage red, crits gold, XP amber,
+  notes muted gray. Green is nature's alone: healing (+) and poison (−) share
+  it, the sign carrying the meaning. See the comment above `.float-dmg` in
+  `css/risen.css` before adding a floater type.
 - Verification is yours to do: `npm test` (all suites must pass) plus, for
   balance-relevant changes, the instruments in `tools/`. The owner should
   never be the one to discover a regression.

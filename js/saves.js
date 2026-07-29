@@ -49,15 +49,14 @@ function syncSettingsUI() {
 // ---- Menu / pause navigation ----------------------------------
 function newGame() {
   leaveMenuTab(); closeSettings();
-  // With a slot free the choice is not worth a screen — the run takes it.
-  // Only when every slot is occupied does starting a run mean ending one, and
-  // that is a decision to put in front of the player rather than make for them.
-  // Asked here, before the intro, so it is settled before any time is invested.
-  _pendingSlot = firstFreeSlot();
-  if (_pendingSlot) { showScreen('intro-screen'); return; }
-  _armedDelete = null;
-  renderSlotList('slot-list', 'overwrite');
-  showScreen('slot-screen');
+  // Starting a run never asks where to put itself: the first free slot is
+  // claimed silently, and with every slot full, slot 1 is overwritten. The
+  // owner's explicit call — the old picker screen cost a click at the start
+  // of every run to guard a decision they never wanted to be asked. The slot
+  // is only claimed when startGame commits, so backing out of the intro
+  // still leaves every existing save untouched.
+  _pendingSlot = firstFreeSlot() || 1;
+  showScreen('intro-screen');
 }
 
 // RESIST MUTATION: a quiet transition beat, then drop into the run as base Sonny.
@@ -192,7 +191,7 @@ function refreshContinueButton(){
 // the main menu.
 function openLoadScreen(){
   _armedDelete = null;
-  renderSlotList('save-list', 'load');
+  renderSlotList('save-list');
   showScreen('load-screen');
 }
 function slotSummary(d){
@@ -206,11 +205,11 @@ function slotSummary(d){
 // resets whenever the list is re-rendered or the screen is opened.
 let _armedDelete = null;
 
-// The LOAD screen and the overwrite picker are the same list of slots read two
-// ways, so they share one renderer. `mode` decides only what a click does:
-//   'load'       open a filled slot; empty slots are inert; delete is offered
-//   'overwrite'  every slot is a target for the run about to start
-function renderSlotList(listId, mode){
+// The LOAD screen's slot list: a filled slot opens, an empty slot is inert,
+// and delete is offered behind a two-click arm. (This used to double as an
+// overwrite picker for NEW GAME; that screen is gone — new runs claim a slot
+// silently in newGame.)
+function renderSlotList(listId){
   const list = document.getElementById(listId);
   if(!list) return;
   list.innerHTML = '';
@@ -222,9 +221,8 @@ function renderSlotList(listId, mode){
     const body = document.createElement('button');
     body.type = 'button';
     body.className = 'save-slot-body';
-    // An empty slot is only a target while choosing where a new run goes; on
-    // the LOAD screen there is nothing behind it to open.
-    body.disabled = !d && mode === 'load';
+    // An empty slot has nothing behind it to open.
+    body.disabled = !d;
     const colorVar = d ? (d.classId === 'base' ? 'var(--text)' : 'var(--' + d.classId + ')') : '';
     // Spans, not divs: the body is a <button>, whose content model is phrasing
     // content. The two are blocks by CSS instead.
@@ -234,16 +232,12 @@ function renderSlotList(listId, mode){
         '<span class="save-slot-num">SLOT ' + n + '</span>' +
       '</span>' +
       '<span class="save-slot-meta">' +
-        (d ? slotSummary(d) : (mode === 'overwrite' ? 'Start the new run here' : 'No run saved')) +
+        (d ? slotSummary(d) : 'No run saved') +
       '</span>';
-    if (mode === 'overwrite') body.addEventListener('click', () => chooseSlot(n));
-    else if (d) body.addEventListener('click', () => continueRun(n));
+    if (d) body.addEventListener('click', () => continueRun(n));
     row.appendChild(body);
 
-    // Delete belongs to the LOAD screen only. In the picker, choosing a slot
-    // already replaces what is in it, so a second way to destroy the same run
-    // would just be a way to do it by accident.
-    if (d && mode === 'load') {
+    if (d) {
       const del = document.createElement('button');
       del.type = 'button';
       del.className = 'save-slot-del' + (_armedDelete === n ? ' armed' : '');
@@ -258,23 +252,16 @@ function renderSlotList(listId, mode){
 
 function deleteSlot(n){
   if(!slotData(n)) return;
-  if(_armedDelete !== n){ _armedDelete = n; renderSlotList('save-list', 'load'); return; }
+  if(_armedDelete !== n){ _armedDelete = n; renderSlotList('save-list'); return; }
   _armedDelete = null;
   clearSlot(n);
-  renderSlotList('save-list', 'load');
-}
-
-// Picked a slot to overwrite; the run itself does not start until startGame
-// claims it, so backing out of the intro leaves the existing save untouched.
-function chooseSlot(n){
-  _pendingSlot = n;
-  showScreen('intro-screen');
+  renderSlotList('save-list');
 }
 
 function continueRun(slot){
   const n = slot || occupiedSlots()[0];
   const d = n ? slotData(n) : null;
-  if(!d){ refreshContinueButton(); renderSlotList('save-list', 'load'); return; }
+  if(!d){ refreshContinueButton(); renderSlotList('save-list'); return; }
   leaveMenuTab(); closeSettings();
   resetRunState(d.classId);
   state.saveSlot = n;

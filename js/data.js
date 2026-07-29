@@ -497,7 +497,7 @@ const STATUSES = {
       const toxin = statusStacks(unit, 'toxin');
       const dmg = Math.max(1, Math.floor((st.perStack||1) * (st.stacks||1) * (1 + toxin * P().toxinPerStack)));
       unit.hp = Math.max(0, unit.hp - dmg);
-      floatText(unit, dmg, 'damage');
+      floatText(unit, dmg, 'poison');
       logDamage('POISON', unit, dmg, [
         '×' + (st.stacks||1) + ' @ ' + logNum(st.perStack||1) + '/stack',
         toxin ? 'TOXIN +' + Math.round(toxin * P().toxinPerStack * 100) + '%' : null,
