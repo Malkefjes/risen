@@ -284,7 +284,7 @@ function applyEnemyDamage(e, p, mult) {
   if (Math.random() < p.evadeChance) {
     logMiss(label, p, 'EVADED (' + Math.round(p.evadeChance * 100) + '%)');
     if (p.class === 'psy') bankAdjust(p, 1, 'attack evaded');   // speed → evade → streak
-    floatText(p, 'EVADE', 'xp'); playAttackAnim(e, p, false); return 0;
+    floatText(p, 'EVADE', 'note'); playAttackAnim(e, p, false); return 0;
   }
   if (Math.random() < e.critChance) { dmg = Math.floor(dmg * e.critMult); notes.push('CRIT ×' + e.critMult.toFixed(1)); }
   notes.push(...statusNotes(p, 'incomingMult', { attacker: e }));
@@ -322,7 +322,7 @@ function applyEnemyDamage(e, p, mult) {
   // Spore, Brace punching back — fires here, in one place, for any status.
   statusEach(p, 'onHitTaken', { attacker: e, damage: dmg });
   floatText(p, dmg, 'damage');
-  if (blocked) floatText(p, 'BLOCK', 'xp');
+  if (blocked) floatText(p, 'BLOCK', 'note');
   shake(Math.min(10, 2 + dmg/Math.max(1,p.maxHp)*40));
 
   let thorns = getThornsDamage(p);
@@ -419,7 +419,7 @@ function applyPlayerDamage(p, e, skill) {
   // accuracy stat on either side to roll against.
   if (Math.random() < e.evadeChance) {
     playAttackAnim(p, e, false, skill);
-    floatText(e, 'EVADE', 'xp');
+    floatText(e, 'EVADE', 'note');
     // The evade chance is named because it is the whole explanation, and it is
     // the one number the player cannot see on the enemy anywhere else.
     logMiss(skill.name, e, 'EVADED (' + Math.round(e.evadeChance * 100) + '%)');
@@ -740,6 +740,31 @@ function endRun(won) {
   stopCombatLoop();
   clearSavedRun();
   if (HEADLESS.on) return;                 // nothing to draw
+
+  // The killing blow gets to exist before the verdict replaces it. The result
+  // screen used to land on the same frame as the fatal hit — the HP bar never
+  // visibly reached zero. Hold the arena (drained of color on defeat, flushed
+  // on a win) long enough for the last floater and the bar to finish saying
+  // what happened, then show the screen. Rules are already settled above;
+  // playerAct refuses input once hp <= 0, so the pause cannot be acted in.
+  updateHud();
+  if (state.player) updateUnitCard(state.player);
+  const combatScreen = document.getElementById('combat-screen');
+  if (combatScreen && combatScreen.classList.contains('active')) {
+    combatScreen.classList.add(won ? 'won-beat' : 'defeat-beat');
+    setTimeout(showResultScreen, won ? 900 : 1500);
+  } else {
+    showResultScreen();
+  }
+}
+
+function showResultScreen() {
+  // A new run can start during the beat (menu shortcuts); if the ended run is
+  // no longer the current fact, the verdict belongs to nobody — skip it.
+  if (!state.runOver) return;
+  const won = state.won;
+  const combatScreen = document.getElementById('combat-screen');
+  if (combatScreen) combatScreen.classList.remove('won-beat', 'defeat-beat');
   const p = state.player;
   const mins = Math.max(1, Math.round((Date.now()-state.runStart)/60000));
   showScreen('result-screen');

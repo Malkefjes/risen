@@ -577,6 +577,18 @@ body {
   flex-direction: column;
 }
 
+/* End-of-run beats: the moment between the deciding hit and the result screen.
+   Defeat drains the arena of color and light; a win flushes it. The classes
+   are set by endRun and removed when the result screen takes over. */
+#combat-screen.defeat-beat .arena-card {
+  filter: grayscale(0.8) brightness(0.65);
+  transition: filter 0.7s ease;
+}
+#combat-screen.won-beat .arena-card {
+  filter: brightness(1.18) saturate(1.25);
+  transition: filter 0.5s ease;
+}
+
 .arena-card {
   background:
     linear-gradient(180deg, rgba(14,18,27,0.2) 0%, transparent 40%),
@@ -1078,11 +1090,29 @@ body {
 .bank-spores   .bank-label { color: var(--sym); }
 .bank-resolve  .bank-label { color: #ffffff; }
 
+/* Bank tension: one-from-full makes the empty pip shimmer (an invitation);
+   a full bank hums steadily until it is spent (a loaded weapon). */
+@keyframes pipInvite {
+  0%, 100% { box-shadow: none; }
+  50% { box-shadow: 0 0 7px var(--bank-glow, transparent); }
+}
+.bank.near .pip:not(.full) { animation: pipInvite 1.1s ease-in-out infinite; }
+@keyframes bankBrim {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.65); }
+}
+.bank.brim .bank-pips { animation: bankBrim 1.0s ease-in-out infinite; }
+.bank.brim .bank-label { text-shadow: 0 0 9px var(--bank-glow, transparent); }
+
+/* Floater color is a fixed vocabulary — the color names the EVENT, never the
+   class: dealt damage white, taken damage red, healing green (green is
+   reserved: nothing else may use it), crits gold, XP amber, bank/notes muted.
+   Class identity lives in the banks and the UI tint, not in the numbers. */
 .float-dmg {
   position: absolute;
   font-family: 'Orbitron', sans-serif;
   font-weight: 700;
-  font-size: 1.3rem;
+  font-size: 1.45rem;
   pointer-events: none;
   animation: floatUp 1.3s ease forwards;
   z-index: 20;
@@ -1090,19 +1120,28 @@ body {
 }
 
 .float-dmg.damage { color: #ff6b8a; }
+.float-dmg.damage.dealt { color: #f2f6ff; }
 .float-dmg.heal { color: #7dffa0; }
 .float-dmg.xp { color: var(--xp); font-size: 1.05rem; }
 .float-dmg.bank { color: #eaf2ff; font-size: 0.95rem; letter-spacing: 0.5px; }
-/* Enemy damage numbers tinted to the player's strain (crits stay white). */
-.float-dmg.cc-bio { color: var(--bio); }
-.float-dmg.cc-psy { color: var(--psy); }
-.float-dmg.cc-sym { color: var(--sym); }
-.float-dmg.cc-base { color: #fff; }
+/* EVADE / BLOCK: quiet gray notes — information, not a reward, so they must
+   not compete with damage numbers or read as XP the way they used to. */
+.float-dmg.note {
+  color: #93a3ba; font-size: 0.9rem; font-weight: 600;
+  letter-spacing: 2px; font-style: italic;
+}
 
 @keyframes floatUp {
   0% { opacity: 1; transform: translateY(0) scale(0.9); }
   20% { transform: translateY(-10px) scale(1.18); }
   100% { opacity: 0; transform: translateY(-52px) scale(1); }
+}
+/* Crits overshoot: land big, snap back, then drift — the pop IS the message. */
+@keyframes floatUpCrit {
+  0% { opacity: 1; transform: translateY(0) scale(0.6); }
+  16% { transform: translateY(-8px) scale(1.4); }
+  30% { transform: translateY(-14px) scale(1.08); }
+  100% { opacity: 0; transform: translateY(-56px) scale(1.02); }
 }
 
 /* Action panel */
@@ -2217,10 +2256,12 @@ body {
 }
 
 .float-dmg.crit {
-  font-size: 1.6rem; font-weight: 900;
-  /* Fill keeps the strain color (from the cc-* rule); a soft glow in the number's
-     own color + a small yellow CRIT tag mark it, no muddy outline. */
-  text-shadow: 0 2px 8px rgba(0,0,0,0.9), 0 0 12px currentColor;
+  font-size: 1.95rem; font-weight: 900;
+  /* Gold, bigger, and its own overshoot animation: a crit must be recognizable
+     from the corner of the eye without reading the number. */
+  color: var(--xp);
+  text-shadow: 0 2px 8px rgba(0,0,0,0.9), 0 0 14px currentColor;
+  animation: floatUpCrit 1.3s ease forwards;
 }
 .float-dmg .crit-tag {
   font-size: 0.55em;

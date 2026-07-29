@@ -49,7 +49,10 @@ function bankPipsHtml(p) {
   const cur = Math.max(0, Math.min(b.cap, p[b.field] || 0));
   let pips = '';
   for (let i = 0; i < b.cap; i++) pips += '<i class="pip' + (i < cur ? ' full' : '') + '"></i>';
-  return '<div class="bank bank-' + b.tone + '"><span class="bank-label">' + b.name
+  // Charge-up tension: one-away invites (the empty pip shimmers), full hums
+  // until spent. The almost-there and the ready-now must read at a glance.
+  const charge = cur >= b.cap ? ' brim' : (cur === b.cap - 1 ? ' near' : '');
+  return '<div class="bank bank-' + b.tone + charge + '"><span class="bank-label">' + b.name
     + '</span><span class="bank-pips">' + pips + '</span></div>';
 }
 
@@ -287,8 +290,10 @@ function floatText(unit, value, type, isCrit) {
   const card = getFighterPanel(unit); if (!card) return;
   const el = document.createElement('div');
   let cls = 'float-dmg ' + type + (isCrit?' crit':'');
-  // Enemy damage numbers take the player's class color to reinforce identity.
-  if (type === 'damage' && unit && !unit.isPlayer && state.player) cls += ' cc-' + state.player.class;
+  // Damage you DEAL reads white-hot; damage you TAKE stays red; green belongs
+  // to healing alone. Dealt numbers briefly wore the strain color, but bio's
+  // green damage read as healing at a glance — color means the EVENT, not you.
+  if (type === 'damage' && unit && !unit.isPlayer) cls += ' dealt';
   el.className = cls;
   if (typeof value === 'string') el.textContent = value;
   else {
