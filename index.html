@@ -7,6 +7,11 @@
 <!-- Guard rail, not the theme: if the real stylesheet is ever slow or absent,
      the page paints dark and quiet instead of default grey-on-grey. -->
 <meta name="color-scheme" content="dark">
+<!-- The game IS the dark theme. color-scheme above waves off Chrome's native
+     auto-darkening; darkreader-lock is the documented opt-out honored by the
+     Dark Reader extension, which otherwise repaints the UI grey and leaves
+     the sprites colored. -->
+<meta name="darkreader-lock">
 <style>html { background: #07090f; color: #eef2ff; }</style>
 <link rel="stylesheet" href="css/risen.css">
 </head>
