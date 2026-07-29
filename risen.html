@@ -215,6 +215,17 @@ body {
    visible whether or not any of them are in use. */
 .save-hint { color: var(--muted); font-size: 0.8rem; text-align: center; margin-top: 18px; letter-spacing: 0.4px; }
 
+/* Sits under the logo, quiet enough to ignore and present enough to quote in
+   a bug report. The logo's 54px bottom margin is moved here so the tag tucks
+   under it rather than pushing the menu down. */
+.build-tag {
+  font-size: 0.72rem;
+  letter-spacing: 3px;
+  color: var(--muted);
+  opacity: 0.55;
+  margin-top: -42px;
+  margin-bottom: 46px;
+}
 .logo {
   font-family: 'Orbitron', sans-serif;
   font-weight: 900;
@@ -2272,6 +2283,8 @@ body {
   <!-- TITLE -->
   <div id="title-screen" class="screen active">
     <div class="logo">RISEN</div>
+    <!-- Filled by showBuildVersion() so the string lives in one place. -->
+    <div class="build-tag" id="build-tag"></div>
     <div class="menu-stack">
       <button class="btn" onclick="newGame()">NEW GAME</button>
       <button class="btn is-disabled" id="continue-btn" onclick="openLoadScreen()">LOAD GAME</button>
@@ -2636,6 +2649,35 @@ body {
 //    and healing outside class kits is down to two 8% trickles — between fights
 //    and on level-up — since regen and the door's RECOVER both went.
 // ============================================================
+
+// ============================================================
+// BUILD
+//
+// Bump `version` on anything that ships. It is shown under the logo on the
+// title screen, written as the first line of every run's combat log, and
+// stored in the save — so a file can always say what it is, and a bug report
+// can name a build instead of "the one I downloaded yesterday".
+//
+// DELIBERATELY NOT TIED TO BALANCE.saveKey. The two answer different
+// questions: this one is "which build is this", saveKey is "are saved runs
+// still valid". Deriving one from the other would wipe every save on a
+// typo-fix. Bump saveKey only when a change makes an old sheet wrong, and say
+// so in the changelog line when you do.
+//
+// CHANGELOG, newest first. One line each; the git history holds the detail.
+//   0.5.0  Strain select fixed: a run could start as the wrong strain when a
+//          loaded save's class leaked into the menu's pending choice.
+//          Saves bumped to v4 — older runs are dropped, not migrated.
+//   0.4.0  Turn rate became a pure stat: no per-strain base, 5 Speed = 1.00,
+//          +0.20 per point, points cap at x4. Cooldown reduction retired as a
+//          stat (still a live seam). Mutations and refinements cleared —
+//          the system stays, the content went.
+//   0.3.0  Default turn rate anchored at one turn each. A baseline enemy now
+//          acts at the player's starting rate; enemy damage refit to match.
+//   0.2.0  Combat log rebuilt as a technical transcript.
+//   0.1.0  Two save slots, and run state fully reset between runs.
+// ============================================================
+const BUILD = { version: '0.5.0', date: '2026-07-29' };
 
 const BALANCE = {
   player: {
@@ -3887,6 +3929,9 @@ function resetRunState(classId) {
   updateCombo();
   clearLog();
   clearFloaters();
+  // First line of every transcript. A log pasted into a bug report then carries
+  // the build that produced it without anyone having to remember to add it.
+  log('RISEN v' + BUILD.version + '  ·  ' + BUILD.date, 'important');
 }
 
 // `classId` is optional: the EVOLVE button omits it and the menu's pending
@@ -5350,6 +5395,11 @@ const SETTINGS_KEY = 'risen_settings_v1';
 const DEFAULT_SETTINGS = { shake: true, floaters: true, fastTurns: false };
 let SETTINGS = Object.assign({}, DEFAULT_SETTINGS);
 
+function showBuildVersion() {
+  const el = document.getElementById('build-tag');
+  if (el) el.textContent = 'v' + BUILD.version;
+}
+
 function loadSettings() {
   try {
     const raw = Store.get(SETTINGS_KEY);
@@ -5434,7 +5484,7 @@ document.addEventListener('keydown', ev => {
 // ---- Save / load ----------------------------------------------
 function serializeRun() {
   const p = state.player; if (!p) return null;
-  return { v:2, classId:state.classId, wave:state.wave, kills:state.kills,
+  return { v:2, build:BUILD.version, classId:state.classId, wave:state.wave, kills:state.kills,
     overkillCarry:state.overkillCarry, talentQueue:state.talentQueue,
     bestCombo:state.bestCombo, damageDealt:state.damageDealt, runStart:state.runStart,
     // An unconfirmed allocation is not saved — it is refunded. The stats
@@ -6220,6 +6270,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderPreview('preview-bio', 'bio');
   renderPreview('preview-psy', 'psy');
   renderPreview('preview-sym', 'sym');
+  showBuildVersion();
   loadSettings();
   purgeOldSaves();
   refreshContinueButton();
