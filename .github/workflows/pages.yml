@@ -34,8 +34,22 @@ jobs:
           mkdir _site
           cp -r index.html css js assets _site/
           V="${GITHUB_SHA::7}"
-          sed -i "s|href=\"css/risen.css\"|href=\"css/risen.css?v=$V\"|; s|src=\"js/\([a-z]*\)\.js\"|src=\"js/\1.js?v=$V\"|g" _site/index.html
-          grep -c "?v=$V" _site/index.html
+          sed -i "s|src=\"js/\([a-z]*\)\.js\"|src=\"js/\1.js?v=$V\"|g" _site/index.html
+          # Inline the stylesheet into the deployed page. The css fetch was the
+          # one render-critical request left, and when it failed or stalled the
+          # whole UI painted as an unstyled grey page (sprites, being images,
+          # kept their color — the tell). Inlined, the failure mode does not
+          # exist. Font urls are ../assets relative to css/; from the page they
+          # must be plain assets/.
+          python3 - <<'PYEOF'
+          html = open('_site/index.html').read()
+          css = open('_site/css/risen.css').read().replace('../assets/', 'assets/')
+          tag = '<link rel="stylesheet" href="css/risen.css">'
+          assert tag in html
+          html = html.replace(tag, '<style>\n' + css + '\n</style>')
+          open('_site/index.html', 'w').write(html)
+          PYEOF
+          grep -c "?v=$V" _site/index.html && grep -c "<style>" _site/index.html
       - uses: actions/configure-pages@v5
         with:
           enablement: true
