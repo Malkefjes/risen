@@ -166,6 +166,14 @@ function skipIntro() {
   offerSkip(null);
   if (fn) fn();
 }
+// Spacebar is SKIP. Bound to the offer, not the button: inert unless an intro
+// sequence is actually running, so it can never scroll the page, re-click a
+// focused button, or leak into combat as an accidental action.
+document.addEventListener('keydown', ev => {
+  if (ev.code !== 'Space' || !_skipIntro) return;
+  ev.preventDefault();
+  skipIntro();
+});
 
 // Arena card fades in first, then (after a beat) the rest of the UI eases in.
 // onDone fires once the UI is up, so the fight doesn't begin behind hidden controls.

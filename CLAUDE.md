@@ -19,9 +19,13 @@ A turn-based browser roguelite. Personal project, built for enjoyment.
   notes muted gray. Green is nature's alone: healing (+) and poison (−) share
   it, the sign carrying the meaning. See the comment above `.float-dmg` in
   `css/risen.css` before adding a floater type.
-- Verification is yours to do: `npm test` (all suites must pass) plus, for
-  balance-relevant changes, the instruments in `tools/`. The owner should
-  never be the one to discover a regression.
+- **Scale verification to the change — do not run the full suite for small
+  stuff.** CI runs everything on every push, so a cosmetic tweak or a keybind
+  ships on a syntax check and CI catches the rest. Run suites locally only
+  when the change touches what they guard (rules, saves, balance, the sim),
+  and prefer `npm test <name>` for one suite over the whole run. Suggest a
+  full local run only when it's genuinely advisable; the owner accepts
+  finding the occasional break by playing.
 - **Tests come in two speeds, pick by what broke historically.** Browser
   suites (clicking real buttons) guard UI seams — every early bug was a gap
   between the rules and the screen. Pure-rules behaviour (statuses, skills,
