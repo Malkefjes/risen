@@ -30,8 +30,16 @@ behaviour that regressed rather than an internal detail:
 | `refinements` | refinements stay removed, and drafting still works without them |
 | `build` | the build stamp reaches the title, the log and the save |
 
-## Tools
+## Measuring
 
-`tools/` holds read-only instruments that print numbers instead of asserting
-them — see `tools/README.md`. They are slow, because they drive the real game
-through a browser one turn at a time.
+The game can run itself with no DOM and no timers — `simulateRun(classId, opts)`
+plays a whole run in about two milliseconds. It is not a second implementation:
+every rule runs exactly as it does on screen, and `npm test headless` proves it
+by seeding the RNG and requiring a headless run and an on-screen run of the same
+fight to agree exactly.
+
+    simulateRun('psy')                          one run, greedy bot
+    simulateRun('sym', { keepLog: true })       ...and its transcript
+    simulateRun('bio', { allocate: () => 'vit' })
+
+`tools/` holds instruments built on it — see `tools/README.md`.

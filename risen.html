@@ -3453,6 +3453,7 @@ let state = {
   saveSlot:1,
   awaitingSpawn:false, awaitingInput:false, active:null, pendingEnemyAct:false,
   combo:0, fightTurns:0, enemyActions:0, bestCombo:0,
+  runOver:false, won:false,
   // Turns taken by EITHER side this fight, purely so the log can number them.
   // fightTurns counts only the player's, which makes it the wrong clock for a
   // transcript that has to interleave both.
@@ -3802,6 +3803,7 @@ function enemyTags(e) {
 
 // ---- Screens & setup ----------------------------------------
 function showScreen(id) {
+  if (HEADLESS.on) return;
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
@@ -3909,6 +3911,8 @@ function resetRunState(classId) {
   state.runStart = Date.now();
   state._defeatLock = false;
   state._lastOverkill = 0;
+  state.runOver = false;
+  state.won = false;
 
   // The transient combat UI does not rebuild itself: the fighter panels are
   // replaced by spawnEnemy, but these three only change when something happens
@@ -4072,6 +4076,7 @@ function spawnEnemy() {
 
 // ---- HUD -----------------------------------------------------
 function updateHud() {
+  if (HEADLESS.on) return;
   const p = state.player; if (!p) return;
   // Level on the left, strain on the right, same type on both — only the
   // strain word is tinted by class.
@@ -4096,6 +4101,7 @@ function updateHud() {
 }
 
 function updateCombo() {
+  if (HEADLESS.on) return;
   const el = document.getElementById('combo-meter');
   if (!el) return;
   if (state.combo >= 2) {
@@ -4249,6 +4255,7 @@ function pickTalent(id) {
 }
 
 function refreshTalentUI() {
+  if (HEADLESS.on) return;
   const list = document.getElementById('talent-list');
   const pickInline = document.getElementById('talent-pick-inline');
   const choicesEl = document.getElementById('talent-choices-inline');
@@ -4414,6 +4421,7 @@ function showStatGroup(group) {
 }
 
 function refreshSidebarStats() {
+  if (HEADLESS.on) return;
   const p = state.player; if (!p) return;
   const confirming = canConfirmStats(p);
 
@@ -4511,6 +4519,136 @@ function adjustStat(stat, delta) {
   updateHud(); saveRun();
 }
 
+// ---- Headless mode -------------------------------------------
+// Runs the real rules with no DOM and no timers, so a whole 15-wave run
+// finishes in milliseconds instead of the minutes it takes to watch one.
+//
+// This is NOT a second implementation of combat. Every rule — initiative,
+// damage, statuses, banks, cooldowns, XP — runs exactly as it does on screen.
+// The only things suppressed are the ones that draw or wait. A balance number
+// measured here is therefore a number about the game, not about a model of it.
+//
+// Two costs are being removed, and the second one dominates:
+//
+//   DRAWING   floatText alone creates a DOM node and a 1.3s timer per number;
+//             renderCombat rebuilds fighter panels whose <img> src is a
+//             megabyte of base64. Thousands of those per run.
+//   WAITING   the turn engine paces itself through setTimeout. Browsers clamp
+//             nested timeouts to ~4ms, so a run with several hundred turns
+//             cannot finish faster than seconds no matter how fast the rules
+//             are. Headless replaces scheduling with a PUMP: a scheduled step
+//             is stored, and simulateRun drains it in a loop. Iterative, not
+//             recursive, so a long run cannot overflow the stack.
+//
+// Guarded functions return early rather than being swapped out, so reading any
+// one of them shows why it is skipped without knowing this block exists.
+const HEADLESS = {
+  on: false,
+  log: [],            // transcript captured in memory instead of the DOM
+  logCap: 4000
+};
+
+// The step the turn engine has queued. Headless replaces the timer with this.
+let _pendingStep = null;
+
+// Drain queued steps until the run needs the player, ends, or stalls.
+function pumpSteps(limit) {
+  let n = 0;
+  while (_pendingStep && n++ < (limit || 10000)) {
+    const fn = _pendingStep;
+    _pendingStep = null;
+    fn();
+    if (state.awaitingInput || state.runOver) break;
+  }
+  return n;
+}
+
+// Greedy default: spend the strongest thing available, else swing. Beats no
+// policy at all and is deliberately unclever — a bot that plays well would
+// hide exactly the weaknesses a balance sweep is looking for.
+function greedyPolicy(p) {
+  const usable = p.skills.filter(s => !s.basic && s.cd <= 0
+    && !(s.requiresCharges && (p.charges || 0) < s.requiresCharges));
+  return usable[0] || p.skills[0];
+}
+// Round-robin allocation, for the same reason.
+const ROTATE_STATS = ['str', 'instinct', 'speed', 'vit'];
+function rotateAllocate(p) { return ROTATE_STATS[p.level % ROTATE_STATS.length]; }
+
+// One full run, start to death-or-victory.
+//
+//   simulateRun('psy')
+//   simulateRun('sym', { allocate: () => 'vit', keepLog: true })
+//
+// opts.policy(player)   -> the skill to use on the player's turn
+// opts.allocate(player) -> which stat to put the next point in
+// opts.keepLog          -> return the transcript as an array of lines
+// opts.stopWhen(state)  -> end early; for measuring a slice of a run rather
+//                          than all of it (an act, the first boss, ...)
+function simulateRun(classId, opts) {
+  opts = opts || {};
+  const policy = opts.policy || greedyPolicy;
+  const allocate = opts.allocate || rotateAllocate;
+  const maxSteps = opts.maxSteps || 100000;
+
+  // Checked before anything is touched. startGame declines an unknown strain by
+  // returning early, which leaves the PREVIOUS run's player in place — so
+  // testing state.player afterwards would report the last simulation's result
+  // as this one's.
+  if (!CLASSES[classId]) return null;
+
+  const wasOn = HEADLESS.on;
+  HEADLESS.on = true;
+  HEADLESS.log.length = 0;
+  _pendingStep = null;
+  try {
+    startGame(true, classId);
+    let steps = 0;
+    // ADVANCE FIRST, THEN ACT. The bot only touches anything while the game is
+    // waiting on the player, because that is the only moment a human can. An
+    // earlier version spent level-up points at the top of the loop, which let
+    // them land BEFORE the next wave spawned instead of after — and since the
+    // between-fight heal is a share of max HP, allocating Vitality a moment
+    // early changed how much it healed. The rules were identical; the driver
+    // was playing at a moment no player can reach.
+    while (!state.runOver && steps++ < maxSteps) {
+      pumpSteps();
+      if (state.runOver) break;
+      if (opts.stopWhen && opts.stopWhen(state)) break;
+      if (!state.awaitingInput) {
+        if (!_pendingStep) break;                // nothing queued, nobody to ask
+        continue;
+      }
+      const p = state.player;
+      // One decision per pass, cheapest first, so each is taken with the sheet
+      // the previous one produced.
+      if (p.points > 0) { adjustStat(allocate(p), 1); continue; }
+      if (pendingTotal(p) > 0) { commitStats(); continue; }
+      if (state.talentOffers && state.talentOffers.picks && state.talentOffers.picks.length) {
+        pickTalent(state.talentOffers.picks[0].id); continue;
+      }
+      const skill = policy(p);
+      if (!skill) break;
+      playerAct(skill);
+    }
+    const p = state.player;
+    return {
+      classId, won: !!state.won, wave: state.wave, kills: state.kills,
+      level: p.level, turns: state.turnNo, damageDealt: Math.floor(state.damageDealt),
+      bestCombo: state.bestCombo,
+      stats: { str: p.str, instinct: p.instinct, speed: p.speed, vit: p.vit },
+      derived: { atk: attackDamage(p), maxHp: p.maxHp, rate: +p.attackSpeed.toFixed(2) },
+      bank: (function () { const b = bankOf(p.class); return b ? { name: b.name, cap: b.cap } : null; })(),
+      steps,
+      log: opts.keepLog ? HEADLESS.log.slice() : undefined
+    };
+  } finally {
+    HEADLESS.on = wasOn;
+    _pendingStep = null;
+    stopCombatLoop();
+  }
+}
+
 // ---- Turn engine ---------------------------------------------
 // The old rAF loop advanced two attack timers by dt. That is an initiative
 // gauge driven by wall-clock. Here the same gauges are advanced in discrete
@@ -4527,12 +4665,16 @@ function startCombatLoop() {
 }
 function stopCombatLoop() {
   state.combatActive = false;
+  _pendingStep = null;
   clearRevealTimers();
   if (state.turnTimer) { clearTimeout(state.turnTimer); state.turnTimer = null; }
 }
 // FAST TURNS setting just compresses the pacing between actions.
 const turnDelay = ms => SETTINGS.fastTurns ? Math.round(ms * 0.45) : ms;
 function scheduleTurn(fn, ms) {
+  // Headless: hand the step to the pump instead of the clock. Same ordering,
+  // none of the waiting.
+  if (HEADLESS.on) { _pendingStep = fn; return; }
   if (state.turnTimer) clearTimeout(state.turnTimer);
   state.turnTimer = setTimeout(() => { state.turnTimer = null; fn(); }, ms);
 }
@@ -4541,6 +4683,7 @@ function scheduleTurn(fn, ms) {
 // the enemy's is enemy red, so the line is readable at a glance without parsing
 // the words — and stays the same colour whichever strain you are playing.
 function updateTurnInfo() {
+  if (HEADLESS.on) return;
   const ti = document.getElementById('turn-info');
   if (!ti) return;
   const plain = txt => { ti.textContent = txt; };
@@ -5238,9 +5381,15 @@ function onEnemyDefeated() {
 }
 
 function endRun(won) {
-  if (document.getElementById('result-screen').classList.contains('active')) return;
+  // Re-entry guarded by state rather than by asking the result screen whether
+  // it is visible — headless never shows it, and a run ending is a fact about
+  // the run either way.
+  if (state.runOver) return;
+  state.runOver = true;
+  state.won = !!won;
   stopCombatLoop();
   clearSavedRun();
+  if (HEADLESS.on) return;                 // nothing to draw
   const p = state.player;
   const mins = Math.max(1, Math.round((Date.now()-state.runStart)/60000));
   showScreen('result-screen');
@@ -5262,6 +5411,7 @@ function endRun(won) {
 
 // ---- Skills UI ------------------------------------------------
 function renderSkills(forceRebuild) {
+  if (HEADLESS.on) return;
   const container = document.getElementById('skills');
   const p = state.player;
   if (!container || !p) return;
@@ -5535,8 +5685,8 @@ function claimSaveSlot() {
   return n;
 }
 
-function saveRun(){ try { const d=serializeRun(); if(d) Store.set(slotKey(state.saveSlot), JSON.stringify(d)); } catch(e){} }
-function clearSavedRun(){ clearSlot(state.saveSlot); }
+function saveRun(){ if (HEADLESS.on) return; try { const d=serializeRun(); if(d) Store.set(slotKey(state.saveSlot), JSON.stringify(d)); } catch(e){} }
+function clearSavedRun(){ if (HEADLESS.on) return; clearSlot(state.saveSlot); }
 function clearSlot(n){
   Store.remove(slotKey(n));
   refreshContinueButton();
@@ -5677,6 +5827,7 @@ function continueRun(slot){
 
 // ---- Rendering ------------------------------------------------
 function renderCombat(forceFull) {
+  if (HEADLESS.on) return;
   const ps=document.getElementById('player-slot'), es=document.getElementById('enemy-slot');
   if(!ps||!es||!state.player) return;
   const pPanel=ps.querySelector('.fighter'), ePanel=es.querySelector('.fighter');
@@ -5795,6 +5946,7 @@ function getFighterPanel(unit) {
   return document.querySelector('.fighter[data-unit-id="' + unit.id + '"]');
 }
 function updateUnitCard(unit) {
+  if (HEADLESS.on) return;
   if (!unit) return;
   const panel = getFighterPanel(unit); if (!panel) return;
   panel.classList.toggle('dead', unit.hp <= 0);
@@ -5858,6 +6010,7 @@ function createFighterPanel(unit) {
 // ---- Juice ----------------------------------------------------
 let _shakeTimer = null;
 function shake(intensity) {
+  if (HEADLESS.on) return;
   const arena = document.getElementById('arena-card');
   if (!SETTINGS.shake) return;
   if (!arena || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -5867,6 +6020,7 @@ function shake(intensity) {
   _shakeTimer = setTimeout(()=>arena.classList.remove('shaking'), 180);
 }
 function killFlash(unit) {
+  if (HEADLESS.on) return;
   const panel = getFighterPanel(unit);
   if (!panel) return;
   panel.classList.add('killed');
@@ -5877,6 +6031,7 @@ function getFigureForUnit(unit){ const p=getFighterPanel(unit); return p?p.query
 // `skill` is optional; pass one (or its id) and the caster wears that skill's
 // own art for the beat, falling back to the generic strike pose without it.
 function playAttackAnim(caster, target, hit, skill) {
+  if (HEADLESS.on) return;
   const fig = getFigureForUnit(caster); if (!fig) return;
   const isP = !!caster.isPlayer;
   const lunge = isP?'lunge-right':'lunge-left', swing = isP?'swing-right':'swing-left';
@@ -5898,12 +6053,14 @@ function playAttackAnim(caster, target, hit, skill) {
 // poses when the strain actually defines a sprite for the skill, so strains
 // without per-skill art are completely unaffected.
 function playCastAnim(unit, skill) {
+  if (HEADLESS.on) return;
   triggerHeal(unit);
   if (!hasSkillArt(unit, skill)) return;
   setCharPose(unit, 'ready', skill);
   setTimeout(() => setCharPose(unit, 'ready'), 260);
 }
 function playRecoil(unit) {
+  if (HEADLESS.on) return;
   const fig = getFigureForUnit(unit); if (!fig) return;
   const cls = unit.isPlayer?'recoil-left':'recoil-right';
   fig.classList.remove('recoil-left','recoil-right','recoiling');
@@ -5912,11 +6069,13 @@ function playRecoil(unit) {
   setTimeout(()=>fig.classList.remove('recoiling',cls), 220);
 }
 function triggerHeal(unit) {
+  if (HEADLESS.on) return;
   const fig = getFigureForUnit(unit); if (!fig) return;
   fig.style.filter='brightness(1.3)';
   setTimeout(()=>{ fig.style.filter=''; }, 170);
 }
 function spawnImpact(caster) {
+  if (HEADLESS.on) return;
   const arena=document.getElementById('arena-card'); if(!arena) return;
   const color = caster.isPlayer
     ? (caster.class==='bio'?'#7dffa0':caster.class==='psy'?'#c084fc':caster.class==='sym'?'#fb923c':'#eaf2ff')
@@ -5932,8 +6091,23 @@ function spawnImpact(caster) {
   setTimeout(()=>el.remove(), 380);
 }
 
+// Cosmetic randomness draws from its OWN stream, never Math.random.
+//
+// Everything the RULES roll — evade, crit, block, elite selection — shares one
+// sequence. A floater's horizontal jitter used to draw from that same
+// sequence, which meant DRAWING A DAMAGE NUMBER SHIFTED THE NEXT CRIT ROLL.
+// Invisible in normal play because nothing is seeded, but it made an on-screen
+// run and a headless run of the same fight diverge for a purely visual reason,
+// and it would quietly break any seeded replay or deterministic test later.
+let _cosmeticSeed = 1;
+function cosmeticRandom() {
+  _cosmeticSeed = (_cosmeticSeed * 1664525 + 1013904223) >>> 0;
+  return _cosmeticSeed / 4294967296;
+}
+
 let _floaters = 0;
 function floatText(unit, value, type, isCrit) {
+  if (HEADLESS.on) return;
   if (!SETTINGS.floaters) return;
   if (_floaters > 26) return;
   const card = getFighterPanel(unit); if (!card) return;
@@ -5954,7 +6128,7 @@ function floatText(unit, value, type, isCrit) {
       el.appendChild(tag);
     }
   }
-  el.style.left = (18 + Math.random()*46) + '%';
+  el.style.left = (18 + cosmeticRandom()*46) + '%';
   // Stack concurrent floaters up the body so a number and its status label
   // (e.g. "-123" and "BLOCK") never overlap; sit them over the torso, not the feet.
   const active = card.querySelectorAll('.float-dmg').length;
@@ -6009,6 +6183,13 @@ function clearFloaters() {
 const LOG_MAX = 400;
 
 function log(msg, type) {
+  // Headless keeps the transcript — it is the cheapest way to see why a
+  // simulated run went the way it did — just not in the DOM.
+  if (HEADLESS.on) {
+    HEADLESS.log.push(msg);
+    if (HEADLESS.log.length > HEADLESS.logCap) HEADLESS.log.shift();
+    return;
+  }
   const el = document.getElementById('combat-log'); if (!el) return;
   const entry = document.createElement('div');
   entry.className = 'log-entry ' + (type || '');
@@ -6227,6 +6408,7 @@ function makeCharSVG(type, colorClass, pose, unit) {
 // `skill` is optional: pass one to show that skill's own art instead of the
 // generic pose, when the strain has art for it.
 function setCharPose(unit, pose, skill) {
+  if (HEADLESS.on) return;
   if (!hasPoseSet(unit)) return;
   const fig = getFigureForUnit(unit);
   if (!fig) return;

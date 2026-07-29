@@ -13,7 +13,8 @@ const SUITES = [
   ['saveversion',  'save version bump purges older saves'],
   ['mutations',    'mutation system works with an empty pool'],
   ['refinements',  'refinements are gone and drafting still works'],
-  ['build',        'build stamp reaches the title, log and save']
+  ['build',        'build stamp reaches the title, log and save'],
+  ['headless',     'headless mode runs the same game, with no side effects']
 ];
 
 const filter = process.argv[2];
