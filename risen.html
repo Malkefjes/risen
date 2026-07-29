@@ -2580,6 +2580,22 @@ body {
 //    is that "that hit me for 25" is legible as a Vitality point and a bit,
 //    which is what makes it possible to judge an enemy by feel later.
 //
+//  * ONE TURN EACH IS THE DEFAULT. A baseline enemy acts at exactly the
+//    player's starting rate, so wave 1 is 1:1 and the turn-rate readout means
+//    something: 1.00x is even, and anything above it was BOUGHT. Every extra
+//    turn now comes from one of two places you can point at — Speed (1.00 ->
+//    1.79 vs a baseline enemy, fully invested), or the archetype in front of
+//    you being slow. Neither is free.
+//
+//    This matters more than it looks, because a kill costs a fixed number of
+//    YOUR turns: skill cooldowns tick on your own turns rather than a clock,
+//    so turn advantage never speeds up your rotation. All it does is decide
+//    how much the enemy gets to do inside it. Turn rate is therefore a
+//    mitigation stat wearing an offensive costume, and handing out +43% of it
+//    on a fresh sheet was handing out free damage reduction on top of block.
+//    (psy is the one exception, where more turns really is more damage: its
+//    Momentum builds per landed hit.)
+//
 //  * ANYTHING DERIVED HANGS OFF THOSE ANCHORS rather than carrying its own
 //    curve. Ailment damage is a fifth of Attack Damage, thorns a twentieth of
 //    max HP — chosen as the smallest fractions that move by exactly 1 per
@@ -2672,10 +2688,36 @@ const BALANCE = {
   enemy: {
     hpBase: 132, tierGrowth: 1.52, withinStep: 0.13,
     dmgBase: 8, dmgExp: 0.88,
-    apsBase: 0.70, apsPerTier: 0.018, apsCap: 1.5,
+    // ---- TURN-RATE ANCHOR -------------------------------------------------
+    // apsBase MATCHES THE PLAYER'S STARTING RATE ON PURPOSE. A fresh sheet is
+    // 0.85 + 0.15 from its 5 Speed = 1.00, and a baseline enemy is 1.00, so
+    // wave 1 is one turn each. It used to be 0.70, which handed every new
+    // character a free +43% action economy before they had spent anything —
+    // and since a kill costs a fixed number of YOUR turns (cooldowns tick on
+    // your own turns, not a clock), that advantage was really 30% free damage
+    // mitigation stapled to the starting sheet.
+    //
+    // Anchoring here rather than by lowering the player's apsBase keeps the
+    // player sheet round (25 damage, 100 HP, 1.00 rate) AND makes the
+    // ARCHETYPES table below read directly as turns-per-player-turn.
+    //
+    // PREVIOUS VALUES, if this wants reverting as one block:
+    //   apsBase 0.70, apsPerTier 0.018, apsCap 1.5,
+    //   bossDmg 2.0, trashDmgMult 1.9, ARCHETYPES.skirmisher.aps 1.55
+    apsBase: 1.00,
+    // Scaled with the base (0.018 x 1/0.7) so tier growth stays the same
+    // FRACTION of the base it always was: a baseline enemy drifts 1.00 -> 1.05
+    // across the run, so standing still on Speed slowly loses you the tempo.
+    apsPerTier: 0.026,
+    apsCap: 2.15,                      // same base-to-cap headroom as the old 0.70 / 1.5
     crit: 0.10, critMult: 1.5,
-    bossHp: 3.4, bossDmg: 2.0, bossXp: 3.0,
-    trashDmgMult: 1.9,                 // trash hits harder so fights cost real HP (bosses use bossDmg)
+    // bossDmg and trashDmgMult were both fitted against a player taking ~1.5
+    // turns per enemy turn. With the anchor at 1:1 the enemy now acts far more
+    // often per fight, so both come down to keep a wave costing what it cost.
+    // These are the compensation for the anchor, not a difficulty change: total
+    // unmitigated HP spent clearing all 15 waves lands within 2% of before.
+    bossHp: 3.4, bossDmg: 1.40, bossXp: 3.0,
+    trashDmgMult: 1.33,                // trash hits harder so fights cost real HP (bosses use bossDmg)
     windupEvery: 3, windupMult: 6.5,   // boss telegraph: every Nth action winds up; next strike hits xN
     finalWindupEvery: 2,               // the final boss keeps you under constant telegraph pressure
     eliteWindupEvery: 3,               // elites telegraph too: the mid-run skill check
@@ -2759,9 +2801,21 @@ const CLASSES = {
 };
 
 // Enemies get their own bodies now, not a mirror of a maxed player.
+//
+// Now that enemy.apsBase matches the player's starting rate, `aps` READS
+// DIRECTLY AS TURNS PER PLAYER TURN at level 1: a grunt acts once for each of
+// your turns, a brute 0.72 times, a skirmisher 1.18. That is the whole point of
+// the anchor — before it, these multipliers were relative to a base the player
+// never matched, so 0.72 described nothing you could feel.
+//
+// skirmisher was 1.55 (see the revert list in BALANCE.enemy). Against a 1:1
+// baseline that meant it took more than three turns to your two, which turned
+// wave 2 into a wall rather than a change of pace. 1.18 still reads as SWIFT —
+// it out-paces you until you buy Speed — without being the hardest fight in
+// the act.
 const ARCHETYPES = {
   grunt:      { id:'grunt',      tag:null,      hp:1.00, dmg:1.00, aps:1.00, evade:0.00 },
-  skirmisher: { id:'skirmisher', tag:'SWIFT',   hp:0.68, dmg:0.78, aps:1.55, evade:0.15 },
+  skirmisher: { id:'skirmisher', tag:'SWIFT',   hp:0.68, dmg:0.78, aps:1.18, evade:0.15 },
   brute:      { id:'brute',      tag:'HEAVY',   hp:1.55, dmg:1.30, aps:0.72, evade:0.00 },
   warden:     { id:'warden',     tag:'PLATED',  hp:1.25, dmg:0.90, aps:0.90, evade:0.00 }
 };
