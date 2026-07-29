@@ -2924,79 +2924,50 @@ function addBasicRider(p, id, opts) {
 }
 
 const TALENTS = {
-  // --- Riders that afflict what you hit ---------------------------------
-  atrophy: {
-    id:'atrophy', name:'Atrophic Strike', tag:'Basic Attack',
-    power:0.20, duration:2,
-    desc:'Your basic attack also rots what it touches: WEAK for {duration#turn}, −{power%} to its damage.',
-    apply(p){ addBasicRider(p, 'weak', { power:this.power, duration:this.duration }); }
-  },
-  sunder: {
-    id:'sunder', name:'Sundering Strike', tag:'Basic Attack',
-    power:0.25, duration:2,
-    desc:'Your basic attack splits the hide open: VULNERABLE for {duration#turn}, +{power%} damage taken.',
-    apply(p){ addBasicRider(p, 'vulnerable', { power:this.power, duration:this.duration }); }
-  },
-  torpor: {
-    id:'torpor', name:'Creeping Torpor', tag:'Basic Attack',
-    power:0.15, duration:2,
-    desc:'Your basic attack drags at them: SLOW for {duration#turn}, −{power%} to how fast their turns come.',
-    apply(p){ addBasicRider(p, 'slow', { power:this.power, duration:this.duration }); }
-  },
-
-  // --- Riders that feed you ---------------------------------------------
-  escalation: {
-    id:'escalation', name:'Escalation', tag:'Basic Attack',
-    power:0.20, duration:2,
-    desc:'Landing a basic attack stokes you: EMPOWER for {duration#turn}, +{power%} to your damage.',
-    apply(p){ addBasicRider(p, 'empower', { power:this.power, duration:this.duration }); }
-  },
-  calcify: {
-    id:'calcify', name:'Calcify', tag:'Basic Attack',
-    power:0.18, duration:2,
-    desc:'Landing a basic attack hardens you: FORTIFY for {duration#turn}, −{power%} damage taken.',
-    apply(p){ addBasicRider(p, 'fortify', { power:this.power, duration:this.duration }); }
-  },
-  quickening: {
-    id:'quickening', name:'Quickening', tag:'Basic Attack',
-    power:0.12, duration:2,
-    desc:'Landing a basic attack winds you tighter: HASTE for {duration#turn}, +{power%} to how fast your turns come.',
-    apply(p){ addBasicRider(p, 'haste', { power:this.power, duration:this.duration }); }
-  },
-  knitting: {
-    id:'knitting', name:'Knitting Flesh', tag:'Basic Attack',
-    power:0.04, duration:2,
-    desc:'Landing a basic attack sets the flesh growing: REGEN for {duration#turn}, {power%} of max HP each turn.',
-    apply(p){ addBasicRider(p, 'regen', { power:this.power, duration:this.duration }); }
-  }
+  // DELIBERATELY EMPTY. The mutation SYSTEM is intact — drafting, picking,
+  // stacking, the MUTATIONS tab, persistence through a save, and every
+  // p.talents hook listed above are all still wired. There is simply no
+  // content in the pool, so levels pass without offering a draft
+  // (rollTalentOffers returns nothing and queueTalentOffer declines).
+  //
+  // The seven basic-attack riders that lived here were cleared while the
+  // strains and the starting sheet are being tuned: a draft that hands out
+  // WEAK, HASTE or REGEN changes what a class feels like, which makes it
+  // impossible to judge whether the class itself is fun. They come back once
+  // the four strains stand up on their own.
+  //
+  // Adding one is a single entry, nothing else. The rider family read:
+  //
+  //   atrophy: {
+  //     id:'atrophy', name:'Atrophic Strike', tag:'Basic Attack',
+  //     power:0.20, duration:2,
+  //     desc:'Your basic attack also rots what it touches: WEAK for ' +
+  //          '{duration#turn}, -{power%} to its damage.',
+  //     apply(p){ addBasicRider(p, 'weak', { power:this.power, duration:this.duration }); }
+  //   }
+  //
+  // — one line of data naming a status from STATUSES and the values to apply
+  // it with. addBasicRider below is still here for exactly that.
 };
 
-// PLACEHOLDER DRAFT POOL. Repeatable, and used to top a draft up to three
-// choices once rollTalentOffers has run out of unique mutations to offer —
-// which, with seven of them, is every draft past the third or so.
+// THE PLACEHOLDER DRAFT POOL, ALSO DELIBERATELY EMPTY.
 //
-// Deliberately neutral and identical for every strain, so a draft can't skew a
-// class comparison while the strains are being tuned. Values sit above the old
-// refinement numbers because they still stand in for the mutations not yet
-// written: this list is the difficulty knob until the real set lands.
-// Each entry owns its number once: apply() reads it off `this`, and the desc
-// template renders the same field. Retune by editing the value alone.
-const REFINEMENTS = [
-  { id:'ref_dmg',   name:'Refinement: Edge',    tag:'Placeholder', value:0.32,
-    desc:'+{value%} damage.',       apply(p){ p.dmgMult *= 1 + this.value; } },
-  { id:'ref_hp',    name:'Refinement: Hide',    tag:'Placeholder', value:0.25,
-    desc:'+{value%} max HP.',       apply(p){ p.hpMult *= 1 + this.value; } },
-  { id:'ref_aps',   name:'Refinement: Tempo',   tag:'Placeholder', value:0.11,
-    desc:'+{value%} attack speed.', apply(p){ p.apsMult = (p.apsMult || 1) * (1 + this.value); } },
-  { id:'ref_crit',  name:'Refinement: Focus',   tag:'Placeholder', crit:0.07,
-    desc:'+{crit%} crit chance.',
-    apply(p){ p.talents.critFlat = (p.talents.critFlat || 0) + this.crit; } },
-  // Strength drives Attack Damage for every strain now, so this no longer has
-  // to work out which stat the class actually scales off — there is one answer.
-  { id:'ref_stat',  name:'Refinement: Mass',    tag:'Placeholder', value:12,
-    desc:'+{value} Strength.',
-    apply(p){ p.str += this.value; } }
-];
+// This list existed to top a draft up to three choices once rollTalentOffers
+// ran out of unique mutations — flat +32% damage, +25% max HP and so on. With
+// the mutation pool cleared it would BE the draft rather than padding it, and
+// a run whose only progression is "+32% damage, again" tells you nothing about
+// whether a strain plays well. That is the question the game is on right now,
+// so the padding goes too.
+//
+// Entries are `{ id, name, tag, value, desc, apply(p) }` and own their number
+// once: apply() reads it off `this` and the desc template renders the same
+// field, so retuning is editing one value. They read, for example:
+//
+//   { id:'ref_dmg', name:'Refinement: Edge', tag:'Placeholder', value:0.32,
+//     desc:'+{value%} damage.', apply(p){ p.dmgMult *= 1 + this.value; } }
+//
+// rollTalentOffers guards on this being empty, so leaving it so is safe.
+const REFINEMENTS = [];
 
 // ---- Statuses ------------------------------------------------
 // One registry for every timed effect that can sit on a unit, player or enemy.
@@ -4195,11 +4166,18 @@ function rollTalentOffers(player) {
   while (picks.length < 3 && pool.length) {
     picks.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
   }
-  while (picks.length < 3) {
+  // The `REFINEMENTS.length` guard is load-bearing, not defensive dressing:
+  // without it an empty pool indexes undefined, pushes it, and then throws
+  // reading `.id` off it on the next pass. Both pools are empty right now, so
+  // this is the path every draft takes.
+  while (picks.length < 3 && REFINEMENTS.length) {
     const r = REFINEMENTS[Math.floor(Math.random() * REFINEMENTS.length)];
     if (!picks.some(x => x.id === r.id)) picks.push(r);
     else if (picks.length >= REFINEMENTS.length) break;
   }
+  // May be empty. Every caller already treats that as "no draft happens":
+  // queueTalentOffer returns false without creating an offer or queueing the
+  // level, so an empty pool means levels simply pass without a mutation.
   return picks;
 }
 
@@ -4284,7 +4262,15 @@ function refreshTalentUI() {
     //
     // Silent while a draft is up: three cards asking you to choose, with "you
     // have not mutated" printed underneath them, contradicts itself.
-    list.innerHTML = drafting ? '' : '<div class="talent-empty">You have not mutated further yet</div>';
+    // Two different empty states. "You have not mutated FURTHER yet" implies a
+    // draft is coming, which is a lie while the pool is empty — so the message
+    // reads off the pool rather than being hardcoded, and reverts on its own
+    // the moment a mutation is added back.
+    const poolEmpty = !Object.keys(TALENTS).length && !REFINEMENTS.length;
+    list.innerHTML = drafting ? ''
+      : '<div class="talent-empty">'
+        + (poolEmpty ? 'No mutations in the pool yet' : 'You have not mutated further yet')
+        + '</div>';
   } else {
     const counts = {};
     ids.forEach(id => counts[id] = (counts[id] || 0) + 1);
