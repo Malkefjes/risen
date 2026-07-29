@@ -2206,14 +2206,22 @@ body {
   position: relative; overflow: hidden;
   font-family: 'Orbitron', sans-serif; font-size: 0.55rem; font-weight: 700;
   letter-spacing: 1.2px; padding: 2.5px 8px; border-radius: 4px;
-  color: var(--muted);
-  background: linear-gradient(165deg, #2a3347 0%, #131926 48%, #1c2434 100%);
-  border: 1px solid;
-  border-color: color-mix(in srgb, currentColor 40%, transparent);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.13),
-              inset 0 -1px 0 rgba(0,0,0,0.55),
-              0 1px 3px rgba(0,0,0,0.5);
-  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  /* Letterpress on silver: the word is a dark cut in the metal, and the
+     single bright hairline UNDER each glyph is light from above catching
+     the dent's lower lip — that one shadow is what sells "engraved".
+     The mod's color lives in the metal itself (a tinted cast mixed into
+     the silver), not in the text, so the engraving stays readable. */
+  --tint: var(--muted);
+  color: rgba(8, 12, 20, 0.78);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+  background: linear-gradient(165deg,
+    color-mix(in srgb, var(--tint) 22%, #d8dee8) 0%,
+    color-mix(in srgb, var(--tint) 14%, #8d97aa) 48%,
+    color-mix(in srgb, var(--tint) 18%, #b0b9c8) 100%);
+  border: 1px solid color-mix(in srgb, var(--tint) 35%, #677183);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.55),
+              inset 0 -1px 0 rgba(0,0,0,0.35),
+              0 1px 3px rgba(0,0,0,0.55);
 }
 .unit-tag::after {
   content: ''; position: absolute; top: 0; left: -70%;
@@ -2229,15 +2237,15 @@ body {
   100%    { left: 140%; }
 }
 @media (prefers-reduced-motion: reduce) { .unit-tag::after { animation: none; } }
-.unit-tag.boss     { color: var(--accent2); }
-.unit-tag.swift    { color: #c084fc; }
-.unit-tag.heavy    { color: #fbbf24; }
-.unit-tag.plated   { color: #94a3b8; }
-.unit-tag.frenzied { color: #fb7185; }
-.unit-tag.vampiric { color: #f472b6; }
-.unit-tag.colossal { color: #fbbf24; }
-.unit-tag.venomous { color: #7dffa0; }
-.unit-tag.volatile { color: #fb923c; }
+.unit-tag.boss     { --tint: var(--accent2); }
+.unit-tag.swift    { --tint: #c084fc; }
+.unit-tag.heavy    { --tint: #fbbf24; }
+.unit-tag.plated   { --tint: #94a3b8; }
+.unit-tag.frenzied { --tint: #fb7185; }
+.unit-tag.vampiric { --tint: #f472b6; }
+.unit-tag.colossal { --tint: #fbbf24; }
+.unit-tag.venomous { --tint: #7dffa0; }
+.unit-tag.volatile { --tint: #fb923c; }
 
 .fighter.boss .unit-name {
   color: var(--accent2);
