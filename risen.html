@@ -2482,9 +2482,16 @@ body {
                 <div class="derived-item"><span>Poison chance</span><span><b id="d-poisonchance">—</b><i class="delta" id="p-poisonchance"></i></span></div>
                 <div class="derived-item"><span>Poison damage</span><span><b id="d-poisondmg">—</b><i class="delta" id="p-poisondmg"></i></span></div>
               </div>
-              <div class="derived-subhead">UTILITY</div>
-              <div class="derived-grid">
-                <div class="derived-item"><span>Cooldown reduction</span><span><b id="d-cdr">—</b><i class="delta" id="p-cdr"></i></span></div>
+              <!-- UTILITY holds only cooldown reduction, which has no source
+                   yet. The subhead and its grid are hidden together with the
+                   row (see refreshSidebarStats) so the pane never shows a
+                   heading over nothing, or a stat frozen at 0% that no amount
+                   of play can move. -->
+              <div id="row-cdr">
+                <div class="derived-subhead">UTILITY</div>
+                <div class="derived-grid">
+                  <div class="derived-item"><span>Cooldown reduction</span><span><b id="d-cdr">—</b><i class="delta" id="p-cdr"></i></span></div>
+                </div>
               </div>
             </div>
           </div>
@@ -2613,7 +2620,10 @@ body {
 //  * Strains currently differ ONLY by their skills and banks. Damage, HP,
 //    turn rate and every percentage are identical across all four — the
 //    per-strain damage and attack-rate scalars were retired when the sheet was
-//    anchored. apsBase is the lever if a strain should be fast again.
+//    anchored, and the per-strain apsBase went with them when turn rate became
+//    a pure stat. A strain that should be fast again wants a MULTIPLIER on the
+//    rate, never an additive base: a base hands out speed nobody paid for,
+//    which is exactly what the 1:1 anchor exists to prevent.
 //
 //  * Talents prefer to scale p.dmgMult / p.hpMult / p.apsMult over touching a
 //    raw stat, so one pick cannot quietly buy two things. Refinement: Mass is
@@ -2621,15 +2631,40 @@ body {
 //    was unified is a single axis rather than two.
 //
 //  * Known soft spots, in case they read as bugs rather than gaps: Instinct
-//    feeds crit chance and nothing else; cooldown reduction has no source at
-//    all (cdrPerSpeed is 0 and no talent sets cdrBonus); and healing outside
-//    class kits is down to two 8% trickles — between fights and on level-up —
-//    since regen and the door's RECOVER both went.
+//    feeds crit chance and nothing else; cooldown reduction is a live seam with
+//    no source yet (no talent sets cdrBonus, so its readout row stays hidden);
+//    and healing outside class kits is down to two 8% trickles — between fights
+//    and on level-up — since regen and the door's RECOVER both went.
 // ============================================================
 
 const BALANCE = {
   player: {
-    apsPerSpeed: 0.030, speedApsCap: 0.70, apsCap: 3.2,
+    // TURN RATE IS PURELY A STAT, exactly like damage and HP. 5 Speed is 1.00,
+    // one point is +0.20, and there is NO FLAT BASE — the strain's old 0.85
+    // apsBase is gone.
+    //
+    // That base was the whole problem. It meant a starting 1.00 rate was
+    // 0.85 given + 0.15 earned, so a Speed point moved your rate by 3% of its
+    // starting value where a Strength point moves damage by 20% and a Vitality
+    // point moves HP by 20%. Speed points were worth a seventh of everyone
+    // else's, and a full run's 36 points could only take the rate to x1.55
+    // against x8.2 for either of the others. Speed was a garnish, not a build.
+    //
+    // With the base gone every stat obeys ONE rule: a stat is (5 + points) / 5
+    // times its starting value. 20% per point, across the sheet.
+    apsPerSpeed: 0.20,
+    // TWO CEILINGS, doing different jobs:
+    //   speedApsCap  what SPEED POINTS alone can buy. Reached at 20 Speed (15
+    //                points), and deliberately x4 rather than the x8.2 parity
+    //                would allow: boss windups fire every 3 ENEMY actions, so
+    //                at x4 you already get 12 turns to answer one, and past
+    //                that the telegraph stops being a decision.
+    //   apsCap       absolute ceiling AFTER apsMult. Leaves headroom so earned
+    //                multipliers (Refinement: Tempo, anything later) still pay
+    //                out for a player who has capped the stat itself.
+    // Points past 20 are not wasted: they keep buying evade below, so
+    // overinvestment degrades gently instead of hitting a wall.
+    speedApsCap: 4.00, apsCap: 6.00,
     // The two anchors the rest of the player is tuned against, both chosen to be
     // legible rather than derived: 5 Strength is 25 Attack Damage, 5 Vitality is
     // 100 HP. Everything reads off one point being worth 5 damage or 20 HP, so
@@ -2637,7 +2672,7 @@ const BALANCE = {
     //
     // No flat base and no per-level HP on purpose. Both would make max HP stop
     // being Vitality x 20 the moment you levelled, which is the whole property
-    // worth having here.
+    // worth having here. Turn rate now follows the same rule above.
     damagePerStr: 5,
     hpPerVit: 20,
     pointsPerLevel: 3,
@@ -2652,10 +2687,22 @@ const BALANCE = {
     blockBase: 0.065, blockPerVit: 0.007, blockCap: 0.35, blockReduction: 0.5,
     critBase: 0.045, critPerInstinct: 0.011, critCap: 0.70,
     critMult: 2.0,          // flat: a crit is always double, on every strain
-    // Cooldown reduction starts at zero and has no source. It used to ride on
-    // Speed, which made it 4% at 5 Speed; starting at 0 means it can only come
-    // from somewhere earned. t.cdrBonus still feeds it.
-    cdrPerSpeed: 0, cdrCap: 0.55,
+    // COOLDOWN REDUCTION IS NO LONGER A STAT. Speed does not feed it and
+    // nothing else does yet, so cdrPerSpeed is gone rather than sitting at 0.
+    //
+    // Speed was the obvious home for it and is the wrong one, because Speed
+    // already covers the feeling by another route. Cooldowns tick on the
+    // PLAYER'S OWN turns (see tickTurnStart), so rate never changes your
+    // rotation — a 4-turn cooldown is 4 of your turns at x1 and at x4. What
+    // rate changes is how much the enemy does while you wait: 4 enemy actions
+    // at x1, one at x4. Stacking real CDR on top would be paying twice.
+    //
+    // The mechanic itself stays as a live seam: cdrCap and t.cdrBonus still
+    // feed p.cdr, and fireSkill still divides cooldowns by it. The readout row
+    // renders only when cdr > 0 (same conditional treatment as the strain and
+    // guard rows), so it shows nothing today and appears by itself the moment
+    // a mutation grants some.
+    cdrCap: 0.55,
     // Ailment damage is a SHARE OF ATTACK DAMAGE rather than its own curve off
     // Strength, and thorns a share of max HP. Both were fractions-per-stat
     // tuned against the old base, which at 5 left them floored at 1 and needing
@@ -2750,7 +2797,6 @@ const BALANCE = {
 const CLASSES = {
   bio: {
     name: 'Biological', color: 'bio',
-    apsBase: 0.85,
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
       { id:'slash', name:'Slash', desc:'Attack the enemy for {power!} damage. +{poison} POISON', type:'attack', power:1.0, poison:1, target:'enemy', basic:true },
@@ -2761,7 +2807,6 @@ const CLASSES = {
   },
   psy: {
     name: 'Psychological', color: 'psy',
-    apsBase: 0.85,
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
       { id:'shock', name:'Shock', desc:'Auto. Attack the enemy for your Attack Damage.', type:'attack', power:1.0, target:'enemy', basic:true },
@@ -2772,7 +2817,6 @@ const CLASSES = {
   },
   sym: {
     name: 'Symbiotic', color: 'sym',
-    apsBase: 0.85,
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
       { id:'latch', name:'Latch', desc:'Auto. Attack the enemy for your Attack Damage + {thornsScale%} of your thorns.', type:'attack', power:1.0, thornsScale:0.35, target:'enemy', basic:true },
@@ -2789,7 +2833,6 @@ const CLASSES = {
   // your highest stat" rule went when Attack Damage was unified.
   base: {
     name: 'Unmutated', color: 'base',
-    apsBase: 0.85,
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
       { id:'jab', name:'Strike', desc:'Attack the enemy for {power!} damage. +{buildsResolve} RESOLVE', type:'attack', power:1.0, buildsResolve:1, target:'enemy', basic:true },
@@ -3501,7 +3544,9 @@ function fmtDesc(def) {
 // ---- Player stats -------------------------------------------
 function applyDerivedStats(p) {
   if (!p) return p;
-  const B = P(), C = CLASSES[p.class];
+  // CLASSES is no longer consulted here: apsBase was the last per-strain
+  // number in the derived sheet, and it went when turn rate became a pure stat.
+  const B = P();
   const t = p.talents || {};
 
   p.dmgMult = p.dmgMult || 1;
@@ -3524,9 +3569,19 @@ function applyDerivedStats(p) {
   // point it was multiplying by one; dmgMult already covers earned multipliers.
   p.atkPower = p.str * B.damagePerStr * p.dmgMult;
 
-  // Speed raises attack rate but saturates, so it can never run away with the build.
-  p.speedAps = Math.min(B.speedApsCap, p.speed * B.apsPerSpeed);
-  p.attackSpeed = Math.min(B.apsCap, (C.apsBase + p.speedAps) * p.apsMult);
+  // TURN RATE. Speed and nothing else, the same shape as damage off Strength
+  // and HP off Vitality: 5 Speed is 1.00, one point is +0.20. There is no
+  // per-strain base any more — every strain starts at the same rate by design,
+  // so an additive base could only reintroduce the free head start the anchor
+  // removed. If a strain should be fast again it wants a MULTIPLIER here, not
+  // a base, so that it scales the earned rate instead of replacing it.
+  //
+  // The two caps are applied in order and mean different things: points
+  // saturate at speedApsCap, then earned multipliers apply, then apsCap is the
+  // absolute ceiling. Capping the stat contribution BEFORE apsMult is what
+  // lets a player who has maxed Speed still gain from a Tempo refinement.
+  const fromPoints = Math.min(B.speedApsCap, p.speed * B.apsPerSpeed);
+  p.attackSpeed = Math.min(B.apsCap, fromPoints * p.apsMult);
 
   // Max HP is Vitality x 20, full stop. Symbiotic used to take a reduced rate to
   // pay for its thorns; that came out with the flat base and the per-level
@@ -3550,7 +3605,8 @@ function applyDerivedStats(p) {
   // Cooldowns answer to Speed, not Instinct: acting more often and acting
   // again sooner are the same idea, and it gives Speed somewhere to go once
   // the attack-rate term saturates at 23 points.
-  p.cdr = Math.min(B.cdrCap, p.speed*B.cdrPerSpeed + (t.cdrBonus||0));
+  // Earned sources only — Speed does not feed this (see the note in BALANCE).
+  p.cdr = Math.min(B.cdrCap, t.cdrBonus || 0);
 
   // A fifth of Attack Damage and a twentieth of max HP — both already carry
   // dmgMult / hpMult through those two, so neither is applied again here.
@@ -3655,7 +3711,13 @@ function readouts(p) {
       num: p.blockChance*100, unit:'%' }
   );
   const g = guardReadout(p); if (g) rows.push(g);
-  rows.push(pct('cdr', p.cdr));
+  // Cooldown reduction only exists once something grants it. Omitted rather
+  // than reported as a permanent 0%, the same way the strain and guard rows
+  // are omitted for classes that do not own them — a readout that cannot move
+  // is not information. p.cdr is constant across a pending allocation (Speed
+  // no longer feeds it), so omitting it cannot desync the two readouts()
+  // renderDeltas zips together.
+  if (p.cdr > 0) rows.push(pct('cdr', p.cdr));
   return rows;
 }
 
@@ -4352,7 +4414,7 @@ function refreshSidebarStats() {
   const rows = readouts(p);
   const shown = {};
   rows.forEach(r => { shown[r.id] = true; });
-  ['strain','guard'].forEach(id => {
+  ['strain','guard','cdr'].forEach(id => {
     const row = document.getElementById('row-' + id);
     if (row) row.style.display = shown[id] ? '' : 'none';
   });
