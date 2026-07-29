@@ -59,11 +59,6 @@ function updateTurnInfo() {
     side(foeWord + ' TURN', 'foe').classList.add('turn-now');
   } else {
     side('YOUR TURN', 'you').classList.add('turn-now');
-    // The windup telegraph is the one thing worth interrupting the line for,
-    // and only while you can actually answer it.
-    if (state.awaitingInput && state.enemy && state.enemy.windup) {
-      add(foeWord + ' CHARGING', 'turn-warn');
-    }
   }
 
   const fc = forecastTurns(3);

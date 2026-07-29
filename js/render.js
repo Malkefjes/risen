@@ -106,7 +106,8 @@ function buildStatusesHtml(unit) {
     if (!def) return '<span class="status">' + String(st.type).toUpperCase() + '</span>';
     return '<span class="status ' + (def.tone || def.kind || '') + '">' + statusLabel(def, st, unit) + '</span>';
   }).join('');
-  if (unit.windup) html += '<span class="status stun">CHARGING ×' + BALANCE.enemy.windupMult + '</span>';
+  // The windup deliberately does NOT appear here: the intent badge is the one
+  // source of truth about the enemy's future — statuses are present state.
   if (unit.isPlayer && unit.thorns > 0) html += '<span class="status spines">THORNS ' + formatNum(getThornsDamage(unit)) + '</span>';
   return html;
 }
@@ -114,7 +115,7 @@ function buildStatusesHtml(unit) {
 // rebuilt when it would actually look different. Power is part of it: Spines
 // amplifying from ×2.2 to ×3.3 changes the badge without changing its duration.
 function buildStatusKey(u) {
-  let k = (u.windup?'W':'') + ('C'+(u.charges||0)) + ('R'+(u.resolve||0)) + (u.thorns>0?'T'+getThornsDamage(u):'');
+  let k = ('C'+(u.charges||0)) + ('R'+(u.resolve||0)) + (u.thorns>0?'T'+getThornsDamage(u):'');
   u.statuses.forEach(s => k += '|' + s.type + (isFinite(s.duration) ? Math.ceil(s.duration) : '*') + (s.stacks||'') + (s.power||''));
   return k;
 }
@@ -156,7 +157,8 @@ function updateUnitCard(unit) {
 
 function createFighterPanel(unit) {
   const div = document.createElement('div');
-  div.className = 'fighter unit' + (unit.hp<=0?' dead':'') + (unit.isBoss?' boss':'');
+  div.className = 'fighter unit' + (unit.hp<=0?' dead':'') + (unit.isBoss?' boss':'')
+    + (!unit.isBoss && unit.elite ? ' elite' : '');
   div.dataset.unitId = unit.id;
   unit._statusKey = '';
   const colorClass = unit.isPlayer ? unit.class : 'enemy';
