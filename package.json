@@ -1,0 +1,13 @@
+{
+  "name": "risen",
+  "private": true,
+  "type": "module",
+  "description": "RISEN — a single-file turn-based roguelite. The game is risen.html; everything here exists only to test it.",
+  "scripts": {
+    "test": "node tests/run.mjs",
+    "setup": "npm install && npx playwright install chromium"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.0"
+  }
+}
