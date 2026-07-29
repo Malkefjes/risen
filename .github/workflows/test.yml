@@ -1,0 +1,21 @@
+# Run the full suite on every push, so main cannot quietly break the
+# published game even if a change was pushed without testing locally.
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npx playwright install chromium --with-deps
+      - run: npm test
