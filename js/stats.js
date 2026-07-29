@@ -530,7 +530,15 @@ function makeEnemy(wave) {
   return e;
 }
 
+// ?plates — display-only dev flag: every enemy panel shows the full plate set
+// (all archetypes, all elites, boss) so their colors can be judged side by
+// side. Rules never read this; an enemy still HAS whatever it rolled.
+const DEV_ALL_PLATES = typeof location !== 'undefined' && /[?&]plates\b/.test(location.search);
 function enemyTags(e) {
+  if (DEV_ALL_PLATES)
+    return ['BOSS']
+      .concat(Object.values(ARCHETYPES).map(a => a.tag).filter(Boolean))
+      .concat(Object.values(ELITES).map(el => el.tag));
   const out = [];
   if (e.isBoss) out.push('BOSS');
   else if (e.arch && e.arch.tag) out.push(e.arch.tag);
