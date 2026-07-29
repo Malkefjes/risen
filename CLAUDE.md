@@ -1,0 +1,59 @@
+# RISEN — project conventions
+
+A turn-based browser roguelite. Personal project, built for enjoyment.
+
+## How this project works
+
+- **The owner plays the game and gives feedback. They never read code** and
+  don't care about repo internals. Translate feel into mechanics yourself;
+  never ask them to look at a diff, a file, or a stack trace.
+- **Design by feel, not by plan.** There is deliberately no roadmap. Don't
+  create planning documents; don't accumulate TODO lists in the repo. The
+  owner decides what's next by playing.
+- Verification is yours to do: `npm test` (all suites must pass) plus, for
+  balance-relevant changes, the instruments in `tools/`. The owner should
+  never be the one to discover a regression.
+
+## Layout
+
+- `index.html` + `css/` + `js/` + `assets/` — the game. No build step. The
+  js files are ordinary scripts sharing one global scope, loaded in order
+  (data → stats → screens → sim → combat → saves → render → sprites); they
+  are chapters of one program, not modules. Keep new code in the chapter
+  where it belongs; keep load order in mind for top-level statements.
+- `tests/` — playwright suites driving the real game (`npm test`). One
+  dependency (playwright). `RISEN_CHROMIUM=<path>` points the suite at a
+  pre-installed browser; in this remote environment use
+  `RISEN_CHROMIUM=/opt/pw-browsers/chromium`.
+- `tools/` — read-only balance instruments built on `simulateRun`
+  (bank-usage, balance-sweep, transcript). They print numbers, not verdicts.
+
+## Invariants (learned the hard way — do not rediscover)
+
+- **Two RNG streams.** Rules use `Math.random`; anything cosmetic uses
+  `cosmeticRandom()`. When they were shared, drawing a damage number shifted
+  the next crit roll and seeded replays diverged. Never mix them.
+- **Headless equivalence is a gate.** `simulateRun` is not a second
+  implementation — the seeded test in `tests/headless.test.mjs` requires a
+  headless run and an on-screen run to match exactly. If a change breaks
+  that test, the change is wrong (or must consciously update both paths).
+- **`BALANCE.saveKey` vs `BUILD` are independent.** `BUILD` is a date stamp
+  so two copies can be told apart. `saveKey` is bumped ONLY when a change
+  makes an old saved sheet wrong (saves store raw stats and recompute the
+  derived sheet, so a rules change silently re-reads an old run under new
+  economics). On a bump, add the outgoing prefix to `BALANCE.oldSaveKeys`
+  so it gets purged. Old saves are dropped, never migrated.
+- **The player sheet is the anchor** (5/5/5/5, 25 dmg, 100 HP, 1.00 turn
+  rate); enemies are fitted to it and computed by separate functions. See
+  the header comment in `js/data.js` before touching balance.
+- **No changelog files.** Git history is the changelog; commit messages
+  carry the detail.
+
+## Known soft spots (context, not a to-do list)
+
+- Psy's Momentum drains faster than it fills (net −1 per exchange at the
+  1:1 anchor); the owner wants a full overhaul someday, on their timing.
+- Instinct feeds crit chance and nothing else; cooldown reduction is a live
+  seam with no source.
+- Sym barely responds to stat allocation; Unmutated's bot numbers are
+  unmeasured rather than bad.
