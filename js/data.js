@@ -18,9 +18,9 @@
 //  * ONE TURN EACH IS THE DEFAULT. A baseline enemy acts at exactly the
 //    player's starting rate, so wave 1 is 1:1 and the turn-rate readout means
 //    something: 1.00x is even, and anything above it was BOUGHT. Every extra
-//    turn now comes from one of two places you can point at — Speed (1.00 ->
-//    1.79 vs a baseline enemy, fully invested), or the archetype in front of
-//    you being slow. Neither is free.
+//    turn now comes from a place you can point at — Speed (1.00 -> 1.79 vs a
+//    baseline enemy, fully invested), or the boss/elite in front of you being
+//    slow by its own stated numbers. Neither is free.
 //
 //    This matters more than it looks, because a kill costs a fixed number of
 //    YOUR turns: skill cooldowns tick on your own turns rather than a clock,
@@ -79,7 +79,7 @@
 // KEEP THIS SEPARATE FROM BALANCE.saveKey. That one answers "are saved runs
 // still valid" and is bumped only when a change makes an old sheet wrong.
 // Deriving it from this would wipe every save on a typo fix.
-const BUILD = '2026-07-29b';
+const BUILD = '2026-07-29c';
 
 const BALANCE = {
   player: {
@@ -194,12 +194,12 @@ const BALANCE = {
     // mitigation stapled to the starting sheet.
     //
     // Anchoring here rather than by lowering the player's apsBase keeps the
-    // player sheet round (25 damage, 100 HP, 1.00 rate) AND makes the
-    // ARCHETYPES table below read directly as turns-per-player-turn.
+    // player sheet round (25 damage, 100 HP, 1.00 rate), and rate multipliers
+    // read directly as turns-per-player-turn.
     //
     // PREVIOUS VALUES, if this wants reverting as one block:
     //   apsBase 0.70, apsPerTier 0.018, apsCap 1.5,
-    //   bossDmg 2.0, trashDmgMult 1.9, ARCHETYPES.skirmisher.aps 1.55
+    //   bossDmg 2.0, trashDmgMult 1.9
     apsBase: 1.00,
     // Scaled with the base (0.018 x 1/0.7) so tier growth stays the same
     // FRACTION of the base it always was: a baseline enemy drifts 1.00 -> 1.05
@@ -212,7 +212,10 @@ const BALANCE = {
     // often per fight, so both come down to keep a wave costing what it cost.
     // These are the compensation for the anchor, not a difficulty change: total
     // unmitigated HP spent clearing all 15 waves lands within 2% of before.
-    bossHp: 3.4, bossDmg: 1.40, bossXp: 3.0,
+    // bossHp/bossDmg/bossAps carry the boss's old brute chassis (x1.55 hp,
+    // x1.30 dmg, x0.72 rate), folded in when archetypes were removed:
+    // 3.4x1.55 = 5.27, 1.40x1.30 = 1.82. The Captain is numerically unchanged.
+    bossHp: 5.27, bossDmg: 1.82, bossAps: 0.72, bossXp: 3.0,
     trashDmgMult: 1.33,                // trash hits harder so fights cost real HP (bosses use bossDmg)
     windupEvery: 3, windupMult: 6.5,   // boss telegraph: every Nth action winds up; next strike hits xN
     finalWindupEvery: 2,               // the final boss keeps you under constant telegraph pressure
@@ -316,13 +319,13 @@ const CLASSES = {
 // wave 2 into a wall rather than a change of pace. 1.18 still reads as SWIFT —
 // it out-paces you until you buy Speed — without being the hardest fight in
 // the act.
-const ARCHETYPES = {
-  grunt:      { id:'grunt',      tag:null,      hp:1.00, dmg:1.00, aps:1.00, evade:0.00 },
-  skirmisher: { id:'skirmisher', tag:'SWIFT',   hp:0.68, dmg:0.78, aps:1.18, evade:0.15 },
-  brute:      { id:'brute',      tag:'HEAVY',   hp:1.55, dmg:1.30, aps:0.72, evade:0.00 },
-  warden:     { id:'warden',     tag:'PLATED',  hp:1.25, dmg:0.90, aps:0.90, evade:0.00 }
-};
-const ARCH_ORDER = ['grunt','skirmisher','brute','warden','grunt'];
+// ARCHETYPES are gone. The game HAS two enemies — MCP Enforcer and MCP
+// Captain — and the code now agrees: no hidden chassis cycling stats under
+// one name and one sprite. The owner's rule for enemy variety: a thing that
+// fights differently must LOOK different and be NAMED differently, so new
+// enemy types arrive as name + sprite + behavior together, or not at all.
+// The boss's old brute chassis (x1.55 hp, x1.30 dmg, x0.72 rate) is folded
+// into bossHp / bossDmg / bossAps so the Captain fights exactly as before.
 
 // Opt-in risk: elites hit harder but pay far more XP.
 const ELITES = {

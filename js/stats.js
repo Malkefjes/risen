@@ -500,7 +500,6 @@ function makeEnemy(wave) {
   const g = Math.pow(E.tierGrowth, tier) * (1 + within*E.withinStep);
   const isBoss = wave % BALANCE.bossEvery === 0;
   const isFinal = wave === BALANCE.finalWave;
-  const arch = isBoss ? ARCHETYPES.brute : ARCHETYPES[ARCH_ORDER[(wave-1) % ARCH_ORDER.length]];
 
   // Elites are purely a roll now. The door used to be able to force one for
   // its HUNT branch, which is what the removed forceElite argument was for.
@@ -518,13 +517,13 @@ function makeEnemy(wave) {
 
   const e = {
     id: 'enemy-' + wave + '-' + Math.floor(Math.random()*99999),
-    name, class:'enemy', isPlayer:false, isBoss, isFinal, arch, elite,
+    name, class:'enemy', isPlayer:false, isBoss, isFinal, elite,
     windupEvery: isBoss ? (isFinal ? E.finalWindupEvery : E.windupEvery) : (elite ? E.eliteWindupEvery : 0),
     level: Math.max(1, tier+1+Math.floor(within/2)),
-    maxHp: Math.max(1, Math.round(E.hpBase * g * arch.hp * (isBoss?E.bossHp:1) * (elite&&elite.hpMult?elite.hpMult:1))),
-    damage: Math.max(1, Math.round(E.dmgBase * Math.pow(g, E.dmgExp) * arch.dmg * (isBoss?E.bossDmg:E.trashDmgMult))),
-    attackSpeed: Math.min(E.apsCap, (E.apsBase + tier*E.apsPerTier) * arch.aps * (elite&&elite.apsMult?elite.apsMult:1)),
-    evadeChance: arch.evade,
+    maxHp: Math.max(1, Math.round(E.hpBase * g * (isBoss?E.bossHp:1) * (elite&&elite.hpMult?elite.hpMult:1))),
+    damage: Math.max(1, Math.round(E.dmgBase * Math.pow(g, E.dmgExp) * (isBoss?E.bossDmg:E.trashDmgMult))),
+    attackSpeed: Math.min(E.apsCap, (E.apsBase + tier*E.apsPerTier) * (isBoss?E.bossAps:1) * (elite&&elite.apsMult?elite.apsMult:1)),
+    evadeChance: 0,
     critChance: E.crit, critMult: E.critMult,
     xpMult: (isBoss?E.bossXp:1) * (elite?elite.xp:1),
     hp:0, statuses:[], meter:0, stunImmune:false,
@@ -536,17 +535,14 @@ function makeEnemy(wave) {
 }
 
 // ?plates — display-only dev flag: every enemy panel shows the full plate set
-// (all archetypes, all elites, boss) so their colors can be judged side by
-// side. Rules never read this; an enemy still HAS whatever it rolled.
+// (boss + all elites) so their colors can be judged side by side. Rules never
+// read this; an enemy still HAS whatever it rolled.
 const DEV_ALL_PLATES = typeof location !== 'undefined' && /[?&]plates\b/.test(location.search);
 function enemyTags(e) {
   if (DEV_ALL_PLATES)
-    return ['BOSS']
-      .concat(Object.values(ARCHETYPES).map(a => a.tag).filter(Boolean))
-      .concat(Object.values(ELITES).map(el => el.tag));
+    return ['BOSS'].concat(Object.values(ELITES).map(el => el.tag));
   const out = [];
   if (e.isBoss) out.push('BOSS');
-  else if (e.arch && e.arch.tag) out.push(e.arch.tag);
   if (e.elite) out.push(e.elite.tag);
   return out;
 }
