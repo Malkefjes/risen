@@ -2625,10 +2625,10 @@ body {
 //    rate, never an additive base: a base hands out speed nobody paid for,
 //    which is exactly what the 1:1 anchor exists to prevent.
 //
-//  * Talents prefer to scale p.dmgMult / p.hpMult / p.apsMult over touching a
-//    raw stat, so one pick cannot quietly buy two things. Refinement: Mass is
-//    the deliberate exception — it grants Strength, which since Attack Damage
-//    was unified is a single axis rather than two.
+//  * Mutations prefer to scale p.dmgMult / p.hpMult / p.apsMult over touching
+//    a raw stat, so one pick cannot quietly buy two things. Bumping a raw stat
+//    is allowed where that stat is a single axis — Strength is, since Attack
+//    Damage was unified — but it is the exception and wants saying out loud.
 //
 //  * Known soft spots, in case they read as bugs rather than gaps: Instinct
 //    feeds crit chance and nothing else; cooldown reduction is a live seam with
@@ -2659,9 +2659,10 @@ const BALANCE = {
     //                would allow: boss windups fire every 3 ENEMY actions, so
     //                at x4 you already get 12 turns to answer one, and past
     //                that the telegraph stops being a decision.
-    //   apsCap       absolute ceiling AFTER apsMult. Leaves headroom so earned
-    //                multipliers (Refinement: Tempo, anything later) still pay
-    //                out for a player who has capped the stat itself.
+    //   apsCap       absolute ceiling AFTER apsMult. Leaves headroom so any
+    //                earned multiplier still pays out for a player who has
+    //                capped the stat itself. Nothing sets apsMult today; this
+    //                is the room for whatever does.
     // Points past 20 are not wasted: they keep buying evade below, so
     // overinvestment degrades gently instead of hitting a wall.
     speedApsCap: 4.00, apsCap: 6.00,
@@ -2901,7 +2902,8 @@ function actForWave(wave) {
 //   desc  a fmtDesc template, not prose — put the number in a field and
 //         reference it ({key}, {key%}, {key#noun}) so the card can never
 //         disagree with what apply() actually does. Write apply() as a method
-//         and read the field off `this`, the way REFINEMENTS does.
+//         and read the field off `this` so the number lives exactly once —
+//         `power:0.20, desc:'-{power%} damage', apply(p){ ...this.power... }`.
 //   apply(p)  scale p.dmgMult / p.hpMult / p.apsMult, bump a raw stat, or set
 //         a flag under p.talents. These p.talents hooks are all wired into the
 //         combat code and lie inert until an entry sets one:
@@ -2949,25 +2951,6 @@ const TALENTS = {
   // — one line of data naming a status from STATUSES and the values to apply
   // it with. addBasicRider below is still here for exactly that.
 };
-
-// THE PLACEHOLDER DRAFT POOL, ALSO DELIBERATELY EMPTY.
-//
-// This list existed to top a draft up to three choices once rollTalentOffers
-// ran out of unique mutations — flat +32% damage, +25% max HP and so on. With
-// the mutation pool cleared it would BE the draft rather than padding it, and
-// a run whose only progression is "+32% damage, again" tells you nothing about
-// whether a strain plays well. That is the question the game is on right now,
-// so the padding goes too.
-//
-// Entries are `{ id, name, tag, value, desc, apply(p) }` and own their number
-// once: apply() reads it off `this` and the desc template renders the same
-// field, so retuning is editing one value. They read, for example:
-//
-//   { id:'ref_dmg', name:'Refinement: Edge', tag:'Placeholder', value:0.32,
-//     desc:'+{value%} damage.', apply(p){ p.dmgMult *= 1 + this.value; } }
-//
-// rollTalentOffers guards on this being empty, so leaving it so is safe.
-const REFINEMENTS = [];
 
 // ---- Statuses ------------------------------------------------
 // One registry for every timed effect that can sit on a unit, player or enemy.
@@ -3550,7 +3533,8 @@ function applyDerivedStats(p) {
   // The two caps are applied in order and mean different things: points
   // saturate at speedApsCap, then earned multipliers apply, then apsCap is the
   // absolute ceiling. Capping the stat contribution BEFORE apsMult is what
-  // lets a player who has maxed Speed still gain from a Tempo refinement.
+  // lets a player who has maxed Speed still gain from an earned multiplier
+  // rather than drawing something that does nothing.
   const fromPoints = Math.min(B.speedApsCap, p.speed * B.apsPerSpeed);
   p.attackSpeed = Math.min(B.apsCap, fromPoints * p.apsMult);
 
@@ -4153,7 +4137,13 @@ function promoteQueuedTalent() {
   logEvent('MUTATION available', null, 'level ' + level, ['pick one in MUTATIONS'], 'level');
 }
 
-// Always returns three options. Unique talents first, refinements fill the rest.
+// Up to three options, drawn from TALENTS and nothing else.
+//
+// There is no filler tier. A second pool of generic stat bumps used to top a
+// short draft up to three, which meant the draft never admitted the mutation
+// set was thin — it padded instead, and a pick that reads "+32% damage" is not
+// a decision. A draft now offers what actually exists: three mutations, or two,
+// or none.
 function rollTalentOffers(player) {
   const owned = new Set(player.talentIds);
   // Every mutation is offered to every strain. The draft used to reserve one of
@@ -4166,23 +4156,17 @@ function rollTalentOffers(player) {
   while (picks.length < 3 && pool.length) {
     picks.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
   }
-  // The `REFINEMENTS.length` guard is load-bearing, not defensive dressing:
-  // without it an empty pool indexes undefined, pushes it, and then throws
-  // reading `.id` off it on the next pass. Both pools are empty right now, so
-  // this is the path every draft takes.
-  while (picks.length < 3 && REFINEMENTS.length) {
-    const r = REFINEMENTS[Math.floor(Math.random() * REFINEMENTS.length)];
-    if (!picks.some(x => x.id === r.id)) picks.push(r);
-    else if (picks.length >= REFINEMENTS.length) break;
-  }
-  // May be empty. Every caller already treats that as "no draft happens":
-  // queueTalentOffer returns false without creating an offer or queueing the
-  // level, so an empty pool means levels simply pass without a mutation.
+  // May be empty, and that is a supported answer rather than an error case:
+  // queueTalentOffer declines without creating an offer or queueing the level,
+  // so a level simply passes with no draft.
   return picks;
 }
 
+// TALENTS is the only registry. Returns null for an id from an older build,
+// which callers already handle — see the "Legacy mutation" branch in
+// refreshTalentUI.
 function findTalentDef(id) {
-  return TALENTS[id] || REFINEMENTS.find(r => r.id === id) || null;
+  return TALENTS[id] || null;
 }
 
 function pickTalent(id) {
@@ -4266,7 +4250,7 @@ function refreshTalentUI() {
     // draft is coming, which is a lie while the pool is empty — so the message
     // reads off the pool rather than being hardcoded, and reverts on its own
     // the moment a mutation is added back.
-    const poolEmpty = !Object.keys(TALENTS).length && !REFINEMENTS.length;
+    const poolEmpty = !Object.keys(TALENTS).length;
     list.innerHTML = drafting ? ''
       : '<div class="talent-empty">'
         + (poolEmpty ? 'No mutations in the pool yet' : 'You have not mutated further yet')
