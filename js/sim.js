@@ -43,16 +43,151 @@ function pumpSteps(limit) {
   return n;
 }
 
-// Greedy default: spend the strongest thing available, else swing. Beats no
-// policy at all and is deliberately unclever — a bot that plays well would
-// hide exactly the weaknesses a balance sweep is looking for.
+// ---- The three bots ------------------------------------------
+// THE POINT IS THE BRACKET, NOT ANY ONE NUMBER. One bot gives a single reading
+// that stops discriminating the moment it saturates — when the greedy bot won
+// 40/40 on three classes no enemy tuning could move, that number had stopped
+// measuring the game. A floor and a ceiling say much more than either alone:
+//
+//   dumb high, skilled high   too easy — the run is winnable on autopilot
+//   dumb low,  skilled high   skill-expressive, which is the target
+//   dumb low,  skilled low    too hard
+//   dumb ≈ skilled            NO SKILL EXPRESSION — the class plays itself,
+//                             and this is the case a single bot cannot see
+//
+// Two rules keep the instrument honest. GREEDY IS FROZEN: every balance number
+// in this repo's history was measured with it, so changing it would silently
+// invalidate the comparisons in old commit messages. And SKILLED IS NOT
+// OPTIMAL — deliberately. A searching bot would be a second implementation of
+// the game's strategy that breaks on every kit change, and worse, it would
+// encode one theory of how a class should be played and then confirm it.
+// Skilled is a short list of things a human obviously does, readable in one
+// screen. It is a floor on competence, not a model of mastery.
+//
+// A bot's choices come off Math.random (the rules stream), never
+// cosmeticRandom: what the player does decides the outcome, so it belongs to
+// the same stream every other rule reads.
+
+// The four stats, declared here because two of the three allocators read it.
+const ROTATE_STATS = ['str', 'instinct', 'speed', 'vit'];
+
+// DUMB — mashes. Any ready skill at random, no reading of the fight at all,
+// and points thrown wherever. The floor: whatever this wins, the game gives
+// away for free.
+function dumbPolicy(p) {
+  const ready = p.skills.filter(s => !s.basic && s.cd <= 0);
+  const pool = ready.concat(p.skills.filter(s => s.basic));
+  return pool[Math.floor(Math.random() * pool.length)] || p.skills[0];
+}
+function dumbAllocate() { return ROTATE_STATS[Math.floor(Math.random() * ROTATE_STATS.length)]; }
+
+// GREEDY — the original, and FROZEN (see above): spend the strongest thing
+// available, else swing. Deliberately unclever, which is what lets it expose
+// weaknesses a competent bot would paper over.
 function greedyPolicy(p) {
   const usable = p.skills.filter(s => !s.basic && s.cd <= 0);
   return usable[0] || p.skills[0];
 }
 // Round-robin allocation, for the same reason.
-const ROTATE_STATS = ['str', 'instinct', 'speed', 'vit'];
 function rotateAllocate(p) { return ROTATE_STATS[p.level % ROTATE_STATS.length]; }
+
+// SKILLED — four habits, each one a thing any player picks up in a session.
+// Nothing here knows a class by name; it reads the same fields the skill cards
+// show, so a new kit is piloted without touching this.
+//
+// Is this spender worth firing yet? A bank exists to be spent at a payoff, and
+// dumping Kill on one DREAD stack or Last Stand on one Resolve is how a good
+// skill reads as a bad one. Under 60% of cap it waits — except on a nearly
+// dead enemy, where everything goes in.
+function bankUnderfed(p, skill, e) {
+  if (e && e.maxHp > 0 && e.hp / e.maxHp < 0.25) return false;   // execute: dump it
+  const enough = cap => Math.max(1, Math.ceil(cap * 0.6));
+  if (skill.consumesDread)   return statusStacks(e, 'dread') < enough(P().dreadCap);
+  if (skill.consumesResolve) return (p.resolve || 0) < enough(P().resolveCap);
+  if (skill.consumesSpores)  return (p.spores || 0) < enough(P().sporeCap);
+  return false;
+}
+function skilledPolicy(p) {
+  const e = state.enemy;
+  const ready = p.skills.filter(s => !s.basic && s.cd <= 0);
+  const basic = p.skills.find(s => s.basic) || p.skills[0];
+  const pick = f => ready.find(f);
+
+  // 1. ANSWER THE TELEGRAPH — BUT ONLY IF IT ACTUALLY THREATENS YOU. A windup
+  //    is the biggest hit in the game, and interrupting it deletes the hit
+  //    outright, so a stun spent here beats a stun spent anywhere else. What a
+  //    player does NOT do is burn a turn guarding a blow they can shrug: they
+  //    read the telegraph against their own bar and keep attacking when it is
+  //    survivable. Defending unconditionally is how the first version of this
+  //    bot managed to play worse than one that mashed.
+  if (e && e.windup) {
+    const incoming = (e.damage || 0) * (BALANCE.enemy.windupMult || 1);
+    const scary = incoming > p.hp * 0.35;
+    const answer = (!e.stunImmune && pick(s => s.stun))
+                || (scary && (pick(s => s.type === 'buff') || pick(s => s.type === 'heal')));
+    if (answer) return answer;
+  }
+
+  // 2. DON'T DIE. Below a third, healing outranks damage — but not above it:
+  //    a heal thrown at a nearly full bar is a turn the enemy got for free.
+  if (p.hp / Math.max(1, p.maxHp) < 0.33) {
+    const heal = pick(s => s.type === 'heal');
+    if (heal) return heal;
+  }
+
+  // 3. HOLD THE STUN FOR THE TELEGRAPH, if this enemy telegraphs at all. This
+  //    is the single habit that most separates a player from the greedy bot,
+  //    which fires the stun on cooldown and has it unavailable when the heavy
+  //    lands. Against trash that never winds up there is nothing to save for.
+  //    A stun into an armed stagger resist is also just thrown away.
+  const holdStun = !!(e && e.windupEvery > 0);
+  const usable = ready.filter(s => {
+    // 4. NEVER HEAL A FULL BAR. Heals are reached only by the two rules above,
+    //    which is the difference between a heal and a filler: left in the
+    //    general list, whatever sat earliest in the kit got cast on cooldown
+    //    forever — Unmutated bandaged itself at full health every fourth turn
+    //    and never won a run.
+    if (s.type === 'heal') return false;
+    if (s.stun && (holdStun || (e && e.stunImmune))) return false;
+    // 5. SPEND A BANK AT ITS PAYOFF, not on arrival.
+    if (bankUnderfed(p, s, e)) return false;
+    return true;
+  });
+  return usable[0] || basic;
+}
+// A declared plan per strain rather than a spread: the stats each class
+// actually converts. Stated out loud so it can be argued with, which is the
+// point of writing it down instead of hiding it in a heuristic.
+//
+// EVERY PLAN BUYS ALL FOUR STATS, leaning rather than specialising, and both
+// halves of that were learned the hard way by this bracket:
+//   - the first table skipped INSTINCT, written from pre-rework habit when it
+//     meant 1.1% crit a point. Instinct is quadratic now, so skipping it cost
+//     bio half its win rate.
+//   - the second skipped SPEED, and that was worse: turn rate is a mitigation
+//     stat wearing an offensive costume (see the balance header), so a plan
+//     with no Speed hands the enemy every turn it wants. Unmutated went to 0%.
+// Two rounds of the "skilled" bot losing to the one that mashes, which is the
+// instrument doing its job — and a standing hint that a balanced spread is
+// simply strong in this game.
+const SKILLED_PLANS = {
+  bio:  ['vit', 'str', 'instinct', 'speed'],      // outlast, and poison rides Attack Damage
+  psy:  ['instinct', 'speed', 'str', 'vit'],      // fear comes from crits and dodges
+  sym:  ['vit', 'str', 'instinct', 'speed'],      // thorns are a share of max HP
+  base: ['vit', 'str', 'instinct', 'speed']       // endure, then Last Stand
+};
+function skilledAllocate(p) {
+  const plan = SKILLED_PLANS[p.class] || ROTATE_STATS;
+  return plan[(p.level - 1) % plan.length];
+}
+
+// The registry, shaped so a bot IS a simulateRun opts object: pass it straight
+// through as simulateRun('psy', BOTS.skilled).
+const BOTS = {
+  dumb:    { name: 'dumb',    policy: dumbPolicy,    allocate: dumbAllocate },
+  greedy:  { name: 'greedy',  policy: greedyPolicy,  allocate: rotateAllocate },
+  skilled: { name: 'skilled', policy: skilledPolicy, allocate: skilledAllocate }
+};
 
 // One full run, start to death-or-victory.
 //
