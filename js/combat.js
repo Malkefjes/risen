@@ -165,6 +165,25 @@ function tickTurnStart(unit) {
   if (unit.isPlayer) {
     unit.skills.forEach(s => { if (!s.basic && s.cd > 0) s.cd--; });
     state.fightTurns++;
+    // THE SIPHON — psy feeds on fear while it sits on the enemy: each DREAD
+    // stack drips a share of max HP at the start of your turn. Ticks on YOUR
+    // turns so it scales with the turn advantage the slow already bought.
+    // Follows REGEN's shape: skipped silently at full HP, a floater and a log
+    // line when it drinks, so the drip is visible without being noise.
+    const foe = state.enemy;
+    if (unit.class === 'psy' && unit.hp < unit.maxHp && foe && foe.hp > 0 && !foe._defeated) {
+      const stacks = statusStacks(foe, 'dread');
+      if (stacks > 0) {
+        const heal = Math.max(1, Math.floor(unit.maxHp * (P().dreadSiphonFrac || 0) * stacks));
+        const before = unit.hp;
+        unit.hp = Math.min(unit.maxHp, unit.hp + heal);
+        floatText(unit, unit.hp - before, 'heal');
+        logHeal('SIPHON', unit, unit.hp - before, [
+          'DREAD ×' + stacks,
+          logNum(unit.hp) + '/' + logNum(unit.maxHp)
+        ]);
+      }
+    }
   }
   updateUnitCard(unit);
   return false;
@@ -559,9 +578,15 @@ function applyPlayerDamage(p, e, skill) {
     // stay, still slowing. A threshold keeps hold-vs-spend as base's tension,
     // not psy's: psy's only cash-out is Kill. The attack still lands either
     // way; only the break is gated, and the log names what was missing.
+    // Every way the break can fail gets a FLOATER, not just a log line: the
+    // owner plays without reading the transcript, and three silent outcomes
+    // (threshold missed, stagger resist, windup interrupt) stacked up into
+    // "Traumatize doesn't work". A muted note names which rule ate the stun
+    // at the moment it happens.
     if (skill.dreadNeed) {
       const held = statusStacks(e, 'dread');
       if (held < skill.dreadNeed) {
+        floatText(e, 'MIND HOLDS ' + held + '/' + skill.dreadNeed, 'note');
         logEvent('STUN', null, 'mind holds',
                  ['needs ' + skill.dreadNeed + ' DREAD, it holds ' + held], '');
         return dmg;
@@ -576,16 +601,19 @@ function applyPlayerDamage(p, e, skill) {
       const fig = getFigureForUnit(e);
       if (fig) fig.style.filter = '';
       e.stunImmune = true;
+      floatText(e, 'INTERRUPTED', 'note');
       logEvent('INTERRUPT', e, 'windup broken', ['stagger resist now armed'], 'heal');
     } else if (e.windup && e.stunImmune) {
       // The shrug clears the resist but the strike still comes.
       e.stunImmune = false;
+      floatText(e, 'RESISTED', 'note');
       logEvent('STAGGER RESISTED', e, 'windup holds', ['resist consumed'], 'damage');
     } else {
       if (e.stunImmune) {
         // Without this, a 1-turn stun on a ~3-turn cooldown locks an enemy that acts
         // once per 3-4 of your turns out of the fight entirely.
         e.stunImmune = false;
+        floatText(e, 'RESISTED', 'note');
         logEvent('STAGGER RESISTED', e, 'no stun', ['resist consumed'], 'damage');
       } else {
         applyStatus(e, 'stun', { duration: stunTurns });

@@ -440,7 +440,8 @@ function strainReadout(p) {
   // number printed twice in one pane.
   if (p.class === 'sym') return { id:'strain', label:'Thorns', text: formatNum(p.thorns), num: p.thorns };
   if (p.class === 'psy') return { id:'strain', label:'Per DREAD',
-    text: '−' + Math.round(P().dreadSlowPerStack*100) + '% rate, +' + Math.round(P().dreadVulnPerStack*100) + '% taken' };
+    text: '−' + Math.round(P().dreadSlowPerStack*100) + '% rate, +' + Math.round(P().dreadVulnPerStack*100)
+      + '% taken, +' + (P().dreadSiphonFrac*100) + '% HP/turn' };
   return null;
 }
 function guardReadout(p) {

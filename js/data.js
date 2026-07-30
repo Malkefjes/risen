@@ -133,7 +133,7 @@
 // KEEP THIS SEPARATE FROM BALANCE.saveKey. That one answers "are saved runs
 // still valid" and is bumped only when a change makes an old sheet wrong.
 // Deriving it from this would wipe every save on a typo fix.
-const BUILD = '2026-07-30c';
+const BUILD = '2026-07-30d';
 
 const BALANCE = {
   player: {
@@ -339,6 +339,16 @@ const BALANCE = {
     // Instinct and Speed plant the fear, so they now buy staying power too,
     // which is what finally lets a teeth-first psy live without renting Vit.
     dreadFeedFrac: 0.03,     // heal per DREAD consumed, as a share of max HP (18% for a full 6)
+    // THE SIPHON: fear feeds you passively while it sits on them — each stack
+    // heals this share of max HP at the start of each of YOUR turns. On the
+    // player's turns, not the enemy's, deliberately: the slow means a marked
+    // enemy gives you MORE turns, so the siphon scales with the turn advantage
+    // the stacks already bought instead of being starved by it. The mirror of
+    // poison completes: bio's mark ticks damage out of the enemy on a clock,
+    // psy's mark ticks health into you on one. DEVOUR stays the burst half —
+    // the siphon is the drip that keeps a marked fight from being pure
+    // attrition against a class with no bandage.
+    dreadSiphonFrac: 0.005,  // heal per DREAD on the enemy, per player turn (3%/turn at a full 6)
     sporeCap: 6,           // sym: Spore bank ceiling
     resolveCap: 6,         // Unmutated: Resolve bank ceiling
     resolveDR: 0.03,       // Unmutated: each held Resolve = 3% flat damage reduction (18% at cap)
@@ -488,7 +498,12 @@ const CLASSES = {
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
       { id:'hunt', name:'Hunt', desc:'Auto. Attack the enemy for your Attack Damage. Your crits and your dodges plant +{dreadOnCrit} DREAD.', type:'attack', power:1.0, dreadOnCrit:1, dreadOnEvade:1, target:'enemy', basic:true },
-      { id:'terrify', name:'Terrify', desc:'Attack for {power!} damage and plant +{dread} DREAD. Every stack slows the enemy and opens its guard.', type:'attack', power:0.50, dread:3, target:'enemy', cdTurns:3 },
+      // Plants 4, one MORE than Traumatize needs, so the advertised combo
+      // survives one steadying hit: at the 1:1 anchor the enemy usually lands
+      // a blow between your Terrify and your Traumatize, shedding a stack —
+      // at +3 the threshold arrived already broken and the stun read as a
+      // skill that didn't work.
+      { id:'terrify', name:'Terrify', desc:'Attack for {power!} damage and plant +{dread} DREAD. Every stack slows the enemy and opens its guard.', type:'attack', power:0.50, dread:4, target:'enemy', cdTurns:3 },
       { id:'traumatize', name:'Traumatize', desc:'Attack for {power!} damage. Against {dreadNeed}+ DREAD the mind breaks: stunned for {stun#turn}.', type:'attack', power:0.95, stun:1, dreadNeed:3, target:'enemy', cdTurns:4 },
       { id:'kill', name:'Kill', desc:'Attack for {power!} damage, +{perDreadPower!} per DREAD consumed, and DEVOUR the fear: heal {feedPerDread%} of max HP per stack. Spends ALL the enemy’s DREAD.', type:'attack', power:1.20, perDreadPower:0.60, consumesDread:true, feedPerDread:BALANCE.player.dreadFeedFrac, target:'enemy', cdTurns:5 }
     ]
