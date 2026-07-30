@@ -316,6 +316,14 @@ function updateHud() {
   const statsTab = document.querySelector('.sidebar-tab[data-tab="stats"]');
   if (statsTab) statsTab.classList.toggle('points-alert', p.points > 0 || pendingTotal(p) > 0);
   refreshSidebarStats();
+  // AND THE FIGHTER CARD, which shows the same HP this just redrew in the
+  // sidebar. updateHud fires on the run-scale beats — a level, a commit, a
+  // resume — and every one of them can move max HP or current HP, so leaving
+  // the card out let a committed Vitality point raise the sidebar's Health
+  // row while the bar above the sprite kept the old number until the next
+  // hit landed. Harmless before the arena exists: updateUnitCard finds no
+  // panel and returns.
+  updateUnitCard(p);
 }
 
 function updateCombo() {
@@ -642,6 +650,25 @@ function showStatGroup(group) {
     .forEach(b => b.classList.toggle('active', b.dataset.group === group));
 }
 
+// The readout VALUES alone, split out of refreshSidebarStats so the combat
+// path can keep them honest without dragging the allocation UI — buttons,
+// deltas, hover previews — along for every hit landed.
+//
+// THIS EXISTS BECAUSE THE SIDEBAR USED TO LIE. Damage and healing redraw the
+// fighter card (updateUnitCard) on every exchange, but the sidebar's rows were
+// only rewritten by updateHud, which runs at run-scale beats — a level, a
+// spawn, an allocation. So the Health row sat at whatever it read when the
+// wave began while the bar above the sprite told the truth: two HP numbers on
+// one screen disagreeing, with the authoritative-looking one wrong.
+function refreshReadoutValues() {
+  if (HEADLESS.on) return;
+  const p = state.player; if (!p) return;
+  readouts(p).forEach(r => {
+    const el = document.getElementById('d-' + r.id);
+    if (el) el.textContent = r.text;
+  });
+}
+
 function refreshSidebarStats() {
   if (HEADLESS.on) return;
   const p = state.player; if (!p) return;
@@ -686,10 +713,7 @@ function refreshSidebarStats() {
   if (st) { const l = document.getElementById('label-strain'); if (l) l.textContent = st.label; }
   if (g)  { const l = document.getElementById('label-guard');  if (l) l.textContent = g.label; }
 
-  rows.forEach(r => {
-    const el = document.getElementById('d-' + r.id);
-    if (el) el.textContent = r.text;
-  });
+  refreshReadoutValues();
 
   showStatGroup(_statGroup);
   // The staged allocation is the resting state of the delta column; hovering a

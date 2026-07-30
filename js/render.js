@@ -148,6 +148,10 @@ function updateUnitCard(unit) {
   if (unit.isPlayer) {
     const bankRow = panel.querySelector('.bank-row');
     if (bankRow) { const bh = bankPipsHtml(unit); if (bankRow.dataset.k !== bh) { bankRow.dataset.k = bh; bankRow.innerHTML = bh; } }
+    // The sidebar reads off the same sheet as this card, so it is refreshed
+    // from the same hook rather than from each damage and healing site — the
+    // two HP numbers on screen can then never disagree.
+    refreshReadoutValues();
   }
   if (!unit.isPlayer) {
     const badge = panel.querySelector('.intent-badge');
