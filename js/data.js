@@ -364,6 +364,30 @@ const BALANCE = {
     reloadHpFloor: 0.15    // deliberate mercy: continuing a run never puts you below this
   },
   enemy: {
+    // ---- WHY THIS TABLE CANNOT OPEN THE BRACKET (a read, not a plan) ------
+    // The bot bracket calls bio, psy and sym TOO EASY — the DUMB bot wins
+    // ~98% — and no knob in this table can change that verdict, because the
+    // margin it would have to eat is sustain, and strain sustain is a share
+    // of max HP that does not care when it is cast. Measured (dumb bot, per
+    // run): bio takes ~740 damage and heals ~550 back (Miasma's regen is
+    // ~475 of it, full value on cooldown-mash), sym takes ~1320 and heals
+    // ~875, psy takes ~500 and siphons/devours ~375. Every loss any bot
+    // suffers is at wave 15; waves 1-14 kill nobody. Proportional sustain
+    // cancels proportional damage at any multiplier, so raising this table
+    // only reorders who drowns first. Both obvious raises were tried and
+    // measured before being reverted:
+    //   - elites at 2x chance, windup on the 2nd action: win rates unmoved.
+    //     Heavies land on full bars the loop refills — and elite XP at 1.7x
+    //     is itself a buff, so more elites made base EASIER, not harder.
+    //   - trashDmgMult 1.45 -> 1.75 on top: the three strains' dumb bots
+    //     still won 83-96% while base skilled sank to 38% — the one class
+    //     whose sustain is flat and rare drowns first, every time.
+    // If autopilot wins should stop, the seam is in the KITS: sustain has to
+    // care about timing before enemy numbers can matter. Base already lives
+    // this (Bandage is all it has), which is why base is the only class the
+    // bracket calls hard — the enemy table is fitted against timing-immune
+    // healing three of the four classes carry.
+    //
     // ---- THE TIER STEP ----------------------------------------------------
     // A TIER BOUNDARY MUST BE A STEP, AND IT USED TO BE FLAT — arithmetically,
     // not just in feel. With withinStep 0.13 the drift across a tier's five
