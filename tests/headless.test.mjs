@@ -27,14 +27,14 @@ export default async function ({ page, ok }) {
 
   const safety = await page.evaluate(() => {
     localStorage.clear();
-    localStorage.setItem('risen_run_v4_s1', JSON.stringify({ v: 2, classId: 'bio', wave: 9, kills: 5,
+    localStorage.setItem(slotKey(1), JSON.stringify({ v: 2, classId: 'bio', wave: 9, kills: 5,
       player: { level: 5, str: 9, instinct: 5, speed: 7, vit: 8, hp: 90, maxHp: 160, dmgMult: 1,
                 hpMult: 1, apsMult: 1, talents: {}, talentIds: [], statuses: [], skillCds: [0,0,0,0] } }));
     goToMenu();
     const before = document.querySelector('.screen.active')?.id;
     for (let i = 0; i < 5; i++) simulateRun('psy');
     return { before, after: document.querySelector('.screen.active')?.id,
-             savedWave: JSON.parse(localStorage.getItem('risen_run_v4_s1') || '{}').wave,
+             savedWave: JSON.parse(localStorage.getItem(slotKey(1)) || '{}').wave,
              keys: Object.keys(localStorage).length,
              floaters: document.querySelectorAll('.float-dmg').length,
              logNodes: document.querySelectorAll('#combat-log .log-entry').length,

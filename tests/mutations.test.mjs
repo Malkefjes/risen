@@ -50,7 +50,7 @@ export default async function ({ page, ctx, ok }) {
   ok('tab shows the honest empty state', run.tabText === 'No mutations in the pool yet', JSON.stringify(run.tabText));
   const legacy = await page.evaluate(() => {
     localStorage.clear();
-    localStorage.setItem('risen_run_v4_s1', JSON.stringify({
+    localStorage.setItem(slotKey(1), JSON.stringify({
       v:2, classId:'bio', wave:6, kills:5, bestCombo:2, talentQueue:[],
       player:{ level:6, xp:0, xpNext:200, points:0, str:9, instinct:5, speed:7, vit:8,
                dmgMult:1.32, hpMult:1.25, apsMult:1.11, hp:120, maxHp:160,

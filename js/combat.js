@@ -349,6 +349,31 @@ function applyEnemyDamage(e, p, mult) {
   return dmg;
 }
 
+// A CRIT FEEDS YOUR STRAIN — the half of Instinct that is not damage.
+//
+// One rule, four meanings, because every strain already runs on something that
+// wants filling: Momentum for psy, a Spore for sym, Resolve for Unmutated, and
+// for bio the rot itself, which is its bank in everything but name. So Instinct
+// buys the same sentence for everyone — "my mechanic is online when I need it"
+// — and cashes out as whatever the strain in front of you is made of.
+//
+// Nothing here is per-strain except the bio branch: bankOf already knows which
+// field a class runs on, and bankAdjust returns 0 for a class with no bank, so
+// a strain that never gets one needs no case.
+function creditCrit(p, e) {
+  const gain = P().critBankGain || 0;
+  if (!gain) return;
+  if (p.class === 'bio') {
+    // Guarded on the enemy still standing: a killing crit has nothing left to
+    // rot, and poison permanent-stacked onto a corpse would log a number that
+    // never ticks.
+    if (e && e.hp > 0)
+      applyStatus(e, 'poison', { stacks: gain, perStack: p.poisonPerStack });
+    return;
+  }
+  bankAdjust(p, gain, 'CRIT');
+}
+
 // Player -> enemy.
 function applyPlayerDamage(p, e, skill) {
   let dmg = p.atkPower * (skill.power || 1);
@@ -424,7 +449,13 @@ function applyPlayerDamage(p, e, skill) {
   }
 
   let isCrit = Math.random() < p.critChance;
-  if (isCrit) { dmg *= p.critMult; notes.push('CRIT ×' + p.critMult.toFixed(1)); }
+  // Printed the same way the Crit damage readout prints it — two decimals only
+  // when there is a fraction to show — so the log and the sheet cannot report
+  // the same x2.05 as two different numbers now that Instinct moves it.
+  if (isCrit) {
+    dmg *= p.critMult;
+    notes.push('CRIT ×' + (p.critMult % 1 ? p.critMult.toFixed(2) : p.critMult));
+  }
 
   dmg = Math.max(1, Math.floor(dmg));
   const before = e.hp;
@@ -448,6 +479,10 @@ function applyPlayerDamage(p, e, skill) {
   if (p.class === 'psy') bankAdjust(p, 1, 'attack landed');
   // Resolve (base): landing a hit steadies you.
   if (skill.buildsResolve) bankAdjust(p, skill.buildsResolve, skill.name);
+  // ...and a crit feeds it again, on top of whatever the swing already paid.
+  // Stacks with the two above rather than replacing them, so a critting basic
+  // is the best thing that can happen to a bank.
+  if (isCrit) creditCrit(p, e);
 
   if (skill.poison && p.class === 'bio')
     applyStatus(e, 'poison', { stacks: skill.poison, perStack: p.poisonPerStack });

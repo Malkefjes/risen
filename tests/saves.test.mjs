@@ -176,7 +176,7 @@ export default async function ({ page, ctx, ok }) {
   await page.click('#intro-screen .btn-ghost');
   await page.evaluate(() => {
     localStorage.clear();
-    localStorage.setItem('risen_run_v4_s1', JSON.stringify({
+    localStorage.setItem(slotKey(1), JSON.stringify({
       v: 2, classId: 'bio', wave: 7, kills: 6, bestCombo: 3,
       player: { level: 4, str: 9, instinct: 5, speed: 5, vit: 6, hp: 80, maxHp: 120,
                 dmgMult:1, hpMult:1, apsMult:1, talents:{}, talentIds: [], statuses: [],

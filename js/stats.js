@@ -338,9 +338,16 @@ function applyDerivedStats(p) {
   p.blockChance = Math.min(B.blockCap, B.blockBase + p.vit*B.blockPerVit);
   p.blockReduction = B.blockReduction;
   p.critChance = Math.min(B.critCap, B.critBase + p.instinct*B.critPerInstinct + (t.critFlat||0));
-  // Flat, and the same for everyone: Instinct decides how often you crit, not
-  // how hard. One less number that drifts with a stat nobody can see moving.
-  p.critMult = B.critMult;
+  // CRIT DAMAGE IS THE OVERFLOW VALVE. Instinct raises how OFTEN you crit until
+  // the chance caps, and every point past that raises how HARD instead — the
+  // same shape as Speed's points going to evade once the rate term saturates.
+  //
+  // Counted off the STAT only, never off t.critFlat: a talent's flat chance is
+  // not Instinct, so it must not push the handover point down and quietly turn
+  // a chance bonus into a damage bonus. That also keeps the two terms strictly
+  // sequential, which is what makes Instinct linear rather than quadratic.
+  const critCapAt = (B.critCap - B.critBase) / B.critPerInstinct;
+  p.critMult = B.critMult + Math.max(0, p.instinct - critCapAt) * (B.critMultPerInstinct || 0);
   // Cooldowns answer to Speed, not Instinct: acting more often and acting
   // again sooner are the same idea, and it gives Speed somewhere to go once
   // the attack-rate term saturates at 23 points.

@@ -58,11 +58,36 @@
 //    is allowed where that stat is a single axis — Strength is, since Attack
 //    Damage was unified — but it is the exception and wants saying out loud.
 //
-//  * Known soft spots, in case they read as bugs rather than gaps: Instinct
-//    feeds crit chance and nothing else; cooldown reduction is a live seam with
-//    no source yet (no talent sets cdrBonus, so its readout row stays hidden);
-//    and healing outside class kits is down to two 8% trickles — between fights
-//    and on level-up — since regen and the door's RECOVER both went.
+//  * EVERY STAT OWNS A VERB, and they are deliberately different ones:
+//    Strength hits harder, Vitality survives, Speed acts more often than the
+//    thing in front of you, Instinct keeps your strain mechanic online. The
+//    fourth one was missing for a long time — Instinct fed crit chance and
+//    nothing else, which made it a worse copy of Strength's verb rather than a
+//    verb of its own, and no amount of retuning the rate could fix that (a
+//    bounded stat cannot chase an unbounded one; the numbers are in the
+//    INSTINCT block below). When adding a stat source, ask which verb it
+//    speaks — two stats sharing one is how Instinct died the first time.
+//
+//  * NEXT FOR INSTINCT, once the strains themselves feel right: let it scale
+//    what a charge is WORTH, not just how fast the bank fills. Damage per
+//    Momentum, damage reduction per Resolve, the thorns multiplier, poison per
+//    stack — the magnitudes that are flat constants today (momentumDmg,
+//    resolveDR, thornsFrac, ailmentDamageFrac). Deliberately NOT done yet:
+//    those constants are the knobs the strains are currently being tuned with,
+//    and a stat multiplying a number that is still moving makes both
+//    unjudgeable. It wants doing alongside the Momentum overhaul, and it
+//    stacks cleanly with what is already here — crits-feed-your-strain is how
+//    fast the bank FILLS, this is what each charge PAYS. Watch for two things
+//    when it lands: it must not make Instinct mandatory for every strain (a
+//    stat you must take is as dead as one you never take), and thorns and
+//    poison are shares of the HP and damage anchors, so scaling them by a stat
+//    means those anchors stop carrying them for free.
+//
+//  * Known soft spots, in case they read as bugs rather than gaps: cooldown
+//    reduction is a live seam with no source yet (no talent sets cdrBonus, so
+//    its readout row stays hidden); and healing outside class kits is down to
+//    two 8% trickles — between fights and on level-up — since regen and the
+//    door's RECOVER both went.
 // ============================================================
 
 // ---- Build ----------------------------------------------------
@@ -79,7 +104,7 @@
 // KEEP THIS SEPARATE FROM BALANCE.saveKey. That one answers "are saved runs
 // still valid" and is bumped only when a change makes an old sheet wrong.
 // Deriving it from this would wipe every save on a typo fix.
-const BUILD = '2026-07-29c';
+const BUILD = '2026-07-30';
 
 const BALANCE = {
   player: {
@@ -123,15 +148,45 @@ const BALANCE = {
     pointsPerLevel: 3,
     // The percentage stats are set so a starting sheet reads 10 / 10 / 10 / 0
     // at 5 in every stat — the same round-number treatment as 25 damage and
-    // 100 HP. The bases look odd on their own (0.075, 0.045, 0.065) because
-    // each is "10% minus whatever the starting 5 points already contribute";
-    // the per-point rates are untouched, since Speed and Instinct want defining
-    // before they want retuning. Once they are defined, moving every rate to a
-    // flat 1%/point would let all three bases sit at a tidy 5%.
+    // 100 HP. Evade and block still look odd on their own (0.075, 0.065)
+    // because each is "10% minus whatever the starting 5 points already
+    // contribute"; their per-point rates are untouched, since Speed's second
+    // axis wants defining before it wants retuning. Crit no longer needs the
+    // trick — see below.
     evadeBase: 0.075, evadePerSpeed: 0.005, evadeCap: 0.40,
     blockBase: 0.065, blockPerVit: 0.007, blockCap: 0.35, blockReduction: 0.5,
-    critBase: 0.045, critPerInstinct: 0.011, critCap: 0.70,
-    critMult: 2.0,          // flat: a crit is always double, on every strain
+    // ---- INSTINCT ---------------------------------------------------------
+    // CRIT CHANCE IS TWICE YOUR INSTINCT, AS A PERCENT. No base at all, which
+    // makes it the one percentage stat that reads straight off its own number:
+    // 5 Instinct is 10%, 20 Instinct is 40%. The old 0.045 + 1.1%/point was
+    // the reason Instinct was dead — one point bought 1.1% more damage where a
+    // Strength point bought 20%, so Instinct was worth a fifteenth of Strength
+    // and the break-even sat at 91 Strength. Not reachable in a run, or in ten.
+    //
+    // Doubling the rate does NOT fix that on its own, and it is not meant to.
+    // Crit chance against a fixed multiplier is a BOUNDED stat: even at the cap
+    // Instinct's entire lifetime contribution is x1.70 damage, about what three
+    // and a half Strength points give you. Strength is unbounded and linear, so
+    // a bounded stat can never catch it. Instinct stops competing on damage and
+    // is paid on a second axis instead — the bank, below.
+    critBase: 0.00, critPerInstinct: 0.02, critCap: 0.70,
+    critMult: 2.0,          // a crit is double at the starting sheet...
+    // ...and points past the CHANCE cap keep paying, in crit DAMAGE. Same
+    // gentle-degrade shape as Speed, whose points keep buying evade once the
+    // rate term saturates: overinvestment bends instead of hitting a wall.
+    //
+    // This is also what keeps Instinct LINEAR rather than quadratic (see the
+    // header rule). Chance climbs to the cap, and only then does damage start
+    // climbing — the two never rise at the same time, so Instinct never
+    // multiplies one of its own terms by the other. The cap arrives at 35
+    // Instinct; a full run's points can reach roughly 45, so the tail is real
+    // but short.
+    critMultPerInstinct: 0.05,
+    // A CRIT FEEDS YOUR STRAIN. Instinct's real job, and the axis Strength
+    // cannot buy: not "hit harder" but "my mechanic is online when I need it".
+    // One rule with four meanings — Momentum, a Spore, Resolve, or a poison
+    // stack, whichever the strain in front of you runs on. See creditCrit.
+    critBankGain: 1,
     // COOLDOWN REDUCTION IS NO LONGER A STAT. Speed does not feed it and
     // nothing else does yet, so cdrPerSpeed is gone rather than sitting at 0.
     //
@@ -238,12 +293,20 @@ const BALANCE = {
   // becoming a pure stat, and the mutation pool being cleared: a sheet with 7
   // Speed saved under v3 loaded back at 1.40x where it was built at ~1.06x.
   //
+  // v4 -> v5 is Instinct: crit chance became a flat 2%/point off no base,
+  // points past the chance cap started buying crit damage, and a crit began
+  // feeding the strain bank. A v4 sheet with 20 Instinct was allocated for 26%
+  // crit and would load back at 40% with a bank filling on top — the same shape
+  // of silent re-read the Speed bump was.
+  //
   // Bumping also gives every player empty slots on the next load, which is the
   // honest outcome — those runs are not playable as the game now works.
-  saveKey: 'risen_run_v4',
+  saveKey: 'risen_run_v5',
   // Storage keys from older versions, cleared once on load so they cannot
   // accumulate invisibly. Oldest first; add the outgoing prefix here on a bump.
-  oldSaveKeys: ['risen_run_v3', 'risen_run_v3_s1', 'risen_run_v3_s2'],
+  // Slot keys are listed explicitly because the purge removes literal keys.
+  oldSaveKeys: ['risen_run_v3', 'risen_run_v3_s1', 'risen_run_v3_s2',
+                'risen_run_v4', 'risen_run_v4_s1', 'risen_run_v4_s2'],
   saveSlots: 2
 };
 
