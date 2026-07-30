@@ -428,6 +428,18 @@ const CLASSES = {
       { id:'storm', name:'Flow State', desc:'Needs {requiresCharges}+ Momentum. For {duration#turn}: Momentum cannot be lost, and every held stack deals double damage.', type:'buff', buff:'flow', duration:3, requiresCharges:3, target:'self', cdTurns:6 }
     ]
   },
+  // WHY SYM FEELS OFF, for whenever its pass comes (a read, not a plan): its
+  // bank is Resolve wearing a coat. Spores are gained by taking hits, held,
+  // and spent for a heal (Feed) or a burst (Erupt) — that is Unmutated's loop,
+  // and hold-vs-spend is HIS identity. Meanwhile the part of sym that is
+  // actually unique — thorns, the enemy hurting itself on you — is passive and
+  // merely happens. So sym plays like a worse base with a passive stapled on.
+  // The direction worth trying: bio ramps a number on the ENEMY (poison); sym
+  // should ramp a number on ITSELF — the organism grows over the fight, every
+  // hit fed to it making it bigger, spikier, harder. Spores as growth, not as
+  // a wallet. Erupt is the most base-shaped thing in the kit (spend bank for
+  // burst) and is the first thing to question. Its sentence: "everything you
+  // do to me makes me stronger."
   sym: {
     name: 'Symbiotic', color: 'sym',
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
