@@ -681,7 +681,7 @@ const CLASSES = {
 // it out-paces you until you buy Speed — without being the hardest fight in
 // the act.
 // ARCHETYPES are gone. The game HAS four enemies — two per act: the
-// Laboratory's Failed Experiment and Prime Symbiote, the Encampment's MCP
+// Laboratory's Escaped Experiment and Prime Symbiote, the Encampment's MCP
 // Enforcer and MCP Captain — and the code agrees: no hidden chassis cycling
 // stats under one name and one sprite. The owner's rule for enemy variety:
 // a thing that fights differently must LOOK different and be NAMED
@@ -727,7 +727,7 @@ const ELITES = {
 const ACTS = [
   { num: 1, name: 'The Laboratory', startWave: 1, endWave: 15,
     zones: ['THE LABORATORY'],
-    enemyName: 'Failed Experiment', bossName: 'Prime Symbiote',
+    enemyName: 'Escaped Experiment', bossName: 'Prime Symbiote',
     growthMult: 1 },
   { num: 2, name: 'MCP Encampment', startWave: 16, endWave: 30,
     zones: ['MCP ENCAMPMENT'],
