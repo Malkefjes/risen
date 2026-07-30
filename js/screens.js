@@ -106,6 +106,13 @@ function resetRunState(classId) {
   state.enemyActions = 0;
   state.turnNo = 0;
   state.damageDealt = 0;
+  // Run-lifetime counters for the result card. turnNo above resets per fight
+  // (the log's T-numbers), so the run's total is its own count; the rest are
+  // tallied at the one site each event actually happens.
+  state.runTurns = 0;
+  state.damageTaken = 0;
+  state.critsLanded = 0;
+  state.dodges = 0;
   state.runStart = Date.now();
   state._defeatLock = false;
   state._lastOverkill = 0;

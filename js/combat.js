@@ -165,6 +165,7 @@ function tickTurnStart(unit) {
   if (unit.isPlayer) {
     unit.skills.forEach(s => { if (!s.basic && s.cd > 0) s.cd--; });
     state.fightTurns++;
+    state.runTurns = (state.runTurns || 0) + 1;
     // THE SIPHON — psy feeds on fear while it sits on the enemy: each DREAD
     // stack drips a share of max HP at the start of your turn. Ticks on YOUR
     // turns so it scales with the turn advantage the slow already bought.
@@ -295,6 +296,7 @@ function applyEnemyDamage(e, p, mult) {
   notes.push(...statusNotes(e, 'outgoingMult', { target: p }));
   let dmg = Math.max(1, Math.floor(e.damage * (mult || 1) * statusMult(e, 'outgoingMult', { target: p })));
   if (Math.random() < p.evadeChance) {
+    state.dodges = (state.dodges || 0) + 1;
     logMiss(label, p, 'EVADED (' + Math.round(p.evadeChance * 100) + '%)');
     // Psy: the hunter they cannot touch. A whiff plants fear, which is how
     // Speed feeds the class engine — evade is the second mouth of DREAD,
@@ -327,6 +329,7 @@ function applyEnemyDamage(e, p, mult) {
   }
   dmg = Math.max(1, dmg);
   p.hp = Math.max(0, p.hp - dmg);
+  state.damageTaken = (state.damageTaken || 0) + dmg;
   logDamage(label, p, dmg, notes.concat([logNum(p.hp) + '/' + logNum(p.maxHp) + ' left']));
   // Psy: an enemy that gets its hands on you regains its nerve — the mark
   // eases instead of your bank draining. Same pressure, honest owner: being
@@ -510,6 +513,7 @@ function applyPlayerDamage(p, e, skill) {
   // the same x2.05 as two different numbers now that Instinct moves it.
   if (isCrit) {
     dmg *= p.critMult;
+    state.critsLanded = (state.critsLanded || 0) + 1;
     notes.push('CRIT ×' + (p.critMult % 1 ? p.critMult.toFixed(2) : p.critMult));
   }
 
@@ -775,6 +779,7 @@ function onEnemyDefeated() {
   if (e.elite && e.elite.deathNova) {
     const nova = Math.max(1, Math.floor(p.maxHp * e.elite.deathNova));
     p.hp = Math.max(0, p.hp - nova);
+    state.damageTaken = (state.damageTaken || 0) + nova;
     floatText(p, nova, 'damage');
     logDamage('DEATH NOVA', p, nova, [
       'VOLATILE ' + Math.round(e.elite.deathNova * 100) + '% max HP',
@@ -875,15 +880,39 @@ function showResultScreen() {
   title.className = 'result-title ' + (won ? 'win' : 'lose');
   const finalAct = actForWave(BALANCE.finalWave);
   const opening = won
-    ? 'Act ' + finalAct.num + ': ' + finalAct.name + ' — all ' + BALANCE.finalWave + ' waves cleared. You rose.<br>'
-    : 'You fell on <b>Wave ' + state.wave + '</b> in ' + getZoneName(state.wave) + '.<br>';
+    ? 'Act ' + finalAct.num + ': ' + finalAct.name + ' — all ' + BALANCE.finalWave + ' waves cleared. You rose.'
+    : 'You fell on <b>Wave ' + state.wave + '</b> in ' + getZoneName(state.wave) + '.';
+
+  // The run's ledger, as a card in the save-slot family: same panel, same
+  // rounded border, stats as labelled rows rather than a sentence with the
+  // numbers baked in. Every value is a counter the rules incremented at the
+  // moment the event happened — nothing here is recomputed or estimated.
+  const row = (label, value) =>
+    '<div class="result-row"><span>' + label + '</span><b>' + value + '</b></div>';
   document.getElementById('result-stats').innerHTML =
-    opening +
-    'Level ' + p.level + ' &middot; ' + state.kills + ' kills &middot; best chain ' + state.bestCombo + '&times;<br>' +
-    formatNum(Math.floor(state.damageDealt)) + ' total damage over ~' + mins + ' min<br><br>' +
-    '<span class="result-build">' + CLASSES[p.class].name + ' — Str ' + p.str + ' · Ins ' + p.instinct +
-    ' · Spd ' + p.speed + ' · Vit ' + p.vit + '</span><br>' +
-    '<span class="result-build">' + p.talentIds.length + ' mutations acquired</span>';
+    '<div class="result-card">' +
+      '<div class="result-card-head">' +
+        '<span class="result-card-class ' + p.class + '">' + CLASSES[p.class].name +
+          ' <i>· Level ' + p.level + '</i></span>' +
+        '<span class="result-card-sub">' + opening + '</span>' +
+      '</div>' +
+      '<div class="result-grid">' +
+        row(won ? 'Turns to win' : 'Turns survived', formatNum(state.runTurns || 0)) +
+        row('Time', '~' + mins + ' min') +
+        row('Damage dealt', formatNum(Math.floor(state.damageDealt))) +
+        row('Damage taken', formatNum(Math.floor(state.damageTaken || 0))) +
+        row('Kills', formatNum(state.kills)) +
+        row('Best chain', state.bestCombo + '×') +
+        row('Crits landed', formatNum(state.critsLanded || 0)) +
+        row('Dodges', formatNum(state.dodges || 0)) +
+      '</div>' +
+      '<div class="result-card-foot">' +
+        '<span class="result-build">Str ' + p.str + ' · Ins ' + p.instinct +
+          ' · Spd ' + p.speed + ' · Vit ' + p.vit + '</span>' +
+        '<span class="result-build">' + p.talentIds.length + ' mutation' +
+          (p.talentIds.length === 1 ? '' : 's') + '</span>' +
+      '</div>' +
+    '</div>';
 }
 
 // ---- Skills UI ------------------------------------------------

@@ -116,6 +116,10 @@ function serializeRun() {
   return { v:2, build:BUILD, classId:state.classId, wave:state.wave, kills:state.kills,
     overkillCarry:state.overkillCarry, talentQueue:state.talentQueue,
     bestCombo:state.bestCombo, damageDealt:state.damageDealt, runStart:state.runStart,
+    // The result card's run-lifetime counters. Additive fields: a save written
+    // before they existed loads them as 0, counted from the reload on.
+    runTurns:state.runTurns||0, damageTaken:state.damageTaken||0,
+    critsLanded:state.critsLanded||0, dodges:state.dodges||0,
     // An unconfirmed allocation is not saved — it is refunded. The stats
     // written here are the committed ones, so the points sitting in pending
     // would otherwise vanish with it; reloading puts you back at "N to place,
@@ -293,6 +297,8 @@ function continueRun(slot){
   state.overkillCarry=d.overkillCarry||0;
   state.talentQueue=d.talentQueue||[]; state.wave=d.wave||1; state.kills=d.kills||0;
   state.bestCombo=d.bestCombo||0; state.damageDealt=d.damageDealt||0;
+  state.runTurns=d.runTurns||0; state.damageTaken=d.damageTaken||0;
+  state.critsLanded=d.critsLanded||0; state.dodges=d.dodges||0;
   state.runStart=d.runStart||Date.now();
   recalcPlayerStats();
   p.hp = (sp.hp && sp.maxHp) ? Math.max(1, Math.floor(p.maxHp * Math.min(1, Math.max(P().reloadHpFloor, sp.hp/sp.maxHp)))) : p.maxHp;

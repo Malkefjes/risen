@@ -2181,6 +2181,70 @@ body {
   font-size: 0.95rem;
 }
 
+/* The run's ledger — save-slot family styling on purpose (same panel, same
+   1px border, same 10px radius), so the end of a run and the start of one
+   read as the same kind of object. */
+.result-card {
+  max-width: 460px;
+  margin: 0 auto;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  text-align: left;
+}
+.result-card-head {
+  padding: 15px 18px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.result-card-class {
+  display: block;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  font-size: 1.05rem;
+  margin-bottom: 4px;
+  color: var(--text);
+}
+.result-card-class i { font-style: normal; font-weight: 400; font-size: 0.75rem; color: var(--muted); letter-spacing: 1px; }
+.result-card-class.bio  { color: var(--bio); }
+.result-card-class.psy  { color: var(--psy); }
+.result-card-class.sym  { color: var(--sym); }
+.result-card-sub { display: block; color: var(--muted); font-size: 0.82rem; letter-spacing: 0.4px; line-height: 1.5; }
+.result-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 22px;
+  padding: 10px 18px;
+}
+.result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  font-size: 0.85rem;
+}
+/* Kill the rule under the last row of EACH column, not just the last child. */
+.result-row:nth-last-child(-n+2) { border-bottom: 0; }
+.result-row span { color: var(--muted); letter-spacing: 0.4px; }
+.result-row b { font-family: 'JetBrains Mono', monospace; font-weight: 500; color: var(--text); white-space: nowrap; }
+.result-card-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--panel2);
+}
+/* The two-column grid needs the width; on a phone it folds to one column and
+   every row keeps its own rule except the true last. */
+@media (max-width: 480px) {
+  .result-grid { grid-template-columns: 1fr; }
+  .result-row:nth-last-child(-n+2) { border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .result-row:last-child { border-bottom: 0; }
+}
+
 /* Last resort. Everything above exists so this fires as late as possible:
    once the sidebar drops below the arena the fight no longer fits on one
    screen and you have to scroll to reach your stats mid-turn. */
