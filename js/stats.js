@@ -546,13 +546,22 @@ function makeEnemy(wave) {
   }
 
   const act = actForWave(wave);
-  const name = isBoss ? act.bossName : act.enemyName;
+  // RANK, not level. Levels are the player's growth currency and nobody
+  // else's; giving enemies the same word would promise a comparison ("level 5
+  // vs level 5 is fair") that every future retune would then have to honor.
+  // Rank is the enemy's own scale and it is HONEST: it is the tier, which is
+  // exactly where an enemy changes weight class (tierGrowth steps at waves 6
+  // and 11 — the within-tier +13% drift is gradual, the tier jump is not).
+  // Rank 1 wears nothing; II and III arrive in the name, right after each
+  // boss, so a new act opens with a visibly heavier thing walking in.
+  const rank = tier + 1;
+  const rankTag = rank > 1 ? ' ' + ['', 'I', 'II', 'III', 'IV', 'V'][rank] : '';
+  const name = (isBoss ? act.bossName : act.enemyName) + rankTag;
 
   const e = {
     id: 'enemy-' + wave + '-' + Math.floor(Math.random()*99999),
-    name, class:'enemy', isPlayer:false, isBoss, isFinal, elite,
+    name, class:'enemy', isPlayer:false, isBoss, isFinal, elite, rank,
     windupEvery: isBoss ? (isFinal ? E.finalWindupEvery : E.windupEvery) : (elite ? E.eliteWindupEvery : 0),
-    level: Math.max(1, tier+1+Math.floor(within/2)),
     maxHp: Math.max(1, Math.round(E.hpBase * g * (isBoss?E.bossHp:1) * (elite&&elite.hpMult?elite.hpMult:1))),
     damage: Math.max(1, Math.round(E.dmgBase * Math.pow(g, E.dmgExp) * (isBoss?E.bossDmg:E.trashDmgMult))),
     attackSpeed: Math.min(E.apsCap, (E.apsBase + tier*E.apsPerTier) * (isBoss?E.bossAps:1) * (elite&&elite.apsMult?elite.apsMult:1)),

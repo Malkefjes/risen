@@ -343,6 +343,10 @@ function gainXP(amount, bonus) {
     p.xp -= p.xpNext; p.level++; p.xpNext = xpForLevel(p.level); p.points += grant;
     recalcPlayerStats();
     p.hp = Math.min(p.maxHp, p.hp + Math.floor(p.maxHp * P().levelUpHealFrac));
+    // A level is a rare, fat event now (~8 a run), so it announces itself in
+    // the arena, not just on the badge: amber, because a level-up is the XP
+    // family's loudest member — see the floater vocabulary in the CSS.
+    floatText(p, 'LEVEL ' + p.level, 'xp-bonus');
     logEvent('LEVEL ' + p.level, null, '+' + grant + ' points',
              ['next at ' + logNum(p.xpNext) + ' XP'], 'level');
     gained.push(p.level);

@@ -133,7 +133,7 @@
 // KEEP THIS SEPARATE FROM BALANCE.saveKey. That one answers "are saved runs
 // still valid" and is bumped only when a change makes an old sheet wrong.
 // Deriving it from this would wipe every save on a typo fix.
-const BUILD = '2026-07-30e';
+const BUILD = '2026-07-30f';
 
 const BALANCE = {
   player: {
@@ -174,7 +174,11 @@ const BALANCE = {
     // worth having here. Turn rate now follows the same rule above.
     damagePerStr: 5,
     hpPerVit: 20,
-    pointsPerLevel: 3,
+    // Six, because levels halved: ~8 levels x 6 ≈ the same ~48 points a run
+    // used to grant as 16 x 3, so the sheet the enemy curve was fitted
+    // against still arrives — it just arrives as eight real decisions
+    // instead of sixteen reflexes.
+    pointsPerLevel: 6,
     // The percentage stats are set so a starting sheet reads 10 / 10 / 10 / 0
     // at 5 in every stat — the same round-number treatment as 25 damage and
     // 100 HP. Evade and block still look odd on their own (0.075, 0.065)
@@ -293,7 +297,11 @@ const BALANCE = {
     bleedStackCap: 6, bleedDuration: 4,      // TURNS
     reflectFrac: 0.20, reflectSpinesMult: 2,   // sym: share of damage taken reflected back; doubled while Spines is up
     sporeBigHitFrac: 0.15, sporeHitMax: 3,     // sym: every 15% of max HP lost in one hit plants an extra Spore (cap per hit)
-    levelUpHealFrac: 0.08, recoverHpFrac: 0.08,
+    // Raised with the level compression: the level-up heal is load-bearing
+    // sustain, and 16 levels x 8% was ~128% of max HP across a run. At ~8
+    // levels, 15% keeps that economy whole (~120%) instead of quietly
+    // halving every class's healing.
+    levelUpHealFrac: 0.15, recoverHpFrac: 0.08,
     // ---- DREAD (psy) ------------------------------------------------------
     // Psy's mechanic LIVES ON THE ENEMY, not on the player — the one bank in
     // the game that is a mark, not a wallet. Momentum (a player-side bank of
@@ -411,7 +419,25 @@ const BALANCE = {
     eliteWindupEvery: 3,               // elites telegraph too: the mid-run skill check
     eliteBaseChance: 0.16, eliteChancePerWave: 0.006, eliteChanceCap: 0.40
   },
-  xp: { base: 40, linear: 24, pow: 1.30, powScale: 9,
+  // FEWER, FATTER LEVELS. A winning run used to level SIXTEEN times off
+  // fifteen kills — cost and kill income were both near-linear with the same
+  // slope, so kills-per-level sat pinned at ~1 from wave 2 to wave 15 and a
+  // level-up carried no information the kill hadn't already delivered. The
+  // "oh shit I leveled" beat requires levels to be RARER than the thing that
+  // causes them.
+  //
+  // The cost curve is now quadratic-and-a-half against income that stays
+  // near-linear, so the gaps STRETCH: the first kill levels you (the hook),
+  // the early-boss waves land levels, and the last ones take three or four
+  // waves of work. A winning run lands about eight levels. Income knobs are
+  // untouched — pacing lives in the cost curve only, so the XP readout on a
+  // kill still means what it meant.
+  //
+  // Sighted against the income timeline (cumulative trash+boss XP by wave, no
+  // chain): L2 on the first kill, L3 ~w3, L4 ~w4, L5 at the first boss, L6
+  // ~w8, L7 at the second boss, L8 ~w13, and a chained run squeezes L9 out of
+  // the final boss. Chains push every beat earlier, which is the right reward.
+  xp: { base: 50, linear: 0, pow: 2.5, powScale: 8,
         killBase: 46, killWave: 15, killTier: 36 },
   combo: { maxEnemyActionsPerKill: 3, xpPerStack: 0.05, maxStack: 20 },   // chain continues if the kill let the enemy act <= N times (speed-fair)
   bossEvery: 5,          // boss on every Nth wave
@@ -440,14 +466,21 @@ const BALANCE = {
   // saved by a build people PLAYED still be read", so it moves once per shipped
   // change in economics, not once per edit.
   //
+  // v5 -> v6 is the level compression: the cost curve went quadratic, a level
+  // now grants 6 points instead of 3, and a full run lands ~8 levels instead
+  // of ~16. A v5 sheet leveled and allocated on the old cadence — its level
+  // number, banked points and xpNext all describe a progression that no
+  // longer exists.
+  //
   // Bumping also gives every player empty slots on the next load, which is the
   // honest outcome — those runs are not playable as the game now works.
-  saveKey: 'risen_run_v5',
+  saveKey: 'risen_run_v6',
   // Storage keys from older versions, cleared once on load so they cannot
   // accumulate invisibly. Oldest first; add the outgoing prefix here on a bump.
   // Slot keys are listed explicitly because the purge removes literal keys.
   oldSaveKeys: ['risen_run_v3', 'risen_run_v3_s1', 'risen_run_v3_s2',
-                'risen_run_v4', 'risen_run_v4_s1', 'risen_run_v4_s2'],
+                'risen_run_v4', 'risen_run_v4_s1', 'risen_run_v4_s2',
+                'risen_run_v5', 'risen_run_v5_s1', 'risen_run_v5_s2'],
   saveSlots: 2
 };
 
