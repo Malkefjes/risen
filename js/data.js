@@ -133,7 +133,7 @@
 // KEEP THIS SEPARATE FROM BALANCE.saveKey. That one answers "are saved runs
 // still valid" and is bumped only when a change makes an old sheet wrong.
 // Deriving it from this would wipe every save on a typo fix.
-const BUILD = '2026-07-30h';
+const BUILD = '2026-07-30i';
 
 const BALANCE = {
   player: {
@@ -175,7 +175,9 @@ const BALANCE = {
     damagePerStr: 5,
     hpPerVit: 20,
     // Three, and this time the TOTAL shrank on purpose: ~6 levels x 3 is
-    // ~18 points a run against the ~48 the enemy curve was fitted for. The
+    // ~18 points across act 1 against the ~48 the old one-act game gave
+    // (a full two-act run reaches ~L10 — 27 points — the last three levels
+    // arriving one per act-2 rank). The
     // shower was the imbalance — at 48 points the sanctioned Instinct
     // quadratic was landing 600-damage crits at level 9 against a captain
     // swinging 62, power no half-hour of play had earned — so the sheet
@@ -505,16 +507,17 @@ const BALANCE = {
   //
   // Sighted against the income timeline (cumulative trash+boss XP by wave,
   // no chain): L2 on the first kill, L3 lands ON the first boss, L4 ~w8,
-  // L5 ON the second boss, L6 ~w13, and the final boss pays L7 as the run
-  // ends. Five allocation moments in a typical run, each rarer than a boss.
-  // Chains and elites drag the beats earlier, which stays the right reward;
-  // L8 sits beyond any income the act can pay, by curve rather than by cap.
+  // L5 ON the second boss, L6 ~w13, L7 paid by the act-1 finale. Act 2
+  // breathes slower on the same curve — L8 ~w19, L9 ~w23, L10 ~w26,
+  // roughly one level per rank — and L11 sits beyond the run's income, by
+  // curve rather than by cap. Chains and elites drag every beat earlier,
+  // which stays the right reward.
   xp: { firstCost: 58, base: 485, pow: 2, powScale: 35,
         killBase: 46, killWave: 15, killTier: 36 },
   combo: { maxEnemyActionsPerKill: 3, xpPerStack: 0.05, maxStack: 20 },   // chain continues if the kill let the enemy act <= N times (speed-fair)
   bossEvery: 5,          // boss on every Nth wave
   talentEvery: 5,        // choose a mutation every Nth level
-  finalWave: 15,         // beating this wave's boss wins the run
+  finalWave: 30,         // beating this wave's boss wins the run (act 2's finale)
   spawnDelay: 0.16,
   // saveKey is a PREFIX, not a key: each slot stores under `<saveKey>_s<n>`.
   //
@@ -549,16 +552,21 @@ const BALANCE = {
   // roughly twice the allocated points the new economy can ever grant — the
   // same silent re-read as every bump before it, in the richer direction.
   //
+  // v7 -> v8 is the two-act world: the run doubled to 30 waves and the act
+  // structure moved under every wave a save stores, so a v7 run describes a
+  // game that ended where act 1 now hands over to the Encampment.
+  //
   // Bumping also gives every player empty slots on the next load, which is the
   // honest outcome — those runs are not playable as the game now works.
-  saveKey: 'risen_run_v7',
+  saveKey: 'risen_run_v8',
   // Storage keys from older versions, cleared once on load so they cannot
   // accumulate invisibly. Oldest first; add the outgoing prefix here on a bump.
   // Slot keys are listed explicitly because the purge removes literal keys.
   oldSaveKeys: ['risen_run_v3', 'risen_run_v3_s1', 'risen_run_v3_s2',
                 'risen_run_v4', 'risen_run_v4_s1', 'risen_run_v4_s2',
                 'risen_run_v5', 'risen_run_v5_s1', 'risen_run_v5_s2',
-                'risen_run_v6', 'risen_run_v6_s1', 'risen_run_v6_s2'],
+                'risen_run_v6', 'risen_run_v6_s1', 'risen_run_v6_s2',
+                'risen_run_v7', 'risen_run_v7_s1', 'risen_run_v7_s2'],
   saveSlots: 2
 };
 
@@ -672,13 +680,16 @@ const CLASSES = {
 // wave 2 into a wall rather than a change of pace. 1.18 still reads as SWIFT —
 // it out-paces you until you buy Speed — without being the hardest fight in
 // the act.
-// ARCHETYPES are gone. The game HAS two enemies — MCP Enforcer and MCP
-// Captain — and the code now agrees: no hidden chassis cycling stats under
-// one name and one sprite. The owner's rule for enemy variety: a thing that
-// fights differently must LOOK different and be NAMED differently, so new
-// enemy types arrive as name + sprite + behavior together, or not at all.
+// ARCHETYPES are gone. The game HAS four enemies — two per act: the
+// Laboratory's Failed Experiment and Prime Symbiote, the Encampment's MCP
+// Enforcer and MCP Captain — and the code agrees: no hidden chassis cycling
+// stats under one name and one sprite. The owner's rule for enemy variety:
+// a thing that fights differently must LOOK different and be NAMED
+// differently, so new enemy types arrive as name + sprite + behavior
+// together, or not at all. (The act-1 roster is currently name + sprite on
+// the shared chassis — its own behavior is the open half of that promise.)
 // The boss's old brute chassis (x1.55 hp, x1.30 dmg, x0.72 rate) is folded
-// into bossHp / bossDmg / bossAps so the Captain fights exactly as before.
+// into bossHp / bossDmg / bossAps so bosses fight exactly as before.
 
 // Opt-in risk: elites hit harder but pay far more XP.
 const ELITES = {
@@ -694,12 +705,34 @@ const ELITES = {
   volatile: { id:'volatile', tag:'VOLATILE', xp:1.8, deathNova:0.14 }
 };
 
-// Act structure — the content framework for a run. Act 1 is the 15-wave slice.
-// Each act owns its zones and enemy naming; future acts append to this list.
+// Act structure — the content framework for a run. Two acts of 15 waves,
+// three bosses each. Each act owns its zone label, its enemy roster (names
+// here, art in sprites.js keyed by act), and its DIFFICULTY FLOOR:
+//
+//   growthMult   the act's floor — enemy hp/dmg growth restarts from here,
+//                so within an act the familiar tier curve retraces at a
+//                higher altitude instead of compounding forever. Without
+//                this, extending the old 1.85^tier ride to wave 30 put the
+//                last boss at ~390 damage against a ~300 HP pool: not hard,
+//                unwinnable. Rank and rate are act-local for the same
+//                reason — the roster debuts at Rank I, not Rank IV.
+//   tierGrowth / withinStep   optional per-act steepness overrides. Act 2
+//                climbs much more gently than act 1 because the player's
+//                own growth flattens with the stretched level curve (~9
+//                points across the whole act against act 1's ~18).
+//
+// Act 2's numbers are a FIRST GUESS at extrapolation, not a tuning: act 1
+// wave-for-wave carries exactly the numbers the game has been played on,
+// and the encampment gets fitted the way everything here does — by play.
 const ACTS = [
-  { num: 1, name: 'Containment', startWave: 1, endWave: 15,
-    zones: ['THE SHIP','THE DOCKS','THE LAB'],
-    enemyName: 'MCP Enforcer', bossName: 'MCP Captain' }
+  { num: 1, name: 'The Laboratory', startWave: 1, endWave: 15,
+    zones: ['THE LABORATORY'],
+    enemyName: 'Failed Experiment', bossName: 'Prime Symbiote',
+    growthMult: 1 },
+  { num: 2, name: 'MCP Encampment', startWave: 16, endWave: 30,
+    zones: ['MCP ENCAMPMENT'],
+    enemyName: 'MCP Enforcer', bossName: 'MCP Captain',
+    growthMult: 4.5, tierGrowth: 1.25, withinStep: 0.04 }
 ];
 function actForWave(wave) {
   return ACTS.find(a => wave >= a.startWave && wave <= a.endWave) || ACTS[ACTS.length - 1];

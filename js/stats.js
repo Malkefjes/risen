@@ -534,13 +534,24 @@ function renderDeltas(view) {
 // ---- Enemy stats (fully independent of the player's formulas) ----
 function makeEnemy(wave) {
   const E = BALANCE.enemy;
-  const tier = Math.floor((wave-1)/5), within = (wave-1)%5;
-  const g = Math.pow(E.tierGrowth, tier) * (1 + within*E.withinStep);
+  const act = actForWave(wave);
+  // DIFFICULTY IS ACT-LOCAL. Each act retraces the tier curve from its own
+  // floor (act.growthMult), at its own steepness if it declares one — see
+  // the note on ACTS for why the old single curve could not reach wave 30.
+  // Tier, and everything that hangs off it (growth, rank, rate), counts
+  // from the act's first wave; only XP income keeps the global count.
+  const w = wave - act.startWave;
+  const tier = Math.floor(w/5), within = w%5;
+  const g = Math.pow(act.tierGrowth || E.tierGrowth, tier)
+          * (1 + within*(act.withinStep != null ? act.withinStep : E.withinStep))
+          * (act.growthMult || 1);
   const isBoss = wave % BALANCE.bossEvery === 0;
   const isFinal = wave === BALANCE.finalWave;
 
   // Elites are purely a roll now. The door used to be able to force one for
   // its HUNT branch, which is what the removed forceElite argument was for.
+  // The wave-4 gate is deliberately GLOBAL: only the run's opening ramp is
+  // elite-free, not the start of every act.
   let elite = null;
   if (!isBoss && wave > 4) {
     const keys = Object.keys(ELITES);
@@ -550,15 +561,13 @@ function makeEnemy(wave) {
     }
   }
 
-  const act = actForWave(wave);
   // RANK, not level. Levels are the player's growth currency and nobody
   // else's; giving enemies the same word would promise a comparison ("level 5
   // vs level 5 is fair") that every future retune would then have to honor.
   // Rank is the enemy's own scale and it is HONEST: it is the tier, which is
-  // exactly where an enemy changes weight class (tierGrowth steps at waves 6
-  // and 11 — the within-tier +13% drift is gradual, the tier jump is not).
-  // Rank 1 wears nothing; II and III arrive in the name, right after each
-  // boss, so a new act opens with a visibly heavier thing walking in.
+  // exactly where an enemy changes weight class (the tier jump lands right
+  // after each boss). Act-local like the tier, so every roster debuts plain
+  // and earns its numerals — the Enforcer walks in as Enforcer, not as "IV".
   const rank = tier + 1;
   const rankTag = rank > 1 ? ' ' + ['', 'I', 'II', 'III', 'IV', 'V'][rank] : '';
   const name = (isBoss ? act.bossName : act.enemyName) + rankTag;
@@ -566,6 +575,7 @@ function makeEnemy(wave) {
   const e = {
     id: 'enemy-' + wave + '-' + Math.floor(Math.random()*99999),
     name, class:'enemy', isPlayer:false, isBoss, isFinal, elite, rank,
+    act: act.num,          // which act's roster (and art) this enemy belongs to
     windupEvery: isBoss ? (isFinal ? E.finalWindupEvery : E.windupEvery) : (elite ? E.eliteWindupEvery : 0),
     maxHp: Math.max(1, Math.round(E.hpBase * g * (isBoss?E.bossHp:1) * (elite&&elite.hpMult?elite.hpMult:1))),
     damage: Math.max(1, Math.round(E.dmgBase * Math.pow(g, E.dmgExp) * (isBoss?E.bossDmg:E.trashDmgMult))),

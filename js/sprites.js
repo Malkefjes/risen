@@ -65,6 +65,28 @@ const BOSS_SPRITES = {
   strike: 'assets/sprites/boss-strike.png'
 };
 
+// ---- Act rosters ---------------------------------------------------------
+// Each act fields its own trash and boss art; makeEnemy stamps every enemy
+// with its act number and spriteSrcFor reads the roster off it. The
+// Laboratory's four files currently HOLD PLACEHOLDER COPIES of the
+// encampment art — overwrite experiment-stance/strike and
+// symbiote-ready/strike in assets/sprites/ with the real drawings and the
+// game wears them with no code change.
+const EXPERIMENT_STANCE = 'assets/sprites/experiment-stance.png';
+const EXPERIMENT_SPRITES = {
+  idle: EXPERIMENT_STANCE,
+  ready: EXPERIMENT_STANCE,
+  strike: 'assets/sprites/experiment-strike.png'
+};
+const SYMBIOTE_SPRITES = {
+  ready: 'assets/sprites/symbiote-ready.png',
+  strike: 'assets/sprites/symbiote-strike.png'
+};
+const ACT_SPRITES = {
+  1: { trash: EXPERIMENT_SPRITES, boss: SYMBIOTE_SPRITES },
+  2: { trash: ENEMY_SPRITES, boss: BOSS_SPRITES }
+};
+
 const PLAYER_SPRITES = {
   bio: BIO_SPRITES.idle,
   psy: PSY_SPRITES.idle,
@@ -117,9 +139,12 @@ function hasSkillArt(unit, skill) { return !!skillArtFor(unit, skill); }
 // A skill takes precedence over the generic pose when the strain has art for it.
 function spriteSrcFor(unit, pose, skill) {
   if (!unit.isPlayer) {
-    // Bosses and enforcers both pose-swap; fall back to the set's ready stance
-    // for any pose it doesn't define.
-    const set = unit.isBoss ? BOSS_SPRITES : ENEMY_SPRITES;
+    // Trash and bosses both pose-swap; the act's roster decides which art,
+    // falling back to the encampment sets for any unit with no act stamp,
+    // and to the set's ready stance for any pose it doesn't define.
+    const roster = ACT_SPRITES[unit.act];
+    const set = (roster && (unit.isBoss ? roster.boss : roster.trash))
+             || (unit.isBoss ? BOSS_SPRITES : ENEMY_SPRITES);
     return (set && set[pose]) || (set && set.ready) || ENEMY_SPRITE;
   }
   const art = skillArtFor(unit, skill);
@@ -197,6 +222,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof v === 'string') { if (!seen.has(v)) { seen.add(v); new Image().src = v; } }
     else if (v && typeof v === 'object') Object.values(v).forEach(walk);
   };
-  [ENEMY_SPRITES, BOSS_SPRITES, POSE_SPRITES, MUTATED_SPRITES].forEach(walk);
+  [ENEMY_SPRITES, BOSS_SPRITES, ACT_SPRITES, POSE_SPRITES, MUTATED_SPRITES].forEach(walk);
 })();
 
