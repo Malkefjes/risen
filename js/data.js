@@ -332,12 +332,27 @@ const BALANCE = {
     // often per fight, so both come down to keep a wave costing what it cost.
     // These are the compensation for the anchor, not a difficulty change: total
     // unmitigated HP spent clearing all 15 waves lands within 2% of before.
-    // bossHp/bossDmg/bossAps carry the boss's old brute chassis (x1.55 hp,
-    // x1.30 dmg, x0.72 rate), folded in when archetypes were removed:
-    // 3.4x1.55 = 5.27, 1.40x1.30 = 1.82. The Captain is numerically unchanged.
-    bossHp: 5.27, bossDmg: 1.82, bossAps: 0.72, bossXp: 3.0,
+    // bossHp/bossDmg/bossAps once carried the boss's old brute chassis (x1.55
+    // hp, x1.30 dmg, x0.72 rate), folded in when archetypes were removed. HP has
+    // since come DOWN from that 5.27 to soften the FIRST boss specifically — see
+    // the windup note below for why wave 5 was the wall — which shortens every
+    // boss fight a little; bossDmg and bossAps are still the old chassis.
+    bossHp: 4.5, bossDmg: 1.82, bossAps: 0.72, bossXp: 3.0,
     trashDmgMult: 1.33,                // trash hits harder so fights cost real HP (bosses use bossDmg)
-    windupEvery: 3, windupMult: 6.5,   // boss telegraph: every Nth action winds up; next strike hits xN
+    // WINDUP WAS 6.5 AND IT MADE WAVE 5 A WALL. The multiplier is flat across
+    // all three bosses, but the player's HP pool is SMALLEST at the first one,
+    // so the same multiple bites hardest exactly where you have the least to
+    // spend it against: at 6.5 the wave-5 telegraph hit for 137 against a
+    // starting pool of 100, i.e. a near-certain one-shot on a hit you could see
+    // coming but rarely fully answer that early. A telegraph should cost you
+    // half your bar and a turn spent reacting, not the run. At 4.5 it lands for
+    // ~95 — still the scariest thing in the fight, still demands a block, brace,
+    // heal or a race to burst the boss first, but survivable on a fresh sheet.
+    // Measured: base's wave-5 clear rate went 18% -> 80% (greedy bot). Left as a
+    // free variable because the boss is fitted to the player, not the reverse;
+    // if it ever needs to bite harder again the honest way is a bigger pool to
+    // spend it against (more levels before wave 5), not a bigger multiplier.
+    windupEvery: 3, windupMult: 4.5,   // boss telegraph: every Nth action winds up; next strike hits xN
     finalWindupEvery: 2,               // the final boss keeps you under constant telegraph pressure
     eliteWindupEvery: 3,               // elites telegraph too: the mid-run skill check
     eliteBaseChance: 0.16, eliteChancePerWave: 0.006, eliteChanceCap: 0.40

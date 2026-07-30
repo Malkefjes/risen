@@ -15,6 +15,7 @@ const SUITES = [
   ['refinements',  'refinements are gone and drafting still works'],
   ['build',        'build stamp reaches the title, log and save'],
   ['instinct',     'Instinct buys crit chance and damage, and reaches Strength'],
+  ['playability',  'the first boss is a check, not a wall'],
   ['headless',     'headless mode runs the same game, with no side effects']
 ];
 
