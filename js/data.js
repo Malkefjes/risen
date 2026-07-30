@@ -4,6 +4,19 @@
 //
 // Design notes for future-you:
 //
+//  * A LENS, NOT A LAW, and first because it is the loosest thing here: stat
+//    allocation is only a choice while you can reason about it but not solve it.
+//    Too little to go on and it is a shrug; a known equation over a known run
+//    and it is a preplanned button you click to get past. The dial that keeps
+//    it alive is UNKNOWABILITY — a future you cannot see (which boss, which
+//    draft, which drop) and picks whose worth depends on what you already took.
+//    That is what mutations and items are for; the base sheet stays legible on
+//    purpose so their breaks read clearly against it. But hold this loosely:
+//    sometimes a flat, boring-on-paper number is exactly right because it is
+//    the anchor everything else is judged against, and feel outranks the lens
+//    every time the two disagree. Reach for it when a choice feels flat, not as
+//    a gate every number has to pass.
+//
 //  * THE PLAYER IS HAND-TUNED FIRST; ENEMIES ARE FITTED TO IT. Enemy numbers
 //    are a free variable — nothing constrains them but how the fight feels —
 //    so they are derived from the player rather than designed alongside. It
