@@ -338,16 +338,20 @@ function applyDerivedStats(p) {
   p.blockChance = Math.min(B.blockCap, B.blockBase + p.vit*B.blockPerVit);
   p.blockReduction = B.blockReduction;
   p.critChance = Math.min(B.critCap, B.critBase + p.instinct*B.critPerInstinct + (t.critFlat||0));
-  // CRIT DAMAGE IS THE OVERFLOW VALVE. Instinct raises how OFTEN you crit until
-  // the chance caps, and every point past that raises how HARD instead — the
-  // same shape as Speed's points going to evade once the rate term saturates.
+  // CRIT DAMAGE CLIMBS WITH THE SAME POINTS, from point one rather than as an
+  // overflow past the chance cap. Both terms rising at once is what makes
+  // Instinct quadratic and what lets it reach Strength at all; the balance
+  // header carries the arithmetic and the crossover.
   //
-  // Counted off the STAT only, never off t.critFlat: a talent's flat chance is
-  // not Instinct, so it must not push the handover point down and quietly turn
-  // a chance bonus into a damage bonus. That also keeps the two terms strictly
-  // sequential, which is what makes Instinct linear rather than quadratic.
-  const critCapAt = (B.critCap - B.critBase) / B.critPerInstinct;
-  p.critMult = B.critMult + Math.max(0, p.instinct - critCapAt) * (B.critMultPerInstinct || 0);
+  // Off the STAT only, never off t.critFlat. A talent's flat crit chance is not
+  // Instinct, so it must not also pay out as crit damage — one pick would
+  // quietly buy two things, which is the thing the mutation rules exist to
+  // prevent.
+  //
+  // No cap of its own, and it needs none: Instinct is the only source, the
+  // chance it multiplies is capped, and points past the chance cap keep landing
+  // here, so overinvestment bends instead of hitting a wall.
+  p.critMult = B.critMultBase + p.instinct * (B.critMultPerInstinct || 0);
   // Cooldowns answer to Speed, not Instinct: acting more often and acting
   // again sooner are the same idea, and it gives Speed somewhere to go once
   // the attack-rate term saturates at 23 points.

@@ -349,17 +349,23 @@ function applyEnemyDamage(e, p, mult) {
   return dmg;
 }
 
-// A CRIT FEEDS YOUR STRAIN — the half of Instinct that is not damage.
+// A CRIT FEEDS YOUR STRAIN — SCAFFOLD, PARKED. Reached on every crit, and does
+// nothing while BALANCE.player.critBankGain is 0, which is where it sits until
+// the strains are finished being designed. The reasoning is on that knob.
 //
-// One rule, four meanings, because every strain already runs on something that
-// wants filling: Momentum for psy, a Spore for sym, Resolve for Unmutated, and
-// for bio the rot itself, which is its bank in everything but name. So Instinct
-// buys the same sentence for everyone — "my mechanic is online when I need it"
-// — and cashes out as whatever the strain in front of you is made of.
+// The rule, for when it comes back: one sentence, four meanings, because every
+// strain already runs on something that wants filling — Momentum for psy, a
+// Spore for sym, Resolve for Unmutated, and for bio the rot itself, which is its
+// bank in everything but name. Instinct buys the same sentence for everyone
+// ("my mechanic is online when I need it") and cashes out as whatever the strain
+// in front of you is made of.
 //
-// Nothing here is per-strain except the bio branch: bankOf already knows which
-// field a class runs on, and bankAdjust returns 0 for a class with no bank, so
-// a strain that never gets one needs no case.
+// Left in place rather than deleted because the switch is a number and the code
+// is nine lines; git would remember it either way, but a seam you can flip is
+// worth more than one you have to rebuild. Nothing here is per-strain except
+// the bio branch: bankOf already knows which field a class runs on, and
+// bankAdjust returns 0 for a class with no bank, so a strain that never gets
+// one needs no case.
 function creditCrit(p, e) {
   const gain = P().critBankGain || 0;
   if (!gain) return;
@@ -479,9 +485,8 @@ function applyPlayerDamage(p, e, skill) {
   if (p.class === 'psy') bankAdjust(p, 1, 'attack landed');
   // Resolve (base): landing a hit steadies you.
   if (skill.buildsResolve) bankAdjust(p, skill.buildsResolve, skill.name);
-  // ...and a crit feeds it again, on top of whatever the swing already paid.
-  // Stacks with the two above rather than replacing them, so a critting basic
-  // is the best thing that can happen to a bank.
+  // ...and a crit would feed it again, on top of whatever the swing already
+  // paid — parked at 0 today, see creditCrit.
   if (isCrit) creditCrit(p, e);
 
   if (skill.poison && p.class === 'bio')

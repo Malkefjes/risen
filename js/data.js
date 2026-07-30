@@ -43,7 +43,15 @@
 //    of your damage vanished before it landed.
 //
 //  * Damage is LINEAR in Strength, for every strain. Speed raises attack rate
-//    but saturates, so no single stat can scale quadratically.
+//    but saturates. INSTINCT IS THE ONE SANCTIONED QUADRATIC: it buys crit
+//    chance and crit damage with the same points, so its expected damage goes
+//    as the square of the stat. That is the only way a crit stat can reach a
+//    linear damage stat at all — crit chance against a fixed multiplier is
+//    bounded by that multiplier, so it can never chase Strength no matter the
+//    rate. The exception is bounded in practice by the crit-chance cap and by
+//    the point budget: the two land together at full investment rather than
+//    Instinct running away. The numbers, and the crossover, are in the INSTINCT
+//    block below. Nothing else may do this without the same argument.
 //
 //  * Strains currently differ ONLY by their skills and banks. Damage, HP,
 //    turn rate and every percentage are identical across all four — the
@@ -59,29 +67,35 @@
 //    Damage was unified — but it is the exception and wants saying out loud.
 //
 //  * EVERY STAT OWNS A VERB, and they are deliberately different ones:
-//    Strength hits harder, Vitality survives, Speed acts more often than the
-//    thing in front of you, Instinct keeps your strain mechanic online. The
-//    fourth one was missing for a long time — Instinct fed crit chance and
-//    nothing else, which made it a worse copy of Strength's verb rather than a
-//    verb of its own, and no amount of retuning the rate could fix that (a
-//    bounded stat cannot chase an unbounded one; the numbers are in the
-//    INSTINCT block below). When adding a stat source, ask which verb it
-//    speaks — two stats sharing one is how Instinct died the first time.
+//    Strength hits harder and steadily, Vitality survives, Speed acts more
+//    often than the thing in front of you, Instinct hits harder but spikily.
+//    Instinct's is the weakest of the four as a VERB, because it shares an axis
+//    with Strength rather than owning one, and that is knowingly temporary — the
+//    two notes below are where it goes. What it must never go back to is what
+//    killed it: feeding crit chance alone against a fixed multiplier, which made
+//    it a strictly worse Strength that no rate could rescue.
 //
-//  * NEXT FOR INSTINCT, once the strains themselves feel right: let it scale
-//    what a charge is WORTH, not just how fast the bank fills. Damage per
-//    Momentum, damage reduction per Resolve, the thorns multiplier, poison per
-//    stack — the magnitudes that are flat constants today (momentumDmg,
-//    resolveDR, thornsFrac, ailmentDamageFrac). Deliberately NOT done yet:
-//    those constants are the knobs the strains are currently being tuned with,
-//    and a stat multiplying a number that is still moving makes both
-//    unjudgeable. It wants doing alongside the Momentum overhaul, and it
-//    stacks cleanly with what is already here — crits-feed-your-strain is how
-//    fast the bank FILLS, this is what each charge PAYS. Watch for two things
-//    when it lands: it must not make Instinct mandatory for every strain (a
-//    stat you must take is as dead as one you never take), and thorns and
-//    poison are shares of the HP and damage anchors, so scaling them by a stat
-//    means those anchors stop carrying them for free.
+//  * TWO THINGS ARE PARKED FOR INSTINCT, both waiting on the same thing: the
+//    strains being finished. Neither is a to-do, and neither should be picked up
+//    because it is written down here — they land when the classes feel right.
+//
+//      1. A CRIT FEEDS YOUR STRAIN — built, wired, and switched off at
+//         critBankGain: 0. A crit banks a charge of whatever the strain runs on.
+//         One number turns it back on; see the block below.
+//      2. INSTINCT SCALING WHAT A CHARGE IS WORTH — not built. Damage per
+//         Momentum, reduction per Resolve, the thorns multiplier, poison per
+//         stack: the magnitudes that are flat constants today (momentumDmg,
+//         resolveDR, thornsFrac, ailmentDamageFrac).
+//
+//    They stack rather than compete — the first is how fast a bank FILLS, the
+//    second is what a charge PAYS — and both are off for the same reason: a stat
+//    that accelerates or inflates a mechanic makes that mechanic impossible to
+//    judge. You cannot tell whether Momentum feels bad or is merely arriving
+//    slowly, and both questions are open. Two cautions for whenever the second
+//    one lands: it must not make Instinct mandatory for every strain (a stat you
+//    must take is as dead as one you never take), and thorns and poison are
+//    shares of the HP and damage anchors, so scaling them by a stat means those
+//    anchors stop carrying them for free.
 //
 //  * Known soft spots, in case they read as bugs rather than gaps: cooldown
 //    reduction is a live seam with no source yet (no talent sets cdrBonus, so
@@ -156,37 +170,75 @@ const BALANCE = {
     evadeBase: 0.075, evadePerSpeed: 0.005, evadeCap: 0.40,
     blockBase: 0.065, blockPerVit: 0.007, blockCap: 0.35, blockReduction: 0.5,
     // ---- INSTINCT ---------------------------------------------------------
-    // CRIT CHANCE IS TWICE YOUR INSTINCT, AS A PERCENT. No base at all, which
-    // makes it the one percentage stat that reads straight off its own number:
-    // 5 Instinct is 10%, 20 Instinct is 40%. The old 0.045 + 1.1%/point was
-    // the reason Instinct was dead — one point bought 1.1% more damage where a
-    // Strength point bought 20%, so Instinct was worth a fifteenth of Strength
-    // and the break-even sat at 91 Strength. Not reachable in a run, or in ten.
+    // INSTINCT IS THE COMMIT STAT: it buys crit CHANCE and crit DAMAGE at the
+    // same time, which makes it the one stat that is quadratic in its own
+    // points. That is a DELIBERATE, SANCTIONED exception to the header rule
+    // against quadratic stats — see the note up there — and it exists because
+    // nothing else could make Instinct worth taking.
     //
-    // Doubling the rate does NOT fix that on its own, and it is not meant to.
-    // Crit chance against a fixed multiplier is a BOUNDED stat: even at the cap
-    // Instinct's entire lifetime contribution is x1.70 damage, about what three
-    // and a half Strength points give you. Strength is unbounded and linear, so
-    // a bounded stat can never catch it. Instinct stops competing on damage and
-    // is paid on a second axis instead — the bank, below.
-    critBase: 0.00, critPerInstinct: 0.02, critCap: 0.70,
-    critMult: 2.0,          // a crit is double at the starting sheet...
-    // ...and points past the CHANCE cap keep paying, in crit DAMAGE. Same
-    // gentle-degrade shape as Speed, whose points keep buying evade once the
-    // rate term saturates: overinvestment bends instead of hitting a wall.
+    // The arithmetic that forced it. Crit chance against a FIXED multiplier is
+    // bounded: at any cap below 1.0 the whole stat can only ever add its
+    // multiplier's worth of damage, so at x2 and a 70% cap Instinct's entire
+    // lifetime contribution was x1.70 — roughly three and a half Strength
+    // points. Strength is unbounded and linear, so a bounded stat cannot chase
+    // it at any rate. To match Strength, crit has to be a real multiplier on
+    // both terms, and two linear terms multiplied is a square.
     //
-    // This is also what keeps Instinct LINEAR rather than quadratic (see the
-    // header rule). Chance climbs to the cap, and only then does damage start
-    // climbing — the two never rise at the same time, so Instinct never
-    // multiplies one of its own terms by the other. The cap arrives at 35
-    // Instinct; a full run's points can reach roughly 45, so the tail is real
-    // but short.
-    critMultPerInstinct: 0.05,
-    // A CRIT FEEDS YOUR STRAIN. Instinct's real job, and the axis Strength
-    // cannot buy: not "hit harder" but "my mechanic is online when I need it".
-    // One rule with four meanings — Momentum, a Spore, Resolve, or a poison
-    // stack, whichever the strain in front of you runs on. See creditCrit.
-    critBankGain: 1,
+    // Both rates are picked so the two stats LAND TOGETHER at full investment.
+    // The table below is what a point actually buys, and the one trap to avoid
+    // when re-deriving it: A STRENGTH BUILD CRITS TOO. It keeps the starting 5
+    // Instinct, so it swings at x1.125 expected before it spends anything, and
+    // comparing raw expected damage against Strength's x9.0 double-counts that.
+    // Both columns are therefore GAIN OVER THE SAME STARTING SHEET, which is
+    // the only comparison a player could feel.
+    //
+    //     Instinct   crit%   crit dmg   its gain    all-Strength, same points
+    //        5        10%      x2.25      x1.00           x1.00
+    //       15        30%      x4.75      x1.89           x3.00
+    //       25        50%      x7.25      x3.67           x5.00
+    //       35        70%      x9.75      x6.33           x7.00
+    //       40        80%     x11.00      x8.00           x8.00   <- dead level
+    //       45        90%     x12.25      x9.89           x9.00
+    //
+    // So Strength is the better buy for the first 35 points, the two are exactly
+    // level at 40, and Instinct ends a full run about 10% ahead. That shape is
+    // the point: a square and a line cross ONCE, so wherever the crossing is
+    // put, one stat is behind on one side of it. Putting it near the end makes
+    // Instinct a commitment that pays rather than a garnish or a trap —
+    // half-investing really is worse than not, and that is allowed to be true
+    // as long as the sheet shows both numbers climbing while you do it.
+    //
+    // WHAT IT COSTS: variance. By the end of an Instinct run one hit in ten
+    // lands for a twelfth of the others, which can lose a boss. That is the
+    // trade being sold, and it is why Strength stays the safe pick.
+    critBase: 0.00, critPerInstinct: 0.02, critCap: 0.90,
+    // THE CAP IS 0.90 AND NOT 1.00 ON PURPOSE. A crit that always happens is
+    // not a crit: the gold CRIT floater is the loudest thing on screen, and if
+    // every hit wore it the colour would stop naming an event (see the floater
+    // vocabulary above .float-dmg in the CSS). One plain hit in ten is what
+    // keeps the gold meaning something.
+    //
+    // The cap arrives at 45 Instinct, which is about what a full run can reach,
+    // so it is a ceiling you touch rather than one you sit against. Points past
+    // it still buy crit damage below, so nothing is ever wasted.
+    critMultBase: 1.0, critMultPerInstinct: 0.25,   // crit damage = x(1 + 0.25 x Instinct)
+    // A CRIT FEEDS YOUR STRAIN — PARKED AT 0, SCAFFOLD INTACT.
+    //
+    // The rule: a crit banks a charge of whatever the strain runs on — Momentum,
+    // a Spore, Resolve, or a poison stack. It works, and it is the better
+    // long-term answer for this stat, because "my mechanic is online" is a verb
+    // Strength cannot buy at any price.
+    //
+    // It is off because the STRAINS THEMSELVES ARE STILL BEING DESIGNED. A stat
+    // that accelerates a mechanic makes that mechanic harder to judge: you can
+    // no longer tell whether Momentum feels bad or is merely arriving slowly,
+    // and both questions are open. Instinct pays in crit alone until the four
+    // strains stand up on their own.
+    //
+    // Set this back to 1 to switch it on. Nothing else needs touching —
+    // creditCrit and its call site in applyPlayerDamage are still wired, and
+    // the readouts are unaffected.
+    critBankGain: 0,
     // COOLDOWN REDUCTION IS NO LONGER A STAT. Speed does not feed it and
     // nothing else does yet, so cdrPerSpeed is gone rather than sitting at 0.
     //
@@ -293,11 +345,18 @@ const BALANCE = {
   // becoming a pure stat, and the mutation pool being cleared: a sheet with 7
   // Speed saved under v3 loaded back at 1.40x where it was built at ~1.06x.
   //
-  // v4 -> v5 is Instinct: crit chance became a flat 2%/point off no base,
-  // points past the chance cap started buying crit damage, and a crit began
-  // feeding the strain bank. A v4 sheet with 20 Instinct was allocated for 26%
-  // crit and would load back at 40% with a bank filling on top — the same shape
-  // of silent re-read the Speed bump was.
+  // v4 -> v5 is Instinct: crit chance became a flat 2%/point off no base with
+  // the cap raised to 90%, and crit damage started climbing with the same
+  // points instead of sitting at a flat x2. A v4 sheet with 20 Instinct was
+  // allocated for 26% crit at x2 and would load back at 40% crit at x6 — the
+  // same shape of silent re-read the Speed bump was, and a much bigger one.
+  //
+  // Only ONE bump for the whole of the Instinct work, deliberately. The crit
+  // numbers moved twice while it was being tuned, but v5 was never a build
+  // anybody played, so a second bump would have purged nothing and cost every
+  // player another set of empty slots. What a save key answers is "can a sheet
+  // saved by a build people PLAYED still be read", so it moves once per shipped
+  // change in economics, not once per edit.
   //
   // Bumping also gives every player empty slots on the next load, which is the
   // honest outcome — those runs are not playable as the game now works.
