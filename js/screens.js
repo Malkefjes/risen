@@ -229,6 +229,11 @@ function spawnEnemy() {
   if (zn) zn.textContent = getZoneName(state.wave);
   const an = document.getElementById('act-name');
   if (an) an.textContent = getActLabel(state.wave);
+  // The act stamp is what lets CSS dress the arena per zone (the Laboratory
+  // painting keys off it); scenery stays a class/attr concern, never a
+  // re-render, same contract as backdrop-on.
+  const ac = document.getElementById('arena-card');
+  if (ac) ac.dataset.act = actForWave(state.wave).num;
 
   // Every wave gets a header, not just bosses and elites. A transcript with
   // silent waves in it cannot be read back — the reader has no way to tell
