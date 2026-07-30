@@ -41,10 +41,18 @@ export default async function ({ page, ctx, ok }) {
     }
     switchTab('talents');
     return { level: state.player.level, sawOffer, ids: state.player.talentIds.length,
+             // Read off BALANCE, not hardcoded: this once asserted level >= 10,
+             // which was really "a run levels plenty" back when one gave
+             // sixteen. The level compression took a run to ~9 and tripped it
+             // on a stale expectation rather than a broken mutation system.
+             // What the check actually needs is that the run passed a level a
+             // draft WOULD have fired on, so it asks for exactly that.
+             draftLevel: BALANCE.talentEvery,
              tabText: document.getElementById('talent-list').textContent.trim(),
              won: document.getElementById('result-title').textContent === 'RISEN' };
   });
-  ok('run reached the mutation levels', run.level >= 10, 'level ' + run.level);
+  ok('run passed a mutation level', run.level >= run.draftLevel,
+     'reached level ' + run.level + ', drafts fire every ' + run.draftLevel);
   ok('no draft was ever offered', run.sawOffer === false);
   ok('no mutations acquired', run.ids === 0, String(run.ids));
   ok('tab shows the honest empty state', run.tabText === 'No mutations in the pool yet', JSON.stringify(run.tabText));
