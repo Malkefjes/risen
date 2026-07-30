@@ -124,7 +124,7 @@ function serializeRun() {
       str:p.str, instinct:p.instinct, speed:p.speed, vit:p.vit,
       dmgMult:p.dmgMult, hpMult:p.hpMult, apsMult:p.apsMult,
       talents:p.talents, talentIds:p.talentIds, hp:p.hp, maxHp:p.maxHp,
-      charges:p.charges||0, resolve:p.resolve||0, spores:p.spores||0,
+      resolve:p.resolve||0, spores:p.spores||0,
       // Only the statuses marked to persist — the same set that survives into
       // the next fight, so a reload lands you in the shape a kill left you in.
       statuses:survivingStatuses(p),
@@ -274,7 +274,7 @@ function continueRun(slot){
     points:sp.points||0, str:sp.str, instinct:sp.instinct, speed:sp.speed, vit:sp.vit,
     dmgMult:sp.dmgMult||1, hpMult:sp.hpMult||1, apsMult:sp.apsMult||1,
     talents:sp.talents||{}, talentIds:sp.talentIds||[],
-    charges:sp.charges||0, resolve:sp.resolve||0, spores:sp.spores||0 });
+    resolve:sp.resolve||0, spores:sp.spores||0 });
   state.player=p;
   // Saves written before statuses were persisted simply have none; anything
   // whose definition has since been removed is dropped rather than trusted.

@@ -13,11 +13,14 @@
 // Both are floors with wide headroom, in the spirit of the balance header:
 // defaults with room, not laws.
 //
-// PSY IS DELIBERATELY EXCLUDED from the clear-rate check. Its bot dies at wave
-// 2-3 to the Momentum drain, long before the boss, so a psy assertion here would
-// measure the bot's inability to bank Momentum rather than anything about the
-// boss — exactly the trap the project notes warn about. A human holds Momentum
-// and does far better; the fix psy needs is its own class pass, not a boss knob.
+// PSY GETS ITS OWN, LOWER FLOOR. Since the DREAD rework the bot can finally
+// play psy honestly (no bank to manage), and it clears the first boss about
+// 60% of the time — but psy is deliberately the hardest class in dumb hands:
+// glass, no heal, and its real answer to the boss windup is holding the stun
+// for it, which the greedy bot cannot do (it fires Traumatize on cooldown and
+// wastes the stun into stagger resist). The floor is 40% so a regression to
+// the old dead class (0-6%) fails loudly while honest variance around 60%
+// does not. If psy's bot rate ever sits comfortably higher, raise this.
 export default async function ({ page, ok }) {
   // ---- The burst invariant ----------------------------------------------
   // The specific number that made wave 5 a wall: one telegraphed hit erasing a
@@ -49,7 +52,7 @@ export default async function ({ page, ok }) {
   const RUNS = 40;
   const clear = await page.evaluate((RUNS) => {
     const out = {};
-    for (const cls of ['bio', 'sym', 'base']) {
+    for (const cls of ['bio', 'sym', 'base', 'psy']) {
       let reachedBoss = 0, cleared = 0;
       for (let n = 0; n < RUNS; n++) {
         const r = simulateRun(cls);
@@ -60,9 +63,10 @@ export default async function ({ page, ok }) {
     }
     return out;
   }, RUNS);
-  for (const cls of ['bio', 'sym', 'base'])
+  const FLOORS = { bio: 0.5, sym: 0.5, base: 0.5, psy: 0.4 };
+  for (const cls of ['bio', 'sym', 'base', 'psy'])
     ok(`the first boss is beatable as ${cls} (${clear[cls].cleared}/${RUNS} clear)`,
-       clear[cls].rate >= 0.5,
+       clear[cls].rate >= FLOORS[cls],
        JSON.stringify(clear[cls]));
 
   // A sanity floor under the numbers above: if a class stopped reaching the boss

@@ -13,12 +13,14 @@ function renderCombat(forceFull) {
   } else updateUnitCard(state.enemy);
 }
 
-// ---- Class banks (Momentum / Spores / Resolve) -------------------
-// One bank per strain, all rendered identically as filled/empty pips with the
-// cap visible. Every change routes through bankAdjust so nothing moves silently:
-// clamp, float text and a log line, then repaint the pips.
+// ---- Class banks (Spores / Resolve) ------------------------------
+// One bank per strain that keeps one on itself, rendered identically as
+// filled/empty pips with the cap visible. Every change routes through
+// bankAdjust so nothing moves silently: clamp, float text and a log line, then
+// repaint the pips. Psy has no player-side bank on purpose — its DREAD lives
+// on the enemy as a status, worn on their card, and bio's bank is the rot
+// itself. Only the strains that hold something show pips.
 function bankOf(cls) {
-  if (cls === 'psy')  return { field:'charges', name:'MOMENTUM', cap:P().chargeCap,  tone:'momentum' };
   if (cls === 'sym')  return { field:'spores',  name:'SPORES',   cap:P().sporeCap,   tone:'spores'   };
   if (cls === 'base') return { field:'resolve', name:'RESOLVE',  cap:P().resolveCap, tone:'resolve'  };
   return null;
@@ -115,7 +117,7 @@ function buildStatusesHtml(unit) {
 // rebuilt when it would actually look different. Power is part of it: Spines
 // amplifying from ×2.2 to ×3.3 changes the badge without changing its duration.
 function buildStatusKey(u) {
-  let k = ('C'+(u.charges||0)) + ('R'+(u.resolve||0)) + (u.thorns>0?'T'+getThornsDamage(u):'');
+  let k = ('R'+(u.resolve||0)) + (u.thorns>0?'T'+getThornsDamage(u):'');
   u.statuses.forEach(s => k += '|' + s.type + (isFinite(s.duration) ? Math.ceil(s.duration) : '*') + (s.stacks||'') + (s.power||''));
   return k;
 }

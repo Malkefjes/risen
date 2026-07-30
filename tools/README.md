@@ -13,5 +13,6 @@ The bot is deliberately naive: it fires whatever special is off cooldown and
 allocates points on a fixed plan. Read the columns comparatively — a class the
 bot cannot pilot is not necessarily a class a person cannot pilot. What the
 numbers are good for is spotting a mechanic that never engages at all, which
-is how psy's Momentum problem surfaced: the bank drains faster than it fills,
-so its gated skills report "not paid" a dozen times a run and never fire.
+is how old psy's Momentum problem surfaced: the bank drained faster than it
+filled, so its gated skills reported "not paid" a dozen times a run and never
+fired — the finding that led to the DREAD rework.

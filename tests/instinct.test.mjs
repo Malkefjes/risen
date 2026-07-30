@@ -107,21 +107,23 @@ export default async function ({ page, ok }) {
   ok('a flat crit talent does not buy crit damage', flat.mult === flat.plainMult, JSON.stringify(flat));
 
   // ---- The scaffold ------------------------------------------------------
-  // "A crit feeds your strain" is off while the strains are still being
-  // designed, and the guard is that it is off IN PLAY rather than merely set to
-  // zero: creditCrit is still reached on every crit, so a stray default or a
-  // second caller would show up as a bank line in a real run.
+  // "A crit feeds your strain" is LIVE for psy (its crits plant DREAD, as the
+  // kit) and parked for the other three, and the guard is that it is off for
+  // them IN PLAY rather than merely set to zero: creditCrit is still reached
+  // on every crit, so a stray default or a second caller would show up as a
+  // bank line in a real run. Psy is deliberately absent from this loop — its
+  // crit rule is supposed to fire.
   ok('the bank knob is parked at zero',
      await page.evaluate(() => BALANCE.player.critBankGain) === 0);
   const parked = await page.evaluate(() => {
     const out = { crits: 0, banked: 0, poisonFromCrit: 0 };
-    for (const cls of ['psy', 'sym', 'base', 'bio'])
+    for (const cls of ['sym', 'base', 'bio'])
       for (let n = 0; n < 6; n++) {
         const r = simulateRun(cls, { allocate: () => 'instinct', keepLog: true });
         for (const l of r.log) {
           if (/→ MCP/.test(l) && /CRIT ×/.test(l)) out.crits++;
           // The bank lines creditCrit would write, in either of its two shapes.
-          if (/(MOMENTUM|SPORES|RESOLVE) \+/.test(l) && l.includes('CRIT')) out.banked++;
+          if (/(SPORES|RESOLVE) \+/.test(l) && l.includes('CRIT')) out.banked++;
           if (/^\+ POISON/.test(l) && l.includes('CRIT')) out.poisonFromCrit++;
         }
       }

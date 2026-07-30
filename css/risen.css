@@ -1110,7 +1110,7 @@ body {
 .status.predator { color: var(--accent); border: 1px solid rgba(0,240,208,0.35); }
 .status.spines { color: var(--sym); border: 1px solid rgba(251,146,60,0.4); }
 .status.resolve { color: #ffffff; border: 1px solid rgba(255,255,255,0.5); }
-.status.flow { color: var(--psy); border: 1px solid rgba(192,132,252,0.55); }
+.status.dread { color: var(--psy); border: 1px solid rgba(192,132,252,0.55); background: rgba(192,132,252,0.08); }
 .status.brace { color: var(--base); border: 1px solid rgba(255,255,255,0.55); background: rgba(255,255,255,0.1); }
 
 /* Class bank pips (Momentum / Spores / Resolve) */
@@ -1131,10 +1131,8 @@ body {
   background: var(--bank-color, var(--muted));
   box-shadow: 0 0 6px var(--bank-glow, transparent);
 }
-.bank-momentum { --bank-color: var(--psy); --bank-glow: rgba(192,132,252,0.6); }
 .bank-spores   { --bank-color: var(--sym); --bank-glow: rgba(251,146,60,0.6); }
 .bank-resolve  { --bank-color: #ffffff;    --bank-glow: rgba(255,255,255,0.6); }
-.bank-momentum .bank-label { color: var(--psy); }
 .bank-spores   .bank-label { color: var(--sym); }
 .bank-resolve  .bank-label { color: #ffffff; }
 

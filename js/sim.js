@@ -47,8 +47,7 @@ function pumpSteps(limit) {
 // policy at all and is deliberately unclever — a bot that plays well would
 // hide exactly the weaknesses a balance sweep is looking for.
 function greedyPolicy(p) {
-  const usable = p.skills.filter(s => !s.basic && s.cd <= 0
-    && !(s.requiresCharges && (p.charges || 0) < s.requiresCharges));
+  const usable = p.skills.filter(s => !s.basic && s.cd <= 0);
   return usable[0] || p.skills[0];
 }
 // Round-robin allocation, for the same reason.

@@ -76,12 +76,11 @@ A turn-based browser roguelite. Personal project, built for enjoyment.
 
 ## Known soft spots (context, not a to-do list)
 
-- Psy's Momentum drains faster than it fills (net −1 per exchange at the
-  1:1 anchor); the owner wants a full overhaul someday, on their timing.
-  Note: the tools' bot cannot manage a bank, so until it learns to at
-  least attempt Momentum play, its psy numbers measure the bot, not the
-  class.
-- Instinct feeds crit chance and nothing else; cooldown reduction is a live
-  seam with no source.
-- Sym barely responds to stat allocation; Unmutated's bot numbers are
-  unmeasured rather than bad.
+- Psy was reworked around DREAD (a mark on the enemy: crits and dodges plant
+  it, stacks slow the enemy, Kill cashes it in) — the numbers are first-pass
+  and untested by real play. The bot can finally play psy honestly (no bank
+  to manage), so its psy numbers now measure the class.
+- Cooldown reduction is a live seam with no source.
+- Sym barely responds to stat allocation (a read on why sits above its class
+  entry in `js/data.js`); Unmutated's bot numbers are unmeasured rather than
+  bad.

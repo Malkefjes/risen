@@ -41,8 +41,9 @@
 //    how much the enemy gets to do inside it. Turn rate is therefore a
 //    mitigation stat wearing an offensive costume, and handing out +43% of it
 //    on a fresh sheet was handing out free damage reduction on top of block.
-//    (psy is the one exception, where more turns really is more damage: its
-//    Momentum builds per landed hit.)
+//    (psy leans on this harder than anyone — its DREAD slows the enemy's side
+//    of the ratio, so the class literally plays the mitigation-in-costume
+//    game as its kit — but the rule itself holds for all four.)
 //
 //  * ANYTHING DERIVED HANGS OFF THOSE ANCHORS rather than carrying its own
 //    curve. Ailment damage is a fifth of Attack Damage, thorns a twentieth of
@@ -93,22 +94,23 @@
 //    because it is written down here — they land when the classes feel right.
 //
 //      1. A CRIT FEEDS YOUR STRAIN — built, wired, and switched off at
-//         critBankGain: 0. A crit banks a charge of whatever the strain runs on.
-//         One number turns it back on; see the block below.
-//      2. INSTINCT SCALING WHAT A CHARGE IS WORTH — not built. Damage per
-//         Momentum, reduction per Resolve, the thorns multiplier, poison per
-//         stack: the magnitudes that are flat constants today (momentumDmg,
+//         critBankGain: 0 for sym, base and bio. PSY ALREADY LIVES THIS RULE:
+//         its crits plant DREAD on the enemy, as the kit itself rather than the
+//         parked scaffold (see creditCrit). Psy is the proof of concept the
+//         others can be judged against before the knob turns for them.
+//      2. INSTINCT SCALING WHAT A CHARGE IS WORTH — not built. The DREAD slow
+//         per stack, reduction per Resolve, the thorns multiplier, poison per
+//         stack: the magnitudes that are flat constants today (dreadSlowPerStack,
 //         resolveDR, thornsFrac, ailmentDamageFrac).
 //
 //    They stack rather than compete — the first is how fast a bank FILLS, the
 //    second is what a charge PAYS — and both are off for the same reason: a stat
 //    that accelerates or inflates a mechanic makes that mechanic impossible to
-//    judge. You cannot tell whether Momentum feels bad or is merely arriving
-//    slowly, and both questions are open. Two cautions for whenever the second
-//    one lands: it must not make Instinct mandatory for every strain (a stat you
-//    must take is as dead as one you never take), and thorns and poison are
-//    shares of the HP and damage anchors, so scaling them by a stat means those
-//    anchors stop carrying them for free.
+//    judge. Two cautions for whenever the second one lands: it must not make
+//    Instinct mandatory for every strain (a stat you must take is as dead as one
+//    you never take), and thorns and poison are shares of the HP and damage
+//    anchors, so scaling them by a stat means those anchors stop carrying them
+//    for free.
 //
 //  * Known soft spots, in case they read as bugs rather than gaps: cooldown
 //    reduction is a live seam with no source yet (no talent sets cdrBonus, so
@@ -131,7 +133,7 @@
 // KEEP THIS SEPARATE FROM BALANCE.saveKey. That one answers "are saved runs
 // still valid" and is bumped only when a change makes an old sheet wrong.
 // Deriving it from this would wipe every save on a typo fix.
-const BUILD = '2026-07-30';
+const BUILD = '2026-07-30b';
 
 const BALANCE = {
   player: {
@@ -235,20 +237,20 @@ const BALANCE = {
     // so it is a ceiling you touch rather than one you sit against. Points past
     // it still buy crit damage below, so nothing is ever wasted.
     critMultBase: 1.0, critMultPerInstinct: 0.25,   // crit damage = x(1 + 0.25 x Instinct)
-    // A CRIT FEEDS YOUR STRAIN — PARKED AT 0, SCAFFOLD INTACT.
+    // A CRIT FEEDS YOUR STRAIN — PARKED AT 0 for sym, base and bio; LIVE for
+    // psy, whose crits plant DREAD as the kit itself (Hunt's dreadOnCrit, not
+    // this knob — see creditCrit for how the two routes share one function).
     //
-    // The rule: a crit banks a charge of whatever the strain runs on — Momentum,
-    // a Spore, Resolve, or a poison stack. It works, and it is the better
-    // long-term answer for this stat, because "my mechanic is online" is a verb
-    // Strength cannot buy at any price.
+    // The rule: a crit banks a charge of whatever the strain runs on — a Spore,
+    // Resolve, or a poison stack. It is the better long-term answer for this
+    // stat, because "my mechanic is online" is a verb Strength cannot buy at
+    // any price, and psy is now the living argument for it.
     //
-    // It is off because the STRAINS THEMSELVES ARE STILL BEING DESIGNED. A stat
-    // that accelerates a mechanic makes that mechanic harder to judge: you can
-    // no longer tell whether Momentum feels bad or is merely arriving slowly,
-    // and both questions are open. Instinct pays in crit alone until the four
-    // strains stand up on their own.
+    // Off for the other three because THEIR designs are still being judged. A
+    // stat that accelerates a mechanic makes that mechanic harder to read, so
+    // Instinct pays them in crit alone until each stands up on its own.
     //
-    // Set this back to 1 to switch it on. Nothing else needs touching —
+    // Set this back to 1 to switch it on for them. Nothing else needs touching —
     // creditCrit and its call site in applyPlayerDamage are still wired, and
     // the readouts are unaffected.
     critBankGain: 0,
@@ -292,9 +294,34 @@ const BALANCE = {
     reflectFrac: 0.20, reflectSpinesMult: 2,   // sym: share of damage taken reflected back; doubled while Spines is up
     sporeBigHitFrac: 0.15, sporeHitMax: 3,     // sym: every 15% of max HP lost in one hit plants an extra Spore (cap per hit)
     levelUpHealFrac: 0.08, recoverHpFrac: 0.08,
-    chargeCap: 5,          // Momentum (psy) bank ceiling
-    momentumDmg: 0.10,     // psy: +10% damage per held Momentum — the streak IS the build
-    momentumLossPerHit: 2, // psy: taking a hit trims Momentum by this (not a full reset)
+    // ---- DREAD (psy) ------------------------------------------------------
+    // Psy's mechanic LIVES ON THE ENEMY, not on the player — the one bank in
+    // the game that is a mark, not a wallet. Momentum (a player-side bank of
+    // +1 per hit landed, −2 per hit taken) died of an identity contradiction:
+    // the kit punished being hit in a game whose 1:1 anchor guarantees being
+    // hit, so the bank mathematically drained no matter how well you played.
+    // Flipping the number onto the enemy resolves every piece of it at once:
+    //   - the theme reads true (you are not "in flow", THEY are coming apart);
+    //   - taking a hit still hurts psy — the enemy that lands a blow regains
+    //     its nerve — but as the enemy's recovery, not your tax;
+    //   - fear dies with the enemy, so psy ramps fresh and fast every fight
+    //     where bio ramps slow and permanent. Two infections, two speeds:
+    //     bio's mark eats the enemy's HEALTH, psy's mark eats their TURNS.
+    // Each stack slows the enemy's rate, which the turn-rate readout shows as
+    // the ratio climbing — dominance you can watch. The slow is capped by the
+    // stack cap; without one an enemy could be slowed toward never acting,
+    // which is a stun without the stun's price.
+    // Each stack does TWO things, named on one badge: the enemy hesitates
+    // (−rate) and its guard opens (+damage taken). The pair is what makes
+    // DREAD offense and defense at once — slow alone was mitigation wearing
+    // an offensive costume (see the turn-rate note above), and a terror class
+    // with no teeth measured exactly like it sounds: first pass shipped slow
+    // only, and psy's own best-stat builds died on wave 3 doing 25s into a
+    // 900 HP boss. Fear has to make the kill faster, not just later.
+    dreadCap: 6,             // stack ceiling — bounds the slow at 30% and the open guard at 24%
+    dreadSlowPerStack: 0.05, // each stack: −5% enemy turn rate
+    dreadVulnPerStack: 0.04, // each stack: +4% damage the enemy takes — terror opens the guard
+    dreadLossPerHit: 1,      // an enemy that lands a hit on psy steadies: sheds this many stacks
     sporeCap: 6,           // sym: Spore bank ceiling
     resolveCap: 6,         // Unmutated: Resolve bank ceiling
     resolveDR: 0.03,       // Unmutated: each held Resolve = 3% flat damage reduction (18% at cap)
@@ -418,14 +445,33 @@ const CLASSES = {
       { id:'miasma', name:'Miasma', desc:'For {duration#turn}: regenerate {power%} of max HP each turn. The enemy is WEAK for {weak.duration#turn}', type:'buff', buff:'regen', duration:4, power:0.10, applies:[{ id:'weak', power:0.25, duration:3 }], target:'self', cdTurns:5 }
     ]
   },
+  // THE TERROR MUTANT. Psy's mechanic is DREAD, a mark stacked ON THE ENEMY —
+  // see the DREAD block in BALANCE for why the number moved off the player and
+  // what killed Momentum. The kit is four verbs in order: Hunt (crits and
+  // dodges plant fear), Terrify (seize control — a burst of stacks, each one
+  // slowing the enemy's turn rate), Traumatize (at 3+ DREAD the mind breaks:
+  // stun), Kill (cash every stack in as damage — and with the fear spent, the
+  // enemy speeds back up, so the finisher is a real decision, not a rotation
+  // button). Its sentence: "you were beaten before I ever touched you."
+  //
+  // The class's stats are Speed and Instinct, enforced by hunger rather than
+  // by a discount: Instinct is the engine (crits plant DREAD), Speed is both
+  // halves of the ratio (your rate up, their whiffs planting more fear via
+  // dodges), and every point of Vit is a point the engine didn't get. Squishy
+  // because you chose teeth over hide, not because the sheet says so.
+  //
+  // No heal anywhere in the kit, deliberately. Psy's answer to damage is that
+  // the enemy doesn't get to act: the slow, the stun, the evade. If that line
+  // fails, the run bleeds — the failure state is "they steadied and now
+  // you're glass in the open", and it should stay scary.
   psy: {
     name: 'Psychological', color: 'psy',
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
-      { id:'shock', name:'Shock', desc:'Auto. Attack the enemy for your Attack Damage.', type:'attack', power:1.0, target:'enemy', basic:true },
-      { id:'traumatize', name:'Traumatize', desc:'{power%} Attack Damage. Consumes {stunCost} Momentum to stun {stun#turn}.', type:'attack', power:0.95, stun:1, stunCost:3, target:'enemy', cdTurns:3 },
-      { id:'drain', name:'Nerve Drain', desc:'{power%} Attack Damage. Consumes {healCost} Momentum to heal {lifesteal%} of damage dealt.', type:'attack', power:0.90, lifesteal:0.30, healCost:2, target:'enemy', cdTurns:3 },
-      { id:'storm', name:'Flow State', desc:'Needs {requiresCharges}+ Momentum. For {duration#turn}: Momentum cannot be lost, and every held stack deals double damage.', type:'buff', buff:'flow', duration:3, requiresCharges:3, target:'self', cdTurns:6 }
+      { id:'hunt', name:'Hunt', desc:'Auto. Attack the enemy for your Attack Damage. Your crits and your dodges plant +{dreadOnCrit} DREAD.', type:'attack', power:1.0, dreadOnCrit:1, dreadOnEvade:1, target:'enemy', basic:true },
+      { id:'terrify', name:'Terrify', desc:'Attack for {power!} damage and plant +{dread} DREAD. Every stack slows the enemy and opens its guard.', type:'attack', power:0.50, dread:3, target:'enemy', cdTurns:3 },
+      { id:'traumatize', name:'Traumatize', desc:'Attack for {power!} damage. Against {dreadNeed}+ DREAD the mind breaks: stunned for {stun#turn}.', type:'attack', power:0.95, stun:1, dreadNeed:3, target:'enemy', cdTurns:4 },
+      { id:'kill', name:'Kill', desc:'Attack for {power!} damage, +{perDreadPower!} per DREAD consumed. Spends ALL the enemy’s DREAD.', type:'attack', power:1.20, perDreadPower:0.60, consumesDread:true, target:'enemy', cdTurns:5 }
     ]
   },
   // WHY SYM FEELS OFF, for whenever its pass comes (a read, not a plan): its
@@ -759,14 +805,27 @@ const STATUSES = {
     }
   },
 
-  flow: {
-    id:'flow', name:'FLOW', tone:'flow', kind:'buff',
-    stacking:'replace', defaults:{ duration:3, power:2 },
-    label: st => 'FLOW ' + Math.ceil(st.duration) + 't',
-    // Its two effects stay as reads at their sites rather than hooks, because
-    // both touch psy's Momentum bank rather than a generic damage number:
-    // applyEnemyDamage skips the loss while it is up, and applyPlayerDamage
-    // multiplies the per-charge bonus by this power.
+  // Psy's mark — the mind coming apart, worn on the enemy's card the way
+  // poison is. Permanent like poison and for the same reason: fear does not
+  // wash out on a timer, only the enemy's own landed hits steady it (see
+  // shedStacks in applyEnemyDamage) and Kill consumes it. Dies with the enemy,
+  // so psy re-establishes dominance fresh each fight — the ramp is fast and
+  // per-fight where bio's is slow and permanent.
+  //
+  // The slow rides the generic apsMult hook, so effectiveAps and the turn-rate
+  // ratio readout pick it up with no special case: as the stacks climb the
+  // player literally watches their ratio rise.
+  dread: {
+    id:'dread', name:'DREAD', tone:'dread', kind:'debuff',
+    stacking:'stack', permanent:true, defaults:{ stacks:1 },
+    maxStacks: () => P().dreadCap,
+    label: st => 'DREAD ×' + (st.stacks||1),
+    apsMult: (u, st) => 1 - (st.stacks||0) * P().dreadSlowPerStack,
+    // Terror opens the guard: the enemy takes more from EVERY source while
+    // marked — including the Kill that consumes the stacks, which strikes
+    // into the open guard before the fear breaks (consumption happens after
+    // the damage resolves). This half is psy's offense; the slow is its skin.
+    incomingMult: (u, st) => 1 + (st.stacks||0) * P().dreadVulnPerStack
   },
 
   predator: {

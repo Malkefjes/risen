@@ -9,6 +9,26 @@ function hasStatus(unit, id) { return !!getStatus(unit, id); }
 function statusStacks(unit, id) { const s = getStatus(unit, id); return s ? (s.stacks || 0) : 0; }
 function statusPower(unit, id) { const s = getStatus(unit, id); return s ? (s.power || 0) : 0; }
 
+// Shed N stacks from a stacking status, removing it when the last one goes.
+// The partial sibling of removeStatus, with the same logging duty: DREAD
+// easing as the enemy steadies must show in the transcript, or fear would
+// look like it evaporates for no reason. Returns how many stacks came off.
+function shedStacks(unit, id, n, why) {
+  const st = getStatus(unit, id);
+  if (!st || !(n > 0)) return 0;
+  const shed = Math.min(st.stacks || 1, n);
+  st.stacks = (st.stacks || 1) - shed;
+  if (st.stacks <= 0) { removeStatus(unit, id, why); }
+  else {
+    // The delta and what remains, in that order — logging only the label
+    // printed the new total ("− DREAD ×3") and read as losing three.
+    const def = STATUSES[id];
+    logEvent((def ? def.name : id) + ' −' + shed, unit, '(×' + st.stacks + ' left)', [why], '');
+    updateUnitCard(unit);
+  }
+  return shed;
+}
+
 // `why` names whatever stripped it. Without a line here a status could vanish
 // mid-fight with nothing in the transcript to show for it — a purge eating a
 // four-stack POISON looked like the rot simply stopped existing.
@@ -419,7 +439,8 @@ function strainReadout(p) {
   // "Poison per stack" beside an identical "Poison damage" would be the same
   // number printed twice in one pane.
   if (p.class === 'sym') return { id:'strain', label:'Thorns', text: formatNum(p.thorns), num: p.thorns };
-  if (p.class === 'psy') return { id:'strain', label:'Per Momentum', text: '+' + Math.round(P().momentumDmg*100) + '% dmg' };
+  if (p.class === 'psy') return { id:'strain', label:'Per DREAD',
+    text: '−' + Math.round(P().dreadSlowPerStack*100) + '% rate, +' + Math.round(P().dreadVulnPerStack*100) + '% taken' };
   return null;
 }
 function guardReadout(p) {

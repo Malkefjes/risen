@@ -68,7 +68,7 @@ function freshPlayer(classId) {
     // confirm — the sidebar renders them by previewing a copy. See adjustStat.
     pending:{ str:0, instinct:0, speed:0, vit:0 },
     skills: cls.skills.map(s => Object.assign({cd:0}, s)),
-    statuses:[], isPlayer:true, meter:0, charges:0, resolve:0, spores:0, _statusKey:''
+    statuses:[], isPlayer:true, meter:0, resolve:0, spores:0, _statusKey:''
   };
   p.basicSkill = p.skills.find(s => s.basic) || p.skills[0];
   return p;

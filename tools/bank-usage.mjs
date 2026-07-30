@@ -1,8 +1,10 @@
 // Can each strain's resource bank actually fill?
 //
-// The instrument that found psy: Momentum is +1 per landed hit and -2 per hit
-// taken, so at the 1:1 turn anchor every exchange is net -1 and the bank
-// drains. Three of psy's four skills are gated behind it, so they never fire.
+// The instrument that found old psy: Momentum was +1 per landed hit and -2 per
+// hit taken, so at the 1:1 turn anchor every exchange was net -1 and the bank
+// drained; three of its four skills were gated behind it and never fired. That
+// finding killed Momentum — psy now marks the ENEMY with DREAD and shows no
+// row here, which is correct: this measures banks the player holds.
 import { serve, launch } from '../tests/harness.mjs';
 
 const RUNS = Number(process.argv[2] || 40);

@@ -79,8 +79,7 @@ export default async function ({ page, ok }) {
         else if (pendingTotal(p) > 0) commitStats();
         else if (state.talentOffers?.picks?.length) pickTalent(state.talentOffers.picks[0].id);
         else {
-          const u = p.skills.filter(k => !k.basic && k.cd <= 0
-            && !(k.requiresCharges && (p.charges || 0) < k.requiresCharges));
+          const u = p.skills.filter(k => !k.basic && k.cd <= 0);
           playerAct(u[0] || p.skills[0]);
         }
       }

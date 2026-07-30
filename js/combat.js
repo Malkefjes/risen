@@ -176,7 +176,6 @@ function playerAct(skill) {
   if (!state.combatActive || !state.awaitingInput) return;
   if (!p || p.hp <= 0 || !skill) return;
   if (!skill.basic && skill.cd > 0) return;
-  if (skill.requiresCharges && (p.charges || 0) < skill.requiresCharges) return;
   const needsEnemy = skill.target !== 'self';
   if (needsEnemy && (!state.enemy || state.enemy.hp <= 0 || state.enemy._defeated)) return;
 
@@ -278,7 +277,11 @@ function applyEnemyDamage(e, p, mult) {
   let dmg = Math.max(1, Math.floor(e.damage * (mult || 1) * statusMult(e, 'outgoingMult', { target: p })));
   if (Math.random() < p.evadeChance) {
     logMiss(label, p, 'EVADED (' + Math.round(p.evadeChance * 100) + '%)');
-    if (p.class === 'psy') bankAdjust(p, 1, 'attack evaded');   // speed → evade → streak
+    // Psy: the hunter they cannot touch. A whiff plants fear, which is how
+    // Speed feeds the class engine — evade is the second mouth of DREAD,
+    // beside Instinct's crits. Read off the basic like bio's poison is.
+    if (p.class === 'psy' && e.hp > 0 && p.basicSkill && p.basicSkill.dreadOnEvade)
+      applyStatus(e, 'dread', { stacks: p.basicSkill.dreadOnEvade });
     floatText(p, 'EVADE', 'note'); playAttackAnim(e, p, false); return 0;
   }
   if (Math.random() < e.critChance) { dmg = Math.floor(dmg * e.critMult); notes.push('CRIT ×' + e.critMult.toFixed(1)); }
@@ -306,11 +309,12 @@ function applyEnemyDamage(e, p, mult) {
   dmg = Math.max(1, dmg);
   p.hp = Math.max(0, p.hp - dmg);
   logDamage(label, p, dmg, notes.concat([logNum(p.hp) + '/' + logNum(p.maxHp) + ' left']));
-  // Psy: a landed hit trims Momentum by 2 — a slip, not a reset.
-  if (p.class === 'psy') {
-    if (hasStatus(p, 'flow')) logEvent('MOMENTUM', p, 'held', ['FLOW blocks the loss'], 'heal');
-    else bankAdjust(p, -P().momentumLossPerHit, 'hit taken');
-  }
+  // Psy: an enemy that gets its hands on you regains its nerve — the mark
+  // eases instead of your bank draining. Same pressure, honest owner: being
+  // hit still costs psy its dominance, but as the ENEMY's recovery, which is
+  // both truer to the theme and visible on the card it happens to.
+  if (p.class === 'psy' && e && e.hp > 0)
+    shedStacks(e, 'dread', P().dreadLossPerHit, 'nerve steadied — its blow landed');
   // Unmutated: every hit taken steadies you, and Brace banks an extra.
   if (p.class === 'base') bankAdjust(p, (P().resolvePerHit||1) + statusSum(p, 'bankOnHitTaken'), 'hit taken');
   // Whatever the player is carrying that answers a hit — Spines planting a
@@ -349,30 +353,32 @@ function applyEnemyDamage(e, p, mult) {
   return dmg;
 }
 
-// A CRIT FEEDS YOUR STRAIN — SCAFFOLD, PARKED. Reached on every crit, and does
-// nothing while BALANCE.player.critBankGain is 0, which is where it sits until
-// the strains are finished being designed. The reasoning is on that knob.
+// A CRIT FEEDS YOUR STRAIN — LIVE FOR PSY, PARKED FOR THE REST.
 //
-// The rule, for when it comes back: one sentence, four meanings, because every
-// strain already runs on something that wants filling — Momentum for psy, a
-// Spore for sym, Resolve for Unmutated, and for bio the rot itself, which is its
-// bank in everything but name. Instinct buys the same sentence for everyone
-// ("my mechanic is online when I need it") and cashes out as whatever the strain
-// in front of you is made of.
+// One sentence, four meanings, because every strain runs on something that
+// wants filling: DREAD for psy, a Spore for sym, Resolve for Unmutated, and
+// for bio the rot itself, which is its bank in everything but name. Instinct
+// buys the same sentence for everyone ("my mechanic is online when I need it")
+// and cashes out as whatever the strain in front of you is made of.
 //
-// Left in place rather than deleted because the switch is a number and the code
-// is nine lines; git would remember it either way, but a seam you can flip is
-// worth more than one you have to rebuild. Nothing here is per-strain except
-// the bio branch: bankOf already knows which field a class runs on, and
-// bankAdjust returns 0 for a class with no bank, so a strain that never gets
-// one needs no case.
+// Psy's branch is its KIT — the terror class where a flash of the knife plants
+// fear — so it reads its strength off the basic (Hunt's dreadOnCrit, the same
+// pattern as bio's Slash carrying its poison) and ignores the parked knob.
+// The other three wait on critBankGain, which sits at 0 until each class's
+// design is settled enough to judge an accelerator on top of it.
+//
+// Every enemy-side branch guards on the enemy still standing: a killing crit
+// has nothing left to frighten or rot, and a permanent status stacked onto a
+// corpse would log a number that never comes due.
 function creditCrit(p, e) {
+  if (p.class === 'psy') {
+    const dread = (p.basicSkill && p.basicSkill.dreadOnCrit) || 0;
+    if (dread && e && e.hp > 0) applyStatus(e, 'dread', { stacks: dread });
+    return;
+  }
   const gain = P().critBankGain || 0;
   if (!gain) return;
   if (p.class === 'bio') {
-    // Guarded on the enemy still standing: a killing crit has nothing left to
-    // rot, and poison permanent-stacked onto a corpse would log a number that
-    // never ticks.
     if (e && e.hp > 0)
       applyStatus(e, 'poison', { stacks: gain, perStack: p.poisonPerStack });
     return;
@@ -389,13 +395,15 @@ function applyPlayerDamage(p, e, skill) {
   const notes = [];
   if ((skill.power || 1) !== 1) notes.push('power ×' + (skill.power || 1).toFixed(2));
 
-  // Held Momentum is offense: psy deals more while the streak is alive, and
-  // Flow multiplies what each held charge is worth.
-  if (p.class === 'psy' && (p.charges || 0) > 0) {
-    const flow = getStatus(p, 'flow');
-    const bonus = (p.charges || 0) * P().momentumDmg * (flow ? (flow.power || 2) : 1);
-    dmg *= (1 + bonus);
-    notes.push('MOMENTUM ×' + p.charges + ' +' + Math.round(bonus * 100) + '%');
+  // DREAD (psy): Kill cashes the enemy's fear in. Same shape as Last Stand and
+  // Bloom Eruption — spend the pile for damage per unit — but the pile lives
+  // on the ENEMY, so spending it also hands their turn rate back: the fight
+  // speeds up the moment you cash out, which is what makes Kill a decision
+  // instead of a rotation button.
+  const dreadSpent = skill.consumesDread ? statusStacks(e, 'dread') : 0;
+  if (dreadSpent > 0) {
+    dmg += p.atkPower * (skill.perDreadPower || 0) * dreadSpent;
+    notes.push('DREAD ×' + dreadSpent + ' consumed');
   }
   // Resolve (base): Last Stand scales with everything you endured.
   const resolveSpent = skill.consumesResolve ? (p.resolve || 0) : 0;
@@ -481,16 +489,26 @@ function applyPlayerDamage(p, e, skill) {
   if (skill.consumesSpores && sporesSpent > 0)
     bankAdjust(p, -sporesSpent, 'spent by ' + skill.name);
   if (skill.consumesSpines) removeStatus(p, 'spines', 'consumed by ' + skill.name);
-  // Build the bank: every landed hit builds Momentum.
-  if (p.class === 'psy') bankAdjust(p, 1, 'attack landed');
+  // DREAD spent is DREAD gone: the enemy's fear breaks with the blow, and its
+  // turn rate recovers with it. Deliberately after logDamage, so the hit line
+  // reports the fear that paid for it before the removal line reports the cost.
+  if (skill.consumesDread && dreadSpent > 0)
+    removeStatus(e, 'dread', 'consumed by ' + skill.name);
   // Resolve (base): landing a hit steadies you.
   if (skill.buildsResolve) bankAdjust(p, skill.buildsResolve, skill.name);
-  // ...and a crit would feed it again, on top of whatever the swing already
-  // paid — parked at 0 today, see creditCrit.
+  // A crit feeds your strain — live for psy (crits plant DREAD), parked for
+  // the rest. See creditCrit.
   if (isCrit) creditCrit(p, e);
 
   if (skill.poison && p.class === 'bio')
     applyStatus(e, 'poison', { stacks: skill.poison, perStack: p.poisonPerStack });
+  // Terrify's burst of fear, the planted counterpart of Slash's poison. On-hit
+  // rather than on-use, so the enemy dodging costs the fear along with the
+  // damage. Lands after creditCrit: a critting Terrify plants its crit stack
+  // first, then the burst — same total either way, but the log reads in the
+  // order the fear arrived.
+  if (skill.dread && e.hp > 0)
+    applyStatus(e, 'dread', { stacks: skill.dread });
 
   applySkillStatuses(p, skill, e);
 
@@ -508,15 +526,18 @@ function applyPlayerDamage(p, e, skill) {
 
   if (skill.stun) {
     const stunTurns = skill.stun;
-    // Priced CC: a stun with a stunCost only fires if the charges are there,
-    // and consumes them. Mashing the spender leaves nothing for the windup.
-    if (skill.stunCost) {
-      if ((p.charges || 0) < skill.stunCost) {
-        logEvent('STUN', null, 'not paid',
-                 ['needs ' + skill.stunCost + ' MOMENTUM, have ' + (p.charges || 0)], '');
+    // Gated CC, threshold not spend: Traumatize breaks a mind that is already
+    // frightened enough, and BREAKING IT DOES NOT SPEND THE FEAR — the stacks
+    // stay, still slowing. A threshold keeps hold-vs-spend as base's tension,
+    // not psy's: psy's only cash-out is Kill. The attack still lands either
+    // way; only the break is gated, and the log names what was missing.
+    if (skill.dreadNeed) {
+      const held = statusStacks(e, 'dread');
+      if (held < skill.dreadNeed) {
+        logEvent('STUN', null, 'mind holds',
+                 ['needs ' + skill.dreadNeed + ' DREAD, it holds ' + held], '');
         return dmg;
       }
-      bankAdjust(p, -skill.stunCost, 'spent to stun');
     }
     if (e.windup && !e.stunImmune) {
       // Interrupt: breaks the charge instead of stunning, and ARMS stagger
@@ -567,7 +588,6 @@ function applySkillStatuses(caster, skill, foe) {
 function fireSkill(caster, skill, target) {
   if (!caster || !skill || !target) return;
   if (!skill.basic && skill.cd > 0) return;
-  if (skill.requiresCharges && (caster.charges || 0) < skill.requiresCharges) return;
   // Turn cooldowns. ceil, not round: with round, 49% CDR turned Overclock into
   // a 2-turn nuke. Floored at 1 so nothing ever becomes free.
   const fullCd = (!skill.basic && skill.cdTurns)
@@ -631,21 +651,17 @@ function fireSkill(caster, skill, target) {
     if (dealt) {
       playAttackAnim(caster, target, true, skill);
       if (skill.lifesteal) {
-        // Priced lifesteal: the hit always lands, but the heal only fires if the
-        // bank can pay for it (Nerve Drain feeds on Momentum).
-        if (skill.healCost && (caster.charges || 0) < skill.healCost) {
-          logEvent('LIFESTEAL', null, 'not paid',
-                   ['needs ' + skill.healCost + ' MOMENTUM, have ' + (caster.charges || 0)], '');
-        } else {
-          if (skill.healCost) bankAdjust(caster, -skill.healCost, 'spent to drain');
-          const heal = Math.max(1, Math.floor(dealt * skill.lifesteal));
-          const before = caster.hp;
-          caster.hp = Math.min(caster.maxHp, caster.hp + heal);
-          floatText(caster, heal, 'heal');
-          logHeal('LIFESTEAL', caster, caster.hp - before,
-                  [Math.round(skill.lifesteal * 100) + '% of ' + logNum(dealt) + ' dealt',
-                   logNum(caster.hp) + '/' + logNum(caster.maxHp)]);
-        }
+        // No skill carries this since Nerve Drain went with the psy rework
+        // (its healCost pricing went too — that read the Momentum bank, which
+        // no longer exists). Kept generic: the vampiric elite's lifesteal runs
+        // through its own path, so this seam is for a future player source.
+        const heal = Math.max(1, Math.floor(dealt * skill.lifesteal));
+        const before = caster.hp;
+        caster.hp = Math.min(caster.maxHp, caster.hp + heal);
+        floatText(caster, heal, 'heal');
+        logHeal('LIFESTEAL', caster, caster.hp - before,
+                [Math.round(skill.lifesteal * 100) + '% of ' + logNum(dealt) + ' dealt',
+                 logNum(caster.hp) + '/' + logNum(caster.maxHp)]);
       }
     } else if (fullCd) {
       // A miss already cost the turn; don't also charge the full cooldown.
@@ -866,12 +882,12 @@ function renderSkills(forceRebuild) {
       if (sweep) sweep.style.height = Math.min(100, (skill.cd/maxCd)*100) + '%';
     } else {
       btn.classList.remove('on-cd'); btn.classList.add('ready');
-      const lacking = skill.requiresCharges && (p.charges || 0) < skill.requiresCharges;
-      btn.disabled = !yourTurn || lacking;
-      // The one thing left worth saying: a card that looks usable but is not,
-      // and the reason why. READY and the cooldown length both described a
-      // state the card already wears.
-      costEl.textContent = lacking ? ('NEEDS ' + skill.requiresCharges + ' MOMENTUM') : '';
+      btn.disabled = !yourTurn;
+      // Nothing gates a ready card any more — the bank-priced skills went with
+      // Momentum (Traumatize's DREAD threshold gates its STUN, not the cast).
+      // The cost line stays as the seam for the next card that is usable-but-
+      // not, so the reason can be said where the player is looking.
+      costEl.textContent = '';
       overlay.style.display = 'none';
       if (sweep) sweep.style.height = '0%';
     }
