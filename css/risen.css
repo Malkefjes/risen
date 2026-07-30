@@ -667,7 +667,11 @@ body {
   background:
     radial-gradient(ellipse 130% 60% at 50% 100%, rgba(4,6,10,0.88) 0%, rgba(4,6,10,0.4) 45%, transparent 75%),
     linear-gradient(180deg, rgba(7,10,16,0.6) 0%, rgba(7,10,16,0.22) 35%, rgba(7,10,16,0.15) 60%, rgba(7,10,16,0.5) 100%),
-    url('../assets/zones/the-laboratory.jpg') center 30% / cover no-repeat;
+    /* Versioned filename on purpose: GitHub Pages caches for ~10 minutes,
+       so replacing a painting under the SAME name shows the old one until
+       the cache turns over. A new name is a new URL — bump the number when
+       a backdrop is swapped and the change is visible on the next deploy. */
+    url('../assets/zones/the-laboratory-2.jpg') center 30% / cover no-repeat;
   filter: blur(1.4px) saturate(0.9) brightness(1.05);
 }
 .arena-haze {
