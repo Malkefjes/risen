@@ -27,6 +27,27 @@
       <button class="btn" onclick="newGame()">NEW GAME</button>
       <button class="btn is-disabled" id="continue-btn" onclick="openLoadScreen()">LOAD GAME</button>
       <button class="btn" onclick="openSettings()">SETTINGS</button>
+      <button class="btn btn-ghost" onclick="openDevTools()">DEV TOOLS</button>
+    </div>
+  </div>
+
+  <!-- DEV TOOLS — the owner's test rig. Ghost-styled on the menu because it
+       is a workbench door, not a play option. -->
+  <div id="dev-screen" class="screen">
+    <h2>DEV TOOLS</h2>
+    <p class="class-desc">Skip to Act 2 — the skilled bot plays Act 1 for you
+      (the real rules, in milliseconds) and hands over at the Encampment gate
+      with whatever sheet it earned.</p>
+    <div class="menu-stack">
+      <button class="btn" onclick="devSkipToAct2('bio')">AS BIOLOGICAL</button>
+      <button class="btn" onclick="devSkipToAct2('psy')">AS PSYCHOLOGICAL</button>
+      <button class="btn" onclick="devSkipToAct2('sym')">AS SYMBIOTIC</button>
+      <button class="btn" onclick="devSkipToAct2('base')">AS UNMUTATED</button>
+    </div>
+    <p class="save-hint" id="dev-status">Dev runs live in their own hidden slot —
+      your saved runs are never touched.</p>
+    <div style="text-align:center;margin-top:30px">
+      <button class="btn btn-ghost" onclick="goToMenu()">BACK</button>
     </div>
   </div>
 

@@ -63,6 +63,74 @@ function newGame() {
   showScreen('intro-screen');
 }
 
+// ---- DEV TOOLS -----------------------------------------------
+// The owner's test rig, reachable from the title screen. SKIP TO ACT 2: the
+// skilled bot plays act 1 headlessly — the real rules, in milliseconds — and
+// the run is handed over on-screen exactly where the sim stopped: wave 16
+// already spawned, the player's turn, whatever sheet the bot earned. No
+// respawn on handover, so the between-fight heal is not paid twice. Dev runs
+// save to slot 0, outside the 1..saveSlots window, so the LOAD screen never
+// lists them and no real run is ever eaten. (On a saveKey bump, list _s0
+// beside _s1/_s2 in oldSaveKeys.)
+function openDevTools() { showScreen('dev-screen'); }
+
+// Shared handover: the run in `state` goes on-screen, mid-run style.
+function devEnterCombat(handoverLine) {
+  state.saveSlot = 0;
+  const zn = document.getElementById('zone-name');
+  if (zn) zn.textContent = getZoneName(state.wave);
+  const an = document.getElementById('act-name');
+  if (an) an.textContent = getActLabel(state.wave);
+  const ac = document.getElementById('arena-card');
+  if (ac) ac.dataset.act = actForWave(state.wave).num;
+  updateHud(); refreshTalentUI(); renderCombat(true); renderSkills(); updateTurnInfo();
+  showScreen('combat-screen');
+  document.getElementById('combat-screen').classList.remove('staged', 'reveal');
+  log(handoverLine, 'important');
+  startCombatLoop();
+  saveRun();
+}
+
+function devSkipToAct2(classId) {
+  if (!CLASSES[classId]) return;
+  const gate = ACTS[0].endWave;
+  const status = document.getElementById('dev-status');
+  // First choice: the bot EARNS the sheet — act 1 played by the real rules.
+  // 20 tries separates bad dice from "the bot cannot do it".
+  for (let attempt = 1; attempt <= 20; attempt++) {
+    simulateRun(classId, Object.assign({}, BOTS.skilled, { stopWhen: s => s.wave > gate }));
+    if (state.runOver || state.wave <= gate) continue;
+    devEnterCombat('DEV · the bot played act 1 (cleared on try ' + attempt
+      + ') · handed over at wave ' + state.wave + ' · level ' + state.player.level);
+    return;
+  }
+  // Fallback: a STANDARD act-1 graduate, synthesized — level 7, the act's
+  // ~18 points spent along the class's skilled plan, full bar. Less organic
+  // than an earned sheet, but a dev tool that sometimes refuses to open the
+  // door is worse than one that hands you a template. The bot failing 20
+  // straight is itself a reading: act 1 is currently harder than the
+  // competence floor, and the log line below says so out loud.
+  resetRunState(classId);
+  state.saveSlot = 0;
+  const p = freshPlayer(classId);
+  state.player = p;
+  p.level = 7;
+  p.xp = 0; p.xpNext = xpForLevel(7);
+  const plan = (typeof SKILLED_PLANS !== 'undefined' && SKILLED_PLANS[classId]) || ROTATE_STATS;
+  for (let i = 0; i < 6 * P().pointsPerLevel; i++) p[plan[i % plan.length]] += 1;
+  recalcPlayerStats();
+  p.hp = p.maxHp;
+  state.wave = ACTS[1].startWave;
+  state.kills = ACTS[0].endWave;
+  state.runStart = Date.now();
+  state.combatActive = true;
+  spawnEnemy();
+  devEnterCombat('DEV · synthetic act-1 graduate (the bot went 0 for 20 on act 1 — '
+    + 'worth knowing) · wave ' + state.wave + ' · level ' + p.level);
+  if (status) status.textContent = 'Note: the bot could not clear act 1 as '
+    + CLASSES[classId].name + ' in 20 tries, so you got a standard level-7 sheet instead.';
+}
+
 // RESIST MUTATION: a quiet transition beat, then drop into the run as base Sonny.
 function resistMutation() {
   leaveMenuTab(); closeSettings();
