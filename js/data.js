@@ -133,7 +133,7 @@
 // KEEP THIS SEPARATE FROM BALANCE.saveKey. That one answers "are saved runs
 // still valid" and is bumped only when a change makes an old sheet wrong.
 // Deriving it from this would wipe every save on a typo fix.
-const BUILD = '2026-07-30g';
+const BUILD = '2026-07-30h';
 
 const BALANCE = {
   player: {
@@ -174,11 +174,17 @@ const BALANCE = {
     // worth having here. Turn rate now follows the same rule above.
     damagePerStr: 5,
     hpPerVit: 20,
-    // Six, because levels halved: ~8 levels x 6 ≈ the same ~48 points a run
-    // used to grant as 16 x 3, so the sheet the enemy curve was fitted
-    // against still arrives — it just arrives as eight real decisions
-    // instead of sixteen reflexes.
-    pointsPerLevel: 6,
+    // Three, and this time the TOTAL shrank on purpose: ~6 levels x 3 is
+    // ~18 points a run against the ~48 the enemy curve was fitted for. The
+    // shower was the imbalance — at 48 points the sanctioned Instinct
+    // quadratic was landing 600-damage crits at level 9 against a captain
+    // swinging 62, power no half-hour of play had earned — so the sheet
+    // comes down to meet the enemies, and the enemies are deliberately NOT
+    // softened to chase it back up. Three is the smallest grant where
+    // allocation still has shape (commit all three, or lean 2-1; one point
+    // would collapse the choice to "whose turn is it"), and a level still
+    // buys a legible jump: +15 damage, or +60 HP.
+    pointsPerLevel: 3,
     // The percentage stats are set so a starting sheet reads 10 / 10 / 10 / 0
     // at 5 in every stat — the same round-number treatment as 25 damage and
     // 100 HP. Evade and block still look odd on their own (0.075, 0.065)
@@ -297,10 +303,11 @@ const BALANCE = {
     bleedStackCap: 6, bleedDuration: 4,      // TURNS
     reflectFrac: 0.20, reflectSpinesMult: 2,   // sym: share of damage taken reflected back; doubled while Spines is up
     sporeBigHitFrac: 0.15, sporeHitMax: 3,     // sym: every 15% of max HP lost in one hit plants an extra Spore (cap per hit)
-    // Raised with the level compression: the level-up heal is load-bearing
-    // sustain, and 16 levels x 8% was ~128% of max HP across a run. At ~8
-    // levels, 15% keeps that economy whole (~120%) instead of quietly
-    // halving every class's healing.
+    // The level-up heal is load-bearing sustain and has tracked the level
+    // curve through both compressions: 16 levels x 8% was ~128% of max HP a
+    // run, and 8 x 15% kept that economy whole (~120%). At ~6 levels the
+    // fraction deliberately STAYS 15% (~90% a run): the point-scarcity pass
+    // wants the whole run poorer, and free healing is part of the shower.
     levelUpHealFrac: 0.15, recoverHpFrac: 0.08,
     // ---- DREAD (psy) ------------------------------------------------------
     // Psy's mechanic LIVES ON THE ENEMY, not on the player — the one bank in
@@ -470,30 +477,39 @@ const BALANCE = {
     // 4.5 tuning assumed. This is that promised adjustment, not a reversal of
     // it. The ceiling still stands: if it ever needs to be scarier again, add
     // pool, not multiplier.
+    //
+    // THE POINT-SCARCITY PASS THEN SHRANK THE WAVE-5 POOL AGAIN (a player
+    // reaches the first boss at L3 with ~6 points now, not L5 with ~24), so
+    // 5.0 stands on a thinner premise than when it was set. Deliberate: the
+    // whole pass makes the run poorer and the game harder. But if the first
+    // boss reads as a wall again in play, this multiplier comes back down
+    // FIRST, before any other lever moves.
     windupEvery: 3, windupMult: 5.0,   // boss telegraph: every Nth action winds up; next strike hits xN
     finalWindupEvery: 2,               // the final boss keeps you under constant telegraph pressure
     eliteWindupEvery: 3,               // elites telegraph too: the mid-run skill check
     eliteBaseChance: 0.16, eliteChancePerWave: 0.006, eliteChanceCap: 0.40
   },
-  // FEWER, FATTER LEVELS. A winning run used to level SIXTEEN times off
-  // fifteen kills — cost and kill income were both near-linear with the same
-  // slope, so kills-per-level sat pinned at ~1 from wave 2 to wave 15 and a
-  // level-up carried no information the kill hadn't already delivered. The
-  // "oh shit I leveled" beat requires levels to be RARER than the thing that
-  // causes them.
+  // FEWER STILL, AND POORER — the second compression. The first (16 levels
+  // -> 8) fixed the BEAT: a level became rarer than a kill. But it kept the
+  // ~48-point budget, and the budget was the remaining lie — see the note on
+  // pointsPerLevel. This one fixes the BUDGET: ~6 levels x 3 points. Income
+  // knobs are untouched, as before — pacing lives in the cost curve only, so
+  // the XP readout on a kill still means what it meant.
   //
-  // The cost curve is now quadratic-and-a-half against income that stays
-  // near-linear, so the gaps STRETCH: the first kill levels you (the hook),
-  // the early-boss waves land levels, and the last ones take three or four
-  // waves of work. A winning run lands about eight levels. Income knobs are
-  // untouched — pacing lives in the cost curve only, so the XP readout on a
-  // kill still means what it meant.
+  // TWO REGIMES, because the first level is a HOOK and the rest are EARNED.
+  // firstCost sits just under the wave-1 kill's 61 XP so the first kill
+  // still levels you — that beat is cheap to keep and teaches the loop —
+  // and then the curve restarts fat and quadratic from level 2. One formula
+  // could not price both: the gap between "one kill" and "the first boss"
+  // is a 10x cliff no smooth curve crosses without wrecking one end.
   //
-  // Sighted against the income timeline (cumulative trash+boss XP by wave, no
-  // chain): L2 on the first kill, L3 ~w3, L4 ~w4, L5 at the first boss, L6
-  // ~w8, L7 at the second boss, L8 ~w13, and a chained run squeezes L9 out of
-  // the final boss. Chains push every beat earlier, which is the right reward.
-  xp: { base: 50, linear: 0, pow: 2.5, powScale: 8,
+  // Sighted against the income timeline (cumulative trash+boss XP by wave,
+  // no chain): L2 on the first kill, L3 lands ON the first boss, L4 ~w8,
+  // L5 ON the second boss, L6 ~w13, and the final boss pays L7 as the run
+  // ends. Five allocation moments in a typical run, each rarer than a boss.
+  // Chains and elites drag the beats earlier, which stays the right reward;
+  // L8 sits beyond any income the act can pay, by curve rather than by cap.
+  xp: { firstCost: 58, base: 485, pow: 2, powScale: 35,
         killBase: 46, killWave: 15, killTier: 36 },
   combo: { maxEnemyActionsPerKill: 3, xpPerStack: 0.05, maxStack: 20 },   // chain continues if the kill let the enemy act <= N times (speed-fair)
   bossEvery: 5,          // boss on every Nth wave
@@ -528,15 +544,21 @@ const BALANCE = {
   // number, banked points and xpNext all describe a progression that no
   // longer exists.
   //
+  // v6 -> v7 is the point-scarcity pass: 3 points a level instead of 6 and
+  // the cost curve stretched to ~6 levels a run, so a v6 sheet carries
+  // roughly twice the allocated points the new economy can ever grant — the
+  // same silent re-read as every bump before it, in the richer direction.
+  //
   // Bumping also gives every player empty slots on the next load, which is the
   // honest outcome — those runs are not playable as the game now works.
-  saveKey: 'risen_run_v6',
+  saveKey: 'risen_run_v7',
   // Storage keys from older versions, cleared once on load so they cannot
   // accumulate invisibly. Oldest first; add the outgoing prefix here on a bump.
   // Slot keys are listed explicitly because the purge removes literal keys.
   oldSaveKeys: ['risen_run_v3', 'risen_run_v3_s1', 'risen_run_v3_s2',
                 'risen_run_v4', 'risen_run_v4_s1', 'risen_run_v4_s2',
-                'risen_run_v5', 'risen_run_v5_s1', 'risen_run_v5_s2'],
+                'risen_run_v5', 'risen_run_v5_s1', 'risen_run_v5_s2',
+                'risen_run_v6', 'risen_run_v6_s1', 'risen_run_v6_s2'],
   saveSlots: 2
 };
 

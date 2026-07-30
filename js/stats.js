@@ -220,7 +220,12 @@ let state = {
 };
 
 const P = () => BALANCE.player;
-const xpForLevel = lv => Math.floor(BALANCE.xp.base + lv*BALANCE.xp.linear + Math.pow(lv,BALANCE.xp.pow)*BALANCE.xp.powScale);
+// Two regimes on purpose: level 1 is priced as the HOOK (one kill levels
+// you), and the earned curve starts at level 2 — the sighting lives on the
+// xp block in BALANCE. (lv - 1) so the curve's first step costs its base
+// rather than base plus a head start.
+const xpForLevel = lv => Math.floor(lv <= 1 ? BALANCE.xp.firstCost
+  : BALANCE.xp.base + Math.pow(lv - 1, BALANCE.xp.pow) * BALANCE.xp.powScale);
 
 function formatNum(n) {
   if (n == null || isNaN(n)) return '0';
