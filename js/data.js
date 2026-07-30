@@ -133,7 +133,7 @@
 // KEEP THIS SEPARATE FROM BALANCE.saveKey. That one answers "are saved runs
 // still valid" and is bumped only when a change makes an old sheet wrong.
 // Deriving it from this would wipe every save on a typo fix.
-const BUILD = '2026-07-30b';
+const BUILD = '2026-07-30c';
 
 const BALANCE = {
   player: {
@@ -322,6 +322,23 @@ const BALANCE = {
     dreadSlowPerStack: 0.05, // each stack: −5% enemy turn rate
     dreadVulnPerStack: 0.04, // each stack: +4% damage the enemy takes — terror opens the guard
     dreadLossPerHit: 1,      // an enemy that lands a hit on psy steadies: sheds this many stacks
+    // PSY'S SUSTAIN: CONSUMED FEAR FEEDS YOU. HP carries across fights in this
+    // game, so a class without a faucet doesn't lose fights, it loses RUNS to
+    // arithmetic — every kit needs one (owner's rule, learned by psy bleeding
+    // out across waves with only the two 8% trickles). Psy's faucet is DEVOUR:
+    // whenever DREAD is consumed — by Kill, or left on an enemy at the moment
+    // it dies — each stack heals this share of max HP. One rule, two exits for
+    // the same meal, chosen per fight: Kill eats the fear early as burst AND
+    // food, or you let it ride and drink it whole off the corpse.
+    //
+    // Stacks SHED when the enemy steadies itself feed nothing: fear lost is
+    // not fear eaten. Getting hit costs psy the meal along with the control,
+    // which is the class's "don't get hit" pole enforced a third way.
+    //
+    // Sustain through the mechanic means sustain through the class stats —
+    // Instinct and Speed plant the fear, so they now buy staying power too,
+    // which is what finally lets a teeth-first psy live without renting Vit.
+    dreadFeedFrac: 0.03,     // heal per DREAD consumed, as a share of max HP (18% for a full 6)
     sporeCap: 6,           // sym: Spore bank ceiling
     resolveCap: 6,         // Unmutated: Resolve bank ceiling
     resolveDR: 0.03,       // Unmutated: each held Resolve = 3% flat damage reduction (18% at cap)
@@ -460,10 +477,12 @@ const CLASSES = {
   // dodges), and every point of Vit is a point the engine didn't get. Squishy
   // because you chose teeth over hide, not because the sheet says so.
   //
-  // No heal anywhere in the kit, deliberately. Psy's answer to damage is that
-  // the enemy doesn't get to act: the slow, the stun, the evade. If that line
-  // fails, the run bleeds — the failure state is "they steadied and now
-  // you're glass in the open", and it should stay scary.
+  // Sustain is DEVOUR, never a bandage: consumed fear feeds you (see
+  // dreadFeedFrac). The first pass shipped no heal at all on the theory that
+  // control was enough — wrong for this game, because HP carries across
+  // fights, so kit-less sustain means losing runs to arithmetic rather than
+  // to fights. The failure state still bites: an enemy that steadies itself
+  // sheds fear without feeding you, so getting hit costs control AND dinner.
   psy: {
     name: 'Psychological', color: 'psy',
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
@@ -471,7 +490,7 @@ const CLASSES = {
       { id:'hunt', name:'Hunt', desc:'Auto. Attack the enemy for your Attack Damage. Your crits and your dodges plant +{dreadOnCrit} DREAD.', type:'attack', power:1.0, dreadOnCrit:1, dreadOnEvade:1, target:'enemy', basic:true },
       { id:'terrify', name:'Terrify', desc:'Attack for {power!} damage and plant +{dread} DREAD. Every stack slows the enemy and opens its guard.', type:'attack', power:0.50, dread:3, target:'enemy', cdTurns:3 },
       { id:'traumatize', name:'Traumatize', desc:'Attack for {power!} damage. Against {dreadNeed}+ DREAD the mind breaks: stunned for {stun#turn}.', type:'attack', power:0.95, stun:1, dreadNeed:3, target:'enemy', cdTurns:4 },
-      { id:'kill', name:'Kill', desc:'Attack for {power!} damage, +{perDreadPower!} per DREAD consumed. Spends ALL the enemy’s DREAD.', type:'attack', power:1.20, perDreadPower:0.60, consumesDread:true, target:'enemy', cdTurns:5 }
+      { id:'kill', name:'Kill', desc:'Attack for {power!} damage, +{perDreadPower!} per DREAD consumed, and DEVOUR the fear: heal {feedPerDread%} of max HP per stack. Spends ALL the enemy’s DREAD.', type:'attack', power:1.20, perDreadPower:0.60, consumesDread:true, feedPerDread:BALANCE.player.dreadFeedFrac, target:'enemy', cdTurns:5 }
     ]
   },
   // WHY SYM FEELS OFF, for whenever its pass comes (a read, not a plan): its

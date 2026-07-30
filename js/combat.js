@@ -386,6 +386,29 @@ function creditCrit(p, e) {
   bankAdjust(p, gain, 'CRIT');
 }
 
+// CONSUMED FEAR FEEDS YOU — psy's sustain, one path for both meals: Kill
+// eating the stacks it spends, and an enemy dying with fear still on it (the
+// death-devour is what answers HP carrying across fights). Stacks SHED when
+// the enemy steadies feed nothing — fear lost is not fear eaten — which is
+// why shedStacks never comes near this. Loud on purpose: sustain the player
+// doesn't notice is sustain that doesn't feel good, so every drink is a
+// floater and a log line even when it lands on a full bar.
+function devour(p, stacks, why) {
+  if (!p || p.class !== 'psy' || !(stacks > 0) || p.hp <= 0) return;
+  const heal = Math.max(1, Math.floor(p.maxHp * (P().dreadFeedFrac || 0) * stacks));
+  const before = p.hp;
+  p.hp = Math.min(p.maxHp, p.hp + heal);
+  const gained = p.hp - before;
+  if (gained > 0) floatText(p, gained, 'heal');
+  logHeal('DEVOUR', p, gained, [
+    'DREAD ×' + stacks + ' @ ' + Math.round((P().dreadFeedFrac || 0) * 100) + '% max HP',
+    why,
+    gained < heal ? 'overheal ' + (heal - gained) : null,
+    logNum(p.hp) + '/' + logNum(p.maxHp)
+  ]);
+  updateUnitCard(p);
+}
+
 // Player -> enemy.
 function applyPlayerDamage(p, e, skill) {
   let dmg = p.atkPower * (skill.power || 1);
@@ -492,8 +515,13 @@ function applyPlayerDamage(p, e, skill) {
   // DREAD spent is DREAD gone: the enemy's fear breaks with the blow, and its
   // turn rate recovers with it. Deliberately after logDamage, so the hit line
   // reports the fear that paid for it before the removal line reports the cost.
-  if (skill.consumesDread && dreadSpent > 0)
+  // And spent fear is eaten — Kill's half of DEVOUR (the death-devour in
+  // onEnemyDefeated is the other; a Kill that kills consumed the stacks here,
+  // so the corpse holds none and no meal is counted twice).
+  if (skill.consumesDread && dreadSpent > 0) {
     removeStatus(e, 'dread', 'consumed by ' + skill.name);
+    devour(p, dreadSpent, 'consumed by ' + skill.name);
+  }
   // Resolve (base): landing a hit steadies you.
   if (skill.buildsResolve) bankAdjust(p, skill.buildsResolve, skill.name);
   // A crit feeds your strain — live for psy (crits plant DREAD), parked for
@@ -708,6 +736,13 @@ function onEnemyDefeated() {
             : 'CHAIN reset (over ' + BALANCE.combo.maxEnemyActionsPerKill + ')',
     overkill > 0 ? 'overkill ' + logNum(overkill) : null
   ], 'xp');
+
+  // The death-devour: fear still riding the enemy when it dies is drunk whole.
+  // This is psy's between-fight sustain — it fires exactly where wave-to-wave
+  // attrition is tallied — and it is the other exit for the same meal Kill
+  // eats early, which is what makes end-of-fight play a choice: cash the
+  // stacks as burst, or finish with Hunt and drink them off the corpse.
+  devour(p, statusStacks(e, 'dread'), 'drunk from the dying');
 
   if (e.elite && e.elite.deathNova) {
     const nova = Math.max(1, Math.floor(p.maxHp * e.elite.deathNova));
