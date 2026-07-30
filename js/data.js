@@ -133,7 +133,7 @@
 // KEEP THIS SEPARATE FROM BALANCE.saveKey. That one answers "are saved runs
 // still valid" and is bumped only when a change makes an old sheet wrong.
 // Deriving it from this would wipe every save on a typo fix.
-const BUILD = '2026-07-30f';
+const BUILD = '2026-07-30g';
 
 const BALANCE = {
   player: {
@@ -364,8 +364,33 @@ const BALANCE = {
     reloadHpFloor: 0.15    // deliberate mercy: continuing a run never puts you below this
   },
   enemy: {
-    hpBase: 132, tierGrowth: 1.52, withinStep: 0.13,
-    dmgBase: 8, dmgExp: 0.88,
+    // ---- THE TIER STEP ----------------------------------------------------
+    // A TIER BOUNDARY MUST BE A STEP, AND IT USED TO BE FLAT — arithmetically,
+    // not just in feel. With withinStep 0.13 the drift across a tier's five
+    // waves came to 4 x 0.13 = 0.52, which is EXACTLY tierGrowth 1.52 minus
+    // one, so wave 5 and wave 6 had identical growth factors (g = 1.520), as
+    // did 10 and 11 (2.310). Rank II walked in carrying precisely the numbers
+    // Rank I walked out with. The boss was the only thing between them.
+    //
+    // Now the drift is gentle (+6% a wave) and the boundary is a real jump:
+    // wave 4 to wave 6 is +57%. Within a tier you are grinding down a known
+    // quantity; the wave after a boss is a heavier CLASS of thing, which is
+    // what the rank in its name has been promising. Set withinStep x 4 well
+    // BELOW tierGrowth - 1 or the step flattens again.
+    //
+    // hpBase carries the general buff (132 -> 160) but HP is the weakest
+    // difficulty lever there is: measured, +60% enemy HP left bio, psy and sym
+    // winning 30/30 — a sponge is a longer fight, not a harder one, which is
+    // the same lesson that retired COLOSSAL. Damage and rate below are what
+    // actually threaten a class that sustains.
+    hpBase: 160, tierGrowth: 1.85, withinStep: 0.06,
+    // dmgExp WAS 0.88 — enemy damage grew SUBLINEARLY in the growth factor
+    // while player HP grows linearly in allocated points, so every wave the
+    // enemy fell further behind the pool it was hitting. At 1.00 damage tracks
+    // growth exactly and a late trash mob stays a real cost. trashDmgMult
+    // 1.33 -> 1.45 on top, because the level compression handed players a
+    // bigger pool per wave to spend.
+    dmgBase: 8, dmgExp: 1.00,
     // ---- TURN-RATE ANCHOR -------------------------------------------------
     // apsBase MATCHES THE PLAYER'S STARTING RATE ON PURPOSE. A fresh sheet is
     // 0.85 + 0.15 from its 5 Speed = 1.00, and a baseline enemy is 1.00, so
@@ -383,10 +408,14 @@ const BALANCE = {
     //   apsBase 0.70, apsPerTier 0.018, apsCap 1.5,
     //   bossDmg 2.0, trashDmgMult 1.9
     apsBase: 1.00,
-    // Scaled with the base (0.018 x 1/0.7) so tier growth stays the same
-    // FRACTION of the base it always was: a baseline enemy drifts 1.00 -> 1.05
-    // across the run, so standing still on Speed slowly loses you the tempo.
-    apsPerTier: 0.026,
+    // WAS 0.026, which was a rounding error dressed as a mechanic: a baseline
+    // enemy drifted 1.00 -> 1.05 across an entire run, so "standing still on
+    // Speed loses you the tempo" was technically true and completely
+    // unfeelable. At 0.070 a Rank III enemy acts 1.14x per player turn — still
+    // small beside what Speed can buy (up to 4x), which is the point: Speed
+    // remains the answer, but now there is a question. It also gives the tier
+    // step a second dimension, so a new rank is faster AND heavier.
+    apsPerTier: 0.070,
     apsCap: 2.15,                      // same base-to-cap headroom as the old 0.70 / 1.5
     crit: 0.10, critMult: 1.5,
     // bossDmg and trashDmgMult were both fitted against a player taking ~1.5
@@ -400,21 +429,24 @@ const BALANCE = {
     // the windup note below for why wave 5 was the wall — which shortens every
     // boss fight a little; bossDmg and bossAps are still the old chassis.
     bossHp: 4.5, bossDmg: 1.82, bossAps: 0.72, bossXp: 3.0,
-    trashDmgMult: 1.33,                // trash hits harder so fights cost real HP (bosses use bossDmg)
+    trashDmgMult: 1.45,                // trash hits harder so fights cost real HP (bosses use bossDmg)
     // WINDUP WAS 6.5 AND IT MADE WAVE 5 A WALL. The multiplier is flat across
     // all three bosses, but the player's HP pool is SMALLEST at the first one,
     // so the same multiple bites hardest exactly where you have the least to
     // spend it against: at 6.5 the wave-5 telegraph hit for 137 against a
     // starting pool of 100, i.e. a near-certain one-shot on a hit you could see
     // coming but rarely fully answer that early. A telegraph should cost you
-    // half your bar and a turn spent reacting, not the run. At 4.5 it lands for
-    // ~95 — still the scariest thing in the fight, still demands a block, brace,
-    // heal or a race to burst the boss first, but survivable on a fresh sheet.
-    // Measured: base's wave-5 clear rate went 18% -> 80% (greedy bot). Left as a
-    // free variable because the boss is fitted to the player, not the reverse;
-    // if it ever needs to bite harder again the honest way is a bigger pool to
-    // spend it against (more levels before wave 5), not a bigger multiplier.
-    windupEvery: 3, windupMult: 4.5,   // boss telegraph: every Nth action winds up; next strike hits xN
+    // half your bar and a turn spent reacting, not the run. At 4.5 it landed
+    // for ~95 and base's wave-5 clear rate went 18% -> 80% (greedy bot).
+    //
+    // NOW 5.0, and the reasoning above is exactly why it can move: that note
+    // said the honest way to make the telegraph bite harder is a bigger pool to
+    // spend it against, and the level compression delivered one — six points a
+    // level means a player arrives at wave 5 holding more Vitality than the
+    // 4.5 tuning assumed. This is that promised adjustment, not a reversal of
+    // it. The ceiling still stands: if it ever needs to be scarier again, add
+    // pool, not multiplier.
+    windupEvery: 3, windupMult: 5.0,   // boss telegraph: every Nth action winds up; next strike hits xN
     finalWindupEvery: 2,               // the final boss keeps you under constant telegraph pressure
     eliteWindupEvery: 3,               // elites telegraph too: the mid-run skill check
     eliteBaseChance: 0.16, eliteChancePerWave: 0.006, eliteChanceCap: 0.40
