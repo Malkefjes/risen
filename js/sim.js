@@ -248,7 +248,11 @@ function simulateRun(classId, opts) {
     const p = state.player;
     return {
       classId, won: !!state.won, wave: state.wave, kills: state.kills,
-      level: p.level, turns: state.turnNo, damageDealt: Math.floor(state.damageDealt),
+      // runTurns, NOT turnNo: turnNo resets on every spawn, so reporting it
+      // here labelled a run's length with the LAST FIGHT's turn count — the
+      // bracket's "turns to win" column was measuring the final fight alone.
+      // runTurns is the run-level counter the result screen already shows.
+      level: p.level, turns: state.runTurns, damageDealt: Math.floor(state.damageDealt),
       bestCombo: state.bestCombo,
       stats: { str: p.str, instinct: p.instinct, speed: p.speed, vit: p.vit },
       derived: { atk: attackDamage(p), maxHp: p.maxHp, rate: +p.attackSpeed.toFixed(2) },

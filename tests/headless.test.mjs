@@ -58,10 +58,12 @@ export default async function ({ page, ok }) {
   ok('cosmeticRandom does not consume Math.random', streams === 0, String(streams));
 
   // ---- the equivalence proof ----
-  // A WHOLE run, not a slice: turnNo is a per-fight counter that resets when a
-  // wave spawns, so stopping at a wave boundary lands the two sides either
-  // side of that reset and reports a difference that is not one. Costs ~25s,
-  // and it is the assertion the whole balance-measurement story rests on.
+  // A WHOLE run, not a slice, and both sides read runTurns — the run-level
+  // counter — rather than the per-fight turnNo they used to compare. (That
+  // pairing worked only because a whole run leaves both sides inside the same
+  // fight; a sliced run landed them either side of a spawn reset and reported
+  // a difference that was not one.) Costs ~25s, and it is the assertion the
+  // whole balance-measurement story rests on.
   const head = await page.evaluate((s) => {
     eval('(' + s + ')()');
     const r = simulateRun('bio', { allocate: () => 'vit' });
@@ -87,7 +89,7 @@ export default async function ({ page, ok }) {
     }
     const p = state.player;
     return { wave: state.wave, level: p.level, kills: state.kills,
-             dmg: Math.floor(state.damageDealt), won: !!state.won, turns: state.turnNo,
+             dmg: Math.floor(state.damageDealt), won: !!state.won, turns: state.runTurns,
              stats: { str: p.str, instinct: p.instinct, speed: p.speed, vit: p.vit },
              derived: { atk: attackDamage(p), maxHp: p.maxHp, rate: +p.attackSpeed.toFixed(2) } };
   }, SEED);

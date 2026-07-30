@@ -23,7 +23,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       # Ship only the game, not the tests/tools that measure it.
       # Pages serves everything with a 10-minute browser cache; stamping the
       # commit onto each css/js URL makes a fresh index.html pull matching
