@@ -614,7 +614,11 @@ body {
      with window width, so subtracting a fixed chrome constant went stale and
      pushed the page into a scroll on laptops. */
   flex: 0 0 auto;
-  height: clamp(340px, calc(var(--vh) * 52), 520px);
+  /* 52 -> 58vh and the sidebar's share trimmed (see .combat-layout): both
+     moves exist for the zone paintings, which were losing a third of their
+     height to the cover crop. The fighters stay bottom-anchored and the
+     same size (--fig is untouched), so every gained pixel is scenery. */
+  height: clamp(360px, calc(var(--vh) * 58), 580px);
   /* Master sprite scale for the arena; every tier below is a ratio of it.
      A boss is 1.56x this and sits under ~150px of name, bars and padding, so
      the usable scale is (card - 190) / 1.56 — that fixed overhead is why this
@@ -671,7 +675,7 @@ body {
        so replacing a painting under the SAME name shows the old one until
        the cache turns over. A new name is a new URL — bump the number when
        a backdrop is swapped and the change is visible on the next deploy. */
-    url('../assets/zones/the-laboratory-2.jpg') center 30% / cover no-repeat;
+    url('../assets/zones/the-laboratory-2.jpg') center 55% / cover no-repeat;
   filter: blur(1.4px) saturate(0.9) brightness(1.05);
 }
 .arena-haze {
@@ -1496,7 +1500,10 @@ body {
   /* The floor is in rem, not px, so it shrinks with the root font above —
      a hard 360px floor stayed put while everything in it got smaller, which
      is what forced the collapse to one column earlier than it needed to. */
-  grid-template-columns: 1fr minmax(20.5rem, 28%);
+  /* 28% -> 25.5%: the difference goes to the arena for the zone paintings.
+     The rem floor is what actually guards the sidebar's readability, and it
+     is untouched. */
+  grid-template-columns: 1fr minmax(20.5rem, 25.5%);
   gap: 20px;
   align-items: stretch;
   flex: 1;
@@ -2297,7 +2304,7 @@ body {
   #app { max-width: min(1980px, 96vw); }
 
   .arena-card {
-    height: clamp(340px, calc(var(--vh) * 58), 620px);
+    height: clamp(380px, calc(var(--vh) * 63), 680px);
     /* Same affine shape as the base rule, opened up to match the taller card.
        The ceiling is set by the ART, not by the layout: the boss is the one
        sprite with no resolution headroom (219x256 native, drawn at 1.56x this)
