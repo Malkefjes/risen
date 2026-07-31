@@ -540,9 +540,13 @@ function strainReadout(p) {
     const held = statusStacks(p, 'resolve');
     return { id:'strain', label:'Resolve', text: formatNum(held), num: held };
   }
-  if (p.class === 'psy') return { id:'strain', label:'Per DREAD',
-    text: '−' + Math.round(P().dreadSlowPerStack*100) + '% rate, +' + Math.round(P().dreadVulnPerStack*100)
-      + '% taken, +' + (P().dreadSiphonFrac*100) + '% HP/turn' };
+  // NO PSY ROW, for the same reason bio has none. The other two strain rows
+  // answer "how much do I have" about a number worn on the PLAYER — thorns,
+  // held Resolve — which nothing else on screen reports. DREAD is worn on the
+  // ENEMY, where its count is already a badge under their health bar, so the
+  // row could only restate the per-stack rates: three percentages that never
+  // move, in a pane whose every other entry is a live value off the sheet.
+  // Constants belong on the cards that spend them, not in the readout.
   return null;
 }
 function guardReadout(p) {
