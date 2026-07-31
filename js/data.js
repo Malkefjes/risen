@@ -154,7 +154,7 @@
 // KEEP THIS SEPARATE FROM BALANCE.saveKey. That one answers "are saved runs
 // still valid" and is bumped only when a change makes an old sheet wrong.
 // Deriving it from this would wipe every save on a typo fix.
-const BUILD = '2026-07-31k';
+const BUILD = '2026-07-31l';
 
 const BALANCE = {
   player: {
@@ -803,8 +803,8 @@ const CLASSES = {
     name: 'Biological', color: 'bio',
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
-      { id:'slash', name:'Slash', desc:'Attack the enemy for {power!} damage. +{poison} POISON', type:'attack', power:1.0, poison:1, target:'enemy', basic:true },
-      { id:'infest', name:'Infest', desc:'Attack the enemy for {power!} damage. +{poison} POISON', type:'attack', power:0.50, poison:4, target:'enemy', cdTurns:3 },
+      { id:'slash', name:'Slash', desc:'Deal {power!} damage. +{poison} POISON', type:'attack', power:1.0, poison:1, target:'enemy', basic:true },
+      { id:'infest', name:'Infest', desc:'Deal {power!} damage. +{poison} POISON', type:'attack', power:0.50, poison:4, target:'enemy', cdTurns:3 },
       { id:'chitin', name:'Chitin', desc:'For {duration#turn}: take −{power%} damage. POISON on the enemy ticks twice per turn', type:'buff', buff:'chitin', duration:3, power:0.40, target:'self', cdTurns:5 },
       // MIASMA IS BIO'S ONLY FAUCET, and at 10% x 4 turns on a 5-turn
       // cooldown it was handing back 40% of a bar across the five turns a
@@ -840,14 +840,14 @@ const CLASSES = {
     name: 'Psychological', color: 'psy',
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
-      { id:'hunt', name:'Hunt', desc:'Auto. Attack the enemy for your Attack Damage. Your crits and your dodges plant +{dreadOnCrit} DREAD.', type:'attack', power:1.0, dreadOnCrit:1, dreadOnEvade:1, target:'enemy', basic:true },
+      { id:'hunt', name:'Hunt', desc:'Auto. Deal your Attack Damage. Your crits and your dodges plant +{dreadOnCrit} DREAD.', type:'attack', power:1.0, dreadOnCrit:1, dreadOnEvade:1, target:'enemy', basic:true },
       // Plants 4, one MORE than Traumatize needs, so the advertised combo
       // survives one steadying hit: at the 1:1 anchor the enemy usually lands
       // a blow between your Terrify and your Traumatize, shedding a stack —
       // at +3 the threshold arrived already broken and the stun read as a
       // skill that didn't work.
-      { id:'terrify', name:'Terrify', desc:'Attack for {power!} damage and plant +{dread} DREAD. Every stack slows the enemy and opens its guard.', type:'attack', power:0.50, dread:4, target:'enemy', cdTurns:3 },
-      { id:'traumatize', name:'Traumatize', desc:'Attack for {power!} damage. Against {dreadNeed}+ DREAD the mind breaks: stunned for {stun#turn}.', type:'attack', power:0.95, stun:1, dreadNeed:3, target:'enemy', cdTurns:4 },
+      { id:'terrify', name:'Terrify', desc:'Deal {power!} damage and plant +{dread} DREAD. Every stack slows the enemy and opens its guard.', type:'attack', power:0.50, dread:4, target:'enemy', cdTurns:3 },
+      { id:'traumatize', name:'Traumatize', desc:'Deal {power!} damage. Against {dreadNeed}+ DREAD the mind breaks: stunned for {stun#turn}.', type:'attack', power:0.95, stun:1, dreadNeed:3, target:'enemy', cdTurns:4 },
       // KILL TAKES HALF THE FEAR, NOT ALL OF IT, and the old version was a
       // button that was correct to never press. Every stack is doing three
       // things while it sits there — slowing their turn, opening their guard
@@ -863,7 +863,7 @@ const CLASSES = {
       // back up as you do it — while leaving an engine to keep running. The
       // finisher is now "how deep do I cut into my own advantage", asked every
       // five turns, instead of "do I delete my class".
-      { id:'kill', name:'Kill', desc:'Attack for {power!} damage, +{perDreadPower!} per DREAD torn away, and DEVOUR it: heal {feedPerDread%} of max HP for each. Takes HALF the enemy’s DREAD.', type:'attack', power:1.20, perDreadPower:0.60, consumesDread:true, consumeFrac:0.5, feedPerDread:BALANCE.player.dreadFeedFrac, target:'enemy', cdTurns:5 }
+      { id:'kill', name:'Kill', desc:'Deal {power!} damage, +{perDreadPower!} per DREAD torn away, and DEVOUR it: heal {feedPerDread%} of max HP for each. Takes HALF the enemy’s DREAD.', type:'attack', power:1.20, perDreadPower:0.60, consumesDread:true, consumeFrac:0.5, feedPerDread:BALANCE.player.dreadFeedFrac, target:'enemy', cdTurns:5 }
     ]
   },
   // THE ORGANISM. Sym's mechanic is THORNS — one number, worn on the player,
@@ -906,7 +906,7 @@ const CLASSES = {
       // 0.35 -> 0.55: with THORNS as the ramp, the basic is where the number
       // gets read back on your OWN turns, and it has to carry the share Bloom
       // used to. A grown sym should feel its size every time it swings.
-      { id:'latch', name:'Latch', desc:'Auto. Attack the enemy for your Attack Damage + {thornsScale%} of your THORNS.', type:'attack', power:1.0, thornsScale:0.55, target:'enemy', basic:true },
+      { id:'latch', name:'Latch', desc:'Auto. Deal your Attack Damage + {thornsScale%} of your THORNS.', type:'attack', power:1.0, thornsScale:0.55, target:'enemy', basic:true },
       { id:'spines', name:'Raise Spines', desc:'THORNS ×{power} and pain reflect doubled for {duration#turn}. Every hit taken grows +{growBonus} extra THORNS.', type:'buff', buff:'spines', duration:3, power:2, growBonus:BALANCE.player.thornsSpinesGrow, target:'self', cdTurns:4 },
       // THE OLD WORDING DESCRIBED THE IMPLEMENTATION, not the decision. "Shed
       // THORNS for the rest — 4% each, never past 35% of your growth" is three
@@ -950,7 +950,7 @@ const CLASSES = {
       // bleedDepth computes it from the sheet every time a cut lands. A desc
       // field may be a function now (see fmtDesc), so the card prints what the
       // next Strike will actually open, and it moves as Resolve stacks up.
-      { id:'jab', name:'Strike', desc:'Attack the enemy for {power!} damage. +{buildsResolve} RESOLVE, and open a wound: +{bleedTick} BLEED a turn for {bleedTurns#turn}', type:'attack', power:1.0, buildsResolve:1, bleed:1, bleedTick:p => bleedDepth(p), bleedTurns:BALANCE.player.bleedDuration, target:'enemy', basic:true },
+      { id:'jab', name:'Strike', desc:'Deal {power!} damage. +{buildsResolve} RESOLVE, and open a wound: +{bleedTick} BLEED a turn for {bleedTurns#turn}', type:'attack', power:1.0, buildsResolve:1, bleed:1, bleedTick:p => bleedDepth(p), bleedTurns:BALANCE.player.bleedDuration, target:'enemy', basic:true },
       { id:'bandage', name:'Bandage', desc:'Heal {healFrac%} of max HP and +{resolveHealBonus%} per held RESOLVE', type:'heal', healFrac:0.14, resolveHealBonus:0.02, target:'self', cdTurns:4 },
       // BRACE LASTS TWO TURNS, NOT ONE, and the reason is measured. This is
       // base's answer to the telegraph, and it was the only answer in the game
@@ -968,7 +968,7 @@ const CLASSES = {
       // misjudgement, which is the difference between strict and broken.
       // `holdFor` tells the bot the same thing the card tells the player.
       { id:'counter', name:'Counterpunch', desc:'Brace for {duration#turn}: −{power%} damage taken, stacking with RESOLVE. A hit taken while braced strikes back for {counterPower!} damage and opens a wound: +{bleedTick} BLEED a turn', type:'buff', buff:'brace', duration:2, power:0.60, counterPower:1.20, counterBleed:1, bleedTick:p => bleedDepth(p), holdFor:'windup', target:'self', cdTurns:4 },
-      { id:'laststand', name:'Last Stand', desc:'Attack the enemy for {power!} damage, +{perResolvePower!} per RESOLVE consumed. Spends all RESOLVE', type:'attack', power:1.20, perResolvePower:0.40, consumesResolve:true, target:'enemy', cdTurns:5 }
+      { id:'laststand', name:'Last Stand', desc:'Deal {power!} damage, +{perResolvePower!} per RESOLVE consumed. Spends all RESOLVE', type:'attack', power:1.20, perResolvePower:0.40, consumesResolve:true, target:'enemy', cdTurns:5 }
     ]
   }
 };
