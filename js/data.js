@@ -154,7 +154,7 @@
 // KEEP THIS SEPARATE FROM BALANCE.saveKey. That one answers "are saved runs
 // still valid" and is bumped only when a change makes an old sheet wrong.
 // Deriving it from this would wipe every save on a typo fix.
-const BUILD = '2026-07-31l';
+const BUILD = '2026-07-31m';
 
 const BALANCE = {
   player: {
@@ -840,7 +840,7 @@ const CLASSES = {
     name: 'Psychological', color: 'psy',
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
-      { id:'hunt', name:'Hunt', desc:'Auto. Deal your Attack Damage. Your crits and your dodges plant +{dreadOnCrit} DREAD.', type:'attack', power:1.0, dreadOnCrit:1, dreadOnEvade:1, target:'enemy', basic:true },
+      { id:'hunt', name:'Hunt', desc:'Auto. Deal {power!} damage. Your crits and your dodges plant +{dreadOnCrit} DREAD.', type:'attack', power:1.0, dreadOnCrit:1, dreadOnEvade:1, target:'enemy', basic:true },
       // Plants 4, one MORE than Traumatize needs, so the advertised combo
       // survives one steadying hit: at the 1:1 anchor the enemy usually lands
       // a blow between your Terrify and your Traumatize, shedding a stack —
@@ -906,7 +906,7 @@ const CLASSES = {
       // 0.35 -> 0.55: with THORNS as the ramp, the basic is where the number
       // gets read back on your OWN turns, and it has to carry the share Bloom
       // used to. A grown sym should feel its size every time it swings.
-      { id:'latch', name:'Latch', desc:'Auto. Deal your Attack Damage + {thornsScale%} of your THORNS.', type:'attack', power:1.0, thornsScale:0.55, target:'enemy', basic:true },
+      { id:'latch', name:'Latch', desc:'Auto. Deal {power!} damage + {thornsScale%} of your THORNS.', type:'attack', power:1.0, thornsScale:0.55, target:'enemy', basic:true },
       { id:'spines', name:'Raise Spines', desc:'THORNS ×{power} and pain reflect doubled for {duration#turn}. Every hit taken grows +{growBonus} extra THORNS.', type:'buff', buff:'spines', duration:3, power:2, growBonus:BALANCE.player.thornsSpinesGrow, target:'self', cdTurns:4 },
       // THE OLD WORDING DESCRIBED THE IMPLEMENTATION, not the decision. "Shed
       // THORNS for the rest — 4% each, never past 35% of your growth" is three
@@ -967,7 +967,7 @@ const CLASSES = {
       // to see the telegraph and act on it) while forgiving a turn of
       // misjudgement, which is the difference between strict and broken.
       // `holdFor` tells the bot the same thing the card tells the player.
-      { id:'counter', name:'Counterpunch', desc:'Brace for {duration#turn}: −{power%} damage taken, stacking with RESOLVE. A hit taken while braced strikes back for {counterPower!} damage and opens a wound: +{bleedTick} BLEED a turn', type:'buff', buff:'brace', duration:2, power:0.60, counterPower:1.20, counterBleed:1, bleedTick:p => bleedDepth(p), holdFor:'windup', target:'self', cdTurns:4 },
+      { id:'counter', name:'Counterpunch', desc:'Brace for {duration#turn}: −{power%} damage taken, stacking with RESOLVE. A hit taken while braced counters {counterPower!} damage and opens a wound: +{bleedTick} BLEED a turn', type:'buff', buff:'brace', duration:2, power:0.60, counterPower:1.20, counterBleed:1, bleedTick:p => bleedDepth(p), holdFor:'windup', target:'self', cdTurns:4 },
       { id:'laststand', name:'Last Stand', desc:'Deal {power!} damage, +{perResolvePower!} per RESOLVE consumed. Spends all RESOLVE', type:'attack', power:1.20, perResolvePower:0.40, consumesResolve:true, target:'enemy', cdTurns:5 }
     ]
   }
