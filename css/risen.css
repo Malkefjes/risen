@@ -1648,7 +1648,9 @@ body {
   font-size: 1.15rem;
   min-width: 32px;
   text-align: center;
-  color: var(--stat-color, var(--accent));
+  /* Its OWN variable, not --stat-color: the number stays white while the name
+     takes the hue. See the stat-colours block below. */
+  color: var(--stat-value-color, var(--accent));
   text-shadow: var(--stat-value-glow, none);
 }
 
@@ -1680,10 +1682,16 @@ body.stat-colors-on .side-stat-row[data-stat="speed"] {
 body.stat-colors-on .side-stat-row[data-stat="vit"] {
   --stat-color: var(--stat-vit);      --stat-glow: var(--stat-vit-glow);
 }
-/* The glow is soft and the NAME's is softer than the VALUE's: the number is
-   what you look at when spending a point, the word is what you read once. A
-   single blur on both made the label bloom into the row above it. */
+/* THE NUMBER STAYS WHITE. The hue lives on the NAME, which is the label you
+   read once; the value is a quantity you compare against the other three, and
+   four differently-coloured digits made that comparison harder rather than
+   prettier. The number keeps the row's coloured GLOW, so the association still
+   reads — a white digit in a red halo is unambiguously Strength — without the
+   digit itself changing colour.
+   Amber pending is untouched by all of this: `.side-stat-value.pending`
+   declares its colour outright and outranks the fallback above. */
 body.stat-colors-on .side-stat-row {
+  --stat-value-color: var(--text);
   --stat-name-glow: 0 0 10px var(--stat-glow);
   --stat-value-glow: 0 0 14px var(--stat-glow);
 }
