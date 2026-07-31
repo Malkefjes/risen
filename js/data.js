@@ -17,6 +17,27 @@
 //    every time the two disagree. Reach for it when a choice feels flat, not as
 //    a gate every number has to pass.
 //
+//  * A BREAK MUST BE POSSIBLE, AND MUST NOT BE NORMAL. The runs worth
+//    remembering are the ones where something got away from the game: a number
+//    that scaled past anything it was fitted against, an assembled combo doing
+//    what no single pick promised. That outcome is WANTED, and the ceiling
+//    stays open for it — a ramp is not capped merely because it could get big,
+//    and "this could get out of hand" is not by itself an argument against a
+//    mechanic. What keeps a break rare is that it must be ASSEMBLED: several
+//    picks agreeing, drafted across a run that could have gone otherwise. Never
+//    the default line of play, and never an accident of two things stacking
+//    quietly. Mutations are the main engine of this, so expect the ceiling to
+//    rise as their pool fills.
+//
+//    A COST THAT RIDES A RUNAWAY NUMBER HAS A TRAP IN IT, worth naming because
+//    it was nearly walked into while designing sym's sustain. A PERCENTAGE cost
+//    against an uncapped ramp grows without bound while its payout does not —
+//    healing is bounded by max HP, so past a certain size you pay a fortune for
+//    a heal you cannot hold, and the trade stops being expensive and becomes
+//    absurd. The fix is to take only what the payout was actually worth, which
+//    leaves scaling making a cost EFFICIENT rather than unpayable. Costs should
+//    scale; they must not outrun their own exchange rate.
+//
 //  * THE PLAYER IS HAND-TUNED FIRST; ENEMIES ARE FITTED TO IT. Enemy numbers
 //    are a free variable — nothing constrains them but how the fight feels —
 //    so they are derived from the player rather than designed alongside. It
