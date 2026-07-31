@@ -31,6 +31,7 @@ behaviour that regressed rather than an internal detail:
 | `mutations` | the mutation system works while its content pool is empty |
 | `refinements` | refinements stay removed, and drafting still works without them |
 | `build` | the build stamp reaches the title, the log and the save |
+| `thorns` | sym grows one number, and it is the only thing it spends |
 
 ## Measuring
 

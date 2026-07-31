@@ -13,15 +13,19 @@ function renderCombat(forceFull) {
   } else updateUnitCard(state.enemy);
 }
 
-// ---- Class banks (Spores / Resolve) ------------------------------
-// One bank per strain that keeps one on itself, rendered identically as
-// filled/empty pips with the cap visible. Every change routes through
-// bankAdjust so nothing moves silently: clamp, float text and a log line, then
-// repaint the pips. Psy has no player-side bank on purpose — its DREAD lives
-// on the enemy as a status, worn on their card, and bio's bank is the rot
-// itself. Only the strains that hold something show pips.
+// ---- Class banks (Resolve) ---------------------------------------
+// A bank is a CAPPED, PIPPED wallet, and Unmutated is the only strain that has
+// one — hold-vs-spend is his identity, and the pips are what make it legible.
+// Nobody else holds one on purpose: psy's DREAD lives on the enemy as a status
+// worn on their card, bio's bank is the rot itself, and sym's THORNS is an
+// uncapped number that grows rather than fills, so pips would be the wrong
+// shape for it twice over (no cap to draw, and it is not spent so much as
+// shed). Sym's number is drawn as the badge on its own card and the Thorns row
+// in the sidebar instead — see strainReadout.
+//
+// Every change routes through bankAdjust so nothing moves silently: clamp,
+// float text and a log line, then repaint the pips.
 function bankOf(cls) {
-  if (cls === 'sym')  return { field:'spores',  name:'SPORES',   cap:P().sporeCap,   tone:'spores'   };
   if (cls === 'base') return { field:'resolve', name:'RESOLVE',  cap:P().resolveCap, tone:'resolve'  };
   return null;
 }

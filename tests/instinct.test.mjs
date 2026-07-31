@@ -121,9 +121,16 @@ export default async function ({ page, ok }) {
       for (let n = 0; n < 6; n++) {
         const r = simulateRun(cls, { allocate: () => 'instinct', keepLog: true });
         for (const l of r.log) {
-          if (/→ MCP/.test(l) && /CRIT ×/.test(l)) out.crits++;
-          // The bank lines creditCrit would write, in either of its two shapes.
-          if (/(SPORES|RESOLVE) \+/.test(l) && l.includes('CRIT')) out.banked++;
+          // ANY line whose target is not You: a player crit, wherever it lands.
+          // This matched '→ MCP' until the two acts arrived, which quietly made
+          // it "crits landed in ACT 2" — so it only counted at all while some
+          // class could reach wave 16, and it went to zero the moment none did.
+          // What it is guarding is that runs crit somewhere, not where.
+          if (/CRIT ×/.test(l) && !/→ You/.test(l)) out.crits++;
+          // The bank lines creditCrit would write, in any of its shapes. THORNS
+          // is sym's now that its wallet is gone; the CRIT qualifier is what
+          // separates a banked charge from the growth every hit taken writes.
+          if (/(THORNS|RESOLVE) \+/.test(l) && l.includes('CRIT')) out.banked++;
           if (/^\+ POISON/.test(l) && l.includes('CRIT')) out.poisonFromCrit++;
         }
       }
@@ -138,12 +145,15 @@ export default async function ({ page, ok }) {
   const flipped = await page.evaluate(() => {
     const was = BALANCE.player.critBankGain;
     BALANCE.player.critBankGain = 1;
-    const p = { class: 'sym', str: 5, instinct: 5, speed: 5, vit: 5, spores: 0,
-                isPlayer: true, statuses: [], talents: {} };
+    // Sym's charge is THORNS now — the wallet is gone, so the same sentence
+    // has to cash out as growth. hp is set because growThorns declines to feed
+    // a corpse.
+    const p = { class: 'sym', str: 5, instinct: 5, speed: 5, vit: 5, thornsGrown: 0,
+                hp: 100, isPlayer: true, statuses: [], talents: {} };
     applyDerivedStats(p);
     creditCrit(p, { name: 'x', isPlayer: false, hp: 100, maxHp: 100, statuses: [] });
     BALANCE.player.critBankGain = was;
-    return p.spores;
+    return p.thornsGrown;
   });
   ok('flipping the knob is the whole switch', flipped === 1, String(flipped));
 

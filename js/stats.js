@@ -258,7 +258,7 @@ function formatNum(n) {
 // The value is the CSS variable suffix, so an entry and a matching `.kw-<x>`
 // rule are the whole cost of adding MOMENTUM ('psy'), SPORES ('sym') or
 // POISON ('bio') when their cards get the same treatment.
-const DESC_KEYWORDS = { RESOLVE: 'base', POISON: 'bio', CHITIN: 'bio', WEAK: 'weak' };
+const DESC_KEYWORDS = { RESOLVE: 'base', POISON: 'bio', CHITIN: 'bio', WEAK: 'weak', THORNS: 'sym' };
 const KEYWORD_RE = new RegExp('\\b(' + Object.keys(DESC_KEYWORDS).join('|') + ')\\b', 'g');
 function highlightKeywords(html) {
   return html.replace(KEYWORD_RE, w => '<span class="kw kw-' + DESC_KEYWORDS[w] + '">' + w + '</span>');
@@ -390,8 +390,16 @@ function applyDerivedStats(p) {
   const ailmentDmg = Math.max(1, Math.round(attackDamage(p) * B.ailmentDamageFrac));
   p.poisonPerStack = p.class === 'bio'
     ? Math.max(1, Math.round(ailmentDmg * (t.poisonMult||1))) : 0;
+  // THORNS IS THE ONE DERIVED NUMBER THAT REMEMBERS. Everything else on this
+  // sheet is a pure function of the stats above it, recomputed from scratch —
+  // thorns is stat-derived PLUS p.thornsGrown, a raw value the run accumulates
+  // by being hit (see growThorns). The innate share of max HP is the floor Shed
+  // can never eat into, so a sym who has spent everything is still spiky; the
+  // grown part is the class. Both go through thornsMult together, so a talent
+  // that multiplies thorns multiplies what you have become, not just what you
+  // were born with.
   p.thorns = p.class === 'sym'
-    ? Math.max(0, Math.round(p.maxHp * B.thornsFrac * (t.thornsMult||1))) : 0;
+    ? Math.max(0, Math.round((p.maxHp * B.thornsFrac + (p.thornsGrown || 0)) * (t.thornsMult||1))) : 0;
 
   // ---- Ailments ----
   // Bleed and poison are one mechanic wearing two coats: a stacking tick on

@@ -104,7 +104,9 @@ function bankUnderfed(p, skill, e) {
   const enough = cap => Math.max(1, Math.ceil(cap * 0.6));
   if (skill.consumesDread)   return statusStacks(e, 'dread') < enough(P().dreadCap);
   if (skill.consumesResolve) return (p.resolve || 0) < enough(P().resolveCap);
-  if (skill.consumesSpores)  return (p.spores || 0) < enough(P().sporeCap);
+  // Sym is deliberately absent: THORNS is not a wallet with a payoff to wait
+  // for. Shed takes only what the heal needed, so there is no "too early" —
+  // it is gated by rule 4 (never heal a full bar) like any other heal.
   return false;
 }
 function skilledPolicy(p) {
@@ -123,7 +125,20 @@ function skilledPolicy(p) {
   if (e && e.windup) {
     const incoming = (e.damage || 0) * (BALANCE.enemy.windupMult || 1);
     const scary = incoming > p.hp * 0.35;
+    // BAITING IS THE OTHER WAY TO ANSWER A TELEGRAPH — sym's way. Provoke does
+    // not delete the heavy swing the way a stun does; it goads the charge out
+    // early so it lands as an ordinary hit.
+    //
+    // THE TEST IS THE ORDINARY HIT AGAINST YOUR BAR, NOT AGAINST HALF OF IT.
+    // Written as `damage < hp * 0.5` first, and it read as cowardice in the
+    // transcript: at 28 HP the bot refused to bait an 18-damage swing, healed
+    // to 52 instead, and ate the x5 for 90 on the next turn. Whenever you
+    // survive the small hit, taking it is strictly better than letting the
+    // heavy one land — the margin here is for a crit landing on top, and
+    // nothing else.
+    const canBait = !e.stunImmune && (e.damage || 0) * 1.5 < p.hp;
     const answer = (!e.stunImmune && pick(s => s.stun))
+                || (canBait && pick(s => s.type === 'provoke'))
                 || (scary && (pick(s => s.type === 'buff') || pick(s => s.type === 'heal')));
     if (answer) return answer;
   }
@@ -151,6 +166,11 @@ function skilledPolicy(p) {
     if (s.stun && (holdStun || (e && e.stunImmune))) return false;
     // 5. SPEND A BANK AT ITS PAYOFF, not on arrival.
     if (bankUnderfed(p, s, e)) return false;
+    // 6. DON'T INVITE A HIT YOU CANNOT AFFORD. Provoke buys the enemy a free
+    //    swing, which is a trade only a healthy fighter should take. Rule 1 is
+    //    the deliberate exception: there the swing is coming regardless, and
+    //    baiting it out is what makes it smaller.
+    if (s.type === 'provoke' && p.hp / Math.max(1, p.maxHp) < 0.5) return false;
     return true;
   });
   return usable[0] || basic;
@@ -173,12 +193,29 @@ function skilledPolicy(p) {
 const SKILLED_PLANS = {
   bio:  ['vit', 'str', 'instinct', 'speed'],      // outlast, and poison rides Attack Damage
   psy:  ['instinct', 'speed', 'str', 'vit'],      // fear comes from crits and dodges
-  sym:  ['vit', 'str', 'instinct', 'speed'],      // thorns are a share of max HP
+  // Sym leans Vit first for two reasons at once: max HP is the innate share of
+  // THORNS, and surviving longer is literally how the ramp gets fed. Speed is
+  // last on purpose and it is the one plan where the last slot is a genuine
+  // COST — more of your turns means proportionally fewer enemy swings, and
+  // swings are food. It is still bought (see the note above), just last.
+  sym:  ['vit', 'str', 'instinct', 'speed'],
   base: ['vit', 'str', 'instinct', 'speed']       // endure, then Last Stand
 };
+// THE FIRST ENTRY IN EVERY PLAN WAS DEAD, and had been since the plans were
+// written. Points arrive with level 2 — level 1 grants none — so indexing by
+// `level - 1` handed the first allocation to plan[1] and plan[0] was never
+// reached at all. Every plan here has therefore been running one slot rotated:
+// the three that read 'vit' first were spending their opening points on
+// Strength, which is why a measured sym sat at vit 5 / 100 max HP through the
+// whole of act 1 and read as a class that could not afford to be hit.
+//
+// Indexing off level - 2 puts the FIRST allocation on the FIRST named stat, so
+// a plan finally means what it says. This moves skilled's historical numbers
+// (greedy is the frozen one, deliberately — see tools/README.md), and it moves
+// them for all four classes at once.
 function skilledAllocate(p) {
   const plan = SKILLED_PLANS[p.class] || ROTATE_STATS;
-  return plan[(p.level - 1) % plan.length];
+  return plan[Math.max(0, p.level - 2) % plan.length];
 }
 
 // The registry, shaped so a bot IS a simulateRun opts object: pass it straight

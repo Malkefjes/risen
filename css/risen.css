@@ -1426,6 +1426,7 @@ body {
    without becoming a second heading inside the card. */
 .kw-base { color: var(--base); }
 .kw-bio { color: var(--bio); }
+.kw-sym { color: var(--sym); }
 .kw-weak { color: var(--weak); }
 
 .skill-desc {

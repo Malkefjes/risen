@@ -83,6 +83,15 @@ A turn-based browser roguelite. Personal project, built for enjoyment.
   finally play psy honestly (no bank to manage), so its psy numbers now
   measure the class.
 - Cooldown reduction is a live seam with no source.
-- Sym barely responds to stat allocation (a read on why sits above its class
-  entry in `js/data.js`); Unmutated's bot numbers are unmeasured rather than
-  bad.
+- Sym was reworked around THORNS as a growing, run-permanent number (every hit
+  taken feeds it, Shed spends it to heal, Provoke buys a swing to eat and baits
+  a telegraph out as an ordinary hit). Its numbers are early and owner-tuned by
+  play. Speed is deliberately a COST for this class — more of your turns means
+  fewer enemy swings, and swings are food.
+- **Unmutated cannot beat the first boss** and psy barely can — measured, and
+  the two failing assertions in `npm test playability` say so out loud. This
+  predates the sym pass (it was three failures before it) and is the
+  point-scarcity wall the DEV TOOLS skip already found: level 2 with 100 max HP
+  against a 90-damage telegraph. Base drowns first because its sustain is flat
+  and rare, exactly as the enemy-table note predicts. Not a regression, and not
+  fixed — it wants an owner decision about act 1, not a quiet nudge.

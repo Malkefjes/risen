@@ -196,7 +196,11 @@ function serializeRun() {
       str:p.str, instinct:p.instinct, speed:p.speed, vit:p.vit,
       dmgMult:p.dmgMult, hpMult:p.hpMult, apsMult:p.apsMult,
       talents:p.talents, talentIds:p.talentIds, hp:p.hp, maxHp:p.maxHp,
-      resolve:p.resolve||0, spores:p.spores||0,
+      // thornsGrown is the one raw value that is NOT a stat: sym's ramp, banked
+      // across the whole run by being hit. The derived sheet recomputes thorns
+      // from it on load (see applyDerivedStats), so losing it would silently
+      // hand back a wave-20 sym with a wave-1 body.
+      resolve:p.resolve||0, thornsGrown:p.thornsGrown||0,
       // Only the statuses marked to persist — the same set that survives into
       // the next fight, so a reload lands you in the shape a kill left you in.
       statuses:survivingStatuses(p),
@@ -346,7 +350,7 @@ function continueRun(slot){
     points:sp.points||0, str:sp.str, instinct:sp.instinct, speed:sp.speed, vit:sp.vit,
     dmgMult:sp.dmgMult||1, hpMult:sp.hpMult||1, apsMult:sp.apsMult||1,
     talents:sp.talents||{}, talentIds:sp.talentIds||[],
-    resolve:sp.resolve||0, spores:sp.spores||0 });
+    resolve:sp.resolve||0, thornsGrown:sp.thornsGrown||0 });
   state.player=p;
   // Saves written before statuses were persisted simply have none; anything
   // whose definition has since been removed is dropped rather than trusted.

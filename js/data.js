@@ -154,7 +154,7 @@
 // KEEP THIS SEPARATE FROM BALANCE.saveKey. That one answers "are saved runs
 // still valid" and is bumped only when a change makes an old sheet wrong.
 // Deriving it from this would wipe every save on a typo fix.
-const BUILD = '2026-07-30k';
+const BUILD = '2026-07-31a';
 
 const BALANCE = {
   player: {
@@ -324,8 +324,56 @@ const BALANCE = {
     // Bleed: the same damage-over-time shape as poison, its own knobs so the
     // two can be tuned apart. Nothing applies bleed yet.
     bleedStackCap: 6, bleedDuration: 4,      // TURNS
+    // ---- THORNS (sym) -----------------------------------------------------
+    // SYM'S MECHANIC IS ONE NUMBER THAT GROWS, and thorns is that number —
+    // not a bank beside it. The old kit had both: thorns as a passive share of
+    // max HP, and Spores as a wallet filled by being hit and spent on a heal or
+    // a burst. The wallet was Unmutated's identity wearing a coat (gain, hold,
+    // spend), and the part that was actually sym — the enemy hurting itself on
+    // you — merely happened. Collapsing the two is the whole rework: a growth
+    // stat that raises thorns IS thorns with an extra step, and two numbers
+    // doing one job means reading both to know how big you are.
+    //
+    // Growth is RUN-PERMANENT, and that is forced by measurement rather than
+    // taste. A trash fight gives the player about 5 enemy swings and a boss
+    // about 10-13 (~52 across a whole run), so a per-fight ramp could only ever
+    // reach 5 before being wiped — DREAD-sized, and DREAD is a mark that gets
+    // to reset because it lives on a corpse. Carried across the run the number
+    // is genuinely big, which is the point: "everything you do to me makes me
+    // stronger" is a RUN sentence, not a fight sentence.
+    //
+    // It also fixes the direction of travel. Swings-per-player-turn FALLS as a
+    // run goes (0.44 early, 0.17 late) because Speed and slow bosses both cut
+    // it, so a per-fight ramp would have gotten weaker exactly as the game got
+    // harder. Banked across the run, early fights pay for late ones.
+    //
+    // THORNS IS PAID OUT THREE WAYS, which is what makes one number enough:
+    // the enemy takes it when they swing (here), Latch reads a share of it back
+    // on your own turns, and Shed converts it to healing. Grow one thing and
+    // everything gets better.
+    thornsFrac: 0.05,          // INNATE thorns: a twentieth of max HP, and the floor Shed can never eat into
+    thornsPerHit: 1,           // every hit taken grows thorns by this, no window and no condition
+    thornsBigHitFrac: 0.15,    // ...plus one more per this share of max HP taken in a single blow
+    thornsGrowMax: 4,          // ceiling on what ONE hit can grow, so a x5 telegraph is a feast, not a jackpot
+    thornsSpinesGrow: 2,       // extra growth per hit while Spines is up — the window is an INVITATION now
+    // SHED: THE CEILING IS NOT THE PRICE. A percentage cost against a number
+    // allowed to run away grows without bound while its payout does not —
+    // healing is bounded by max HP — so past a certain size you would pay a
+    // fortune for a heal you cannot hold, and the button stops being worth
+    // pressing at exactly the moment you have played best. So the shed takes
+    // only as many thorns as the heal actually NEEDED, and the fraction below
+    // is a ceiling on top of that. Growing huge therefore makes Shed cheap in
+    // proportion rather than unpayable. See "a cost that rides a runaway
+    // number" in the header.
+    // Both numbers were first set a third of this and MEASURED too thin: Shed
+    // healed 24 of a 100 HP bar, which is not a sustain button, it is a
+    // rounding error with a cooldown. Cutting the old passive thorns lifesteal
+    // (see the note at its call site) took ~875 HP a run out of the class, and
+    // that has to come back through the button you press on purpose rather
+    // than through a drip that asks nothing.
+    shedCapFrac: 0.35,         // Shed never takes more than this share of GROWN thorns in one press
+    shedHpPerThorn: 0.04,      // one thorn shed is worth this share of max HP
     reflectFrac: 0.20, reflectSpinesMult: 2,   // sym: share of damage taken reflected back; doubled while Spines is up
-    sporeBigHitFrac: 0.15, sporeHitMax: 3,     // sym: every 15% of max HP lost in one hit plants an extra Spore (cap per hit)
     // The level-up heal is load-bearing sustain and has tracked the level
     // curve through both compressions: 16 levels x 8% was ~128% of max HP a
     // run, and 8 x 15% kept that economy whole (~120%). At ~6 levels the
@@ -387,7 +435,6 @@ const BALANCE = {
     // the siphon is the drip that keeps a marked fight from being pure
     // attrition against a class with no bandage.
     dreadSiphonFrac: 0.005,  // heal per DREAD on the enemy, per player turn (3%/turn at a full 6)
-    sporeCap: 6,           // sym: Spore bank ceiling
     resolveCap: 6,         // Unmutated: Resolve bank ceiling
     resolveDR: 0.03,       // Unmutated: each held Resolve = 3% flat damage reduction (18% at cap)
     resolvePerHit: 1,      // Unmutated: Resolve gained whenever you take a hit
@@ -577,9 +624,16 @@ const BALANCE = {
   // structure moved under every wave a save stores, so a v7 run describes a
   // game that ended where act 1 now hands over to the Encampment.
   //
+  // v8 -> v9 is the sym rework. A saved sym holds a Spore count for a bank
+  // that no longer exists and, worse, holds NO grown thorns — so a mid-run
+  // sheet would load with the whole ramp its wave count was earned on reset to
+  // zero, which is a harder re-read than any stat drift: the class would be
+  // unplayably weak rather than merely mistuned. Two of its four skills are
+  // also gone by id. Every other strain rides along, as always.
+  //
   // Bumping also gives every player empty slots on the next load, which is the
   // honest outcome — those runs are not playable as the game now works.
-  saveKey: 'risen_run_v8',
+  saveKey: 'risen_run_v9',
   // Storage keys from older versions, cleared once on load so they cannot
   // accumulate invisibly. Oldest first; add the outgoing prefix here on a bump.
   // Slot keys are listed explicitly because the purge removes literal keys.
@@ -587,7 +641,8 @@ const BALANCE = {
                 'risen_run_v4', 'risen_run_v4_s1', 'risen_run_v4_s2',
                 'risen_run_v5', 'risen_run_v5_s1', 'risen_run_v5_s2',
                 'risen_run_v6', 'risen_run_v6_s1', 'risen_run_v6_s2',
-                'risen_run_v7', 'risen_run_v7_s1', 'risen_run_v7_s2'],
+                'risen_run_v7', 'risen_run_v7_s1', 'risen_run_v7_s2',
+                'risen_run_v8', 'risen_run_v8_s1', 'risen_run_v8_s2'],
   saveSlots: 2
 };
 
@@ -648,26 +703,50 @@ const CLASSES = {
       { id:'kill', name:'Kill', desc:'Attack for {power!} damage, +{perDreadPower!} per DREAD consumed, and DEVOUR the fear: heal {feedPerDread%} of max HP per stack. Spends ALL the enemy’s DREAD.', type:'attack', power:1.20, perDreadPower:0.60, consumesDread:true, feedPerDread:BALANCE.player.dreadFeedFrac, target:'enemy', cdTurns:5 }
     ]
   },
-  // WHY SYM FEELS OFF, for whenever its pass comes (a read, not a plan): its
-  // bank is Resolve wearing a coat. Spores are gained by taking hits, held,
-  // and spent for a heal (Feed) or a burst (Erupt) — that is Unmutated's loop,
-  // and hold-vs-spend is HIS identity. Meanwhile the part of sym that is
-  // actually unique — thorns, the enemy hurting itself on you — is passive and
-  // merely happens. So sym plays like a worse base with a passive stapled on.
-  // The direction worth trying: bio ramps a number on the ENEMY (poison); sym
-  // should ramp a number on ITSELF — the organism grows over the fight, every
-  // hit fed to it making it bigger, spikier, harder. Spores as growth, not as
-  // a wallet. Erupt is the most base-shaped thing in the kit (spend bank for
-  // burst) and is the first thing to question. Its sentence: "everything you
-  // do to me makes me stronger."
+  // THE ORGANISM. Sym's mechanic is THORNS — one number, worn on the player,
+  // that GROWS every time it is hit and keeps growing for the whole run. See
+  // the THORNS block in BALANCE for why the wallet died and why the ramp is
+  // run-permanent. Its sentence: "everything you do to me makes me stronger."
+  //
+  // THE OTHER THREE ANSWER A HIT; SYM WANTS ONE. Base accepts the hit and
+  // trades, bio outlasts it, psy refuses it outright — sym is the only strain
+  // in the game that is PAID for being struck, and the kit now says so with a
+  // verb instead of a passive. Provoke is that verb, and it is the only button
+  // here that spends your turn to buy the ENEMY a turn: suicide for anyone
+  // else, correct for you. It doubles as sym's answer to the telegraph, and
+  // deliberately a different answer from psy's: a stun DELETES the heavy swing,
+  // Provoke goads it out early so it lands as an ordinary one. You do not dodge
+  // the hit — you take it small, and you eat for it.
+  //
+  // RAISE SPINES + PROVOKE IS THE COMBO, and it stays two cards on purpose:
+  // raise the spikes, then make them swing into you. It asks a question no
+  // other combo in the game asks, because you have to be healthy enough to eat
+  // what you invited — and it degrades honestly, since Provoke bare (Spines
+  // still cooling) is the wrong way to use it and still works.
+  //
+  // Sustain is SHED, and it is the one place a run-permanent ramp can be spent:
+  // healing costs you growth you cannot get back this fight. There is no burst
+  // finisher and that is the point — Bloom Eruption was the most base-shaped
+  // card in the kit (spend the bank, hit once, start over) and it was carrying
+  // 42% of sym's damage while thorns carried 22%. Cutting it is what forces the
+  // thorns half to actually be the class.
+  //
+  // The class's stats are Vitality and Strength, but SPEED IS THE INTERESTING
+  // ONE: more of your turns means proportionally FEWER enemy swings, and swings
+  // are food. Speed makes you faster and smaller. It is the only stat in the
+  // game with a real cost attached, and it lands here on purpose — sym is the
+  // strain whose allocation had nothing to say.
   sym: {
     name: 'Symbiotic', color: 'sym',
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
-      { id:'latch', name:'Latch', desc:'Auto. Attack the enemy for your Attack Damage + {thornsScale%} of your thorns.', type:'attack', power:1.0, thornsScale:0.35, target:'enemy', basic:true },
-      { id:'spines', name:'Raise Spines', desc:'Thorns ×{power} and pain reflect doubled for {duration#turn}. Hits taken plant Spores — big hits plant more.', type:'buff', buff:'spines', duration:3, power:2.2, target:'self', cdTurns:4 },
-      { id:'feed', name:'Symbiote Feed', desc:'Consume 1 Spore: heal {healFracFed%} max HP and Thorns ×{thornsBoost} for {thornsBoostDur#turn}. Starved (no Spore): heal {healFrac%} only.', type:'heal', healFrac:0.08, healFracFed:0.16, sporeFuel:true, thornsBoost:1.5, thornsBoostDur:2, target:'self', cdTurns:3 },
-      { id:'erupt', name:'Bloom Eruption', desc:'{power%} Attack Damage +{perSporePower%} per Spore consumed.', type:'attack', power:1.50, perSporePower:0.70, consumesSpores:true, target:'enemy', cdTurns:5 }
+      // 0.35 -> 0.55: with THORNS as the ramp, the basic is where the number
+      // gets read back on your OWN turns, and it has to carry the share Bloom
+      // used to. A grown sym should feel its size every time it swings.
+      { id:'latch', name:'Latch', desc:'Auto. Attack the enemy for your Attack Damage + {thornsScale%} of your THORNS.', type:'attack', power:1.0, thornsScale:0.55, target:'enemy', basic:true },
+      { id:'spines', name:'Raise Spines', desc:'THORNS ×{power} and pain reflect doubled for {duration#turn}. Every hit taken grows +{growBonus} extra THORNS.', type:'buff', buff:'spines', duration:3, power:2.2, growBonus:BALANCE.player.thornsSpinesGrow, target:'self', cdTurns:4 },
+      { id:'shed', name:'Shed', desc:'Heal {healFrac%} of max HP, then shed THORNS for the rest — {hpPerThorn%} each, never past {capFrac%} of your growth.', type:'heal', healFrac:0.08, shedFuel:true, hpPerThorn:BALANCE.player.shedHpPerThorn, capFrac:BALANCE.player.shedCapFrac, target:'self', cdTurns:3 },
+      { id:'provoke', name:'Provoke', desc:'Bare your guard: the enemy strikes at once and cannot miss. +{growBonus} THORNS, and a charged telegraph comes out ordinary.', type:'provoke', growBonus:3, target:'enemy', cdTurns:4 }
     ]
   },
   // Base Sonny, reached via "RESIST MUTATION". Refused the infection, so he has
@@ -966,12 +1045,14 @@ const STATUSES = {
     stacking:'amplify', defaults:{ duration:3, power:2.2 }, persists:true,
     label: st => 'SPINES ' + Math.ceil(st.duration) + 't',
     thornsMult: (u, st) => st.power || 1,
-    // Sym: a hit landed while the spines are up plants a Spore for later
-    // Bloom, and a big hit plants more.
+    // Sym: the window is an INVITATION, not the gate it used to be. Every hit
+    // grows thorns whether the spines are up or not (see growThorns); raising
+    // them makes each hit worth MORE. Before, growth only happened inside this
+    // window — three turns in every seven — so the class that wants to be hit
+    // spent most of the fight not being paid for it.
     onHitTaken(unit, st, ctx) {
       if (unit.class !== 'sym' || !(ctx.damage > 0)) return;
-      const planted = Math.min(P().sporeHitMax, 1 + Math.floor(ctx.damage / Math.max(1, unit.maxHp * P().sporeBigHitFrac)));
-      bankAdjust(unit, planted, 'SPINES, hit taken' + (planted > 1 ? ' (big hit)' : ''));
+      growThorns(unit, P().thornsSpinesGrow, 'SPINES, hit taken');
     }
   },
 

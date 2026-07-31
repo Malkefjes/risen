@@ -251,18 +251,21 @@ function doSpawn() {
   scheduleTurn(nextTurn, turnDelay(260));
 }
 
-function enemySwing(e) {
+// opts carries what a PROVOKED swing changes: it cannot be evaded, and it never
+// carries the windup multiplier (Provoke resolves the charge itself, either
+// baiting it out or letting it hold — see provokeSwing).
+function enemySwing(e, opts) {
   const p = state.player;
   if (!p || p.hp <= 0) return;
   state.enemyActions = (state.enemyActions || 0) + 1;   // real swings only; windup/stun turns never reach here
   let mult = 1;
-  if (e.windup) {
+  if (e.windup && !(opts && opts.ordinary)) {
     mult = BALANCE.enemy.windupMult;
     e.windup = false;
     const fig = getFigureForUnit(e);
     if (fig) fig.style.filter = '';
   }
-  const dealt = applyEnemyDamage(e, p, mult);
+  const dealt = applyEnemyDamage(e, p, mult, opts);
   if (dealt > 0) playAttackAnim(e, p, true);
 
   if (e.elite && e.elite.lifesteal && dealt > 0) {
@@ -284,10 +287,92 @@ function getThornsDamage(p) {
   return Math.floor(p.thorns * statusMult(p, 'thornsMult'));
 }
 
+// SYM'S RAMP. Thorns is the number and it grows — every hit taken feeds it,
+// permanently, for the rest of the run. Routed through one function for the
+// same reason bankAdjust exists: a number that climbs silently is a number the
+// owner cannot feel climbing, so every gain is a floater and a log line naming
+// what fed it. Recomputes the sheet immediately, which is what lets the spines
+// that fire back on THIS exchange already be the bigger ones.
+function growThorns(p, amount, why) {
+  if (!p || p.class !== 'sym' || !(amount > 0) || p.hp <= 0) return 0;
+  p.thornsGrown = (p.thornsGrown || 0) + amount;
+  applyDerivedStats(p);
+  floatText(p, '+' + amount + ' THORNS', 'bank');
+  logEvent('THORNS +' + amount, null, '(' + formatNum(p.thorns) + ')', [why], 'heal');
+  updateUnitCard(p);
+  return amount;
+}
+
+// What one hit is worth. Flat growth plus one more per big-hit slice of max HP,
+// capped — so a x5 telegraph eaten on purpose is a feast without being a
+// jackpot that makes every other exchange pointless.
+function thornsGrowthFor(p, damage) {
+  const B = P();
+  const slice = Math.max(1, p.maxHp * B.thornsBigHitFrac);
+  return Math.min(B.thornsGrowMax, B.thornsPerHit + Math.floor(damage / slice));
+}
+
+// SHED — sym's sustain, and the one place a run-permanent ramp can be spent.
+// THE FRACTION IS A CEILING, NOT A PRICE: the shed takes only as many thorns as
+// the heal actually needed, so a number that has run away makes Shed cheap in
+// proportion instead of absurd (a percentage of a huge number would buy healing
+// that max HP cannot hold — see the balance header). Only GROWN thorns are
+// spendable; the innate share of max HP is a floor, so shedding can never leave
+// you blunt.
+function shedForHeal(p, skill, already, notes) {
+  const grown = p.thornsGrown || 0;
+  if (grown <= 0) { notes.push('nothing grown to shed'); return 0; }
+  const perThorn = Math.max(1, Math.floor(p.maxHp * (skill.hpPerThorn || 0)));
+  const missing = Math.max(0, p.maxHp - p.hp - already);
+  // At least one whenever anything is grown: floor()ing the cap alone would
+  // make Shed a plain heal for the whole of act 1, which reads as the skill
+  // being broken rather than as sustain being tight.
+  const cap = Math.max(1, Math.floor(grown * (skill.capFrac || 0.25)));
+  const shed = Math.max(0, Math.min(Math.ceil(missing / perThorn), cap, grown));
+  if (shed <= 0) { notes.push('no THORNS needed'); return 0; }
+  p.thornsGrown = grown - shed;
+  applyDerivedStats(p);
+  notes.push('SHED ' + shed + ' THORNS (' + formatNum(p.thorns) + ' left)');
+  return shed * perThorn;
+}
+
+// PROVOKE — the class's verb, and the only button in the game that spends your
+// turn to buy the ENEMY a turn. You bare your guard: the swing lands (no evade
+// roll — you do not dodge a hit you invited), the spikes take it, and you grow.
+//
+// Against a charged telegraph it is sym's answer to the windup, and a different
+// answer from psy's on purpose. A stun DELETES the heavy swing; Provoke goads
+// it out early so it comes as an ordinary one — you still get hit, you just get
+// hit small, and you eat for it. It shares stun's stagger-resist rule so it
+// cannot lock a boss out of its telegraph forever, and the shrug is honest:
+// the resist is consumed, the swing still comes, but the charge HOLDS and the
+// heavy blow is still on its way.
+function provokeSwing(p, e, skill) {
+  if (!e || e.hp <= 0 || e._defeated) return;
+  if (e.windup && !e.stunImmune) {
+    e.windup = false;
+    const fig = getFigureForUnit(e);
+    if (fig) fig.style.filter = '';
+    e.stunImmune = true;
+    floatText(e, 'BAITED', 'note');
+    logEvent('BAITED', e, 'windup spent early', ['stagger resist now armed'], 'heal');
+  } else if (e.windup) {
+    e.stunImmune = false;
+    floatText(e, 'RESISTED', 'note');
+    logEvent('STAGGER RESISTED', e, 'the charge holds', ['resist consumed'], 'damage');
+  }
+  // Grow BEFORE the swing: you raise yourself to meet it, so the thorns that
+  // answer this hit are already the bigger ones.
+  growThorns(p, skill.growBonus || 0, skill.name);
+  // ordinary: a provoked swing never carries the windup multiplier, whether the
+  // charge was baited out or shrugged off.
+  enemySwing(e, { unevadable: true, ordinary: true });
+}
+
 // Enemy -> player. Enemies use a flat designed damage number, not a stat formula.
 // mult carries the boss windup multiplier; evade and block still apply, so
 // every strain's defenses answer the big hit in its own way.
-function applyEnemyDamage(e, p, mult) {
+function applyEnemyDamage(e, p, mult, opts) {
   // Anything on the attacker that changes what it hits for (weak, empower)
   // lands before the roll; anything on the defender that changes what it takes
   // (vulnerable, fortify) lands after the crit, alongside the other mitigation.
@@ -295,7 +380,11 @@ function applyEnemyDamage(e, p, mult) {
   const label = (mult && mult > 1) ? 'HEAVY ×' + mult : 'Attack';
   notes.push(...statusNotes(e, 'outgoingMult', { target: p }));
   let dmg = Math.max(1, Math.floor(e.damage * (mult || 1) * statusMult(e, 'outgoingMult', { target: p })));
-  if (Math.random() < p.evadeChance) {
+  // A provoked swing skips the evade roll entirely rather than rolling and
+  // discarding: you do not dodge a hit you invited, and a wasted roll would
+  // shift every rules draw after it.
+  if (opts && opts.unevadable) notes.push('GUARD BARED');
+  else if (Math.random() < p.evadeChance) {
     state.dodges = (state.dodges || 0) + 1;
     logMiss(label, p, 'EVADED (' + Math.round(p.evadeChance * 100) + '%)');
     // Psy: the hunter they cannot touch. A whiff plants fear, which is how
@@ -339,8 +428,14 @@ function applyEnemyDamage(e, p, mult) {
     shedStacks(e, 'dread', P().dreadLossPerHit, 'nerve steadied — its blow landed');
   // Unmutated: every hit taken steadies you, and Brace banks an extra.
   if (p.class === 'base') bankAdjust(p, (P().resolvePerHit||1) + statusSum(p, 'bankOnHitTaken'), 'hit taken');
-  // Whatever the player is carrying that answers a hit — Spines planting a
-  // Spore, Brace punching back — fires here, in one place, for any status.
+  // Sym: EVERY hit feeds the organism, with no window and no condition. This
+  // is the half that used to live inside Raise Spines, which meant the strain
+  // that wants to be hit was only paid for it three turns in every seven.
+  // Spines still pays extra on top (its onHitTaken, just below).
+  if (p.class === 'sym' && dmg > 0)
+    growThorns(p, thornsGrowthFor(p, dmg), 'hit taken' + (dmg >= p.maxHp * P().thornsBigHitFrac ? ' (big hit)' : ''));
+  // Whatever the player is carrying that answers a hit — Spines feeding the
+  // growth, Brace punching back — fires here, in one place, for any status.
   statusEach(p, 'onHitTaken', { attacker: e, damage: dmg });
   floatText(p, dmg, 'damage');
   if (blocked) floatText(p, 'BLOCK', 'note');
@@ -366,11 +461,21 @@ function applyEnemyDamage(e, p, mult) {
     if (e.hp <= 0) state._lastOverkill = Math.max(0, thorns - tBefore);
     floatText(e, thorns, 'damage');
     logDamage('THORNS', e, thorns, tNotes);
-    const healPct = p.talents.thornsHeal || 0.25;
-    const feed = Math.max(1, Math.floor(thorns * healPct));
-    const hpBefore = p.hp;
-    p.hp = Math.min(p.maxHp, p.hp + feed);
-    if (p.hp > hpBefore) logHeal('THORNS FEED', p, p.hp - hpBefore, [Math.round(healPct * 100) + '% of thorns']);
+    // THORNS FEED IS OFF BY DEFAULT NOW, and the default is the whole change:
+    // it used to lifesteal a flat 25% of every thorns tick. That was fine when
+    // thorns were a static twentieth of max HP, but against a number that grows
+    // all run it becomes sustain that scales with the ramp and asks nothing —
+    // timing-immune healing, which the enemy-table note names as the exact
+    // reason enemy numbers cannot make this game hard. Sym's faucet is SHED,
+    // on a cooldown, paid for out of the ramp itself. The hook stays live so a
+    // talent or mutation can hand the drip back as a visible pick.
+    const healPct = p.talents.thornsHeal || 0;
+    if (healPct > 0) {
+      const feed = Math.max(1, Math.floor(thorns * healPct));
+      const hpBefore = p.hp;
+      p.hp = Math.min(p.maxHp, p.hp + feed);
+      if (p.hp > hpBefore) logHeal('THORNS FEED', p, p.hp - hpBefore, [Math.round(healPct * 100) + '% of thorns']);
+    }
   }
   return dmg;
 }
@@ -378,7 +483,7 @@ function applyEnemyDamage(e, p, mult) {
 // A CRIT FEEDS YOUR STRAIN — LIVE FOR PSY, PARKED FOR THE REST.
 //
 // One sentence, four meanings, because every strain runs on something that
-// wants filling: DREAD for psy, a Spore for sym, Resolve for Unmutated, and
+// wants filling: DREAD for psy, THORNS for sym, Resolve for Unmutated, and
 // for bio the rot itself, which is its bank in everything but name. Instinct
 // buys the same sentence for everyone ("my mechanic is online when I need it")
 // and cashes out as whatever the strain in front of you is made of.
@@ -405,6 +510,9 @@ function creditCrit(p, e) {
       applyStatus(e, 'poison', { stacks: gain, perStack: p.poisonPerStack });
     return;
   }
+  // Sym has no wallet any more — its charge IS the thorns number, so the same
+  // sentence cashes out as growth rather than as a pip.
+  if (p.class === 'sym') { growThorns(p, gain, 'CRIT'); return; }
   bankAdjust(p, gain, 'CRIT');
 }
 
@@ -440,8 +548,8 @@ function applyPlayerDamage(p, e, skill) {
   const notes = [];
   if ((skill.power || 1) !== 1) notes.push('power ×' + (skill.power || 1).toFixed(2));
 
-  // DREAD (psy): Kill cashes the enemy's fear in. Same shape as Last Stand and
-  // Bloom Eruption — spend the pile for damage per unit — but the pile lives
+  // DREAD (psy): Kill cashes the enemy's fear in. Same shape as Last Stand —
+  // spend the pile for damage per unit — but the pile lives
   // on the ENEMY, so spending it also hands their turn rate back: the fight
   // speeds up the moment you cash out, which is what makes Kill a decision
   // instead of a rotation button.
@@ -456,13 +564,6 @@ function applyPlayerDamage(p, e, skill) {
     dmg += p.atkPower * (skill.perResolvePower || 0) * resolveSpent;
     notes.push('RESOLVE ×' + resolveSpent + ' spent');
   }
-  // Spores (sym): Bloom Eruption scales with the harvest.
-  const sporesSpent = skill.consumesSpores ? (p.spores || 0) : 0;
-  if (sporesSpent > 0) {
-    dmg += p.atkPower * (skill.perSporePower || 0) * sporesSpent;
-    notes.push('SPORES ×' + sporesSpent + ' spent');
-  }
-
   // Both sides' statuses meet here: what the player is carrying that raises the
   // hit (Predator, Empower) and what the enemy is carrying that softens or
   // opens it up (Fortify, Vulnerable).
@@ -487,10 +588,13 @@ function applyPlayerDamage(p, e, skill) {
     dmg += t;
     notes.push('THORNS +' + logNum(t));
   }
-  if (skill.thornsScale) {                                  // Latch: thorns floor
+  if (skill.thornsScale) {                                  // Latch: reads the ramp back
     const t = getThornsDamage(p) * skill.thornsScale;
     dmg += t;
-    notes.push('THORNS +' + logNum(t));
+    // "from THORNS", not "THORNS +": the growth lines in this same transcript
+    // read "THORNS +2", and two different meanings under one prefix is how a
+    // log stops being reconstructable.
+    notes.push('+' + logNum(t) + ' from THORNS');
   }
 
   // Nothing misses. An attack is only ever avoided by the target getting out of
@@ -532,8 +636,6 @@ function applyPlayerDamage(p, e, skill) {
 
   if (skill.consumesResolve && resolveSpent > 0)
     bankAdjust(p, -resolveSpent, 'spent by ' + skill.name);
-  if (skill.consumesSpores && sporesSpent > 0)
-    bankAdjust(p, -sporesSpent, 'spent by ' + skill.name);
   if (skill.consumesSpines) removeStatus(p, 'spines', 'consumed by ' + skill.name);
   // DREAD spent is DREAD gone: the enemy's fear breaks with the blow, and its
   // turn rate recovers with it. Deliberately after logDamage, so the hit line
@@ -671,16 +773,11 @@ function fireSkill(caster, skill, target) {
       frac += bonus;
       if (bonus > 0) notes.push('RESOLVE ×' + (caster.resolve || 0) + ' +' + Math.round(bonus * 100) + '%');
     }
-    // Sym: Feed runs on the harvest — a Spore buys the real heal and the
-    // thorns boost; starved, it's a thin patch and nothing more.
-    let fed = true;
-    if (skill.sporeFuel) {
-      fed = (caster.spores || 0) > 0;
-      if (fed) { bankAdjust(caster, -1, 'spent by ' + skill.name); frac = skill.healFracFed || frac; }
-      else notes.push('STARVED, no spore');
-    }
     notes.push(Math.round(frac * 100) + '% max HP');
-    const amount = Math.max(1, Math.floor(caster.maxHp * frac));
+    let amount = Math.max(1, Math.floor(caster.maxHp * frac));
+    // Sym: SHED covers whatever the base patch did not, out of grown thorns —
+    // computed after the base amount so it only ever pays for the remainder.
+    if (skill.shedFuel) amount += shedForHeal(caster, skill, amount, notes);
     const before = caster.hp;
     caster.hp = Math.min(caster.maxHp, caster.hp + amount);
     const restored = caster.hp - before;
@@ -693,8 +790,13 @@ function fireSkill(caster, skill, target) {
       notes.concat([restored < amount ? 'overheal ' + logNum(amount - restored) : null,
                     logNum(caster.hp) + '/' + logNum(caster.maxHp)]));
     playCastAnim(caster, skill);
-    if (skill.thornsBoost && fed)
-      applyStatus(caster, 'spines', { power: skill.thornsBoost, duration: skill.thornsBoostDur || 3 });
+  } else if (skill.type === 'provoke') {
+    // The invitation. No damage of its own on purpose — every point on the
+    // board comes from the enemy's own swing landing on your spikes, which is
+    // the whole claim the class makes.
+    logEvent(skill.name, null, 'guard bared', null, '');
+    playCastAnim(caster, skill);
+    provokeSwing(caster, target, skill);
   } else if (skill.type === 'buff') {
     // Any buff at all: the skill names a status id and hands over whichever
     // fields it wants to override. Stacking and duration come from the
