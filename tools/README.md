@@ -8,7 +8,6 @@ same rule now holds in `tests/` — see the note above `tracker()` in
 `tests/harness.mjs` for where the line sits between a check and a measurement.
 
     node tools/bot-bracket.mjs [runs]     how much does playing well change a run?
-    node tools/bank-usage.mjs [runs]      can each strain's bank actually fill?
     node tools/single-stat.mjs [runs]     is a stat a build or a garnish?
     node tools/double-stat.mjs [runs]     which PAIRS of stats actually work?
     node tools/transcript.mjs [strain]    dump one run's combat log
