@@ -103,7 +103,7 @@ function devSkipToAct2(classId) {
   // First choice: the bot EARNS the sheet — act 1 played by the real rules.
   // 20 tries separates bad dice from "the bot cannot do it".
   for (let attempt = 1; attempt <= 20; attempt++) {
-    simulateRun(classId, Object.assign({}, BOTS.skilled, { stopWhen: s => s.wave > gate }));
+    simulateRun(classId, Object.assign({}, BOTS.smart, { stopWhen: s => s.wave > gate }));
     if (state.runOver || state.wave <= gate) continue;
     devEnterCombat('DEV · the bot played act 1 (cleared on try ' + attempt
       + ') · handed over at wave ' + state.wave + ' · level ' + state.player.level);

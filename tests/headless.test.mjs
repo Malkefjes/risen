@@ -64,9 +64,16 @@ export default async function ({ page, ok }) {
   // fight; a sliced run landed them either side of a spawn reset and reported
   // a difference that was not one.) Costs ~25s, and it is the assertion the
   // whole balance-measurement story rests on.
+  // BOTH SIDES MUST PLAY THE SAME POLICY, stated explicitly on each. The
+  // on-screen loop below used to hand-copy the old default bot's one-liner
+  // ("first ready special, else swing"), which matched simulateRun's default
+  // only by coincidence — so changing that default silently made the two sides
+  // play different games and this assertion failed for a reason that had
+  // nothing to do with headless equivalence. Naming the policy on both sides
+  // is what makes the comparison mean what it says.
   const head = await page.evaluate((s) => {
     eval('(' + s + ')()');
-    const r = simulateRun('bio', { allocate: () => 'vit' });
+    const r = simulateRun('bio', { policy: BOTS.smart.policy, allocate: () => 'vit' });
     return { wave: r.wave, level: r.level, kills: r.kills, dmg: r.damageDealt,
              won: r.won, turns: r.turns, stats: r.stats, derived: r.derived };
   }, SEED);
@@ -80,10 +87,7 @@ export default async function ({ page, ok }) {
         if (p.points > 0) adjustStat('vit', 1);
         else if (pendingTotal(p) > 0) commitStats();
         else if (state.talentOffers?.picks?.length) pickTalent(state.talentOffers.picks[0].id);
-        else {
-          const u = p.skills.filter(k => !k.basic && k.cd <= 0);
-          playerAct(u[0] || p.skills[0]);
-        }
+        else playerAct(BOTS.smart.policy(p));   // same hand on the controls
       }
       await new Promise(r => setTimeout(r, 0));
     }

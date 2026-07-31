@@ -16,19 +16,24 @@ All three go through `simulateRun` inside the game, so a few hundred runs
 finish in the time it takes to start a browser. They used to drive the real UI
 one turn at a time and took minutes per run.
 
-There are three bots, defined as `BOTS` in `js/sim.js`: **dumb** mashes a random
-ready skill and allocates at random, **greedy** fires the strongest thing off
-cooldown on a round-robin spread, and **skilled** plays four stated habits
-(answer a telegraph that actually threatens you, heal only when low, hold a stun
-for a windup, spend a bank at its payoff). Any of them drops straight into
-`simulateRun(cls, BOTS.skilled)`.
+There are TWO bots, defined as `BOTS` in `js/sim.js`, and one difference
+between them that matters. **dumb** presses a button at random — cooldowns
+included, it does not know what a cooldown is — and throws its stat points
+anywhere. **smart** presses everything the moment it is available, spreads its
+points evenly one at a time, and holds whatever answers a telegraph (a stun, a
+Provoke, a brace, a damage-reducing buff), spending it on the telegraph and
+never on anything else. Either drops straight into `simulateRun(cls,
+BOTS.smart)`.
 
-Two rules keep them honest. **greedy is frozen** — every balance number in this
-repo's history was measured with it, so changing it would invalidate the
-comparisons in old commit messages. And **skilled is not optimal** on purpose: a
-searching bot would be a second implementation of the game's strategy, breaking
-on every kit change, and it would encode one theory of how a class should play
-and then confirm it. Skilled is a floor on competence, not a model of mastery.
+So the gap between the columns is close to one question: what is reading the
+windup worth, in waves? Measured when they were built, smart answers 79-93% of
+the telegraphs it faces with no whiffs, against 0-44% for dumb.
+
+There used to be a third, "greedy", frozen so that balance numbers quoted in
+old commit messages stayed comparable. It is gone, and so are the per-strain
+allocation plans the old "skilled" bot used — those turned out to decide more
+about a run than the piloting did, which made the bracket a table about the
+plans.
 
 The value is the SPREAD, not any single number — a lone win rate stops saying
 anything the moment it saturates. Read the columns comparatively, and remember

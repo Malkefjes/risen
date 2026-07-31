@@ -1,8 +1,8 @@
 # RISEN
 
-A turn-based roguelite. You are Sonny, a lucid mutant hunted through fifteen
-waves of containment. Pick a strain — or refuse the infection entirely — and
-see how far the run goes.
+A turn-based roguelite. You are Sonny, a lucid mutant hunted through thirty
+waves of containment, across two acts. Pick a strain — or refuse the infection
+entirely — and see how far the run goes.
 
 ## The game
 
@@ -41,7 +41,7 @@ every measurement would quietly become fiction.
 ## Measuring
 
 The game can run itself with no DOM and no timers — `simulateRun(classId, opts)`
-plays a whole run in about two milliseconds. It is not a second implementation:
+plays a whole run in a few milliseconds. It is not a second implementation:
 every rule runs exactly as it does on screen, and `npm test headless` proves it
 by seeding the RNG and requiring a headless run and an on-screen run of the same
 fight to agree exactly.

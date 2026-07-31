@@ -43,274 +43,169 @@ function pumpSteps(limit) {
   return n;
 }
 
-// ---- The three bots ------------------------------------------
-// THE POINT IS THE BRACKET, NOT ANY ONE NUMBER. One bot gives a single reading
-// that stops discriminating the moment it saturates — when the greedy bot won
-// 40/40 on three classes no enemy tuning could move, that number had stopped
-// measuring the game. A floor and a ceiling say much more than either alone:
+// ---- The two bots --------------------------------------------
+// A FLOOR AND A CEILING, and nothing in between. There were three; the middle
+// one ("greedy") was a frozen baseline kept so old commit messages stayed
+// comparable, which meant carrying a third set of numbers forever to protect
+// the readability of numbers nobody re-reads. Gone, along with the per-strain
+// allocation plans that turned out to be deciding more than the piloting did.
 //
-//   dumb high, skilled high   too easy — the run is winnable on autopilot
-//   dumb low,  skilled high   skill-expressive, which is the target
-//   dumb low,  skilled low    too hard
-//   dumb ≈ skilled            NO SKILL EXPRESSION — the class plays itself,
-//                             and this is the case a single bot cannot see
+// What is left is one question asked two ways: how far does this game go when
+// nobody is thinking, and how far when somebody is? The gap is the reading.
 //
-// Two rules keep the instrument honest. GREEDY IS FROZEN: every balance number
-// in this repo's history was measured with it, so changing it would silently
-// invalidate the comparisons in old commit messages. And SKILLED IS NOT
-// OPTIMAL — deliberately. A searching bot would be a second implementation of
-// the game's strategy that breaks on every kit change, and worse, it would
-// encode one theory of how a class should be played and then confirm it.
-// Skilled is a short list of things a human obviously does, readable in one
-// screen. It is a floor on competence, not a model of mastery.
+//   DUMB     mashes. Presses a button at random with no idea what any of them
+//            do, and throws its stat points wherever.
+//   SMART    presses everything the moment it is available, spreads its points
+//            evenly, and does exactly ONE clever thing: it holds whatever
+//            answers a telegraph, and spends it on the telegraph.
+//
+// That one clever thing is the whole experiment. If holding an answer for the
+// windup is worth a lot, this pair says so; if it is worth nothing, this pair
+// says that too, and neither of them can say anything about whether the answer
+// is GOOD, which is not a machine's call.
 //
 // A bot's choices come off Math.random (the rules stream), never
 // cosmeticRandom: what the player does decides the outcome, so it belongs to
 // the same stream every other rule reads.
 
-// The four stats, declared here because two of the three allocators read it.
+// The four stats. A level grants BALANCE.player.pointsPerLevel (3) of them, and
+// both allocators are called once PER POINT, not once per level.
 const ROTATE_STATS = ['str', 'instinct', 'speed', 'vit'];
 
-// DUMB — mashes. Any ready skill at random, no reading of the fight at all,
-// and points thrown wherever. The floor: whatever this wins, the game gives
-// away for free.
+// ---- DUMB ----------------------------------------------------------------
+// PRESSES A BUTTON AT RANDOM, cooldowns included. It does not look at the
+// cards, so a dark button is as likely a target as a lit one — the press just
+// does nothing when it lands on one, exactly as it does for a person jabbing
+// at a disabled button, and the turn is still there to spend. Re-rolling the
+// dead press is what the real UI does to you, so that is what this does.
+//
+// (Rejection-sampling a uniform pick until it lands on something usable is
+// uniform over the usable buttons — written the long way anyway, because the
+// short way reads as "picks a ready skill", which is a bot that knows what a
+// cooldown is.)
 function dumbPolicy(p) {
-  const ready = p.skills.filter(s => !s.basic && s.cd <= 0);
-  const pool = ready.concat(p.skills.filter(s => s.basic));
-  return pool[Math.floor(Math.random() * pool.length)] || p.skills[0];
+  const pressable = s => s.basic || s.cd <= 0;
+  for (let jab = 0; jab < 40; jab++) {
+    const btn = p.skills[Math.floor(Math.random() * p.skills.length)];
+    if (btn && pressable(btn)) return btn;      // the press landed on a live button
+  }
+  return p.skills.find(s => s.basic) || p.skills[0];
 }
+// Points thrown wherever, one at a time.
 function dumbAllocate() { return ROTATE_STATS[Math.floor(Math.random() * ROTATE_STATS.length)]; }
 
-// GREEDY — the original, and FROZEN (see above): spend the strongest thing
-// available, else swing. Deliberately unclever, which is what lets it expose
-// weaknesses a competent bot would paper over.
-function greedyPolicy(p) {
-  const usable = p.skills.filter(s => !s.basic && s.cd <= 0);
-  return usable[0] || p.skills[0];
+// ---- SMART ---------------------------------------------------------------
+// Spends every point evenly and presses everything on cooldown, with ONE
+// exception that it plays properly.
+//
+// Round-robin PER POINT, so a level's three points land on three different
+// stats and the sheet stays even the whole way up. The old per-strain plan
+// tables allocated per LEVEL against a 4-stat order, which meant a class whose
+// plan named Vitality last had none of it until its fifth level — psy played
+// all of act 1 on a 100 HP bar and the bracket read that as psy being weak.
+// A plan that decides the run more than the piloting does is not a bot, it is
+// a build, and it belongs to whoever is playing.
+function rotateAllocate(p) {
+  p._alloc = ((p._alloc || 0) + 1) % ROTATE_STATS.length;
+  return ROTATE_STATS[p._alloc];
 }
-// Round-robin allocation, for the same reason.
-function rotateAllocate(p) { return ROTATE_STATS[p.level % ROTATE_STATS.length]; }
 
-// SKILLED — four habits, each one a thing any player picks up in a session.
-// Nothing here knows a class by name; it reads the same fields the skill cards
-// show, so a new kit is piloted without touching this.
+// WHAT ANSWERS A TELEGRAPH. Read off the card, never by class name — four
+// shapes, and the fourth was missed on the first pass with a measurable cost:
 //
-// Is this spender worth firing yet? Dumping Kill on one DREAD stack or Last
-// Stand on one Resolve is how a good skill reads as a bad one. It used to wait
-// for 60% of the bank's CAP — which stopped meaning anything when the caps came
-// off, since 60% of infinity is not a number. So the threshold moved onto the
-// skill itself as `spendAt`: the stack count at which its owner would actually
-// press it. That is a judgement about the skill, so it belongs on the skill,
-// and it reads on the card's own terms instead of as a fraction of a ceiling
-// the player can no longer see.
+//   a stun          deletes the charge outright
+//   a provoke       drags it out early, ordinary or spoiled
+//   holdFor:'windup'  the card says so itself (base's brace)
+//   a buff that SOFTENS INCOMING DAMAGE — bio's Chitin. Not declared as an
+//     answer anywhere and easy to miss because it is also bio's poison
+//     doubler, so the first version of this bot held nothing for bio and
+//     answered 0% of 42 telegraphs while every other class answered 83-97%.
+//     Found by measuring the answer rate rather than by reading the code,
+//     which is the only way that gap shows up at all.
 //
-// Sym is deliberately absent: THORNS is not a pile with a payoff to wait for.
-// Shed takes only what the heal needed, so there is no "too early" — it is
-// gated by rule 4 (never heal a full bar) like any other heal.
-function spenderUnderfed(p, skill, e) {
-  if (e && e.maxHp > 0 && e.hp / e.maxHp < 0.25) return false;   // execute: dump it
-  const need = skill.spendAt || 0;
-  if (!need) return false;
-  if (skill.consumesDread)   return statusStacks(e, 'dread') < need;
-  if (skill.consumesResolve) return statusStacks(p, 'resolve') < need;
-  return false;
+// Detected by asking the STATUS what it does (incomingMult below 1 means it
+// takes the edge off a hit), so a defensive buff added later is held without
+// touching this. These are the ONLY skills smart withholds, and it withholds
+// them completely — never filler, at any health, against any enemy.
+function softensIncoming(s) {
+  const def = s.buff && STATUSES[s.buff];
+  if (!def || typeof def.incomingMult !== 'function') return false;
+  // Probed with the status as the skill would apply it; anything under 1 is
+  // mitigation. A status whose power comes from elsewhere reads as 1 and is
+  // correctly not treated as an answer.
+  return def.incomingMult(null, Object.assign({}, def.defaults, { power: s.power })) < 1;
 }
-// CAN THIS STUN ACTUALLY BREAK THE MIND? A gated stun that is fired under its
-// threshold does not stun, does not interrupt, does not even consume the
-// stagger resist — the gate returns before any of that. The bot used to answer
-// a telegraph with Traumatize on cooldown regardless of the count, so psy's one
-// answer to the biggest hit in the game was spent on a log line reading "mind
-// holds, needs 3 DREAD, it holds 1". `dreadNeed` is declared on the card, like
-// spendAt and holdFor, so this reads the skill's own terms rather than learning
-// psy by name.
-function stunUnarmed(skill, e) {
-  if (!skill || !skill.stun) return false;
-  if (!skill.dreadNeed) return false;
-  return statusStacks(e, 'dread') < skill.dreadNeed;
+function isAnswer(s) {
+  return !!(s.stun || s.type === 'provoke' || s.holdFor === 'windup' || softensIncoming(s));
 }
-function skilledPolicy(p) {
+
+// AND WHETHER IT WOULD ACTUALLY CONNECT. The point of holding an answer is
+// spending it on the blow; an answer that whiffs is worse than one never held,
+// because the hold cost every turn it sat unused AND the blow still lands.
+// Three ways each answer can whiff, all of them checkable before the press:
+//
+//   a gated stun under its threshold  Traumatize below its DREAD count does not
+//                                     stun, does not interrupt, and does not
+//                                     even consume the stagger resist — the
+//                                     gate returns before any of that. It is a
+//                                     plain attack wearing an answer's name.
+//   a brace cast too early            The brace covers the turns it is up for,
+//                                     and the initiative gauges often hand you
+//                                     two turns inside one telegraph. Thrown on
+//                                     the first, it has expired by the swing.
+//   a Provoke you cannot afford       Provoke buys the enemy its swing on the
+//                                     spot. Into an armed resist that swing is
+//                                     the telegraph itself, spoiled — worth
+//                                     taking, but not on a bar that cannot
+//                                     hold it.
+//
+// A stun into an armed resist is NOT a whiff: it spoils the charge, which is
+// half the blow removed. It is the correct press when the clean one is
+// unavailable, and it is the reason this bot never simply stands there.
+function answerConnects(s, p, e) {
+  if (s.stun) {
+    if (s.dreadNeed && statusStacks(e, 'dread') < s.dreadNeed) return false;
+    return true;                       // clean interrupt, or a spoil if resisted
+  }
+  if (s.type === 'provoke') {
+    const incoming = e.stunImmune
+      ? (e.damage || 0) * windupMultFor(e) * (BALANCE.enemy.windupSpoilFrac || 1)  // spoiled, now
+      : (e.damage || 0);                                                          // baited, ordinary
+    return incoming * 1.5 < p.hp;      // margin is for a crit landing on top
+  }
+  // Anything that answers by being UP when the blow lands — the brace, Chitin
+  // — is cast on the turn the enemy actually swings, not the moment the charge
+  // appears. The gauges often hand you two turns inside one telegraph, and a
+  // 2-turn cover thrown on the first of them has expired by the swing.
+  return forecastTurns(1)[0] === 'foe';
+}
+
+function smartPolicy(p) {
   const e = state.enemy;
   const ready = p.skills.filter(s => !s.basic && s.cd <= 0);
   const basic = p.skills.find(s => s.basic) || p.skills[0];
-  const pick = f => ready.find(f);
 
-  // 1. ANSWER THE TELEGRAPH — BUT ONLY IF IT ACTUALLY THREATENS YOU. A windup
-  //    is the biggest hit in the game, and interrupting it deletes the hit
-  //    outright, so a stun spent here beats a stun spent anywhere else. What a
-  //    player does NOT do is burn a turn guarding a blow they can shrug: they
-  //    read the telegraph against their own bar and keep attacking when it is
-  //    survivable. Defending unconditionally is how the first version of this
-  //    bot managed to play worse than one that mashed.
+  // 1. ANSWER THE TELEGRAPH. The one habit this bot has. A charge is up, an
+  //    answer is off cooldown, and it would connect — press it, whatever else
+  //    is available, because nothing else on the bar is worth more than the
+  //    biggest hit in the game not landing.
   if (e && e.windup) {
-    // windupMultFor, not the boss constant: elites telegraph for less, and
-    // reading the wrong multiple made the bot panic at a blow it could walk
-    // through.
-    const incoming = (e.damage || 0) * windupMultFor(e);
-    const spoiled = incoming * (BALANCE.enemy.windupSpoilFrac || 1);
-    const scary = incoming > p.hp * 0.35;
-    // BAITING IS THE OTHER WAY TO ANSWER A TELEGRAPH — sym's way. Provoke does
-    // not delete the heavy swing the way a stun does; it goads the charge out
-    // early so it lands as an ordinary hit.
-    //
-    // THE TEST IS THE ORDINARY HIT AGAINST YOUR BAR, NOT AGAINST HALF OF IT.
-    // Written as `damage < hp * 0.5` first, and it read as cowardice in the
-    // transcript: at 28 HP the bot refused to bait an 18-damage swing, healed
-    // to 52 instead, and ate the x5 for 90 on the next turn. Whenever you
-    // survive the small hit, taking it is strictly better than letting the
-    // heavy one land — the margin here is for a crit landing on top, and
-    // nothing else.
-    const canBait = !e.stunImmune && (e.damage || 0) * 1.5 < p.hp;
-    // A BRACE ONLY COVERS THE TURNS IT IS UP FOR, so it is cast when the blow
-    // is actually next rather than the moment the charge appears — the gauges
-    // often give the player two turns inside one telegraph, and a brace thrown
-    // on the first of them has expired by the time the swing lands.
-    //
-    // Not gated on `scary`, unlike the fallback below, and deliberately: a
-    // skill flagged holdFor is barred from filler use (rule 6), so there is no
-    // opportunity cost left to weigh. Declining to spend it here spends it on
-    // nothing.
-    const swingsNext = forecastTurns(1)[0] === 'foe';
-    // SPOILING IS THE THIRD ANSWER, and it only became worth writing down when
-    // a shrugged answer stopped being free for the boss: into an armed stagger
-    // resist, a stun or a Provoke no longer does nothing — it knocks a share
-    // out of the charge. So the bot spends it rather than standing there, but
-    // only when the blow is frightening (otherwise the clean answer next
-    // telegraph is worth more), and for Provoke only when the spoiled version
-    // is survivable, since spoiling drags it out immediately and unevadably.
-    const canSpoilByBait = e.stunImmune && spoiled * 1.5 < p.hp;
-    const canStun = s => s.stun && !stunUnarmed(s, e);
-    const answer = (!e.stunImmune && pick(canStun))
-                || (canBait && pick(s => s.type === 'provoke'))
-                || (swingsNext && pick(s => s.holdFor === 'windup'))
-                || (scary && e.stunImmune && pick(canStun))
-                || (scary && canSpoilByBait && pick(s => s.type === 'provoke'))
-                || (scary && (pick(s => s.type === 'buff') || pick(s => s.type === 'heal')));
+    const answer = ready.filter(isAnswer).find(s => answerConnects(s, p, e));
     if (answer) return answer;
   }
 
-  // 2. DON'T DIE. Below a third, healing outranks damage — but not above it:
-  //    a heal thrown at a nearly full bar is a turn the enemy got for free.
-  //
-  //    A KIT'S FAUCET IS NOT ALWAYS A HEAL SKILL. Psy has no `type: 'heal'` at
-  //    all — its sustain is DEVOUR, riding on the finisher — so this rule was
-  //    a no-op for the one class with the thinnest bar in the game, and rule 5
-  //    then held that finisher back for a bigger payoff while the bar it was
-  //    supposed to refill ran out. Measured: skilled psy died at the first boss
-  //    (median wave 5) while the bot that mashes reached 13, which is the
-  //    bracket doing its job — a heuristic losing to no heuristic is a bug in
-  //    the heuristic. Read off the card like everything else here: a skill that
-  //    declares it feeds you IS a heal when you are starving, whatever its type
-  //    says, and the payoff threshold does not outrank being alive.
-  if (p.hp / Math.max(1, p.maxHp) < 0.33) {
-    const heal = pick(s => s.type === 'heal')
-              || pick(s => s.feedPerDread && statusStacks(e, 'dread') > 0);
-    if (heal) return heal;
-  }
-
-  // 3. HOLD THE STUN FOR THE TELEGRAPH, if this enemy telegraphs at all. This
-  //    is the single habit that most separates a player from the greedy bot,
-  //    which fires the stun on cooldown and has it unavailable when the heavy
-  //    lands. Against trash that never winds up there is nothing to save for.
-  //    A stun into an armed stagger resist still isn't worth spending as
-  //    FILLER — it would spoil a charge that isn't coming — so it stays held
-  //    here and rule 1 decides whether spoiling a live telegraph is worth it.
-  const holdStun = !!(e && e.windupEvery > 0);
-  const usable = ready.filter(s => {
-    // 4. NEVER HEAL A FULL BAR. Heals are reached only by the two rules above,
-    //    which is the difference between a heal and a filler: left in the
-    //    general list, whatever sat earliest in the kit got cast on cooldown
-    //    forever — Unmutated bandaged itself at full health every fourth turn
-    //    and never won a run.
-    if (s.type === 'heal') return false;
-    if (s.stun && (holdStun || (e && e.stunImmune))) return false;
-    // 5. SPEND A PILE AT ITS PAYOFF, not on arrival.
-    if (spenderUnderfed(p, s, e)) return false;
-    // 6. DON'T INVITE A HIT YOU CANNOT AFFORD. Provoke buys the enemy a free
-    //    swing, which is a trade only a healthy fighter should take. Rule 1 is
-    //    the deliberate exception: there the swing is coming regardless, and
-    //    baiting it out is what makes it smaller.
-    if (s.type === 'provoke' && p.hp / Math.max(1, p.maxHp) < 0.5) return false;
-    // 7. HOLD YOUR ANSWER FOR THE BLOW IT ANSWERS — rule 3's habit, applied to
-    //    anything that declares itself an answer rather than only to stuns.
-    //    This was the single largest measured gap in the bot: base's brace was
-    //    fired as filler the moment it came off cooldown, so it met 3% of
-    //    heavies, and 60% of base's deaths were a heavy landing. Holding it
-    //    took the first-boss clear from 20% to 100% with no balance number
-    //    touched. `holdFor` is data on the skill, like spendAt, so this reads
-    //    the card's own terms and never learns a class by name.
-    if (s.holdFor === 'windup' && holdStun) return false;
-    return true;
-  });
-  return usable[0] || basic;
-}
-// A declared plan per strain rather than a spread: the stats each class
-// actually converts. Stated out loud so it can be argued with, which is the
-// point of writing it down instead of hiding it in a heuristic.
-//
-// EVERY PLAN BUYS ALL FOUR STATS, leaning rather than specialising, and both
-// halves of that were learned the hard way by this bracket:
-//   - the first table skipped INSTINCT, written from pre-rework habit when it
-//     meant 1.1% crit a point. Instinct is quadratic now, so skipping it cost
-//     bio half its win rate.
-//   - the second skipped SPEED, and that was worse: turn rate is a mitigation
-//     stat wearing an offensive costume (see the balance header), so a plan
-//     with no Speed hands the enemy every turn it wants. Unmutated went to 0%.
-// Two rounds of the "skilled" bot losing to the one that mashes, which is the
-// instrument doing its job — and a standing hint that a balanced spread is
-// simply strong in this game.
-//
-// AND THE THIRD ROUND, MEASURED BUT NOT ACTED ON — read this before trusting
-// the bracket's psy column. "Buys all four stats" is true of the TABLE and not
-// of a short run: a level grants about six points and skilledAllocate returns
-// one stat for the whole level, so a plan is a hard sequence, not a lean. Psy
-// names Vitality LAST, so it plays the entire first act on a 100 HP bar and the
-// bracket reports median wave 5 — while greedy, on a plain round-robin, reaches
-// 14 and wins a third of its runs. Same policy, same kit; the difference is
-// four allocation slots.
-//
-// Swapping only the allocator (skilled policy, greedy's round-robin) puts psy
-// at median wave 12 and bio at 12, which is what the classes actually do. So
-// the psy column reads TOO HARD about the plan table, not about psy.
-//
-// Left alone deliberately: reordering a plan restates how a class is meant to
-// be played (psy is teeth-first and squishy BY CHOICE — see the class note in
-// data.js), and it would move every skilled number this repo has recorded.
-// That is the owner's call, not a quiet retune, and the finding is written here
-// so the column is read with it rather than instead of it.
-const SKILLED_PLANS = {
-  bio:  ['vit', 'str', 'instinct', 'speed'],      // outlast, and poison rides Attack Damage
-  psy:  ['instinct', 'speed', 'str', 'vit'],      // fear comes from crits and dodges
-  // Sym leans Vit first for two reasons at once: max HP is the innate share of
-  // THORNS, and surviving longer is literally how the ramp gets fed. Speed is
-  // last on purpose and it is the one plan where the last slot is a genuine
-  // COST — more of your turns means proportionally fewer enemy swings, and
-  // swings are food. It is still bought (see the note above), just last.
-  sym:  ['vit', 'str', 'instinct', 'speed'],
-  base: ['vit', 'str', 'instinct', 'speed']       // endure, then Last Stand
-};
-// THE FIRST ENTRY IN EVERY PLAN WAS DEAD, and had been since the plans were
-// written. Points arrive with level 2 — level 1 grants none — so indexing by
-// `level - 1` handed the first allocation to plan[1] and plan[0] was never
-// reached at all. Every plan here has therefore been running one slot rotated:
-// the three that read 'vit' first were spending their opening points on
-// Strength, which is why a measured sym sat at vit 5 / 100 max HP through the
-// whole of act 1 and read as a class that could not afford to be hit.
-//
-// Indexing off level - 2 puts the FIRST allocation on the FIRST named stat, so
-// a plan finally means what it says. This moves skilled's historical numbers
-// (greedy is the frozen one, deliberately — see tools/README.md), and it moves
-// them for all four classes at once.
-function skilledAllocate(p) {
-  const plan = SKILLED_PLANS[p.class] || ROTATE_STATS;
-  return plan[Math.max(0, p.level - 2) % plan.length];
+  // 2. EVERYTHING ELSE, ON COOLDOWN — except an answer, which is never spent
+  //    on anything but rule 1. Held through a full bar, held at one HP, held
+  //    against trash that has no telegraph at all. That is the experiment:
+  //    what the discipline alone is worth.
+  return ready.find(s => !isAnswer(s)) || basic;
 }
 
 // The registry, shaped so a bot IS a simulateRun opts object: pass it straight
-// through as simulateRun('psy', BOTS.skilled).
+// through as simulateRun('psy', BOTS.smart).
 const BOTS = {
-  dumb:    { name: 'dumb',    policy: dumbPolicy,    allocate: dumbAllocate },
-  greedy:  { name: 'greedy',  policy: greedyPolicy,  allocate: rotateAllocate },
-  skilled: { name: 'skilled', policy: skilledPolicy, allocate: skilledAllocate }
+  dumb:  { name: 'dumb',  policy: dumbPolicy,  allocate: dumbAllocate },
+  smart: { name: 'smart', policy: smartPolicy, allocate: rotateAllocate }
 };
 
 // One full run, start to death-or-victory.
@@ -325,7 +220,11 @@ const BOTS = {
 //                          than all of it (an act, the first boss, ...)
 function simulateRun(classId, opts) {
   opts = opts || {};
-  const policy = opts.policy || greedyPolicy;
+  // Defaults to SMART, which is the honest default now that there are only
+  // two: a bare simulateRun('psy') should show what the class does when it is
+  // played, not what it does when the buttons are mashed. Mashing is a
+  // deliberate choice you pass in.
+  const policy = opts.policy || smartPolicy;
   const allocate = opts.allocate || rotateAllocate;
   const maxSteps = opts.maxSteps || 100000;
 

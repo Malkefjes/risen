@@ -154,7 +154,7 @@
 // KEEP THIS SEPARATE FROM BALANCE.saveKey. That one answers "are saved runs
 // still valid" and is bumped only when a change makes an old sheet wrong.
 // Deriving it from this would wipe every save on a typo fix.
-const BUILD = '2026-07-31e';
+const BUILD = '2026-07-31f';
 
 const BALANCE = {
   player: {
@@ -825,7 +825,7 @@ const CLASSES = {
       // back up as you do it — while leaving an engine to keep running. The
       // finisher is now "how deep do I cut into my own advantage", asked every
       // five turns, instead of "do I delete my class".
-      { id:'kill', name:'Kill', desc:'Attack for {power!} damage, +{perDreadPower!} per DREAD torn away, and DEVOUR it: heal {feedPerDread%} of max HP for each. Takes HALF the enemy’s DREAD.', type:'attack', power:1.20, perDreadPower:0.60, consumesDread:true, consumeFrac:0.5, feedPerDread:BALANCE.player.dreadFeedFrac, spendAt:4, target:'enemy', cdTurns:5 }
+      { id:'kill', name:'Kill', desc:'Attack for {power!} damage, +{perDreadPower!} per DREAD torn away, and DEVOUR it: heal {feedPerDread%} of max HP for each. Takes HALF the enemy’s DREAD.', type:'attack', power:1.20, perDreadPower:0.60, consumesDread:true, consumeFrac:0.5, feedPerDread:BALANCE.player.dreadFeedFrac, target:'enemy', cdTurns:5 }
     ]
   },
   // THE ORGANISM. Sym's mechanic is THORNS — one number, worn on the player,
@@ -930,7 +930,7 @@ const CLASSES = {
       // misjudgement, which is the difference between strict and broken.
       // `holdFor` tells the bot the same thing the card tells the player.
       { id:'counter', name:'Counterpunch', desc:'Brace for {duration#turn}: −{power%} damage taken, stacking with RESOLVE. A hit taken while braced strikes back for {counterPower!} damage and opens a wound: +{bleedTick} BLEED a turn', type:'buff', buff:'brace', duration:2, power:0.60, counterPower:1.20, counterBleed:1, bleedTick:p => bleedDepth(p), holdFor:'windup', target:'self', cdTurns:4 },
-      { id:'laststand', name:'Last Stand', desc:'Attack the enemy for {power!} damage, +{perResolvePower!} per RESOLVE consumed. Spends all RESOLVE', type:'attack', power:1.20, perResolvePower:0.40, consumesResolve:true, spendAt:4, target:'enemy', cdTurns:5 }
+      { id:'laststand', name:'Last Stand', desc:'Attack the enemy for {power!} damage, +{perResolvePower!} per RESOLVE consumed. Spends all RESOLVE', type:'attack', power:1.20, perResolvePower:0.40, consumesResolve:true, target:'enemy', cdTurns:5 }
     ]
   }
 };

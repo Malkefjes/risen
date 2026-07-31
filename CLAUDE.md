@@ -70,7 +70,12 @@ A turn-based browser roguelite. Personal project, built for enjoyment.
   pre-installed browser; in this remote environment use
   `RISEN_CHROMIUM=/opt/pw-browsers/chromium`.
 - `tools/` — read-only balance instruments built on `simulateRun`
-  (bank-usage, balance-sweep, transcript). They print numbers, not verdicts.
+  (bot-bracket, bank-usage, balance-sweep, transcript). They print numbers,
+  never verdicts. TWO bots live in `js/sim.js`: **dumb** mashes random buttons
+  and allocates at random; **smart** presses everything on cooldown, spreads
+  points evenly, and holds its telegraph answer for the telegraph. The spread
+  between them is close to a single question — what is reading the windup
+  worth.
 
 ## Invariants (learned the hard way — do not rediscover)
 
@@ -90,6 +95,10 @@ A turn-based browser roguelite. Personal project, built for enjoyment.
 - **The player sheet is the anchor** (5/5/5/5, 25 dmg, 100 HP, 1.00 turn
   rate); enemies are fitted to it and computed by separate functions. See
   the header comment in `js/data.js` before touching balance.
+- **The run is 30 waves across two acts**, a boss every 5th, and winning means
+  clearing wave 30. A level grants exactly 3 stat points (`pointsPerLevel`),
+  and a run reaches roughly level 6-7 — so the whole budget is ~18-20 points
+  on top of the starting 5/5/5/5.
 - **No changelog files.** Git history is the changelog; commit messages
   carry the detail.
 
@@ -102,12 +111,10 @@ A turn-based browser roguelite. Personal project, built for enjoyment.
   HALF the fear rather than all of it: spending the pile cost the slow, the
   guard opening and the drip at once, so holding was correct at every count and
   the finisher was a card you never pressed.
-  **Do not read the bracket's psy column as a statement about psy.** The
-  skilled bot's plan table names Vitality last and a level grants ~6 points at
-  once, so psy plays all of act 1 on a 100 HP bar and reports median wave 5.
-  Same policy on a plain round-robin allocator reaches wave 12. The measurement
-  and why it was not quietly fixed are written above SKILLED_PLANS in
-  `js/sim.js`.
+  Psy's old bracket column was an artefact of the bot, not the class — the
+  retired per-strain plan tables named Vitality last, so psy played all of act 1
+  on a 100 HP bar. Both bots spread points evenly now and the column is about
+  psy again.
 - Cooldown reduction is a live seam with no source.
 - Sym was reworked around THORNS as a growing, run-permanent number (every hit
   taken feeds it, Shed spends it to heal, Provoke buys a swing to eat and baits
@@ -122,18 +129,19 @@ A turn-based browser roguelite. Personal project, built for enjoyment.
   number touched. Bleed was NOT the fix — it is a real damage source (31-40% of
   base's boss damage) but sweeping its depth dial did almost nothing, because
   killing faster cannot help when one blow is what kills you.
-  Now: brace lasts 2 turns (strict, not broken) and the skilled bot holds it for
-  the telegraph. Skilled clears the first boss 100% of the time; GREEDY, which
-  is frozen and deliberately unclever, still spends the brace as filler and
-  clears 48% (200 runs). That gap IS the class working — for the one strain
-  whose identity is reading a telegraph, mashing should fail — so nothing
-  asserts a floor under it. `tools/bot-bracket.mjs` prints both if you want to
-  see whether it still holds.
+  Now: brace lasts 2 turns (strict, not broken) and the smart bot holds it for
+  the telegraph — it covers ~93% of the heavies it faces, against ~16% when
+  mashed. That gap IS the class working: for the one strain whose identity is
+  reading a telegraph, mashing should fail. Nothing asserts a floor under it;
+  `tools/bot-bracket.mjs` prints both columns if you want to see it still holds.
 - **A skill can declare how it wants to be played**, and the bot reads it off
-  the card rather than learning classes by name: `spendAt` (the count at which a
-  spender is worth pressing) and `holdFor: 'windup'` (do not burn this as
-  filler; it answers the telegraph). Reach for a declared field before adding a
-  class check to `js/sim.js`.
+  the card rather than learning classes by name. What the smart bot looks for,
+  to decide a skill answers a telegraph: `stun` (plus `dreadNeed`, so it never
+  fires a gated stun under its threshold), `type: 'provoke'`, an explicit
+  `holdFor: 'windup'` (base's brace), or a `buff` whose status has an
+  `incomingMult` under 1 (bio's Chitin). Add a declared field before adding a
+  class check to `js/sim.js`. `spendAt` used to live here and was deleted with
+  the old bots — nothing read it any more.
 - **No banks, and no stack ceilings.** Every strain runs on ONE UNCAPPED NUMBER
   worn as a status badge: bio POISON and psy DREAD on the enemy, sym THORNS and
   base RESOLVE on the player. Only THORNS is run-permanent; the other three
