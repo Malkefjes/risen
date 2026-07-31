@@ -132,16 +132,36 @@ function skillStatusOpts(skill) {
 // Start of a unit's turn: every onTurnStart fires, then everything that runs on
 // a clock counts down and expires. Returns true if a tick was lethal, so the
 // caller can stop rather than resolve a turn for a corpse.
-function tickStatuses(unit) {
+//
+// A MARK TICKS ON THE TURN OF WHOEVER PUT IT THERE. Statuses come in two
+// clocks and this is the split: what you are CARRYING (regen, chitin, brace,
+// resolve) runs on your own turn, and what has been DONE TO YOU (poison,
+// bleed — anything flagged `inflicted`) runs on the turn of whoever did it.
+// tickTurnStart calls this twice per turn, once per clock, and `which` says
+// which pass this is.
+//
+// The old single clock metered every ailment by how often its VICTIM acted,
+// which quietly made Speed a negative stat for the two classes whose damage is
+// an ailment: more of your turns meant fewer of theirs, and fewer of theirs
+// meant less rot and shallower bleeding. Buying tempo bought less damage.
+// Durations move with the ticks for the same reason — four turns of BLEED has
+// to mean four of the cutter's turns, or the wound would close on a clock the
+// cutter cannot see.
+function tickStatuses(unit, which) {
   if (!unit || !unit.statuses || !unit.statuses.length) return false;
+  const mine = which === 'inflicted'
+    ? st => !!(STATUSES[st.type] && STATUSES[st.type].inflicted)
+    : st => !(STATUSES[st.type] && STATUSES[st.type].inflicted);
   // Snapshot: a hook may add or remove statuses mid-loop.
   for (const st of unit.statuses.slice()) {
+    if (!mine(st)) continue;
     const def = STATUSES[st.type];
     if (def && def.onTurnStart && def.onTurnStart(unit, st)) return true;
   }
   const expired = [];
   unit.statuses = unit.statuses.filter(st => {
     const def = STATUSES[st.type];
+    if (!mine(st)) return true;
     if (def && (def.permanent || def.manual)) return true;
     st.duration--;
     if (st.duration > 0) return true;
@@ -301,7 +321,18 @@ function descField(def, key) {
 function fmtDesc(def) {
   if (!def || !def.desc) return '';
   return highlightKeywords(def.desc.replace(/\{([\w.]+)(%|!|#[^}]+)?\}/g, (token, key, mode) => {
-    const v = descField(def, key);
+    let v = descField(def, key);
+    // A FIELD MAY BE A FUNCTION, read off the live sheet. Constants cover most
+    // of a card, but some numbers are computed — a cut's depth rides held
+    // RESOLVE and moves every turn — and stating the relationship instead of
+    // the number ("as deep as the RESOLVE behind it") tells the player nothing
+    // they can act on. Menus can render a card with no run in progress, so a
+    // computed field with no player falls back to leaving the token alone
+    // rather than printing a number from an imaginary sheet.
+    if (typeof v === 'function') {
+      if (!state.player) return token;
+      v = v(state.player);
+    }
     if (v == null) return token;
     if (mode === '%') return Math.round(v * 100) + '%';
     // '!' reads the field as a multiplier on Attack Damage and prints the

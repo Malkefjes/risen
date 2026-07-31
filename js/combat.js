@@ -162,6 +162,19 @@ function tickTurnStart(unit) {
     return true;
   }
 
+  // THE SECOND CLOCK: what this unit has DONE to the other one. Marks tick on
+  // the turn of whoever planted them (see tickStatuses), so bio's rot and
+  // base's wound run on the player's turns — the same clock psy's siphon has
+  // always used — and an elite's venom runs on the enemy's. Ailment damage is
+  // metered by the attacker's tempo now, which is what makes Speed mean the
+  // same thing for a DoT class as it does for everyone else.
+  const foe = unit.isPlayer ? state.enemy : state.player;
+  if (foe && foe.hp > 0 && !foe._defeated && tickStatuses(foe, 'inflicted')) {
+    if (!foe.isPlayer) onEnemyDefeated();
+    else { stopCombatLoop(); endRun(); }
+    return true;
+  }
+
   if (unit.isPlayer) {
     unit.skills.forEach(s => { if (!s.basic && s.cd > 0) s.cd--; });
     state.fightTurns++;
@@ -224,7 +237,8 @@ function enemyAct() {
     e.actionCount = (e.actionCount || 0) + 1;
     if (e.actionCount % (e.windupEvery || BALANCE.enemy.windupEvery) === 0) {
       e.windup = true;
-      logEvent('WINDUP', e, 'next strike ×' + BALANCE.enemy.windupMult,
+      e.windupSpoiled = false;               // a fresh charge is a whole one
+      logEvent('WINDUP', e, 'next strike ×' + windupMultFor(e),
                ['action ' + e.actionCount + ' of every ' + e.windupEvery], 'damage');
       const fig = getFigureForUnit(e);
       if (fig) fig.style.filter = 'brightness(1.35)';
@@ -251,21 +265,37 @@ function doSpawn() {
   scheduleTurn(nextTurn, turnDelay(260));
 }
 
-// opts carries what a PROVOKED swing changes: it cannot be evaded, and it never
-// carries the windup multiplier (Provoke resolves the charge itself, either
-// baiting it out or letting it hold — see provokeSwing).
+// WHAT A TELEGRAPH IS WORTH, and it is not one number any more: a boss
+// telegraph is the fight, an elite telegraph is a skill check you meet a dozen
+// times a run. See the eliteWindupMult note in the enemy table.
+function windupMultFor(e) {
+  const E = BALANCE.enemy;
+  if (e && e.elite && !e.isBoss && E.eliteWindupMult) return E.eliteWindupMult;
+  return E.windupMult;
+}
+
+// opts carries what a PROVOKED swing changes: it cannot be evaded, and (when
+// the charge was successfully baited) it does not carry the windup multiplier
+// either — see provokeSwing.
 function enemySwing(e, opts) {
   const p = state.player;
   if (!p || p.hp <= 0) return;
   state.enemyActions = (state.enemyActions || 0) + 1;   // real swings only; windup/stun turns never reach here
   let mult = 1;
+  let spoiled = false;
   if (e.windup && !(opts && opts.ordinary)) {
-    mult = BALANCE.enemy.windupMult;
+    // A SPOILED CHARGE STILL COMES, SMALLER. Answering a telegraph into an
+    // armed stagger resist used to buy nothing at all; now it knocks a share
+    // out of the blow. The resist keeps its one job — the heavy is still on
+    // its way and no amount of CC stops it — without the answer being deleted.
+    spoiled = !!e.windupSpoiled;
+    mult = windupMultFor(e) * (spoiled ? (BALANCE.enemy.windupSpoilFrac || 1) : 1);
     e.windup = false;
+    e.windupSpoiled = false;
     const fig = getFigureForUnit(e);
     if (fig) fig.style.filter = '';
   }
-  const dealt = applyEnemyDamage(e, p, mult, opts);
+  const dealt = applyEnemyDamage(e, p, mult, Object.assign({}, opts, { spoiled }));
   if (dealt > 0) playAttackAnim(e, p, true);
 
   if (e.elite && e.elite.lifesteal && dealt > 0) {
@@ -367,24 +397,37 @@ function shedForHeal(p, skill, already, notes) {
 // heavy blow is still on its way.
 function provokeSwing(p, e, skill) {
   if (!e || e.hp <= 0 || e._defeated) return;
+  // ordinary: a BAITED charge comes out as a plain swing. A SPOILED one does
+  // not — see below.
+  let ordinary = true;
   if (e.windup && !e.stunImmune) {
     e.windup = false;
+    e.windupSpoiled = false;
     const fig = getFigureForUnit(e);
     if (fig) fig.style.filter = '';
     e.stunImmune = true;
     floatText(e, 'BAITED', 'note');
     logEvent('BAITED', e, 'windup spent early', ['stagger resist now armed'], 'heal');
   } else if (e.windup) {
+    // THE SHRUG USED TO PUNISH TWICE. The charge held AND the swing you bought
+    // came anyway, so a resisted Provoke fed the enemy a free ordinary hit and
+    // left the heavy still on its way — you paid a turn to be hit an extra
+    // time before the thing that kills you. Now the resist SPOILS the charge
+    // and drags it out right here: you eat the heavy at the moment you chose,
+    // at a share of its size, with your spines already up and the blow
+    // feeding growth as a big hit. The class asked to be hit; being hit is the
+    // answer, not a bill on top of it.
     e.stunImmune = false;
-    floatText(e, 'RESISTED', 'note');
-    logEvent('STAGGER RESISTED', e, 'the charge holds', ['resist consumed'], 'damage');
+    e.windupSpoiled = true;
+    ordinary = false;
+    floatText(e, 'SPOILED', 'note');
+    logEvent('CHARGE SPOILED', e, 'dragged out early, and smaller',
+             ['resist consumed', '×' + BALANCE.enemy.windupSpoilFrac + ' of the telegraph'], 'heal');
   }
   // Grow BEFORE the swing: you raise yourself to meet it, so the thorns that
   // answer this hit are already the bigger ones.
   growThorns(p, skill.growBonus || 0, skill.name);
-  // ordinary: a provoked swing never carries the windup multiplier, whether the
-  // charge was baited out or shrugged off.
-  enemySwing(e, { unevadable: true, ordinary: true });
+  enemySwing(e, { unevadable: true, ordinary });
 }
 
 // Enemy -> player. Enemies use a flat designed damage number, not a stat formula.
@@ -395,7 +438,13 @@ function applyEnemyDamage(e, p, mult, opts) {
   // lands before the roll; anything on the defender that changes what it takes
   // (vulnerable, fortify) lands after the crit, alongside the other mitigation.
   const notes = [];
-  const label = (mult && mult > 1) ? 'HEAVY ×' + mult : 'Attack';
+  // A spoiled heavy says so in the log AND on the floater: the number is
+  // smaller than the telegraph advertised, and the player has to be able to
+  // tell "my answer worked partially" from "the boss rolled low".
+  const heavyN = mult % 1 ? mult.toFixed(1) : mult;
+  const label = (mult && mult > 1)
+    ? ((opts && opts.spoiled ? 'SPOILED ×' : 'HEAVY ×') + heavyN)
+    : 'Attack';
   notes.push(...statusNotes(e, 'outgoingMult', { target: p }));
   let dmg = Math.max(1, Math.floor(e.damage * (mult || 1) * statusMult(e, 'outgoingMult', { target: p })));
   // A provoked swing skips the evade roll entirely rather than rolling and
@@ -577,10 +626,15 @@ function applyPlayerDamage(p, e, skill) {
   // on the ENEMY, so spending it also hands their turn rate back: the fight
   // speeds up the moment you cash out, which is what makes Kill a decision
   // instead of a rotation button.
-  const dreadSpent = skill.consumesDread ? statusStacks(e, 'dread') : 0;
+  // consumeFrac: what share of the pile the skill actually takes, rounded UP so
+  // a single stack is still edible. Kill takes half — see the note on the card
+  // for why taking all of it made the button correct to never press.
+  const dreadHeld = skill.consumesDread ? statusStacks(e, 'dread') : 0;
+  const dreadSpent = Math.ceil(dreadHeld * (skill.consumeFrac || 1));
   if (dreadSpent > 0) {
     dmg += p.atkPower * (skill.perDreadPower || 0) * dreadSpent;
-    notes.push('DREAD ×' + dreadSpent + ' consumed');
+    notes.push('DREAD ×' + dreadSpent + ' torn away'
+      + (dreadSpent < dreadHeld ? ' (×' + (dreadHeld - dreadSpent) + ' left)' : ''));
   }
   // Resolve (base): Last Stand scales with everything you endured.
   const resolveSpent = skill.consumesResolve ? statusStacks(p, 'resolve') : 0;
@@ -667,9 +721,14 @@ function applyPlayerDamage(p, e, skill) {
   // And spent fear is eaten — Kill's half of DEVOUR (the death-devour in
   // onEnemyDefeated is the other; a Kill that kills consumed the stacks here,
   // so the corpse holds none and no meal is counted twice).
+  // Partial by default now, so shedStacks rather than removeStatus: it takes
+  // exactly what was paid for and removes the status only when the last stack
+  // goes. Fear TAKEN is fear eaten — this is the one path where stacks coming
+  // off feed DEVOUR, as against the enemy steadying itself, which feeds
+  // nothing (see shedStacks' other callers).
   if (skill.consumesDread && dreadSpent > 0) {
-    removeStatus(e, 'dread', 'consumed by ' + skill.name);
-    devour(p, dreadSpent, 'consumed by ' + skill.name);
+    shedStacks(e, 'dread', dreadSpent, 'torn away by ' + skill.name);
+    devour(p, dreadSpent, 'torn away by ' + skill.name);
   }
   // Resolve (base): landing a hit steadies you.
   if (skill.buildsResolve) gainResolve(p, skill.buildsResolve, skill.name);
@@ -734,16 +793,23 @@ function applyPlayerDamage(p, e, skill) {
       // differently (heal, brace, tank). One rule everywhere: bosses
       // alternate CC resistance. No second action is lost, so no stun-lock.
       e.windup = false;
+      e.windupSpoiled = false;
       const fig = getFigureForUnit(e);
       if (fig) fig.style.filter = '';
       e.stunImmune = true;
       floatText(e, 'INTERRUPTED', 'note');
       logEvent('INTERRUPT', e, 'windup broken', ['stagger resist now armed'], 'heal');
     } else if (e.windup && e.stunImmune) {
-      // The shrug clears the resist but the strike still comes.
+      // The shrug clears the resist and the strike still comes — but it comes
+      // SPOILED. This branch used to be psy's only defensive button doing
+      // nothing whatsoever on every second telegraph, against a blow the class
+      // has no mitigation to eat. You did not break the charge; you knocked a
+      // share out of it.
       e.stunImmune = false;
-      floatText(e, 'RESISTED', 'note');
-      logEvent('STAGGER RESISTED', e, 'windup holds', ['resist consumed'], 'damage');
+      e.windupSpoiled = true;
+      floatText(e, 'SPOILED', 'note');
+      logEvent('CHARGE SPOILED', e, 'the charge holds, and it is smaller',
+               ['resist consumed', '×' + BALANCE.enemy.windupSpoilFrac + ' of the telegraph'], 'heal');
     } else {
       if (e.stunImmune) {
         // Without this, a 1-turn stun on a ~3-turn cooldown locks an enemy that acts
@@ -1080,6 +1146,18 @@ function renderSkills(forceRebuild) {
   p.skills.forEach(skill => {
     const btn = container.querySelector('.skill-btn[data-skill-id="' + skill.id + '"]');
     if (!btn) return;
+    // THE CARDS WERE WRITTEN ONCE AND NEVER REWRITTEN, so every damage number
+    // on them was frozen at whatever the sheet said when the fight screen was
+    // first built — a run that had doubled its Attack Damage still read "25
+    // damage" on Strike while the sidebar read 40. fmtDesc has always resolved
+    // {power!} against the LIVE sheet; nothing was ever asking it again.
+    // Compared before writing, so the common case (nothing moved) touches no
+    // DOM and a mid-fight rebuild can't fight the cooldown overlay.
+    const descEl = btn.querySelector('.skill-desc');
+    if (descEl) {
+      const html = fmtDesc(skill);
+      if (descEl.innerHTML !== html) descEl.innerHTML = html;
+    }
     const costEl = btn.querySelector('.skill-cost');
     const overlay = btn.querySelector('.cd-overlay');
     const sweep = btn.querySelector('.cd-sweep');

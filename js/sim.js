@@ -115,6 +115,19 @@ function spenderUnderfed(p, skill, e) {
   if (skill.consumesResolve) return statusStacks(p, 'resolve') < need;
   return false;
 }
+// CAN THIS STUN ACTUALLY BREAK THE MIND? A gated stun that is fired under its
+// threshold does not stun, does not interrupt, does not even consume the
+// stagger resist — the gate returns before any of that. The bot used to answer
+// a telegraph with Traumatize on cooldown regardless of the count, so psy's one
+// answer to the biggest hit in the game was spent on a log line reading "mind
+// holds, needs 3 DREAD, it holds 1". `dreadNeed` is declared on the card, like
+// spendAt and holdFor, so this reads the skill's own terms rather than learning
+// psy by name.
+function stunUnarmed(skill, e) {
+  if (!skill || !skill.stun) return false;
+  if (!skill.dreadNeed) return false;
+  return statusStacks(e, 'dread') < skill.dreadNeed;
+}
 function skilledPolicy(p) {
   const e = state.enemy;
   const ready = p.skills.filter(s => !s.basic && s.cd <= 0);
@@ -129,7 +142,11 @@ function skilledPolicy(p) {
   //    survivable. Defending unconditionally is how the first version of this
   //    bot managed to play worse than one that mashed.
   if (e && e.windup) {
-    const incoming = (e.damage || 0) * (BALANCE.enemy.windupMult || 1);
+    // windupMultFor, not the boss constant: elites telegraph for less, and
+    // reading the wrong multiple made the bot panic at a blow it could walk
+    // through.
+    const incoming = (e.damage || 0) * windupMultFor(e);
+    const spoiled = incoming * (BALANCE.enemy.windupSpoilFrac || 1);
     const scary = incoming > p.hp * 0.35;
     // BAITING IS THE OTHER WAY TO ANSWER A TELEGRAPH — sym's way. Provoke does
     // not delete the heavy swing the way a stun does; it goads the charge out
@@ -153,17 +170,40 @@ function skilledPolicy(p) {
     // opportunity cost left to weigh. Declining to spend it here spends it on
     // nothing.
     const swingsNext = forecastTurns(1)[0] === 'foe';
-    const answer = (!e.stunImmune && pick(s => s.stun))
+    // SPOILING IS THE THIRD ANSWER, and it only became worth writing down when
+    // a shrugged answer stopped being free for the boss: into an armed stagger
+    // resist, a stun or a Provoke no longer does nothing — it knocks a share
+    // out of the charge. So the bot spends it rather than standing there, but
+    // only when the blow is frightening (otherwise the clean answer next
+    // telegraph is worth more), and for Provoke only when the spoiled version
+    // is survivable, since spoiling drags it out immediately and unevadably.
+    const canSpoilByBait = e.stunImmune && spoiled * 1.5 < p.hp;
+    const canStun = s => s.stun && !stunUnarmed(s, e);
+    const answer = (!e.stunImmune && pick(canStun))
                 || (canBait && pick(s => s.type === 'provoke'))
                 || (swingsNext && pick(s => s.holdFor === 'windup'))
+                || (scary && e.stunImmune && pick(canStun))
+                || (scary && canSpoilByBait && pick(s => s.type === 'provoke'))
                 || (scary && (pick(s => s.type === 'buff') || pick(s => s.type === 'heal')));
     if (answer) return answer;
   }
 
   // 2. DON'T DIE. Below a third, healing outranks damage — but not above it:
   //    a heal thrown at a nearly full bar is a turn the enemy got for free.
+  //
+  //    A KIT'S FAUCET IS NOT ALWAYS A HEAL SKILL. Psy has no `type: 'heal'` at
+  //    all — its sustain is DEVOUR, riding on the finisher — so this rule was
+  //    a no-op for the one class with the thinnest bar in the game, and rule 5
+  //    then held that finisher back for a bigger payoff while the bar it was
+  //    supposed to refill ran out. Measured: skilled psy died at the first boss
+  //    (median wave 5) while the bot that mashes reached 13, which is the
+  //    bracket doing its job — a heuristic losing to no heuristic is a bug in
+  //    the heuristic. Read off the card like everything else here: a skill that
+  //    declares it feeds you IS a heal when you are starving, whatever its type
+  //    says, and the payoff threshold does not outrank being alive.
   if (p.hp / Math.max(1, p.maxHp) < 0.33) {
-    const heal = pick(s => s.type === 'heal');
+    const heal = pick(s => s.type === 'heal')
+              || pick(s => s.feedPerDread && statusStacks(e, 'dread') > 0);
     if (heal) return heal;
   }
 
@@ -171,7 +211,9 @@ function skilledPolicy(p) {
   //    is the single habit that most separates a player from the greedy bot,
   //    which fires the stun on cooldown and has it unavailable when the heavy
   //    lands. Against trash that never winds up there is nothing to save for.
-  //    A stun into an armed stagger resist is also just thrown away.
+  //    A stun into an armed stagger resist still isn't worth spending as
+  //    FILLER — it would spoil a charge that isn't coming — so it stays held
+  //    here and rule 1 decides whether spoiling a live telegraph is worth it.
   const holdStun = !!(e && e.windupEvery > 0);
   const usable = ready.filter(s => {
     // 4. NEVER HEAL A FULL BAR. Heals are reached only by the two rules above,
@@ -216,6 +258,25 @@ function skilledPolicy(p) {
 // Two rounds of the "skilled" bot losing to the one that mashes, which is the
 // instrument doing its job — and a standing hint that a balanced spread is
 // simply strong in this game.
+//
+// AND THE THIRD ROUND, MEASURED BUT NOT ACTED ON — read this before trusting
+// the bracket's psy column. "Buys all four stats" is true of the TABLE and not
+// of a short run: a level grants about six points and skilledAllocate returns
+// one stat for the whole level, so a plan is a hard sequence, not a lean. Psy
+// names Vitality LAST, so it plays the entire first act on a 100 HP bar and the
+// bracket reports median wave 5 — while greedy, on a plain round-robin, reaches
+// 14 and wins a third of its runs. Same policy, same kit; the difference is
+// four allocation slots.
+//
+// Swapping only the allocator (skilled policy, greedy's round-robin) puts psy
+// at median wave 12 and bio at 12, which is what the classes actually do. So
+// the psy column reads TOO HARD about the plan table, not about psy.
+//
+// Left alone deliberately: reordering a plan restates how a class is meant to
+// be played (psy is teeth-first and squishy BY CHOICE — see the class note in
+// data.js), and it would move every skilled number this repo has recorded.
+// That is the owner's call, not a quiet retune, and the finding is written here
+// so the column is read with it rather than instead of it.
 const SKILLED_PLANS = {
   bio:  ['vit', 'str', 'instinct', 'speed'],      // outlast, and poison rides Attack Damage
   psy:  ['instinct', 'speed', 'str', 'vit'],      // fear comes from crits and dodges

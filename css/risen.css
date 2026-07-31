@@ -858,9 +858,13 @@ body {
 /* Size carries threat. A rank-and-file Enforcer is Sonny's equal and stands eye
    to eye with him; only elites and the Captain loom.
    Every sprite's solid body fills 98.9-100% of its own canvas, so these ratios
-   are literally how tall each character reads on screen. */
-.char-figure.foe       { --sprite-h: var(--fig, 200px); }                 /* eye to eye */
-.char-figure.foe-elite { --sprite-h: calc(var(--fig, 200px) * 1.15); }
+   are literally how tall each character reads on screen.
+   --foe-art is the ACT's own art scale, set per fighter by createFighterPanel
+   (see ACT_SPRITES.trashScale) and defaulting to 1. It MULTIPLIES the tier
+   rather than replacing it, so the ladder within an act survives: an elite
+   Experiment still stands taller than a plain one. */
+.char-figure.foe       { --sprite-h: calc(var(--fig, 200px) * var(--foe-art, 1)); }
+.char-figure.foe-elite { --sprite-h: calc(var(--fig, 200px) * 1.15 * var(--foe-art, 1)); }
 .char-figure.foe-boss  { --sprite-h: calc(var(--fig, 200px) * 1.56); }   /* the MCP Captain looms */
 
 .char-figure.alive .char-svg {

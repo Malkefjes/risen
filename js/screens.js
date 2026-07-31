@@ -249,7 +249,7 @@ function spawnEnemy() {
   log('HP ' + logNum(e.maxHp) + ' · DMG ' + logNum(e.damage)
     + ' · RATE ' + e.attackSpeed.toFixed(2) + '×'
     + (e.evadeChance ? ' · EVADE ' + Math.round(e.evadeChance*100) + '%' : '')
-    + (e.windupEvery ? ' · WINDUP every ' + e.windupEvery + ' (×' + BALANCE.enemy.windupMult + ')' : '')
+    + (e.windupEvery ? ' · WINDUP every ' + e.windupEvery + ' (×' + windupMultFor(e) + ')' : '')
     + (e.xpMult !== 1 ? ' · XP ×' + e.xpMult.toFixed(1) : ''), 'spec');
 
   // Everything that lands on the fight before the first turn is logged under

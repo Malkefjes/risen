@@ -82,10 +82,25 @@ const SYMBIOTE_SPRITES = {
   ready: 'assets/sprites/symbiote-ready.png',
   strike: 'assets/sprites/symbiote-strike.png'
 };
+// trashScale: how big this act's rank-and-file stands relative to the player.
+// A DRAWING HAS A SIZE IT WANTS TO BE READ AT and it is not always eye-to-eye:
+// the Escaped Experiment is drawn hunched and heavy, and at 1.0 it read as a
+// man rather than as the thing that got out. 1.25 puts it clearly above the
+// player and clearly below the boss (1.56), which is the whole ladder — you
+// can tell what you are looking at by how much of the arena it takes up.
+// Omitted means 1.0, so the encampment's grunts stay eye-to-eye.
 const ACT_SPRITES = {
-  1: { trash: EXPERIMENT_SPRITES, boss: SYMBIOTE_SPRITES },
+  1: { trash: EXPERIMENT_SPRITES, boss: SYMBIOTE_SPRITES, trashScale: 1.25 },
   2: { trash: ENEMY_SPRITES, boss: BOSS_SPRITES }
 };
+
+// The art scale for one foe, as a multiplier on whatever size tier it already
+// wears (plain / elite / boss). Purely cosmetic — no rule reads it.
+function foeArtScale(unit) {
+  if (!unit || unit.isPlayer || unit.isBoss) return 1;
+  const roster = ACT_SPRITES[unit.act];
+  return (roster && roster.trashScale) || 1;
+}
 
 const PLAYER_SPRITES = {
   bio: BIO_SPRITES.idle,

@@ -79,9 +79,16 @@ A turn-based browser roguelite. Personal project, built for enjoyment.
 - Psy was reworked around DREAD (a mark on the enemy: crits and dodges plant
   it, stacks slow the enemy and open its guard, and fear feeds psy — a SIPHON
   drip per stack each player turn, a DEVOUR burst when stacks are consumed by
-  Kill or death) — the numbers are early and owner-tuned by play. The bot can
-  finally play psy honestly (no bank to manage), so its psy numbers now
-  measure the class.
+  Kill or death) — the numbers are early and owner-tuned by play. Kill takes
+  HALF the fear rather than all of it: spending the pile cost the slow, the
+  guard opening and the drip at once, so holding was correct at every count and
+  the finisher was a card you never pressed.
+  **Do not read the bracket's psy column as a statement about psy.** The
+  skilled bot's plan table names Vitality last and a level grants ~6 points at
+  once, so psy plays all of act 1 on a 100 HP bar and reports median wave 5.
+  Same policy on a plain round-robin allocator reaches wave 12. The measurement
+  and why it was not quietly fixed are written above SKILLED_PLANS in
+  `js/sim.js`.
 - Cooldown reduction is a live seam with no source.
 - Sym was reworked around THORNS as a growing, run-permanent number (every hit
   taken feeds it, Shed spends it to heal, Provoke buys a swing to eat and baits
@@ -97,11 +104,12 @@ A turn-based browser roguelite. Personal project, built for enjoyment.
   base's boss damage) but sweeping its depth dial did almost nothing, because
   killing faster cannot help when one blow is what kills you.
   Now: brace lasts 2 turns (strict, not broken) and the skilled bot holds it for
-  the telegraph. Skilled clears the first boss 40/40. **`playability` still
-  fails for base because it measures GREEDY**, which is frozen and deliberately
-  unclever — it still spends the brace as filler and clears ~12/40. Worth
-  deciding whether "beatable" should mean "beatable while mashing"; for the one
-  class whose identity is reading the telegraph, mashing arguably should fail.
+  the telegraph. Skilled clears the first boss 100% of the time; GREEDY, which
+  is frozen and deliberately unclever, still spends the brace as filler and
+  clears 48% (200 runs). `playability` gives base its own 0.35 floor for that
+  reason — the question "should beatable mean beatable while mashing" is
+  answered NO for this one class, in the test comment, rather than left as a
+  failing assertion.
 - **A skill can declare how it wants to be played**, and the bot reads it off
   the card rather than learning classes by name: `spendAt` (the count at which a
   spender is worth pressing) and `holdFor: 'windup'` (do not burn this as

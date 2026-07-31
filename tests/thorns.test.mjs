@@ -153,18 +153,39 @@ export default async function ({ page, ok }) {
      bait.resistArmed, JSON.stringify(bait));
   ok('the baited swing lands small, not heavy', bait.took < bait.heavy, JSON.stringify(bait));
 
-  // The shrug: into an armed resist the charge HOLDS. You bought a swing and
-  // the heavy blow is still coming — a real failure, not a free interrupt.
+  // The shrug: into an armed resist the charge is SPOILED rather than baited.
+  // It used to hold, which punished the cast twice — the enemy got a free
+  // ordinary swing AND the heavy was still on its way, so sym's only answer to
+  // a telegraph was worse than doing nothing on every second one. Now the
+  // charge comes out here and now, at a share of its size, on the turn the
+  // player chose. Still a real failure (the blow lands, and it is bigger than
+  // an ordinary hit), just not a free hit for the boss.
   const shrug = await page.evaluate(() => {
     startGame(true, 'sym');
     const p = state.player, e = state.enemy;
     e.windup = true; e.stunImmune = true;
+    // Survive it, so the numbers can be read. Bought with VITALITY rather than
+    // by writing maxHp, because Provoke grows THORNS and growth recomputes the
+    // sheet, which would throw a hand-written maxHp away mid-swing. Kept modest
+    // and paired with an unkillable enemy for the same reason: sym's innate
+    // thorns are a twentieth of max HP, so a huge bar reflects hard enough to
+    // kill the enemy outright and the kill (XP, a level, a fresh spawn) is what
+    // would actually be under measurement.
+    e.maxHp = e.hp = 1e9;
+    p.vit = 100; applyDerivedStats(p); p.hp = p.maxHp;
+    const hpBefore = p.hp;
     const skill = p.skills.find(s => s.id === 'provoke');
     fireSkill(p, Object.assign({}, skill, { cd: 0 }), e);
-    return { windup: e.windup, resistArmed: !!e.stunImmune };
+    return { windup: e.windup, resistArmed: !!e.stunImmune,
+             took: hpBefore - p.hp, ordinary: e.damage,
+             heavy: e.damage * windupMultFor(e) };
   });
-  ok('a resisted Provoke leaves the charge standing', shrug.windup === true, JSON.stringify(shrug));
+  ok('a resisted Provoke drags the charge out now', shrug.windup === false, JSON.stringify(shrug));
   ok('the shrug consumes the resist', shrug.resistArmed === false, JSON.stringify(shrug));
+  ok('a spoiled charge lands harder than an ordinary hit',
+     shrug.took > shrug.ordinary, JSON.stringify(shrug));
+  ok('...and softer than the telegraph it answered',
+     shrug.took < shrug.heavy, JSON.stringify(shrug));
 
   // ---- The wallet is gone -------------------------------------------------
   const wallet = await page.evaluate(() => ({

@@ -43,9 +43,16 @@ function enemyIntent(e) {
   if (!e || e.isPlayer || e.hp <= 0 || e._defeated) return null;
   if (hasStatus(e, 'stun'))
     return { kind:'stunned', icon:'💫', label:'Stunned', tone:'stunned' };
-  if (e.windup)   // already charged — the very next swing is the heavy hit
-    return { kind:'heavy', icon:'💥', label:'Heavy',
-             dmg: Math.max(1, Math.floor(e.damage * BALANCE.enemy.windupMult)), tone:'heavy' };
+  if (e.windup) { // already charged — the very next swing is the heavy hit
+    // A SPOILED CHARGE MUST READ AS SPOILED. The badge is the only place the
+    // player sees the number before it lands, so an answer that halved the
+    // blow has to show up here or it looks like it did nothing (which is
+    // exactly the complaint the spoil rule exists to answer).
+    const spoiled = !!e.windupSpoiled;
+    const mult = windupMultFor(e) * (spoiled ? (BALANCE.enemy.windupSpoilFrac || 1) : 1);
+    return { kind:'heavy', icon:'💥', label: spoiled ? 'Spoiled' : 'Heavy',
+             dmg: Math.max(1, Math.floor(e.damage * mult)), tone:'heavy' };
+  }
   if (e.windupEvery > 0 && ((e.actionCount || 0) + 1) % e.windupEvery === 0)
     return { kind:'charge', icon:'⚡', label:'Winding up', tone:'charge' };
   const riders = [];
@@ -148,6 +155,11 @@ function createFighterPanel(unit) {
   const tags = unit.isPlayer ? [] : enemyTags(unit);
   const tagHtml = tags.map(t => '<span class="unit-tag ' + t.toLowerCase() + '">' + t + '</span>').join('');
   const foeSize = unit.isPlayer ? '' : (unit.isBoss ? ' foe-boss' : (unit.elite ? ' foe-elite' : ' foe'));
+  // The act's art scale rides on top of the size tier rather than replacing it,
+  // so an elite Experiment is still visibly bigger than a plain one. Written
+  // only when it isn't 1, so the common case leaves no style attribute behind.
+  const artScale = foeArtScale(unit);
+  const foeStyle = artScale !== 1 ? ' style="--foe-art:' + artScale + '"' : '';
   div.innerHTML =
     '<div class="fighter-info">' +
       (unit.isPlayer ? '' : (function(){ const ib = intentBadge(unit); return '<div class="' + ib.cls + '">' + ib.html + '</div>'; })()) +
@@ -160,7 +172,7 @@ function createFighterPanel(unit) {
       '</div></div></div>' +
       '<div class="status-effects">' + buildStatusesHtml(unit) + '</div>' +
     '</div>' +
-    '<div class="char-figure ' + (unit.hp>0?'alive':'') + foeSize + '">' +
+    '<div class="char-figure ' + (unit.hp>0?'alive':'') + foeSize + '"' + foeStyle + '>' +
       makeCharSVG(type, colorClass, hasPoseSet(unit) ? 'ready' : 'idle', unit) +
       '<div class="ground-shadow"></div></div>';
   return div;

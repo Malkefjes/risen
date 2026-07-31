@@ -154,7 +154,7 @@
 // KEEP THIS SEPARATE FROM BALANCE.saveKey. That one answers "are saved runs
 // still valid" and is bumped only when a change makes an old sheet wrong.
 // Deriving it from this would wipe every save on a typo fix.
-const BUILD = '2026-07-31d';
+const BUILD = '2026-07-31e';
 
 const BALANCE = {
   player: {
@@ -603,13 +603,57 @@ const BALANCE = {
     //
     // THE POINT-SCARCITY PASS THEN SHRANK THE WAVE-5 POOL AGAIN (a player
     // reaches the first boss at L3 with ~6 points now, not L5 with ~24), so
-    // 5.0 stands on a thinner premise than when it was set. Deliberate: the
-    // whole pass makes the run poorer and the game harder. But if the first
-    // boss reads as a wall again in play, this multiplier comes back down
-    // FIRST, before any other lever moves.
-    windupEvery: 3, windupMult: 5.0,   // boss telegraph: every Nth action winds up; next strike hits xN
+    // 5.0 stood on a thinner premise than when it was set.
+    //
+    // NOW 4.0, AND THE FIRST BOSS WAS NEVER THE PROBLEM — THE LAST ONE WAS.
+    // Every note above reasons about wave 5, where the pool is smallest, and
+    // concluded the multiplier was safe because the pool grows. It does, but
+    // ENEMY DAMAGE GROWS FASTER, so the telegraph's share of the bar it lands
+    // on climbs all run. Measured at 5.0, median bar the skilled bot actually
+    // arrives with, both allocation plans:
+    //
+    //                     telegraph    spread build      all-Vitality
+    //     wave  5 boss         90       160   56%         160   56%
+    //     wave 10 boss        165       160  103%         280   59%
+    //     wave 13 elite       235       160  147%         340   69%
+    //     wave 15 boss        310       220  141%         400   78%
+    //
+    // Read the SPREAD column: from wave 10 on, the telegraph was a clean
+    // one-shot on any sheet that had not poured everything into Vitality — and
+    // 78% on one that had, which is a hit you survive only from full. So the
+    // rule this table has always stated ("a telegraph costs you half your bar
+    // and a turn spent reacting, not the run") was true at wave 5 and false
+    // everywhere after it.
+    //
+    // At 4.0 the invested bar pays 45% / 47% / 62% across the three bosses.
+    // The spread build still loses its last-boss bar to one blow (113%), and
+    // that stays: a player who bought no Vitality has made a decision, and the
+    // decision has to be allowed to be wrong. What is fixed is the other case,
+    // the one no decision answers — investing in survival and dying anyway.
+    windupEvery: 3, windupMult: 4.0,   // boss telegraph: every Nth action winds up; next strike hits xN
     finalWindupEvery: 2,               // the final boss keeps you under constant telegraph pressure
     eliteWindupEvery: 3,               // elites telegraph too: the mid-run skill check
+    // ELITES TELEGRAPH SMALLER THAN BOSSES, and the reason is frequency, not
+    // fairness. You meet three bosses in a run and a dozen elites, so a shared
+    // multiplier means the rare scripted moment and the routine one cost the
+    // same — and since elite damage already carries trashDmgMult, the routine
+    // one was landing at 147% of a spread build's bar (the table above), worse
+    // than either boss around it. An elite telegraph is a skill check; a boss
+    // telegraph is the fight. They should not hit for the same multiple.
+    eliteWindupMult: 3.0,
+    // THE SHRUG IS NO LONGER FREE. Bosses alternate stagger resistance so a
+    // stun or a Provoke cannot lock them out of their telegraph forever — but
+    // a TOTAL shrug meant psy and sym had their only answer deleted on every
+    // second telegraph, while bio's Chitin and base's Brace (mitigation, not
+    // stagger) answered every one. Two classes played the game the enemy table
+    // describes; two played a coin flip.
+    //
+    // A resisted answer now SPOILS the charge instead of doing nothing: the
+    // boss keeps its windup, but this share of it. You did not break the
+    // charge — you knocked something out of it. The resist still does its one
+    // job (the heavy blow is still coming, and no amount of CC stops it), and
+    // no class has a button that does literally nothing every other turn.
+    windupSpoilFrac: 0.5,
     eliteBaseChance: 0.16, eliteChancePerWave: 0.006, eliteChanceCap: 0.40
   },
   // FEWER STILL, AND POORER — the second compression. The first (16 levels
@@ -724,7 +768,13 @@ const CLASSES = {
       { id:'slash', name:'Slash', desc:'Attack the enemy for {power!} damage. +{poison} POISON', type:'attack', power:1.0, poison:1, target:'enemy', basic:true },
       { id:'infest', name:'Infest', desc:'Attack the enemy for {power!} damage. +{poison} POISON', type:'attack', power:0.50, poison:4, target:'enemy', cdTurns:3 },
       { id:'chitin', name:'Chitin', desc:'For {duration#turn}: take −{power%} damage. POISON on the enemy ticks twice per turn', type:'buff', buff:'chitin', duration:3, power:0.40, target:'self', cdTurns:5 },
-      { id:'miasma', name:'Miasma', desc:'For {duration#turn}: regenerate {power%} of max HP each turn. The enemy is WEAK for {weak.duration#turn}', type:'buff', buff:'regen', duration:4, power:0.10, applies:[{ id:'weak', power:0.25, duration:3 }], target:'self', cdTurns:5 }
+      // MIASMA IS BIO'S ONLY FAUCET, and at 10% x 4 turns on a 5-turn
+      // cooldown it was handing back 40% of a bar across the five turns a
+      // wave-6 enemy needs ~2.5 of to take a third of it. Owner-measured the
+      // honest way: died just past the first boss, holding the button that is
+      // supposed to be the answer to attrition. 13% is the same shape (four
+      // ticks, one press, still worth timing) paying 52% of a bar per cast.
+      { id:'miasma', name:'Miasma', desc:'For {duration#turn}: regenerate {power%} of max HP each turn. The enemy is WEAK for {weak.duration#turn}', type:'buff', buff:'regen', duration:4, power:0.13, applies:[{ id:'weak', power:0.25, duration:3 }], target:'self', cdTurns:5 }
     ]
   },
   // THE TERROR MUTANT. Psy's mechanic is DREAD, a mark stacked ON THE ENEMY —
@@ -760,7 +810,22 @@ const CLASSES = {
       // skill that didn't work.
       { id:'terrify', name:'Terrify', desc:'Attack for {power!} damage and plant +{dread} DREAD. Every stack slows the enemy and opens its guard.', type:'attack', power:0.50, dread:4, target:'enemy', cdTurns:3 },
       { id:'traumatize', name:'Traumatize', desc:'Attack for {power!} damage. Against {dreadNeed}+ DREAD the mind breaks: stunned for {stun#turn}.', type:'attack', power:0.95, stun:1, dreadNeed:3, target:'enemy', cdTurns:4 },
-      { id:'kill', name:'Kill', desc:'Attack for {power!} damage, +{perDreadPower!} per DREAD consumed, and DEVOUR the fear: heal {feedPerDread%} of max HP per stack. Spends ALL the enemy’s DREAD.', type:'attack', power:1.20, perDreadPower:0.60, consumesDread:true, feedPerDread:BALANCE.player.dreadFeedFrac, spendAt:4, target:'enemy', cdTurns:5 }
+      // KILL TAKES HALF THE FEAR, NOT ALL OF IT, and the old version was a
+      // button that was correct to never press. Every stack is doing three
+      // things while it sits there — slowing their turn, opening their guard
+      // (+4% damage taken, uncapped), and dripping the siphon into you — so
+      // "spend the whole pile for one hit" was a trade against a fight's worth
+      // of compounding value. In a boss fight, which is where DREAD actually
+      // piles up, the arithmetic said hold, every single time. A decision that
+      // resolves the same way at every count is not a decision; it is a dead
+      // card taking up a slot.
+      //
+      // Half (rounded up, so a lone stack is still edible) keeps the shape the
+      // card promised — cashing out costs you control, and the enemy speeds
+      // back up as you do it — while leaving an engine to keep running. The
+      // finisher is now "how deep do I cut into my own advantage", asked every
+      // five turns, instead of "do I delete my class".
+      { id:'kill', name:'Kill', desc:'Attack for {power!} damage, +{perDreadPower!} per DREAD torn away, and DEVOUR it: heal {feedPerDread%} of max HP for each. Takes HALF the enemy’s DREAD.', type:'attack', power:1.20, perDreadPower:0.60, consumesDread:true, consumeFrac:0.5, feedPerDread:BALANCE.player.dreadFeedFrac, spendAt:4, target:'enemy', cdTurns:5 }
     ]
   },
   // THE ORGANISM. Sym's mechanic is THORNS — one number, worn on the player,
@@ -804,9 +869,15 @@ const CLASSES = {
       // gets read back on your OWN turns, and it has to carry the share Bloom
       // used to. A grown sym should feel its size every time it swings.
       { id:'latch', name:'Latch', desc:'Auto. Attack the enemy for your Attack Damage + {thornsScale%} of your THORNS.', type:'attack', power:1.0, thornsScale:0.55, target:'enemy', basic:true },
-      { id:'spines', name:'Raise Spines', desc:'THORNS ×{power} and pain reflect doubled for {duration#turn}. Every hit taken grows +{growBonus} extra THORNS.', type:'buff', buff:'spines', duration:3, power:2.2, growBonus:BALANCE.player.thornsSpinesGrow, target:'self', cdTurns:4 },
-      { id:'shed', name:'Shed', desc:'Heal {healFrac%} of max HP, then shed THORNS for the rest — {hpPerThorn%} each, never past {capFrac%} of your growth.', type:'heal', healFrac:0.08, shedFuel:true, hpPerThorn:BALANCE.player.shedHpPerThorn, capFrac:BALANCE.player.shedCapFrac, target:'self', cdTurns:3 },
-      { id:'provoke', name:'Provoke', desc:'Bare your guard: the enemy strikes at once and cannot miss. +{growBonus} THORNS, and a charged telegraph comes out ordinary.', type:'provoke', growBonus:3, target:'enemy', cdTurns:4 }
+      { id:'spines', name:'Raise Spines', desc:'THORNS ×{power} and pain reflect doubled for {duration#turn}. Every hit taken grows +{growBonus} extra THORNS.', type:'buff', buff:'spines', duration:3, power:2, growBonus:BALANCE.player.thornsSpinesGrow, target:'self', cdTurns:4 },
+      // THE OLD WORDING DESCRIBED THE IMPLEMENTATION, not the decision. "Shed
+      // THORNS for the rest — 4% each, never past 35% of your growth" is three
+      // clauses, two of which are internal accounting, and the important half
+      // (it takes only what the heal needed, so a huge number makes it CHEAP
+      // rather than expensive) was the half not said. Now the first sentence
+      // is what you get, the second is what it costs, in that order.
+      { id:'shed', name:'Shed', desc:'Heal {healFrac%} of max HP, then tear off THORNS to heal {hpPerThorn%} more each. Takes only as many as the wound needed, up to {capFrac%} of what you have grown.', type:'heal', healFrac:0.08, shedFuel:true, hpPerThorn:BALANCE.player.shedHpPerThorn, capFrac:BALANCE.player.shedCapFrac, target:'self', cdTurns:3 },
+      { id:'provoke', name:'Provoke', desc:'Bare your guard: the enemy strikes at once and cannot miss. +{growBonus} THORNS, and a charged telegraph comes out now — ordinary, or half-strength if it shrugs you off.', type:'provoke', growBonus:3, target:'enemy', cdTurns:4 }
     ]
   },
   // Base Sonny, reached via "RESIST MUTATION". Refused the infection, so he has
@@ -835,7 +906,13 @@ const CLASSES = {
     name: 'Unmutated', color: 'base',
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
-      { id:'jab', name:'Strike', desc:'Attack the enemy for {power!} damage. +{buildsResolve} RESOLVE, and open a wound: +{bleed} BLEED, as deep as the RESOLVE behind it', type:'attack', power:1.0, buildsResolve:1, bleed:1, target:'enemy', basic:true },
+      // "AS DEEP AS THE RESOLVE BEHIND IT" SAID NOTHING. It is a true sentence
+      // about the rules and a useless one on a card: it names a relationship
+      // when the player wants a NUMBER, and the number was already knowable —
+      // bleedDepth computes it from the sheet every time a cut lands. A desc
+      // field may be a function now (see fmtDesc), so the card prints what the
+      // next Strike will actually open, and it moves as Resolve stacks up.
+      { id:'jab', name:'Strike', desc:'Attack the enemy for {power!} damage. +{buildsResolve} RESOLVE, and open a wound: +{bleedTick} BLEED a turn for {bleedTurns#turn}', type:'attack', power:1.0, buildsResolve:1, bleed:1, bleedTick:p => bleedDepth(p), bleedTurns:BALANCE.player.bleedDuration, target:'enemy', basic:true },
       { id:'bandage', name:'Bandage', desc:'Heal {healFrac%} of max HP and +{resolveHealBonus%} per held RESOLVE', type:'heal', healFrac:0.14, resolveHealBonus:0.02, target:'self', cdTurns:4 },
       // BRACE LASTS TWO TURNS, NOT ONE, and the reason is measured. This is
       // base's answer to the telegraph, and it was the only answer in the game
@@ -852,7 +929,7 @@ const CLASSES = {
       // to see the telegraph and act on it) while forgiving a turn of
       // misjudgement, which is the difference between strict and broken.
       // `holdFor` tells the bot the same thing the card tells the player.
-      { id:'counter', name:'Counterpunch', desc:'Brace for {duration#turn}: −{power%} damage taken, stacking with RESOLVE. A hit taken while braced strikes back for {counterPower!} damage and +{counterBleed} BLEED', type:'buff', buff:'brace', duration:2, power:0.60, counterPower:1.20, counterBleed:1, holdFor:'windup', target:'self', cdTurns:4 },
+      { id:'counter', name:'Counterpunch', desc:'Brace for {duration#turn}: −{power%} damage taken, stacking with RESOLVE. A hit taken while braced strikes back for {counterPower!} damage and opens a wound: +{bleedTick} BLEED a turn', type:'buff', buff:'brace', duration:2, power:0.60, counterPower:1.20, counterBleed:1, bleedTick:p => bleedDepth(p), holdFor:'windup', target:'self', cdTurns:4 },
       { id:'laststand', name:'Last Stand', desc:'Attack the enemy for {power!} damage, +{perResolvePower!} per RESOLVE consumed. Spends all RESOLVE', type:'attack', power:1.20, perResolvePower:0.40, consumesResolve:true, spendAt:4, target:'enemy', cdTurns:5 }
     ]
   }
@@ -1067,6 +1144,14 @@ const STATUSES = {
     // if its damage can be waited out — the class trades every other advantage
     // for the fact that what it has already done keeps happening.
     stacking:'stack', permanent:true, defaults:{ stacks:1, perStack:1 },
+    // A MARK TICKS ON THE TURN OF WHOEVER PUT IT THERE — see the `inflicted`
+    // note in tickStatuses. It used to tick on the turn of whoever CARRIED it,
+    // which metered bio's whole damage output by how often the ENEMY acted:
+    // buying Speed bought fewer enemy turns, so the fastest bio was the one
+    // whose rot ticked least. The stat was worse than dead, it was negative.
+    // Psy's siphon already lived on this rule and the comment beside it called
+    // poison its mirror; the mirror is real now.
+    inflicted: true,
     // No timer on the badge — there is nothing left to count down.
     label: st => 'POISON ×' + (st.stacks||1),
     onTurnStart(unit, st) {
@@ -1122,6 +1207,10 @@ const STATUSES = {
     id:'bleed', name:'BLEED', tone:'bleed', kind:'debuff',
     // No maxStacks, exactly like poison: the twin shares the shape.
     stacking:'stack', defaults:{ duration:4, stacks:1, perStack:1 },
+    // Ticks on the cutter's turn, like the rot — and here the timer makes it
+    // matter twice, because the duration counts down on the same clock. Four
+    // turns of BLEED is four of YOUR turns now, however fast either of you is.
+    inflicted: true,
     // The wound is as deep as the LAST cut, not the deepest one ever made —
     // which is what gives spending Resolve a price. See applyStatus.
     perStackRule:'newest',
@@ -1142,10 +1231,10 @@ const STATUSES = {
 
   spines: {
     id:'spines', name:'SPINES', tone:'spines', kind:'buff',
-    // Boosts multiply and refresh, never overwrite: Feed on top of Raised
-    // Spines is x2.2 * x1.5 = x3.3, not a downgrade to x1.5. The duration is
-    // shorter than Spines' cooldown, so it can't ladder on itself forever.
-    stacking:'amplify', defaults:{ duration:3, power:2.2 }, persists:true,
+    // Boosts multiply and refresh, never overwrite: a x1.5 landing on top of
+    // Raised Spines is x2 * x1.5 = x3, not a downgrade to x1.5. The duration
+    // is shorter than Spines' cooldown, so it can't ladder on itself forever.
+    stacking:'amplify', defaults:{ duration:3, power:2 }, persists:true,
     label: st => 'SPINES ' + Math.ceil(st.duration) + 't',
     thornsMult: (u, st) => st.power || 1,
     // Sym: the window is an INVITATION, not the gate it used to be. Every hit

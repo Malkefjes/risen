@@ -77,16 +77,24 @@ export default async function ({ page, ok }) {
     e.maxHp = 1e9; e.hp = 1e9;
     applyStatus(e, 'bleed', { stacks: 3, perStack: 5, duration: BALANCE.player.bleedDuration });
     const start = getStatus(e, 'bleed').duration;
-    // Tick it out with nobody re-cutting.
+    // THE WOUND RUNS ON THE CUTTER'S CLOCK, so the enemy's own turns do
+    // nothing to it — that is the whole point of the second clock, and this is
+    // the assertion that would catch it silently moving back.
     for (let i = 0; i < BALANCE.player.bleedDuration + 1; i++) tickStatuses(e);
+    const survivedFoeTurns = hasStatus(e, 'bleed');
+    // Tick it out on the cutter's clock, with nobody re-cutting.
+    for (let i = 0; i < BALANCE.player.bleedDuration + 1; i++) tickStatuses(e, 'inflicted');
     const closed = !hasStatus(e, 'bleed');
     // Now re-cut mid-wound and confirm the timer resets.
     applyStatus(e, 'bleed', { stacks: 1, perStack: 5, duration: BALANCE.player.bleedDuration });
-    tickStatuses(e);
+    tickStatuses(e, 'inflicted');
     applyStatus(e, 'bleed', { stacks: 1, perStack: 5, duration: BALANCE.player.bleedDuration });
     const refreshed = getStatus(e, 'bleed').duration;
-    return { start, closed, refreshed, permanent: !!STATUSES.bleed.permanent };
+    return { start, closed, refreshed, survivedFoeTurns,
+             permanent: !!STATUSES.bleed.permanent };
   });
+  ok('the enemy cannot wait a wound out on its own turns', timer.survivedFoeTurns,
+     JSON.stringify(timer));
   ok('a wound left alone closes', timer.closed, JSON.stringify(timer));
   ok('bleed is never permanent — that is poison', timer.permanent === false);
   ok('cutting again reopens the full timer', timer.refreshed === timer.start,
@@ -102,7 +110,7 @@ export default async function ({ page, ok }) {
     e.maxHp = 1e9; e.hp = 1e9;
     applyStatus(e, 'bleed', { stacks: 4, perStack: 7, duration: 9 });
     const before = state.damageDealt;
-    tickStatuses(e);
+    tickStatuses(e, 'inflicted');
     const fromBleed = state.damageDealt - before;
 
     // ...and an elite's venom ticking on YOU is not damage you dealt.
@@ -110,7 +118,7 @@ export default async function ({ page, ok }) {
     const p = state.player;
     applyStatus(p, 'poison', { stacks: 3, perStack: 4 });
     const mine = state.damageDealt;
-    tickStatuses(p);
+    tickStatuses(p, 'inflicted');
     return { fromBleed, selfTick: state.damageDealt - mine };
   });
   ok('a bleed tick counts as damage dealt', ledger.fromBleed === 28, JSON.stringify(ledger));

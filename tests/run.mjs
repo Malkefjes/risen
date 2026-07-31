@@ -20,6 +20,7 @@ const SUITES = [
   ['uncapped',     'every strain runs on one uncapped number, and there are no banks'],
   ['bleed',        'Unmutated cuts, and the wound is as deep as the grit behind it'],
   ['playability',  'the first boss is a check, not a wall'],
+  ['telegraph',    'a telegraph costs half a bar, and an answer is never wasted'],
   ['headless',     'headless mode runs the same game, with no side effects']
 ];
 
