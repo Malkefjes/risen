@@ -4,7 +4,7 @@
 // finishes in milliseconds instead of the minutes it takes to watch one.
 //
 // This is NOT a second implementation of combat. Every rule — initiative,
-// damage, statuses, banks, cooldowns, XP — runs exactly as it does on screen.
+// damage, statuses, cooldowns, XP — runs exactly as it does on screen.
 // The only things suppressed are the ones that draw or wait. A balance number
 // measured here is therefore a number about the game, not about a model of it.
 //
@@ -95,18 +95,24 @@ function rotateAllocate(p) { return ROTATE_STATS[p.level % ROTATE_STATS.length];
 // Nothing here knows a class by name; it reads the same fields the skill cards
 // show, so a new kit is piloted without touching this.
 //
-// Is this spender worth firing yet? A bank exists to be spent at a payoff, and
-// dumping Kill on one DREAD stack or Last Stand on one Resolve is how a good
-// skill reads as a bad one. Under 60% of cap it waits — except on a nearly
-// dead enemy, where everything goes in.
-function bankUnderfed(p, skill, e) {
+// Is this spender worth firing yet? Dumping Kill on one DREAD stack or Last
+// Stand on one Resolve is how a good skill reads as a bad one. It used to wait
+// for 60% of the bank's CAP — which stopped meaning anything when the caps came
+// off, since 60% of infinity is not a number. So the threshold moved onto the
+// skill itself as `spendAt`: the stack count at which its owner would actually
+// press it. That is a judgement about the skill, so it belongs on the skill,
+// and it reads on the card's own terms instead of as a fraction of a ceiling
+// the player can no longer see.
+//
+// Sym is deliberately absent: THORNS is not a pile with a payoff to wait for.
+// Shed takes only what the heal needed, so there is no "too early" — it is
+// gated by rule 4 (never heal a full bar) like any other heal.
+function spenderUnderfed(p, skill, e) {
   if (e && e.maxHp > 0 && e.hp / e.maxHp < 0.25) return false;   // execute: dump it
-  const enough = cap => Math.max(1, Math.ceil(cap * 0.6));
-  if (skill.consumesDread)   return statusStacks(e, 'dread') < enough(P().dreadCap);
-  if (skill.consumesResolve) return (p.resolve || 0) < enough(P().resolveCap);
-  // Sym is deliberately absent: THORNS is not a wallet with a payoff to wait
-  // for. Shed takes only what the heal needed, so there is no "too early" —
-  // it is gated by rule 4 (never heal a full bar) like any other heal.
+  const need = skill.spendAt || 0;
+  if (!need) return false;
+  if (skill.consumesDread)   return statusStacks(e, 'dread') < need;
+  if (skill.consumesResolve) return statusStacks(p, 'resolve') < need;
   return false;
 }
 function skilledPolicy(p) {
@@ -164,8 +170,8 @@ function skilledPolicy(p) {
     //    and never won a run.
     if (s.type === 'heal') return false;
     if (s.stun && (holdStun || (e && e.stunImmune))) return false;
-    // 5. SPEND A BANK AT ITS PAYOFF, not on arrival.
-    if (bankUnderfed(p, s, e)) return false;
+    // 5. SPEND A PILE AT ITS PAYOFF, not on arrival.
+    if (spenderUnderfed(p, s, e)) return false;
     // 6. DON'T INVITE A HIT YOU CANNOT AFFORD. Provoke buys the enemy a free
     //    swing, which is a trade only a healthy fighter should take. Rule 1 is
     //    the deliberate exception: there the swing is coming regardless, and
@@ -293,7 +299,6 @@ function simulateRun(classId, opts) {
       bestCombo: state.bestCombo,
       stats: { str: p.str, instinct: p.instinct, speed: p.speed, vit: p.vit },
       derived: { atk: attackDamage(p), maxHp: p.maxHp, rate: +p.attackSpeed.toFixed(2) },
-      bank: (function () { const b = bankOf(p.class); return b ? { name: b.name, cap: b.cap } : null; })(),
       steps,
       log: opts.keepLog ? HEADLESS.log.slice() : undefined
     };

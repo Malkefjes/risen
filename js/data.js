@@ -115,7 +115,7 @@
 //    because it is written down here — they land when the classes feel right.
 //
 //      1. A CRIT FEEDS YOUR STRAIN — built, wired, and switched off at
-//         critBankGain: 0 for sym, base and bio. PSY ALREADY LIVES THIS RULE:
+//         critStrainGain: 0 for sym, base and bio. PSY ALREADY LIVES THIS RULE:
 //         its crits plant DREAD on the enemy, as the kit itself rather than the
 //         parked scaffold (see creditCrit). Psy is the proof of concept the
 //         others can be judged against before the knob turns for them.
@@ -154,7 +154,7 @@
 // KEEP THIS SEPARATE FROM BALANCE.saveKey. That one answers "are saved runs
 // still valid" and is bumped only when a change makes an old sheet wrong.
 // Deriving it from this would wipe every save on a typo fix.
-const BUILD = '2026-07-31a';
+const BUILD = '2026-07-31b';
 
 const BALANCE = {
   player: {
@@ -286,7 +286,7 @@ const BALANCE = {
     // Set this back to 1 to switch it on for them. Nothing else needs touching —
     // creditCrit and its call site in applyPlayerDamage are still wired, and
     // the readouts are unaffected.
-    critBankGain: 0,
+    critStrainGain: 0,
     // COOLDOWN REDUCTION IS NO LONGER A STAT. Speed does not feed it and
     // nothing else does yet, so cdrPerSpeed is gone rather than sitting at 0.
     //
@@ -323,7 +323,10 @@ const BALANCE = {
     // Chitin's numbers live on the skill card, like Miasma's.)
     // Bleed: the same damage-over-time shape as poison, its own knobs so the
     // two can be tuned apart. Nothing applies bleed yet.
-    bleedStackCap: 6, bleedDuration: 4,      // TURNS
+    // Bleed is poison's twin and now shares its shape completely: UNCAPPED, for
+    // the same reason poison is. A stack ceiling turns a ramp into a plateau
+    // you reach and then stop thinking about. Nothing applies bleed yet.
+    bleedDuration: 4,                        // TURNS
     // ---- THORNS (sym) -----------------------------------------------------
     // SYM'S MECHANIC IS ONE NUMBER THAT GROWS, and thorns is that number —
     // not a bank beside it. The old kit had both: thorns as a passive share of
@@ -394,9 +397,7 @@ const BALANCE = {
     //     where bio ramps slow and permanent. Two infections, two speeds:
     //     bio's mark eats the enemy's HEALTH, psy's mark eats their TURNS.
     // Each stack slows the enemy's rate, which the turn-rate readout shows as
-    // the ratio climbing — dominance you can watch. The slow is capped by the
-    // stack cap; without one an enemy could be slowed toward never acting,
-    // which is a stun without the stun's price.
+    // the ratio climbing — dominance you can watch.
     // Each stack does TWO things, named on one badge: the enemy hesitates
     // (−rate) and its guard opens (+damage taken). The pair is what makes
     // DREAD offense and defense at once — slow alone was mitigation wearing
@@ -404,9 +405,18 @@ const BALANCE = {
     // with no teeth measured exactly like it sounds: first pass shipped slow
     // only, and psy's own best-stat builds died on wave 3 doing 25s into a
     // 900 HP boss. Fear has to make the kill faster, not just later.
-    dreadCap: 6,             // stack ceiling — bounds the slow at 30% and the open guard at 24%
+    //
+    // THE STACK COUNT IS UNCAPPED; THE TWO HALVES ARE BOUNDED DIFFERENTLY, and
+    // that split is the whole reason the ceiling could come off. The cap used
+    // to exist for ONE reason — an unbounded slow walks an enemy toward never
+    // acting, which is a stun nobody paid for — so the floor below bounds the
+    // slow directly and the count is free. Vulnerability keeps climbing with
+    // no ceiling at all: it is psy's damage, it costs stacks that a single
+    // landed hit sheds, and fear dies with the enemy, so it cannot follow you
+    // into the next fight the way sym's thorns do.
     dreadSlowPerStack: 0.05, // each stack: −5% enemy turn rate
-    dreadVulnPerStack: 0.04, // each stack: +4% damage the enemy takes — terror opens the guard
+    dreadSlowFloor: 0.55,    // ...but never below this share of its rate: the slow saturates, the count does not
+    dreadVulnPerStack: 0.04, // each stack: +4% damage the enemy takes — terror opens the guard, uncapped
     dreadLossPerHit: 1,      // an enemy that lands a hit on psy steadies: sheds this many stacks
     // PSY'S SUSTAIN: CONSUMED FEAR FEEDS YOU. HP carries across fights in this
     // game, so a class without a faucet doesn't lose fights, it loses RUNS to
@@ -434,9 +444,29 @@ const BALANCE = {
     // psy's mark ticks health into you on one. DEVOUR stays the burst half —
     // the siphon is the drip that keeps a marked fight from being pure
     // attrition against a class with no bandage.
-    dreadSiphonFrac: 0.005,  // heal per DREAD on the enemy, per player turn (3%/turn at a full 6)
-    resolveCap: 6,         // Unmutated: Resolve bank ceiling
-    resolveDR: 0.03,       // Unmutated: each held Resolve = 3% flat damage reduction (18% at cap)
+    dreadSiphonFrac: 0.005,  // heal per DREAD on the enemy, per player turn
+    // ---- RESOLVE (Unmutated) ----------------------------------------------
+    // UNCAPPED, AND A STATUS RATHER THAN A WALLET. It was a 6-pip bank, which
+    // made it the one mechanic in the game you finished thinking about: six
+    // turns in you were full, and "hold or spend" collapsed into "spend,
+    // because the next point is being thrown away". Off the leash it is a
+    // genuine ramp — the longer the fight runs the harder you are to move and
+    // the bigger Last Stand gets, which is the class's sentence (endure, then
+    // everything at once) finally being a curve instead of a plateau.
+    //
+    // PER FIGHT, NOT PER RUN, and that is forced arithmetic rather than taste.
+    // Resolve comes +1 a landed hit AND +1 a hit taken, so it accrues every
+    // single turn; carried across a run it would pass the reduction cap
+    // somewhere in act 1 and sit there for the rest of the game, which is not
+    // a break, it is an off switch. Per fight it starts at nothing and has to
+    // be rebuilt every time — the same shape as DREAD, and the reason sym's
+    // THORNS stays the only mechanic in the game that is run-permanent.
+    //
+    // The reduction is linear per stack and the SUM with Brace is capped hard
+    // in applyEnemyDamage — uncapped number, bounded effect. Overinvestment is
+    // never wasted, because everything past the cap still cashes out through
+    // Last Stand.
+    resolveDR: 0.03,       // Unmutated: each held Resolve = 3% flat damage reduction
     resolvePerHit: 1,      // Unmutated: Resolve gained whenever you take a hit
     reloadHpFloor: 0.15    // deliberate mercy: continuing a run never puts you below this
   },
@@ -631,9 +661,15 @@ const BALANCE = {
   // unplayably weak rather than merely mistuned. Two of its four skills are
   // also gone by id. Every other strain rides along, as always.
   //
+  // v9 -> v10 is the end of banks. Resolve moved off the player as a raw
+  // capped field and became an uncapped status, so a v9 Unmutated save carries
+  // `resolve: 4` in a field nothing reads any more — it would load holding
+  // nothing, which is a live mechanic silently reset to zero rather than a
+  // number merely mistuned.
+  //
   // Bumping also gives every player empty slots on the next load, which is the
   // honest outcome — those runs are not playable as the game now works.
-  saveKey: 'risen_run_v9',
+  saveKey: 'risen_run_v10',
   // Storage keys from older versions, cleared once on load so they cannot
   // accumulate invisibly. Oldest first; add the outgoing prefix here on a bump.
   // Slot keys are listed explicitly because the purge removes literal keys.
@@ -642,7 +678,8 @@ const BALANCE = {
                 'risen_run_v5', 'risen_run_v5_s1', 'risen_run_v5_s2',
                 'risen_run_v6', 'risen_run_v6_s1', 'risen_run_v6_s2',
                 'risen_run_v7', 'risen_run_v7_s1', 'risen_run_v7_s2',
-                'risen_run_v8', 'risen_run_v8_s1', 'risen_run_v8_s2'],
+                'risen_run_v8', 'risen_run_v8_s1', 'risen_run_v8_s2',
+                'risen_run_v9', 'risen_run_v9_s0', 'risen_run_v9_s1', 'risen_run_v9_s2'],
   saveSlots: 2
 };
 
@@ -700,7 +737,7 @@ const CLASSES = {
       // skill that didn't work.
       { id:'terrify', name:'Terrify', desc:'Attack for {power!} damage and plant +{dread} DREAD. Every stack slows the enemy and opens its guard.', type:'attack', power:0.50, dread:4, target:'enemy', cdTurns:3 },
       { id:'traumatize', name:'Traumatize', desc:'Attack for {power!} damage. Against {dreadNeed}+ DREAD the mind breaks: stunned for {stun#turn}.', type:'attack', power:0.95, stun:1, dreadNeed:3, target:'enemy', cdTurns:4 },
-      { id:'kill', name:'Kill', desc:'Attack for {power!} damage, +{perDreadPower!} per DREAD consumed, and DEVOUR the fear: heal {feedPerDread%} of max HP per stack. Spends ALL the enemy’s DREAD.', type:'attack', power:1.20, perDreadPower:0.60, consumesDread:true, feedPerDread:BALANCE.player.dreadFeedFrac, target:'enemy', cdTurns:5 }
+      { id:'kill', name:'Kill', desc:'Attack for {power!} damage, +{perDreadPower!} per DREAD consumed, and DEVOUR the fear: heal {feedPerDread%} of max HP per stack. Spends ALL the enemy’s DREAD.', type:'attack', power:1.20, perDreadPower:0.60, consumesDread:true, feedPerDread:BALANCE.player.dreadFeedFrac, spendAt:4, target:'enemy', cdTurns:5 }
     ]
   },
   // THE ORGANISM. Sym's mechanic is THORNS — one number, worn on the player,
@@ -762,7 +799,7 @@ const CLASSES = {
       { id:'jab', name:'Strike', desc:'Attack the enemy for {power!} damage. +{buildsResolve} RESOLVE', type:'attack', power:1.0, buildsResolve:1, target:'enemy', basic:true },
       { id:'bandage', name:'Bandage', desc:'Heal {healFrac%} of max HP and +{resolveHealBonus%} per held RESOLVE', type:'heal', healFrac:0.14, resolveHealBonus:0.02, target:'self', cdTurns:4 },
       { id:'counter', name:'Counterpunch', desc:'Brace for {duration#turn}: −{power%} damage taken, stacking with RESOLVE. A hit taken while braced strikes back for {counterPower!} damage', type:'buff', buff:'brace', duration:1, power:0.60, counterPower:1.20, target:'self', cdTurns:4 },
-      { id:'laststand', name:'Last Stand', desc:'Attack the enemy for {power!} damage, +{perResolvePower!} per RESOLVE consumed. Spends all RESOLVE', type:'attack', power:1.20, perResolvePower:0.40, consumesResolve:true, target:'enemy', cdTurns:5 }
+      { id:'laststand', name:'Last Stand', desc:'Attack the enemy for {power!} damage, +{perResolvePower!} per RESOLVE consumed. Spends all RESOLVE', type:'attack', power:1.20, perResolvePower:0.40, consumesResolve:true, spendAt:4, target:'enemy', cdTurns:5 }
     ]
   }
 };
@@ -962,7 +999,7 @@ const TALENTS = {
 //   outgoingMult(unit, st, ctx)    multiplies damage the unit DEALS
 //   apsMult(unit, st)              multiplies the unit's initiative rate
 //   thornsMult(unit, st)           multiplies the unit's thorns damage
-//   bankOnHitTaken(unit, st)       extra bank charges gained from being hit.
+//   resolveOnHitTaken(unit, st)    extra RESOLVE gained from being hit (base).
 //                                  Nothing implements this today — Brace was
 //                                  the only user and gave that up — so the
 //                                  fold in applyEnemyDamage adds 0. Kept as
@@ -1021,8 +1058,8 @@ const STATUSES = {
   // takes when something should.
   bleed: {
     id:'bleed', name:'BLEED', tone:'bleed', kind:'debuff',
+    // No maxStacks, exactly like poison: the twin shares the shape.
     stacking:'stack', defaults:{ duration:4, stacks:1, perStack:1 },
-    maxStacks: unit => unit.isPlayer ? 99 : ((state.player && state.player.bleedStackCap) || 99),
     label: st => 'BLEED ×' + (st.stacks||1) + '  ' + Math.ceil(st.duration) + 't',
     onTurnStart(unit, st) {
       const dmg = Math.max(1, Math.floor((st.perStack||1) * (st.stacks||1)));
@@ -1056,18 +1093,35 @@ const STATUSES = {
     }
   },
 
+  // Unmutated's mechanic, and a STATUS rather than a wallet since the banks
+  // came out. See the RESOLVE block in BALANCE for why the ceiling went and why
+  // it does not persist between fights.
+  //
+  // Not permanent-with-a-duration but PERMANENT: nothing times it out inside a
+  // fight, only Last Stand spends it. It is deliberately missing `persists`, so
+  // the between-fight sweep drops it and every fight is rebuilt from nothing.
+  //
+  // The reduction is NOT an incomingMult here, for the same reason Brace's
+  // isn't: applyEnemyDamage sums the two and caps the sum once, so a generic
+  // hook would multiply them into a different (and quietly weaker) number.
+  resolve: {
+    id:'resolve', name:'RESOLVE', tone:'resolve', kind:'buff',
+    stacking:'stack', permanent:true, defaults:{ stacks:1 },
+    label: st => 'RESOLVE ×' + (st.stacks||1)
+  },
+
   brace: {
     id:'brace', name:'BRACE', tone:'brace', kind:'buff',
     stacking:'replace', defaults:{ duration:1, power:0.60, counter:1.20 },
     label: st => 'BRACE ' + Math.ceil(st.duration) + 't',
     // Deliberately NOT an incomingMult: Unmutated adds Brace to held Resolve
-    // and caps the sum (applyEnemyDamage), so 18% Resolve + 60% Brace is one
-    // 78% reduction, not two multiplied ones. Splitting it into a generic hook
-    // would quietly halve the skill.
-    // No bankOnHitTaken: a braced hit banks exactly what any hit banks. Brace
-    // used to add a second point on top, which made a hit worth more for being
-    // absorbed — the skill pays out in mitigation and the counter, not in a
-    // quietly better exchange rate.
+    // and caps the sum (applyEnemyDamage), so the two are one reduction rather
+    // than two multiplied ones. Splitting it into a generic hook would quietly
+    // halve the skill.
+    // No resolveOnHitTaken: a braced hit banks exactly what any hit banks.
+    // Brace used to add a second point on top, which made a hit worth more for
+    // being absorbed — the skill pays out in mitigation and the counter, not in
+    // a quietly better exchange rate.
     onHitTaken(unit, st, ctx) {
       const e = ctx.attacker;
       if (!e || unit.hp <= 0 || e.hp <= 0) return;
@@ -1098,9 +1152,12 @@ const STATUSES = {
   dread: {
     id:'dread', name:'DREAD', tone:'dread', kind:'debuff',
     stacking:'stack', permanent:true, defaults:{ stacks:1 },
-    maxStacks: () => P().dreadCap,
     label: st => 'DREAD ×' + (st.stacks||1),
-    apsMult: (u, st) => 1 - (st.stacks||0) * P().dreadSlowPerStack,
+    // The slow saturates where the count does not: past the floor a stack buys
+    // no further hesitation, only an opener guard. Without this an unbounded
+    // count would walk the enemy toward never acting at all, which is the one
+    // thing the old stack ceiling was there to prevent.
+    apsMult: (u, st) => Math.max(P().dreadSlowFloor, 1 - (st.stacks||0) * P().dreadSlowPerStack),
     // Terror opens the guard: the enemy takes more from EVERY source while
     // marked — including the Kill that consumes the stacks, which strikes
     // into the open guard before the fear breaks (consumption happens after

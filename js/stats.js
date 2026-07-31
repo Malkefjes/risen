@@ -416,7 +416,6 @@ function applyDerivedStats(p) {
   const basicPoisons = p.class === 'bio' && !!(p.basicSkill && p.basicSkill.poison > 0);
   p.poisonChance = Math.min(1, (basicPoisons ? 1 : 0) + (t.poisonChance || 0));
   p.poisonDamage = p.poisonPerStack;
-  p.bleedStackCap = B.bleedStackCap + (t.bleedStackBonus || 0);
   p.bleedChance = Math.min(1, (t.bleedChance || 0));
   p.bleedDamage = Math.max(1, Math.round(ailmentDmg * (t.bleedMult || 1)));
   return p;
@@ -452,6 +451,13 @@ function strainReadout(p) {
   // "Poison per stack" beside an identical "Poison damage" would be the same
   // number printed twice in one pane.
   if (p.class === 'sym') return { id:'strain', label:'Thorns', text: formatNum(p.thorns), num: p.thorns };
+  // Held RESOLVE, now that it is a status rather than a row of pips. The pips
+  // were the only place the count was ever written down; without a row here the
+  // sidebar would be the one pane that cannot answer "how much do I have".
+  if (p.class === 'base') {
+    const held = statusStacks(p, 'resolve');
+    return { id:'strain', label:'Resolve', text: formatNum(held), num: held };
+  }
   if (p.class === 'psy') return { id:'strain', label:'Per DREAD',
     text: '−' + Math.round(P().dreadSlowPerStack*100) + '% rate, +' + Math.round(P().dreadVulnPerStack*100)
       + '% taken, +' + (P().dreadSiphonFrac*100) + '% HP/turn' };

@@ -1,4 +1,4 @@
-// Rendering: arena, banks, enemy intent, juice, combat log
+// Rendering: arena, class mechanics, enemy intent, juice, combat log
 // ---- Rendering ------------------------------------------------
 function renderCombat(forceFull) {
   if (HEADLESS.on) return;
@@ -13,54 +13,27 @@ function renderCombat(forceFull) {
   } else updateUnitCard(state.enemy);
 }
 
-// ---- Class banks (Resolve) ---------------------------------------
-// A bank is a CAPPED, PIPPED wallet, and Unmutated is the only strain that has
-// one — hold-vs-spend is his identity, and the pips are what make it legible.
-// Nobody else holds one on purpose: psy's DREAD lives on the enemy as a status
-// worn on their card, bio's bank is the rot itself, and sym's THORNS is an
-// uncapped number that grows rather than fills, so pips would be the wrong
-// shape for it twice over (no cap to draw, and it is not spent so much as
-// shed). Sym's number is drawn as the badge on its own card and the Thorns row
-// in the sidebar instead — see strainReadout.
+// ---- Class mechanics --------------------------------------------
+// THERE ARE NO BANKS. Every strain now runs on ONE UNCAPPED NUMBER, and every
+// one of them is worn as a status badge under a health bar:
 //
-// Every change routes through bankAdjust so nothing moves silently: clamp,
-// float text and a log line, then repaint the pips.
-function bankOf(cls) {
-  if (cls === 'base') return { field:'resolve', name:'RESOLVE',  cap:P().resolveCap, tone:'resolve'  };
-  return null;
-}
-// `why` is the REASON, not a replacement line. It used to be the whole message,
-// which let each caller invent its own wording and drop the numbers — "Momentum
-// slips (−2)" never said what you were left holding. Now the amount and the
-// new total are always printed the same way and `why` is appended as a
-// qualifier, so every bank line is comparable and the cap is always in view.
-function bankAdjust(unit, delta, why) {
-  if (!unit || !unit.isPlayer) return 0;
-  const b = bankOf(unit.class); if (!b || !delta) return 0;
-  const before = unit[b.field] || 0;
-  const after = Math.max(0, Math.min(b.cap, before + delta));
-  const d = after - before;
-  if (d === 0) return 0;
-  unit[b.field] = after;
-  floatText(unit, (d > 0 ? '+' : '') + d + ' ' + b.name, 'bank');
-  // No "→ You": banks are the player's only, so naming the target every time
-  // would be a column of the same word.
-  logEvent(b.name + ' ' + (d > 0 ? '+' : '−') + Math.abs(d),
-           null, '(' + after + '/' + b.cap + ')', [why], d > 0 ? 'heal' : '');
-  updateUnitCard(unit);
-  return d;
-}
-function bankPipsHtml(p) {
-  const b = bankOf(p.class); if (!b) return '';
-  const cur = Math.max(0, Math.min(b.cap, p[b.field] || 0));
-  let pips = '';
-  for (let i = 0; i < b.cap; i++) pips += '<i class="pip' + (i < cur ? ' full' : '') + '"></i>';
-  // Charge-up tension: one-away invites (the empty pip shimmers), full hums
-  // until spent. The almost-there and the ready-now must read at a glance.
-  const charge = cur >= b.cap ? ' brim' : (cur === b.cap - 1 ? ' near' : '');
-  return '<div class="bank bank-' + b.tone + charge + '"><span class="bank-label">' + b.name
-    + '</span><span class="bank-pips">' + pips + '</span></div>';
-}
+//   bio   POISON   on the enemy, uncapped, dies with it
+//   psy   DREAD    on the enemy, uncapped count (the slow saturates, not the
+//                  stack), dies with it
+//   sym   THORNS   on the player, uncapped, the one ramp that is RUN-permanent
+//   base  RESOLVE  on the player, uncapped, rebuilt every fight
+//
+// What went was the pipped wallet — a fixed row of six dots with a clamp behind
+// it. Three things were wrong with it and all three are the same thing: a cap
+// is a place where a mechanic stops being interesting. You finished filling it
+// early, every point after that was thrown away, and "hold or spend" collapsed
+// into "spend now". Pips also cannot draw a number that has no ceiling, so the
+// UI was quietly the thing forcing the ceiling to exist.
+//
+// Nothing replaced bankAdjust: applyStatus already clamps nothing, stacks
+// correctly, logs at one choke point and repaints the badge. gainResolve and
+// growThorns (combat.js) are thin wrappers that add the floater, which is the
+// only job the pips were really doing.
 
 // ---- Enemy intent (Slay-the-Spire style next-move telegraph) ----
 // Pure prediction that MIRRORS enemyAct/enemySwing exactly, so the badge can
@@ -121,7 +94,7 @@ function buildStatusesHtml(unit) {
 // rebuilt when it would actually look different. Power is part of it: Spines
 // amplifying from ×2.2 to ×3.3 changes the badge without changing its duration.
 function buildStatusKey(u) {
-  let k = ('R'+(u.resolve||0)) + (u.thorns>0?'T'+getThornsDamage(u):'');
+  let k = (u.thorns>0?'T'+getThornsDamage(u):'');
   u.statuses.forEach(s => k += '|' + s.type + (isFinite(s.duration) ? Math.ceil(s.duration) : '*') + (s.stacks||'') + (s.power||''));
   return k;
 }
@@ -150,8 +123,6 @@ function updateUnitCard(unit) {
   const st = panel.querySelector('.status-effects');
   if (st) { const k = buildStatusKey(unit); if (k !== unit._statusKey) { unit._statusKey = k; st.innerHTML = buildStatusesHtml(unit); } }
   if (unit.isPlayer) {
-    const bankRow = panel.querySelector('.bank-row');
-    if (bankRow) { const bh = bankPipsHtml(unit); if (bankRow.dataset.k !== bh) { bankRow.dataset.k = bh; bankRow.innerHTML = bh; } }
     // The sidebar reads off the same sheet as this card, so it is refreshed
     // from the same hook rather than from each damage and healing site — the
     // two HP numbers on screen can then never disagree.
@@ -187,7 +158,6 @@ function createFighterPanel(unit) {
         '<div class="bar-fill hp' + (unit.isPlayer?' player-hp':'') + '" style="width:' + pct + '%"></div>' +
         '<div class="bar-text">' + formatNum(Math.floor(unit.hp)) + ' / ' + formatNum(Math.floor(unit.maxHp)) + '</div>' +
       '</div></div></div>' +
-      (unit.isPlayer ? '<div class="bank-row">' + bankPipsHtml(unit) + '</div>' : '') +
       '<div class="status-effects">' + buildStatusesHtml(unit) + '</div>' +
     '</div>' +
     '<div class="char-figure ' + (unit.hp>0?'alive':'') + foeSize + '">' +

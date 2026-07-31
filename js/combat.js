@@ -289,7 +289,7 @@ function getThornsDamage(p) {
 
 // SYM'S RAMP. Thorns is the number and it grows — every hit taken feeds it,
 // permanently, for the rest of the run. Routed through one function for the
-// same reason bankAdjust exists: a number that climbs silently is a number the
+// same reason gainResolve exists beside it: a number that climbs silently is one the
 // owner cannot feel climbing, so every gain is a floater and a log line naming
 // what fed it. Recomputes the sheet immediately, which is what lets the spines
 // that fire back on THIS exchange already be the bigger ones.
@@ -297,9 +297,23 @@ function growThorns(p, amount, why) {
   if (!p || p.class !== 'sym' || !(amount > 0) || p.hp <= 0) return 0;
   p.thornsGrown = (p.thornsGrown || 0) + amount;
   applyDerivedStats(p);
-  floatText(p, '+' + amount + ' THORNS', 'bank');
+  floatText(p, '+' + amount + ' THORNS', 'tally');
   logEvent('THORNS +' + amount, null, '(' + formatNum(p.thorns) + ')', [why], 'heal');
   updateUnitCard(p);
+  return amount;
+}
+
+// UNMUTATED'S RAMP, and growThorns' sibling — the strain's number going up.
+// Resolve is a status now rather than a pipped wallet (see the RESOLVE block in
+// BALANCE), so applyStatus does all the accounting, the stacking and the log
+// line, exactly as it does for DREAD and POISON. What this adds is the FLOATER:
+// base gains Resolve on almost every turn of a fight, and a ramp the player
+// cannot see climbing is a ramp they do not feel. The pipped bank used to carry
+// that job.
+function gainResolve(p, amount, why) {
+  if (!p || p.class !== 'base' || !(amount > 0) || p.hp <= 0) return 0;
+  applyStatus(p, 'resolve', { stacks: amount });
+  floatText(p, '+' + amount + ' RESOLVE', 'tally');
   return amount;
 }
 
@@ -407,13 +421,18 @@ function applyEnemyDamage(e, p, mult, opts) {
   // of it. The two are summed under one cap on purpose — see the note on the
   // brace status for why it is not a generic incomingMult.
   if (p.class === 'base') {
-    const dr = Math.min(0.85, (p.resolve||0)*P().resolveDR + statusPower(p, 'brace'));
+    // UNCAPPED NUMBER, BOUNDED EFFECT. Resolve has no stack ceiling any more,
+    // so this cap is the only thing standing between a long fight and outright
+    // immunity — and everything past it still pays out through Last Stand, so
+    // the stacks above the cap are banked damage rather than waste.
+    const held = statusStacks(p, 'resolve');
+    const dr = Math.min(0.85, held*P().resolveDR + statusPower(p, 'brace'));
     if (dr > 0) {
       dmg = Math.floor(dmg * (1 - dr));
       // Reported as one number because it IS one number — the sum is what the
       // cap applies to, so splitting it in the log would imply two reductions.
       notes.push('GUARD −' + Math.round(dr * 100) + '%'
-        + ' (RESOLVE ×' + (p.resolve || 0) + (hasStatus(p, 'brace') ? ' + BRACE' : '') + ')');
+        + ' (RESOLVE ×' + held + (hasStatus(p, 'brace') ? ' + BRACE' : '') + ')');
     }
   }
   dmg = Math.max(1, dmg);
@@ -421,13 +440,14 @@ function applyEnemyDamage(e, p, mult, opts) {
   state.damageTaken = (state.damageTaken || 0) + dmg;
   logDamage(label, p, dmg, notes.concat([logNum(p.hp) + '/' + logNum(p.maxHp) + ' left']));
   // Psy: an enemy that gets its hands on you regains its nerve — the mark
-  // eases instead of your bank draining. Same pressure, honest owner: being
+  // eases instead of a player-side number draining. Same pressure, honest owner: being
   // hit still costs psy its dominance, but as the ENEMY's recovery, which is
   // both truer to the theme and visible on the card it happens to.
   if (p.class === 'psy' && e && e.hp > 0)
     shedStacks(e, 'dread', P().dreadLossPerHit, 'nerve steadied — its blow landed');
-  // Unmutated: every hit taken steadies you, and Brace banks an extra.
-  if (p.class === 'base') bankAdjust(p, (P().resolvePerHit||1) + statusSum(p, 'bankOnHitTaken'), 'hit taken');
+  // Unmutated: every hit taken steadies you.
+  if (p.class === 'base')
+    gainResolve(p, (P().resolvePerHit||1) + statusSum(p, 'resolveOnHitTaken'), 'hit taken');
   // Sym: EVERY hit feeds the organism, with no window and no condition. This
   // is the half that used to live inside Raise Spines, which meant the strain
   // that wants to be hit was only paid for it three turns in every seven.
@@ -484,14 +504,14 @@ function applyEnemyDamage(e, p, mult, opts) {
 //
 // One sentence, four meanings, because every strain runs on something that
 // wants filling: DREAD for psy, THORNS for sym, Resolve for Unmutated, and
-// for bio the rot itself, which is its bank in everything but name. Instinct
+// for bio the rot itself. Instinct
 // buys the same sentence for everyone ("my mechanic is online when I need it")
 // and cashes out as whatever the strain in front of you is made of.
 //
 // Psy's branch is its KIT — the terror class where a flash of the knife plants
 // fear — so it reads its strength off the basic (Hunt's dreadOnCrit, the same
 // pattern as bio's Slash carrying its poison) and ignores the parked knob.
-// The other three wait on critBankGain, which sits at 0 until each class's
+// The other three wait on critStrainGain, which sits at 0 until each class's
 // design is settled enough to judge an accelerator on top of it.
 //
 // Every enemy-side branch guards on the enemy still standing: a killing crit
@@ -503,7 +523,7 @@ function creditCrit(p, e) {
     if (dread && e && e.hp > 0) applyStatus(e, 'dread', { stacks: dread });
     return;
   }
-  const gain = P().critBankGain || 0;
+  const gain = P().critStrainGain || 0;
   if (!gain) return;
   if (p.class === 'bio') {
     if (e && e.hp > 0)
@@ -513,7 +533,7 @@ function creditCrit(p, e) {
   // Sym has no wallet any more — its charge IS the thorns number, so the same
   // sentence cashes out as growth rather than as a pip.
   if (p.class === 'sym') { growThorns(p, gain, 'CRIT'); return; }
-  bankAdjust(p, gain, 'CRIT');
+  if (p.class === 'base') { gainResolve(p, gain, 'CRIT'); return; }
 }
 
 // CONSUMED FEAR FEEDS YOU — psy's sustain, one path for both meals: Kill
@@ -559,7 +579,7 @@ function applyPlayerDamage(p, e, skill) {
     notes.push('DREAD ×' + dreadSpent + ' consumed');
   }
   // Resolve (base): Last Stand scales with everything you endured.
-  const resolveSpent = skill.consumesResolve ? (p.resolve || 0) : 0;
+  const resolveSpent = skill.consumesResolve ? statusStacks(p, 'resolve') : 0;
   if (resolveSpent > 0) {
     dmg += p.atkPower * (skill.perResolvePower || 0) * resolveSpent;
     notes.push('RESOLVE ×' + resolveSpent + ' spent');
@@ -635,7 +655,7 @@ function applyPlayerDamage(p, e, skill) {
   if (isCrit) shake(7);
 
   if (skill.consumesResolve && resolveSpent > 0)
-    bankAdjust(p, -resolveSpent, 'spent by ' + skill.name);
+    removeStatus(p, 'resolve', 'spent by ' + skill.name);
   if (skill.consumesSpines) removeStatus(p, 'spines', 'consumed by ' + skill.name);
   // DREAD spent is DREAD gone: the enemy's fear breaks with the blow, and its
   // turn rate recovers with it. Deliberately after logDamage, so the hit line
@@ -648,7 +668,7 @@ function applyPlayerDamage(p, e, skill) {
     devour(p, dreadSpent, 'consumed by ' + skill.name);
   }
   // Resolve (base): landing a hit steadies you.
-  if (skill.buildsResolve) bankAdjust(p, skill.buildsResolve, skill.name);
+  if (skill.buildsResolve) gainResolve(p, skill.buildsResolve, skill.name);
   // A crit feeds your strain — live for psy (crits plant DREAD), parked for
   // the rest. See creditCrit.
   if (isCrit) creditCrit(p, e);
@@ -769,9 +789,9 @@ function fireSkill(caster, skill, target) {
     const notes = [];
     // Unmutated: Bandage patches better the deeper you're dug in.
     if (skill.resolveHealBonus) {
-      const bonus = skill.resolveHealBonus * (caster.resolve || 0);
+      const bonus = skill.resolveHealBonus * statusStacks(caster, 'resolve');
       frac += bonus;
-      if (bonus > 0) notes.push('RESOLVE ×' + (caster.resolve || 0) + ' +' + Math.round(bonus * 100) + '%');
+      if (bonus > 0) notes.push('RESOLVE ×' + statusStacks(caster, 'resolve') + ' +' + Math.round(bonus * 100) + '%');
     }
     notes.push(Math.round(frac * 100) + '% max HP');
     let amount = Math.max(1, Math.floor(caster.maxHp * frac));

@@ -88,10 +88,20 @@ A turn-based browser roguelite. Personal project, built for enjoyment.
   a telegraph out as an ordinary hit). Its numbers are early and owner-tuned by
   play. Speed is deliberately a COST for this class — more of your turns means
   fewer enemy swings, and swings are food.
-- **Unmutated cannot beat the first boss** and psy barely can — measured, and
-  the two failing assertions in `npm test playability` say so out loud. This
-  predates the sym pass (it was three failures before it) and is the
-  point-scarcity wall the DEV TOOLS skip already found: level 2 with 100 max HP
-  against a 90-damage telegraph. Base drowns first because its sustain is flat
-  and rare, exactly as the enemy-table note predicts. Not a regression, and not
-  fixed — it wants an owner decision about act 1, not a quiet nudge.
+- **Unmutated cannot beat the first boss** — 0 of 40, measured, and the failing
+  assertion in `npm test playability` says so out loud. This predates the sym
+  pass (it was three failures before it) and is the point-scarcity wall the DEV
+  TOOLS skip already found: level 2 with 100 max HP against a 90-damage
+  telegraph. Base drowns first because its sustain is flat and rare, exactly as
+  the enemy-table note predicts. Not a regression, and not fixed — it wants an
+  owner decision about act 1, not a quiet nudge. Bio sits right on its 0.5 floor
+  and flakes across runs (18-27 of 40), so that assertion goes red and green on
+  its own; psy cleared comfortably once DREAD lost its cap.
+- **No banks, and no stack ceilings.** Every strain runs on ONE UNCAPPED NUMBER
+  worn as a status badge: bio POISON and psy DREAD on the enemy, sym THORNS and
+  base RESOLVE on the player. Only THORNS is run-permanent; the other three
+  rebuild every fight. Effects stay bounded where an unbounded one would end the
+  game (the DREAD slow saturates, the RESOLVE reduction is capped at 85%) — the
+  rule is uncapped number, bounded effect. `npm test uncapped` guards the
+  absence, since a ceiling is one line in a status definition and would come
+  back silently.

@@ -1118,7 +1118,7 @@ body {
    it is the same colour the skill that applied it used.
 
    The enemy got this treatment first and the player was deliberately left with
-   chips, because its statuses sat beside the bank pips and needed an edge to
+   chips, because its statuses sat beside the old bank pips and needed an edge to
    read as separate things. That reason retired with sym's wallet: only
    Unmutated draws pips at all now, so the row is statuses and nothing else and
    the boxes were drawing a distinction that no longer exists. One rule, both
@@ -1150,56 +1150,18 @@ body {
 .status.dread { color: var(--psy); }
 .status.brace { color: var(--base); }
 
-/* Class bank pips — Unmutated's Resolve, and nothing else now.
-   COLLAPSES WHEN THERE IS NOTHING TO DRAW. The row is emitted for every player
-   so updateUnitCard always has a node to repaint, but three of the four strains
-   render no pips into it, and a reserved 18px of nothing left a gap between the
-   health bar and the statuses that read as a missing element rather than as
-   spacing. :empty is the whole fix, and it keeps working by itself if a strain
-   ever gains or loses a bank. */
-.bank-row { display: flex; justify-content: center; min-height: 18px; margin-bottom: 2px; }
-.bank-row:empty { display: none; }
-.bank { display: inline-flex; align-items: center; gap: 7px; }
-.bank-label {
-  font-family: 'Orbitron', sans-serif; font-weight: 700;
-  font-size: 0.58rem; letter-spacing: 1px;
-}
-.bank-pips { display: inline-flex; gap: 3px; }
-.bank .pip {
-  width: 9px; height: 9px; border-radius: 50%;
-  border: 1px solid var(--bank-color, var(--muted));
-  background: transparent;
-  transition: background 0.15s, box-shadow 0.15s;
-}
-.bank .pip.full {
-  background: var(--bank-color, var(--muted));
-  box-shadow: 0 0 6px var(--bank-glow, transparent);
-}
-.bank-spores   { --bank-color: var(--sym); --bank-glow: rgba(251,146,60,0.6); }
-.bank-resolve  { --bank-color: #ffffff;    --bank-glow: rgba(255,255,255,0.6); }
-.bank-spores   .bank-label { color: var(--sym); }
-.bank-resolve  .bank-label { color: #ffffff; }
-
-/* Bank tension: one-from-full makes the empty pip shimmer (an invitation);
-   a full bank hums steadily until it is spent (a loaded weapon). */
-@keyframes pipInvite {
-  0%, 100% { box-shadow: none; }
-  50% { box-shadow: 0 0 7px var(--bank-glow, transparent); }
-}
-.bank.near .pip:not(.full) { animation: pipInvite 1.1s ease-in-out infinite; }
-@keyframes bankBrim {
-  0%, 100% { filter: brightness(1); }
-  50% { filter: brightness(1.65); }
-}
-.bank.brim .bank-pips { animation: bankBrim 1.0s ease-in-out infinite; }
-.bank.brim .bank-label { text-shadow: 0 0 9px var(--bank-glow, transparent); }
+/* THE BANK PIPS ARE GONE, and so is the row that held them. Every strain now
+   runs on one uncapped number worn as a status badge above — a fixed row of six
+   dots cannot draw a number with no ceiling, so the UI was quietly the thing
+   forcing the ceiling to exist. Unmutated's RESOLVE was the last one left and
+   it reads as a status now like everyone else's. */
 
 /* Floater color is a fixed vocabulary — the color names the EVENT, never the
    class: dealt damage white, taken damage red, crits gold, XP amber,
-   bank/notes muted. Green is nature's: healing ticks up (+) and poison ticks
+   a tallied number and plain notes muted. Green is nature's: healing ticks up (+) and poison ticks
    down (−) in the same green — the sign carries the meaning, and the pairing
    is deliberate (poison IS bio's identity). Nothing else may use green.
-   Class identity lives in the banks and the UI tint, not in the numbers. */
+   Class identity lives in the status badges and the UI tint, not the numbers. */
 .float-dmg {
   position: absolute;
   font-family: 'Orbitron', sans-serif;
@@ -1223,7 +1185,10 @@ body {
   text-shadow: 0 2px 8px rgba(0,0,0,0.9), 0 0 16px currentColor;
   animation: floatUpCrit 1.3s ease forwards;
 }
-.float-dmg.bank { color: #eaf2ff; font-size: 0.95rem; letter-spacing: 0.5px; }
+/* A strain's own number moving — THORNS growing, RESOLVE steadying. Muted on
+   purpose: it happens most turns, so it must read without competing with the
+   damage it caused. */
+.float-dmg.tally { color: #eaf2ff; font-size: 0.95rem; letter-spacing: 0.5px; }
 /* EVADE / BLOCK: quiet gray notes — information, not a reward, so they must
    not compete with damage numbers or read as XP the way they used to. */
 .float-dmg.note {

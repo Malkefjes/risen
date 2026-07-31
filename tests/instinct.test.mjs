@@ -113,8 +113,8 @@ export default async function ({ page, ok }) {
   // on every crit, so a stray default or a second caller would show up as a
   // bank line in a real run. Psy is deliberately absent from this loop — its
   // crit rule is supposed to fire.
-  ok('the bank knob is parked at zero',
-     await page.evaluate(() => BALANCE.player.critBankGain) === 0);
+  ok('the strain-charge knob is parked at zero',
+     await page.evaluate(() => BALANCE.player.critStrainGain) === 0);
   const parked = await page.evaluate(() => {
     const out = { crits: 0, banked: 0, poisonFromCrit: 0 };
     for (const cls of ['sym', 'base', 'bio'])
@@ -143,8 +143,8 @@ export default async function ({ page, ok }) {
   // Still wired, not deleted: flipping the knob must be the whole switch.
   ok('the scaffold is still callable', await page.evaluate(() => typeof creditCrit === 'function'));
   const flipped = await page.evaluate(() => {
-    const was = BALANCE.player.critBankGain;
-    BALANCE.player.critBankGain = 1;
+    const was = BALANCE.player.critStrainGain;
+    BALANCE.player.critStrainGain = 1;
     // Sym's charge is THORNS now — the wallet is gone, so the same sentence
     // has to cash out as growth. hp is set because growThorns declines to feed
     // a corpse.
@@ -152,7 +152,7 @@ export default async function ({ page, ok }) {
                 hp: 100, isPlayer: true, statuses: [], talents: {} };
     applyDerivedStats(p);
     creditCrit(p, { name: 'x', isPlayer: false, hp: 100, maxHp: 100, statuses: [] });
-    BALANCE.player.critBankGain = was;
+    BALANCE.player.critStrainGain = was;
     return p.thornsGrown;
   });
   ok('flipping the knob is the whole switch', flipped === 1, String(flipped));
@@ -161,13 +161,13 @@ export default async function ({ page, ok }) {
   // logged against something already dead and never come due. Asserted with the
   // knob deliberately on, since that is the only state where it can happen.
   const corpse = await page.evaluate(() => {
-    const was = BALANCE.player.critBankGain;
-    BALANCE.player.critBankGain = 1;
+    const was = BALANCE.player.critStrainGain;
+    BALANCE.player.critStrainGain = 1;
     const p = { class: 'bio', str: 5, instinct: 5, speed: 5, vit: 5, talents: {} };
     applyDerivedStats(p);
     const e = { name: 'x', isPlayer: false, hp: 0, maxHp: 100, statuses: [] };
     creditCrit(p, e);
-    BALANCE.player.critBankGain = was;
+    BALANCE.player.critStrainGain = was;
     return e.statuses.length;
   });
   ok('a killing crit does not poison a corpse', corpse === 0, String(corpse));

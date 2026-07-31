@@ -70,7 +70,7 @@ function freshPlayer(classId) {
     skills: cls.skills.map(s => Object.assign({cd:0}, s)),
     // thornsGrown starts at 0 for everyone and only sym ever moves it: the
     // ramp is run-scoped, so a fresh player is a fresh organism.
-    statuses:[], isPlayer:true, meter:0, resolve:0, thornsGrown:0, _statusKey:''
+    statuses:[], isPlayer:true, meter:0, thornsGrown:0, _statusKey:''
   };
   p.basicSkill = p.skills.find(s => s.basic) || p.skills[0];
   return p;

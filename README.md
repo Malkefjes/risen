@@ -32,6 +32,7 @@ behaviour that regressed rather than an internal detail:
 | `refinements` | refinements stay removed, and drafting still works without them |
 | `build` | the build stamp reaches the title, the log and the save |
 | `thorns` | sym grows one number, and it is the only thing it spends |
+| `uncapped` | every strain runs on one uncapped number, and there are no banks |
 
 ## Measuring
 

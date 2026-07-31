@@ -17,6 +17,7 @@ const SUITES = [
   ['hud',          'the screen never disagrees with the sheet'],
   ['instinct',     'Instinct buys crit chance and damage, and reaches Strength'],
   ['thorns',       'sym grows one number, and it is the only thing it spends'],
+  ['uncapped',     'every strain runs on one uncapped number, and there are no banks'],
   ['playability',  'the first boss is a check, not a wall'],
   ['headless',     'headless mode runs the same game, with no side effects']
 ];

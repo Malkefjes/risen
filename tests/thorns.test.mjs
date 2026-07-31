@@ -168,12 +168,9 @@ export default async function ({ page, ok }) {
 
   // ---- The wallet is gone -------------------------------------------------
   const wallet = await page.evaluate(() => ({
-    bank: bankOf('sym'), baseBank: !!bankOf('base'),
     ids: CLASSES.sym.skills.map(s => s.id),
     readout: (() => { startGame(true, 'sym'); return strainReadout(state.player); })()
   }));
-  ok('sym holds no pipped bank any more', wallet.bank === null, JSON.stringify(wallet.bank));
-  ok('Unmutated still does', wallet.baseBank);
   ok('the kit is latch / spines / shed / provoke',
      wallet.ids.join(',') === 'latch,spines,shed,provoke', wallet.ids.join(','));
   ok('THORNS is the strain readout', wallet.readout && wallet.readout.label === 'Thorns',
