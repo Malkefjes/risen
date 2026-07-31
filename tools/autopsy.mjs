@@ -36,7 +36,9 @@
 // Prints numbers. Concludes nothing. See tools/README.md.
 import { serve, launch } from '../tests/harness.mjs';
 
-const RUNS = Number(process.argv[2] || 30);
+// 60 by default: the whole thing costs about 4 seconds, so there is no reason
+// to read a p10/p90 band off a thin sample. Pass a number to change it.
+const RUNS = Number(process.argv[2] || 60);
 const server = await serve();
 const browser = await launch();
 const page = await (await browser.newContext()).newPage();
