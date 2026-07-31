@@ -155,7 +155,7 @@
 // KEEP THIS SEPARATE FROM BALANCE.saveKey. That one answers "are saved runs
 // still valid" and is bumped only when a change makes an old sheet wrong.
 // Deriving it from this would wipe every save on a typo fix.
-const BUILD = '2026-07-31o';
+const BUILD = '2026-07-31p';
 
 const BALANCE = {
   player: {
@@ -882,7 +882,32 @@ const CLASSES = {
       // back up as you do it — while leaving an engine to keep running. The
       // finisher is now "how deep do I cut into my own advantage", asked every
       // five turns, instead of "do I delete my class".
-      { id:'kill', name:'Kill', desc:'Deal {power!} damage, +{perDreadPower!} per DREAD torn away, and DEVOUR it: heal {feedPerDread%} of max HP for each. Takes HALF the enemy’s DREAD.', type:'attack', power:1.20, perDreadPower:0.60, consumesDread:true, consumeFrac:0.5, feedPerDread:BALANCE.player.dreadFeedFrac, target:'enemy', cdTurns:5 }
+      // THE CARD SHOWS THE WHOLE BLOW, not its parts. Every other card can
+      // state one number because one number is all it deals; Kill's depends on
+      // what is standing in front of you, and "1.2x Attack Damage plus 0.6x per
+      // stack, of half the pile rounded up" is arithmetic no one should be
+      // doing mid-fight. killTotal computes exactly what the next press will
+      // hit for — including that only HALF the stacks are torn away, which is
+      // the part that would otherwise be silently double-counted by eye.
+      //
+      // It reads the same fields the damage pipeline reads, off its own card,
+      // so the number cannot drift from the hit when one of them is retuned.
+      //
+      // Deliberately NOT modelling DREAD's vulnerability, crits, or WEAK: every
+      // other card states what the skill produces and lets the fight modify it,
+      // and a card that folded in some multipliers but not others would be
+      // lying more precisely. The blow lands HARDER than this against a marked
+      // enemy, which is the right direction to be wrong in.
+      //
+      // Base power 1.20 -> 2.00: exactly twice Attack Damage, so the floor of
+      // the finisher is legible without a pile behind it.
+      { id:'kill', name:'Kill', desc:'Deal {killTotal} damage. Tears away HALF the enemy’s DREAD — +{perDreadPower!} damage and {feedPerDread%} of max HP healed for each.', type:'attack', power:2.00, perDreadPower:0.60, consumesDread:true, consumeFrac:0.5, feedPerDread:BALANCE.player.dreadFeedFrac, target:'enemy', cdTurns:5,
+        killTotal: (p, s) => {
+          const e = state.enemy;
+          const held = (e && e.hp > 0 && !e._defeated) ? statusStacks(e, 'dread') : 0;
+          const spent = Math.ceil(held * (s.consumeFrac || 1));
+          return formatNum(Math.max(1, Math.floor(p.atkPower * ((s.power || 1) + (s.perDreadPower || 0) * spent))));
+        } }
     ]
   },
   // THE ORGANISM. Sym's mechanic is THORNS — one number, worn on the player,

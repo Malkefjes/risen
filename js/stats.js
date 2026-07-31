@@ -331,7 +331,10 @@ function fmtDesc(def) {
     // rather than printing a number from an imaginary sheet.
     if (typeof v === 'function') {
       if (!state.player) return token;
-      v = v(state.player);
+      // The card itself is passed too: a computed field that needs the skill's
+      // other numbers (Kill's total reads its own power and per-stack rate)
+      // should read them off the card rather than restate them and drift.
+      v = v(state.player, def);
     }
     if (v == null) return token;
     if (mode === '%') return Math.round(v * 100) + '%';
