@@ -392,13 +392,15 @@ function applyDerivedStats(p) {
   // removed. If a strain should be fast again it wants a MULTIPLIER here, not
   // a base, so that it scales the earned rate instead of replacing it.
   //
-  // The two caps are applied in order and mean different things: points
-  // saturate at speedApsCap, then earned multipliers apply, then apsCap is the
-  // absolute ceiling. Capping the stat contribution BEFORE apsMult is what
-  // lets a player who has maxed Speed still gain from an earned multiplier
-  // rather than drawing something that does nothing.
-  const fromPoints = Math.min(B.speedApsCap, p.speed * B.apsPerSpeed);
-  p.attackSpeed = Math.min(B.apsCap, fromPoints * p.apsMult);
+  // Points no longer saturate at all — the curve flattens without stopping, so
+  // there is no "maxed Speed" to worry about paying an earned multiplier on.
+  // apsCap applies after apsMult and is a backstop for that multiplier alone.
+  // The anchor is a pure stat read (5 Speed x 0.20 = 1.00); everything above it
+  // is bought on a curve that flattens but never stops. See the apsGain note.
+  const anchor = BALANCE.player.speedAnchor * B.apsPerSpeed;
+  const above = Math.max(0, p.speed - BALANCE.player.speedAnchor);
+  const earned = B.apsGain * above / (above + B.apsHalfPoints);
+  p.attackSpeed = Math.min(B.apsCap, (anchor + earned) * p.apsMult);
 
   // Max HP is Vitality x 20, full stop. Symbiotic used to take a reduced rate to
   // pay for its thorns; that came out with the flat base and the per-level

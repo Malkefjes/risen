@@ -155,7 +155,7 @@
 // KEEP THIS SEPARATE FROM BALANCE.saveKey. That one answers "are saved runs
 // still valid" and is bumped only when a change makes an old sheet wrong.
 // Deriving it from this would wipe every save on a typo fix.
-const BUILD = '2026-07-31q';
+const BUILD = '2026-07-31r';
 
 const BALANCE = {
   player: {
@@ -173,19 +173,44 @@ const BALANCE = {
     // With the base gone every stat obeys ONE rule: a stat is (5 + points) / 5
     // times its starting value. 20% per point, across the sheet.
     apsPerSpeed: 0.20,
-    // TWO CEILINGS, doing different jobs:
-    //   speedApsCap  what SPEED POINTS alone can buy. Reached at 20 Speed (15
-    //                points), and deliberately x4 rather than the x8.2 parity
-    //                would allow: boss windups fire every 3 ENEMY actions, so
-    //                at x4 you already get 12 turns to answer one, and past
-    //                that the telegraph stops being a decision.
-    //   apsCap       absolute ceiling AFTER apsMult. Leaves headroom so any
-    //                earned multiplier still pays out for a player who has
-    //                capped the stat itself. Nothing sets apsMult today; this
-    //                is the room for whatever does.
-    // Points past 20 are not wasted: they keep buying evade below, so
-    // overinvestment degrades gently instead of hitting a wall.
-    speedApsCap: 4.00, apsCap: 6.00,
+    // SPEED DIMINISHES INSTEAD OF CAPPING, and the wall it replaces was the
+    // single biggest balance fault measured in this game.
+    //
+    // It used to be flat 0.20 a point into a hard ceiling of x4.00 — reached at
+    // 20 Speed, which is 15 points of a run's 33. A ceiling you hit at the
+    // halfway mark is not a ceiling, it is a TARGET: you max the stat by wave
+    // 15 and every point after it is free to pour into Vitality, which is
+    // exactly the Speed+Vitality build that wins 20 runs out of 20 while an
+    // even spread wins none. And turn rate is the one stat that buys offence
+    // and defence at once (it multiplies both halves of "your turns before
+    // their hits add up"), so it was roughly three times the per-point value of
+    // Strength or Vitality right up until it stopped being worth anything.
+    //
+    // The new shape: the anchor is still exactly x1.00 at 5 Speed — nothing
+    // about that moves — and every point above it buys a share of apsGain that
+    // shrinks as you go. apsHalfPoints is where you have bought HALF of what
+    // the curve will ever give. Picked so the first point still feels like the
+    // old one (+0.18 against +0.20) while a full run's investment lands near
+    // x2.5 instead of slamming into x4 at the midpoint.
+    //
+    // NOTHING IS EVER WASTED AND NOTHING IS EVER SOLVED, which is the property
+    // a stat needs to stay a decision: the curve has no number where Speed
+    // stops mattering, and no number where you are done buying it. Instinct
+    // already lives this rule from the other side — its crit chance caps but
+    // crit damage keeps climbing, so overinvestment still pays.
+    //
+    // apsGain is THE DIAL. It is the asymptote above the anchor: raise it and
+    // full investment gets faster without the early points changing much, since
+    // apsHalfPoints holds the opening slope.
+    // The sheet everything is anchored to starts every stat at 5, so that is
+    // where "points above the anchor" counts from. Named rather than a literal
+    // 5 in the formula: the anchor is a design fact, not a magic number.
+    speedAnchor: 5,
+    apsGain: 2.00, apsHalfPoints: 10,
+    //   apsCap  absolute ceiling AFTER apsMult, and now the only cap left. It
+    //           does not bind the stat (the curve tops out near x3 on its own);
+    //           it is the backstop for whatever earned multiplier arrives.
+    apsCap: 6.00,
     // The two anchors the rest of the player is tuned against, both chosen to be
     // legible rather than derived: 5 Strength is 25 Attack Damage, 5 Vitality is
     // 100 HP. Everything reads off one point being worth 5 damage or 20 HP, so
