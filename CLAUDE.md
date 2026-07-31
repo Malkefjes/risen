@@ -2,6 +2,32 @@
 
 A turn-based browser roguelite. Personal project, built for enjoyment.
 
+## Why any of this exists
+
+**THE GAME IS FOR THE PLAYER, AND FOR A LONG TIME.** Nothing here is an end in
+itself. Tests, instruments, balance headers, the bots — each exists to protect a
+play experience, and any of them that stops doing that is overhead to delete
+rather than maintain.
+
+Two words carry it. **PLAYER** is the owner, who actually plays this — not a
+hypothetical audience whose preferences can be argued about instead of observed.
+**LONG TERM** rules out the cheap version: a build that solves the allocation
+screen, a number that trivialises a boss, a rotation pressed the same way every
+fight are all fun once and then never again.
+
+The test, and it must produce NOs or it is steering nothing: **would a player
+ever feel this?** If nobody could, it is overhead — unless it protects something
+they would feel later, which is the entire job of the four suites. Nobody feels
+a save-format bump; everybody feels a corrupted run.
+
+Fun is felt, not argued, so it is judged by PLAYING. Everything below about
+tools that never conclude and tests with no opinion about a balance number is
+not a separate policy. It is this one, applied.
+
+Expect this to bite hardest on TOOLING, because that is where time sinks
+actually live: a sharper instrument only serves the player at one remove, and
+the second remove is where work goes to die.
+
 ## How this project works
 
 - **The owner plays the game and gives feedback. They never read code** and
