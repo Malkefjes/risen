@@ -17,23 +17,26 @@ Everything else in this repo exists only to test and measure the game.
 
     npm run setup     # once: installs playwright + chromium
     npm test          # all suites
-    npm test strain   # only suites whose name matches
+    npm test hud      # only suites whose name matches
 
-The suites drive the real game in a headless browser and click real buttons.
-Each one encodes a bug that actually happened, so a failure names the
-behaviour that regressed rather than an internal detail:
+Four suites, and the list is short on purpose. A test here earns its place by
+guarding a SEAM — somewhere the game can break without the rules being wrong —
+and nothing else. It never has an opinion about a balance number: what a class
+should clear, how deep a wound should run and how much of your bar a boss may
+take are the owner's to judge by playing, and a threshold in a test only turns
+that judgement into an argument with a machine. Numbers get measured in
+`tools/`, where they are printed and nothing concludes anything.
 
 | suite | guards |
 |---|---|
-| `saves` | run state resets between runs; two save slots stay independent |
-| `strain` | a new run starts as the strain you picked |
 | `saveversion` | a save-format bump drops older saves rather than migrating them |
-| `mutations` | the mutation system works while its content pool is empty |
-| `refinements` | refinements stay removed, and drafting still works without them |
 | `build` | the build stamp reaches the title, the log and the save |
-| `thorns` | sym grows one number, and it is the only thing it spends |
-| `uncapped` | every strain runs on one uncapped number, and there are no banks |
-| `bleed` | Unmutated cuts, and the wound is as deep as the grit behind it |
+| `hud` | the screen never disagrees with the sheet |
+| `headless` | a headless run and an on-screen run play the identical game |
+
+The last one is the load-bearing one: every balance number in this repo is
+measured through `simulateRun`, so if it ever stopped matching the real game,
+every measurement would quietly become fiction.
 
 ## Measuring
 

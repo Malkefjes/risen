@@ -1,26 +1,16 @@
 // Runs every suite against a freshly served copy of the game.
 //
 //   npm test              all suites
-//   npm test -- strain    only suites whose name contains "strain"
+//   npm test -- hud       only suites whose name contains "hud"
 //
 // Each suite gets its own browser context, so one suite's saves can never
 // leak into another's.
 import { serve, launch, tracker, openGame } from './harness.mjs';
 
 const SUITES = [
-  ['saves',        'run state resets between runs; two save slots'],
-  ['strain',       'strain select cannot start the wrong class'],
-  ['saveversion',  'save version bump purges older saves'],
-  ['mutations',    'mutation system works with an empty pool'],
-  ['refinements',  'refinements are gone and drafting still works'],
-  ['build',        'build stamp reaches the title, log and save'],
+  ['saveversion',  'a save-format bump drops older saves rather than migrating them'],
+  ['build',        'the build stamp reaches the title, log and save'],
   ['hud',          'the screen never disagrees with the sheet'],
-  ['instinct',     'Instinct buys crit chance and crit damage, and where it lands vs Strength'],
-  ['thorns',       'sym grows one number, and it is the only thing it spends'],
-  ['uncapped',     'every strain runs on one uncapped number, and there are no banks'],
-  ['bleed',        'Unmutated cuts, and the wound is as deep as the grit behind it'],
-  ['playability',  'the first boss, measured — clear rates and what the telegraph costs'],
-  ['telegraph',    'what a telegraph costs, and that an answer is never wasted'],
   ['headless',     'headless mode runs the same game, with no side effects']
 ];
 

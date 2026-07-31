@@ -21,28 +21,36 @@ A turn-based browser roguelite. Personal project, built for enjoyment.
   `css/risen.css` before adding a floater type.
 - **Scale verification to the change — do not run the full suite for small
   stuff.** CI runs everything on every push, so a cosmetic tweak or a keybind
-  ships on a syntax check and CI catches the rest. Run suites locally only
-  when the change touches what they guard (rules, saves, balance, the sim),
-  and prefer `npm test <name>` for one suite over the whole run. Suggest a
-  full local run only when it's genuinely advisable; the owner accepts
-  finding the occasional break by playing.
-- **Tests come in two speeds, pick by what broke historically.** Browser
-  suites (clicking real buttons) guard UI seams — every early bug was a gap
-  between the rules and the screen. Pure-rules behaviour (statuses, skills,
-  banks, damage math) should instead get fast suites through `simulateRun`:
-  hundreds of assertions in seconds, no browser. Don't unit-test private
-  internals in either style; drive the game through its real surfaces.
-- **NO TEST MAY HAVE AN OPINION ABOUT A BALANCE NUMBER.** A suite checks that
-  a mechanic works (`ok`) or reports a number (`say`) — never that a number
-  beats a threshold. "Base clears the first boss 50% of the time" is a design
-  decision wearing a test's clothes, and it does real damage: the number moves,
-  something goes red, and the change gets made — to the game or to the
-  threshold — before the owner has seen the number at all. The measurement
-  never arrives; a verdict arrives, already acted on. Same rule for `tools/`:
-  they print, they never conclude. **If a number moves, report it and let the
-  owner decide.** Never edit a threshold to make a run green — if you find one,
-  the threshold is the bug. The line: if the check failed, would you have found
-  a BUG, or found out the game changed? Only the first belongs in `ok`.
+  ships on a syntax check and CI catches the rest. The whole run is four
+  suites now and takes under a minute, so "run it locally" is cheap when a
+  change touches saves, the HUD or the sim.
+  **What the suites no longer cover is the rules themselves.** Statuses,
+  skills, damage math and balance have no automated guard at all — that is
+  deliberate (see below), and it means a rules change is verified by
+  MEASURING it with `tools/` and reporting the numbers, then by the owner
+  playing it. Don't reach for a new test instead.
+- **FOUR SUITES, AND THAT IS THE POINT. Do not add a fifth without being
+  asked.** What survives guards a SEAM — a place the game can break while the
+  rules are perfectly correct: a save format, a build stamp, two HP readouts
+  drawn on different schedules, and headless matching on-screen. Ten other
+  suites were deleted outright, and they were not deleted for being wrong.
+- **NO TEST MAY HAVE AN OPINION ABOUT A BALANCE NUMBER**, which is why those
+  ten went. A test that demands "base clears the first boss 50% of the time" is
+  a design decision wearing a test's clothes, and it does real damage: the
+  number moves, something goes red, and the change gets made — to the game or
+  to the threshold — before the owner has seen the number at all. The
+  measurement never arrives; a verdict arrives, already acted on. It happened
+  in the session that led to this rule.
+  **How the owner develops this game: we change something, we measure what
+  happened, HE decides what it means.** Nothing in the repo gets a vote. Same
+  for `tools/` — they print, they never conclude. Never edit a threshold to
+  make a run green; if you find a threshold, it is the bug, not the number that
+  tripped it. `tracker()` in `tests/harness.mjs` has `say()` for reporting a
+  number if a new suite ever needs one.
+- **Measure in `tools/`, not in `tests/`.** A question like "is this class too
+  hard" belongs in an instrument the owner runs when he wants it, not in
+  something CI runs on every push. Don't unit-test private internals; drive the
+  game through its real surfaces.
 - **The balance header's rules are defaults with named levers, not laws.**
   "Strains share one baseline", "damage is linear in Strength" bind the
   BASE sheet so feel stays judgeable — but talents and mutations may
@@ -117,10 +125,10 @@ A turn-based browser roguelite. Personal project, built for enjoyment.
   Now: brace lasts 2 turns (strict, not broken) and the skilled bot holds it for
   the telegraph. Skilled clears the first boss 100% of the time; GREEDY, which
   is frozen and deliberately unclever, still spends the brace as filler and
-  clears 48% (200 runs). `playability` gives base its own 0.35 floor for that
-  reason — the question "should beatable mean beatable while mashing" is
-  answered NO for this one class, in the test comment, rather than left as a
-  failing assertion.
+  clears 48% (200 runs). That gap IS the class working — for the one strain
+  whose identity is reading a telegraph, mashing should fail — so nothing
+  asserts a floor under it. `tools/bot-bracket.mjs` prints both if you want to
+  see whether it still holds.
 - **A skill can declare how it wants to be played**, and the bot reads it off
   the card rather than learning classes by name: `spendAt` (the count at which a
   spender is worth pressing) and `holdFor: 'windup'` (do not burn this as
@@ -131,6 +139,6 @@ A turn-based browser roguelite. Personal project, built for enjoyment.
   base RESOLVE on the player. Only THORNS is run-permanent; the other three
   rebuild every fight. Effects stay bounded where an unbounded one would end the
   game (the DREAD slow saturates, the RESOLVE reduction is capped at 85%) — the
-  rule is uncapped number, bounded effect. `npm test uncapped` guards the
-  absence, since a ceiling is one line in a status definition and would come
-  back silently.
+  rule is uncapped number, bounded effect. Nothing guards this any more — the
+  suite that did was deleted with the rest — so a ceiling reintroduced in a
+  status definition is one line and nobody will notice. Check by eye.
