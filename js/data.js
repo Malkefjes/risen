@@ -532,11 +532,18 @@ const BALANCE = {
     // what the rank in its name has been promising. Set withinStep x 4 well
     // BELOW tierGrowth - 1 or the step flattens again.
     //
-    // hpBase carries the general buff (132 -> 160) but HP is the weakest
-    // difficulty lever there is: measured, +60% enemy HP left bio, psy and sym
-    // winning 30/30 — a sponge is a longer fight, not a harder one, which is
-    // the same lesson that retired COLOSSAL. Damage and rate below are what
-    // actually threaten a class that sustains.
+    // hpBase carries the general buff (132 -> 160). One measurement worth
+    // keeping beside it: +60% enemy HP, on its own, left bio, psy and sym
+    // winning 30/30. HP alone did not decide those fights — damage and rate
+    // did.
+    //
+    // That is a fact about the game AS IT WAS WHEN MEASURED, not a rule about
+    // HP. A big pool only reads as padding while there is nothing to do inside
+    // the extra turns it buys; once a run has real scaling to spend them on, a
+    // long fight is a stage rather than a wall, and a wide health bar is the
+    // room those systems need to happen in. Reach for HP when you want a fight
+    // to have ROOM, and for damage and rate when you want it to have TEETH —
+    // they are different jobs, not a better and a worse lever.
     hpBase: 160, tierGrowth: 1.85, withinStep: 0.06,
     // dmgExp WAS 0.88 — enemy damage grew SUBLINEARLY in the growth factor
     // while player HP grows linearly in allocated points, so every wave the
@@ -996,10 +1003,13 @@ const ELITES = {
   // it the affix was a tag and an XP multiplier attached to nothing.
   frenzied: { id:'frenzied', tag:'FRENZIED', xp:1.7, apsMult:1.60 },
   vampiric: { id:'vampiric', tag:'VAMPIRIC', xp:1.7, lifesteal:0.30 },
-  // COLOSSAL went the way of ARMORED: x2.2 HP at x0.8 rate changed nothing the
-  // player DOES, only how long it takes — a sponge, not a question. The test
-  // for this table: an affix must change the correct play, not the duration.
-  // "Big" as an IDEA belongs to a future bespoke enemy with moves to match.
+  // COLOSSAL went the way of ARMORED, and for a narrower reason than it was
+  // once written up with: x2.2 HP at x0.8 rate changed nothing the player DID
+  // with the extra turns, because at the time there was nothing to do with
+  // them. The affix was removed, not the idea. An elite tag is a one-line
+  // modifier, and "big" wants moves to go with it — so BIG comes back as a
+  // bespoke enemy that does something with the room its health buys, whenever
+  // there is something to do.
   venomous: { id:'venomous', tag:'VENOMOUS', xp:1.7, poison:true },
   volatile: { id:'volatile', tag:'VOLATILE', xp:1.8, deathNova:0.14 }
 };
