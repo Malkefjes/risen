@@ -109,14 +109,18 @@ const GRENADIER_SPRITES = {
 // man rather than as the thing that got out. 1.25 puts it clearly above the
 // player and clearly below the boss (1.56), which is the whole ladder — you
 // can tell what you are looking at by how much of the arena it takes up.
-// Omitted means 1.0, which is right for the encampment: its soldiers ARE men,
-// and the Grenadier looming over them is the act's size story.
+// Omitted means 1.0. The encampment sat there at first, on the theory that its
+// soldiers ARE men and should stand eye to eye — but drawn armoured and narrow
+// they read as SMALLER than Sonny rather than equal to him, which is a silhouette
+// effect and not a height one (measured: both figures render at exactly the same
+// pixel height, and all this art fills 98.5-100% of its own canvas). 1.15 buys
+// back the presence the drawing loses to being slim.
 const ACT_SPRITES = {
   1: { trash: { experiment: EXPERIMENT_SPRITES }, boss: SYMBIOTE_SPRITES,
        trashScale: 1.25 },
   2: { trash: { enforcer: ENFORCER_SPRITES, combatant: COMBATANT_SPRITES,
                 rifleman: RIFLEMAN_SPRITES },
-       boss: GRENADIER_SPRITES }
+       boss: GRENADIER_SPRITES, trashScale: 1.15 }
 };
 
 // Last resort when a unit carries no act stamp or an unknown roster id — an old
