@@ -1689,10 +1689,17 @@ body.stat-colors-on .side-stat-row[data-stat="vit"] {
    reads — a white digit in a red halo is unambiguously Strength — without the
    digit itself changing colour.
    Amber pending is untouched by all of this: `.side-stat-value.pending`
-   declares its colour outright and outranks the fallback above. */
+   declares its colour outright and outranks the fallback above.
+
+   THE NAME NOW GLOWS HARDER THAN THE NUMBER, which is the reverse of how this
+   shipped. Two layers rather than a bigger single one: the tight 5px puts light
+   right at the letter edge so the word reads as lit rather than blurred, and
+   the wide 20px is the bloom around it. A single large radius at this strength
+   just made the label look out of focus. The number keeps one soft layer — it
+   is white, and piling glow onto white is how a digit stops being legible. */
 body.stat-colors-on .side-stat-row {
   --stat-value-color: var(--text);
-  --stat-name-glow: 0 0 10px var(--stat-glow);
+  --stat-name-glow: 0 0 5px var(--stat-glow), 0 0 20px var(--stat-glow);
   --stat-value-glow: 0 0 14px var(--stat-glow);
 }
 /* The +/- buttons stay neutral. The colour is there to name the STAT, and
