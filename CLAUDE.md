@@ -7,6 +7,11 @@ A turn-based browser roguelite. Personal project, built for enjoyment.
 - **The owner plays the game and gives feedback. They never read code** and
   don't care about repo internals. Translate feel into mechanics yourself;
   never ask them to look at a diff, a file, or a stack trace.
+- **Push to main by default.** The owner plays the published build, so work
+  that is finished belongs on main without being asked — do the work on a
+  branch, then fast-forward main and say so. Don't ask each time. Anything you
+  would not want him to play yet is the only reason to hold it on a branch, and
+  say that out loud when you do.
 - **Design by feel, not by plan.** There is deliberately no roadmap. Don't
   create planning documents; don't accumulate TODO lists in the repo. The
   owner decides what's next by playing.
