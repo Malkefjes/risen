@@ -101,9 +101,13 @@ A turn-based browser roguelite. Personal project, built for enjoyment.
   rate); enemies are fitted to it and computed by separate functions. See
   the header comment in `js/data.js` before touching balance.
 - **The run is 30 waves across two acts**, a boss every 5th, and winning means
-  clearing wave 30. A level grants exactly 3 stat points (`pointsPerLevel`),
-  and a run reaches roughly level 6-7 — so the whole budget is ~18-20 points
-  on top of the starting 5/5/5/5.
+  clearing wave 30. A level grants exactly 3 stat points (`pointsPerLevel`).
+  **Measured, not assumed:** L6 (15 points) arriving at wave 15, L8 (21) at
+  wave 20, L11 (30) at wave 30, L12 (33) on a finish. The balance notes that
+  say "~18-20 points" describe a run that ENDS around wave 15 — they were
+  written when that was a good run — so act 2 is met by a sheet roughly double
+  what the enemy table was fitted against. See the note under `xp` in
+  `js/data.js` for the full table.
 - **No changelog files.** Git history is the changelog; commit messages
   carry the detail.
 

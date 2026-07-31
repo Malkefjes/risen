@@ -677,6 +677,27 @@ const BALANCE = {
   // roughly one level per rank — and L11 sits beyond the run's income, by
   // curve rather than by cap. Chains and elites drag every beat earlier,
   // which stays the right reward.
+  //
+  // "~6 LEVELS x 3 POINTS" DESCRIBES A RUN THAT DIES, and that is worth saying
+  // out loud now that runs finish. It was written when reaching wave 15 was a
+  // good run, so the budget it names is the budget of a LOSS. Measured across
+  // all four strains, median level at the moment each boss wave begins:
+  //
+  //     wave  5    L2    3 points on top of 5/5/5/5
+  //     wave 10    L4    9
+  //     wave 15    L6   15      <- the ~18-20 the balance notes assume
+  //     wave 20    L8   21
+  //     wave 25   L10   27
+  //     wave 30   L11   30
+  //     finished  L12   33
+  //
+  // So the enemy table is fitted against a sheet holding ~15 points and meets
+  // one holding 21-33 for the whole second half of the run. Chains drag it
+  // earlier still — an owner's winning psy finished L12 with 23 Strength, which
+  // is more Strength alone than the budget the curve was drawn against.
+  // Reported, not acted on: whether act 2 should be met with double the sheet
+  // is a design question, and the levers (this cost curve, the kill income
+  // beside it, or act 2's growth) are all still where they were.
   xp: { firstCost: 58, base: 485, pow: 2, powScale: 35,
         killBase: 46, killWave: 15, killTier: 36 },
   combo: { maxEnemyActionsPerKill: 3, xpPerStack: 0.05, maxStack: 20 },   // chain continues if the kill let the enemy act <= N times (speed-fair)
