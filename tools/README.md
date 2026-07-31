@@ -9,10 +9,11 @@ same rule now holds in `tests/` — see the note above `tracker()` in
 
     node tools/bot-bracket.mjs [runs]     how much does playing well change a run?
     node tools/bank-usage.mjs [runs]      can each strain's bank actually fill?
-    node tools/balance-sweep.mjs [runs]   is a stat a build or a garnish?
+    node tools/single-stat.mjs [runs]     is a stat a build or a garnish?
+    node tools/double-stat.mjs [runs]     which PAIRS of stats actually work?
     node tools/transcript.mjs [strain]    dump one run's combat log
 
-All three go through `simulateRun` inside the game, so a few hundred runs
+All of them go through `simulateRun` inside the game, so a few hundred runs
 finish in the time it takes to start a browser. They used to drive the real UI
 one turn at a time and took minutes per run.
 

@@ -1,8 +1,14 @@
-// How far does each stat-allocation strategy get, per strain?
+// ONE STAT, ALL RUN. How far does each strain get pouring every point into a
+// single stat?
 //
 // Answers "is this stat a build or a garnish" — the question that drove the
 // Speed rework. An all-SPEED column dying where all-VIT wins means Speed is not
-// competing; the two landing close means it is.
+// competing; the two landing close means it is. The `balanced` row (every point
+// spread across all four) is the control: a stat that cannot beat it alone is
+// not a build, and a spread that loses to every specialist says something too.
+//
+// Its sibling is tools/double-stat.mjs, which asks the same question of PAIRS —
+// which is where most real builds live, since nobody plays one stat.
 import { serve, launch } from '../tests/harness.mjs';
 
 const RUNS = Number(process.argv[2] || 40);

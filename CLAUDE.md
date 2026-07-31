@@ -70,9 +70,9 @@ A turn-based browser roguelite. Personal project, built for enjoyment.
   pre-installed browser; in this remote environment use
   `RISEN_CHROMIUM=/opt/pw-browsers/chromium`.
 - `tools/` — read-only balance instruments built on `simulateRun`
-  (bot-bracket, bank-usage, balance-sweep, transcript). They print numbers,
-  never verdicts. TWO bots live in `js/sim.js`: **dumb** mashes random buttons
-  and allocates at random; **smart** presses everything on cooldown, spreads
+  (bot-bracket, bank-usage, single-stat, double-stat, transcript). They print
+  numbers, never verdicts. TWO bots live in `js/sim.js`: **dumb** mashes random
+  buttons and allocates at random; **smart** presses everything on cooldown, spreads
   points evenly, and holds its telegraph answer for the telegraph. The spread
   between them is close to a single question — what is reading the windup
   worth.
