@@ -280,8 +280,24 @@ function spawnEnemy() {
     lost.forEach(s => { const dd = STATUSES[s.type]; if (dd) logEvent('− ' + dd.name + ' ended', p, 'fight over', null, ''); });
   }
 
-  // Fresh gauges each fight; ties go to the player so you open the exchange.
-  state.player.meter = 0;
+  // THE PLAYER ALWAYS OPENS. Both gauges used to start empty with ties going to
+  // the player, which meant you opened the exchange only when the rates were
+  // equal — any enemy quicker than you swung before you had acted at all.
+  //
+  // That is a UI problem before it is a balance one. A kill can level you, the
+  // next enemy spawns immediately, and the only moment you have to spend those
+  // points is a turn of your own. Lose the opening turn and the game takes a
+  // swing at you while the thing it is asking you to do is still undone —
+  // punished for reading your own level-up. A guaranteed first turn is the
+  // window, and it costs nothing to explain: you get the first move, then the
+  // gauges run exactly as they always have.
+  //
+  // Implemented as a FULL gauge rather than a special case in the turn loop, so
+  // there is one initiative rule in this game and not two. A full meter reaches
+  // the threshold in zero time, so the player is next by the ordinary
+  // comparison; acting spends it back to empty and the fight proceeds normally
+  // from two empty gauges.
+  state.player.meter = 1;
   state.enemy.meter = 0;
   state.fightTurns = 0;
   state.enemyActions = 0;
