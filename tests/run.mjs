@@ -15,12 +15,12 @@ const SUITES = [
   ['refinements',  'refinements are gone and drafting still works'],
   ['build',        'build stamp reaches the title, log and save'],
   ['hud',          'the screen never disagrees with the sheet'],
-  ['instinct',     'Instinct buys crit chance and damage, and reaches Strength'],
+  ['instinct',     'Instinct buys crit chance and crit damage, and where it lands vs Strength'],
   ['thorns',       'sym grows one number, and it is the only thing it spends'],
   ['uncapped',     'every strain runs on one uncapped number, and there are no banks'],
   ['bleed',        'Unmutated cuts, and the wound is as deep as the grit behind it'],
-  ['playability',  'the first boss is a check, not a wall'],
-  ['telegraph',    'a telegraph costs half a bar, and an answer is never wasted'],
+  ['playability',  'the first boss, measured — clear rates and what the telegraph costs'],
+  ['telegraph',    'what a telegraph costs, and that an answer is never wasted'],
   ['headless',     'headless mode runs the same game, with no side effects']
 ];
 
@@ -30,7 +30,7 @@ if (!picked.length) { console.error('no suite matches ' + filter); process.exit(
 
 const server = await serve();
 const browser = await launch();
-let totalPass = 0, totalFail = 0;
+let totalPass = 0, totalFail = 0, totalMeasures = 0;
 const failedSuites = [];
 
 for (const [name, blurb] of picked) {
@@ -39,7 +39,7 @@ for (const [name, blurb] of picked) {
   const t = tracker();
   let crash = null;
   try {
-    await mod.default({ page, ctx, ok: t.ok, url: server.url });
+    await mod.default({ page, ctx, ok: t.ok, say: t.say, url: server.url });
   } catch (e) {
     crash = e;
   }
@@ -49,17 +49,24 @@ for (const [name, blurb] of picked) {
   if (crash) t.ok('suite ran to completion', false, String(crash).split('\n')[0]);
   await ctx.close();
 
-  const pass = t.rows.filter(r => r.pass).length;
-  const fail = t.rows.length - pass;
+  // Measurements are not checks and are never counted as either — they are the
+  // numbers the run produced, printed for a human to judge. See tracker().
+  const checks = t.rows.filter(r => !r.measure);
+  const measures = t.rows.filter(r => r.measure);
+  const pass = checks.filter(r => r.pass).length;
+  const fail = checks.length - pass;
   totalPass += pass; totalFail += fail;
+  totalMeasures += measures.length;
   if (fail) failedSuites.push(name);
 
   console.log(`\n${fail ? '✗' : '✓'} ${name}  —  ${blurb}`);
   for (const r of t.rows) {
-    if (r.pass) console.log(`    ·  ${r.label}`);
+    if (r.measure) console.log(`    →  ${r.label}:  ${r.value}`);
+    else if (r.pass) console.log(`    ·  ${r.label}`);
     else console.log(`   FAIL ${r.label}${r.detail ? '  -> ' + r.detail : ''}`);
   }
-  console.log(`    ${pass} passed${fail ? ', ' + fail + ' FAILED' : ''}`);
+  console.log(`    ${pass} passed${fail ? ', ' + fail + ' FAILED' : ''}`
+    + (measures.length ? `, ${measures.length} measured` : ''));
 }
 
 await browser.close();
@@ -67,5 +74,6 @@ await server.close();
 
 console.log('\n' + '─'.repeat(60));
 console.log(`${totalPass} passed, ${totalFail} failed` +
+            (totalMeasures ? `, ${totalMeasures} measured` : '') +
             (failedSuites.length ? `   (${failedSuites.join(', ')})` : ''));
 process.exit(totalFail ? 1 : 0);

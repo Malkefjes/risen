@@ -16,7 +16,7 @@
 //   the ledger     an ailment tick is damage the PLAYER dealt. It was not being
 //                  counted at all, which under-reported bio by ~4x for as long
 //                  as poison has been its ramp.
-export default async function ({ page, ok }) {
+export default async function ({ page, ok, say }) {
 
   // ---- Depth rides Resolve ------------------------------------------------
   const depth = await page.evaluate(() => {
@@ -142,9 +142,12 @@ export default async function ({ page, ok }) {
     }
     return { strikeCut, counterCut, ticks, peak };
   });
+  // The wire is connected — a check. How MUCH it bleeds is a balance number and
+  // gets reported: "more than 20 ticks" and "at least 5 stacks deep" were
+  // demands with no author, and a change that made bleed shallower on purpose
+  // would have had to argue with them before the owner saw a single number.
   ok('Strike opens wounds in a real run', live.strikeCut > 0, JSON.stringify(live));
-  ok('the wound actually ticks', live.ticks > 20, JSON.stringify(live));
-  ok('and it stacks well past a handful', live.peak >= 5, JSON.stringify(live));
+  say('bleed in a real run', `${live.ticks} ticks, deepest wound ×${live.peak}`);
 
   // Only base cuts. Bleed is his, the way poison is bio's.
   const whose = await page.evaluate(() =>
@@ -169,8 +172,7 @@ export default async function ({ page, ok }) {
     const shouldColour = [...named].filter(w => statuses.has(w));
     return { shouldColour, missing: shouldColour.filter(w => !DESC_KEYWORDS[w]) };
   });
-  ok('cards really do name mechanics', words.shouldColour.length >= 5,
-     JSON.stringify(words.shouldColour));
+  say('mechanics named on skill cards', words.shouldColour.join(', ') || 'none');
   ok('every mechanic named on a card is coloured', words.missing.length === 0,
      'uncoloured: ' + JSON.stringify(words.missing));
 

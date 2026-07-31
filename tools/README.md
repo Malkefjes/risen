@@ -1,7 +1,13 @@
-Read-only instruments. They print numbers and assert nothing, and none run as
-part of `npm test`.
+Read-only instruments. They print numbers and assert nothing — no thresholds,
+no verdicts, no "the target". None of them run as part of `npm test`.
 
-    node tools/bot-bracket.mjs [runs]     too easy, too hard, or skill-expressive?
+That was not always true: `bot-bracket` used to print TOO EASY / TOO HARD /
+"skill-expressive, the target" off numbers nobody chose. A tool that hands you a
+conclusion is competing with the person whose job the conclusion is, and the
+same rule now holds in `tests/` — see the note above `tracker()` in
+`tests/harness.mjs` for where the line sits between a check and a measurement.
+
+    node tools/bot-bracket.mjs [runs]     how much does playing well change a run?
     node tools/bank-usage.mjs [runs]      can each strain's bank actually fill?
     node tools/balance-sweep.mjs [runs]   is a stat a build or a garnish?
     node tools/transcript.mjs [strain]    dump one run's combat log

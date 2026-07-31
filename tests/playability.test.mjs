@@ -1,31 +1,28 @@
-// THE FIRST BOSS IS A CHECK, NOT A WALL.
+// THE FIRST BOSS, MEASURED. This suite USED TO DEMAND THINGS — that each class
+// clear wave 5 at a stated rate, that the telegraph land inside a stated band —
+// and that was a mistake worth writing down rather than just deleting.
 //
-// Wave 5 was where runs went to die — and not by a hair. The boss's telegraphed
-// windup hit for 137 against a starting pool of 100, so a fresh sheet was
-// one-shot by a blow it could see coming but rarely had the tools to fully
-// answer that early, and the boss's own HP made the fight long enough to eat
-// several of them. The greedy bot cleared it 18% of the time as Unmutated. You
-// cannot feel a class you never get to play past its first boss.
+// A threshold in here is a design decision wearing a test's clothes. When one
+// trips, nobody learns that the boss got harder; they learn that something is
+// red, and the reflex is to make it green. That is exactly what happened: base
+// drifted to sitting on its 50% floor, the assertion became a coin flip, and
+// the fix applied was to move the floor to 35%. The number never reached the
+// owner as information — it arrived as a verdict that had already been argued
+// with. A measurement you are allowed to negotiate with is not a measurement.
 //
-// This suite guards the two numbers that made it a wall, so a later retune that
-// re-hardens the boss trips here instead of in a play session. It is not a
-// balance oracle — it does not claim wave 5 is TUNED, only that it is passable.
-// Both are floors with wide headroom, in the spirit of the balance header:
-// defaults with room, not laws.
+// So this suite now REPORTS. Every number it used to gate on, it prints. The
+// game changed, here is what it does now, and the person who plays it decides
+// whether wave 5 is a check or a wall. Nothing here can make that call, and
+// nothing here should be edited to make a run look better.
 //
-// PSY GETS ITS OWN, LOWER FLOOR. Since the DREAD rework the bot can finally
-// play psy honestly (no bank to manage), and it clears the first boss about
-// 60% of the time — but psy is deliberately the hardest class in dumb hands:
-// glass, no heal, and its real answer to the boss windup is holding the stun
-// for it, which the greedy bot cannot do (it fires Traumatize on cooldown and
-// wastes the stun into stagger resist). The floor is 40% so a regression to
-// the old dead class (0-6%) fails loudly while honest variance around 60%
-// does not. If psy's bot rate ever sits comfortably higher, raise this.
-export default async function ({ page, ok }) {
-  // ---- The burst invariant ----------------------------------------------
-  // The specific number that made wave 5 a wall: one telegraphed hit erasing a
-  // full starting bar. A windup should cost you half your health and a turn
-  // spent reacting — it must not delete the run off a hit you were shown.
+// What it still CHECKS is one thing, and it is not a judgement: that the boss
+// is actually being reached, so a clear rate of zero cannot quietly mean "died
+// on wave 3" while reading as "the boss is impossible".
+export default async function ({ page, ok, say }) {
+  // ---- The telegraph against a fresh bar ---------------------------------
+  // The number that made wave 5 a wall once: one telegraphed hit erasing a full
+  // starting bar. Reported as a share, so "it one-shots a fresh sheet" and "it
+  // barely tickles" are both visible without either being ruled out here.
   const burst = await page.evaluate(() => {
     // A fresh sheet, built through the real derived-stat path, not a guess.
     const fresh = { class: 'base', str: 5, instinct: 5, speed: 5, vit: 5, talents: {} };
@@ -34,60 +31,47 @@ export default async function ({ page, ok }) {
     return { startHp: fresh.maxHp, bossHp: boss.hp, bossDmg: boss.damage,
              windup: Math.round(boss.damage * BALANCE.enemy.windupMult) };
   });
-  ok('the first boss cannot one-shot a fresh sheet',
-     burst.windup < burst.startHp,
-     `windup ${burst.windup} vs starting HP ${burst.startHp}`);
-  // And it should still HURT — a telegraph that tickles is not a check either.
-  // At least a third of the bar, or the reaction it is asking for is optional.
-  ok('the first boss windup still demands a response',
-     burst.windup >= burst.startHp * 0.33,
-     `windup ${burst.windup} vs starting HP ${burst.startHp}`);
+  say('first boss telegraph vs a fresh 5/5/5/5 bar',
+      `${burst.windup} vs ${burst.startHp} HP  (${Math.round(burst.windup / burst.startHp * 100)}% of the bar)`);
+  say('first boss, ordinary hit and HP', `${burst.bossDmg} damage, ${burst.bossHp} HP`);
 
   // ---- The clear rate -----------------------------------------------------
-  // Beatable, measured by playing: the fraction of runs that get PAST wave 5.
-  // For these three the greedy bot reaches the boss essentially every run, so
-  // "reached wave 6+" reads straight as "cleared the first boss". The floor is
-  // 50% against a measured ~80-100%, wide enough not to flake and tight enough
-  // that winding the boss back up to its old numbers (base fell to 18%) fails.
-  const RUNS = 40;
+  // Both bots, because the CONTRAST is the information and a single rate hides
+  // it. greedy mashes buttons; skilled plays four stated habits. A class that
+  // clears at 100% played and 48% mashed is not the same finding as a class
+  // that clears at 70% either way, and one number cannot tell those apart.
+  const RUNS = 60;
   const clear = await page.evaluate((RUNS) => {
     const out = {};
-    for (const cls of ['bio', 'sym', 'base', 'psy']) {
-      let reachedBoss = 0, cleared = 0;
-      for (let n = 0; n < RUNS; n++) {
-        const r = simulateRun(cls);
-        if (r.wave >= 5) reachedBoss++;
-        if (r.wave > 5) cleared++;
+    for (const bot of ['greedy', 'skilled']) {
+      out[bot] = {};
+      for (const cls of ['bio', 'sym', 'base', 'psy']) {
+        let reachedBoss = 0, cleared = 0;
+        for (let n = 0; n < RUNS; n++) {
+          // stopWhen keeps this cheap: the question is wave 5, not the whole run.
+          const r = simulateRun(cls, Object.assign({}, BOTS[bot], { stopWhen: s => s.wave >= 6 }));
+          if (r.wave >= 5) reachedBoss++;
+          if (r.wave >= 6) cleared++;
+        }
+        out[bot][cls] = { reachedBoss, cleared };
       }
-      out[cls] = { reachedBoss, cleared, rate: cleared / RUNS };
     }
     return out;
   }, RUNS);
-  // BASE GETS ITS OWN FLOOR NOW, for the same reason psy has one and with the
-  // same duty to say what it measures. Measured over 200 runs, not 40: greedy
-  // clears the first boss as base 48% of the time — sitting exactly on a 0.5
-  // floor, which makes the assertion a coin flip rather than a guard. A test
-  // that fails half the time reports nothing.
-  //
-  // 0.35 is deliberately below that and still well above the state this suite
-  // was written to catch (base at 18%, and 27% before the telegraph came down),
-  // so a real regression still trips it. The reason base is allowed to sit low
-  // HERE is the number that matters more, measured alongside it: the SKILLED
-  // bot — which holds the brace for the telegraph instead of firing it as
-  // filler — clears the first boss 100% of the time. Base is beatable; base is
-  // not beatable while mashing. For the one class whose identity is reading a
-  // telegraph, that is the class working, and this floor now says so out loud
-  // rather than failing every other run about it.
-  const FLOORS = { bio: 0.5, sym: 0.5, base: 0.35, psy: 0.4 };
-  for (const cls of ['bio', 'sym', 'base', 'psy'])
-    ok(`the first boss is beatable as ${cls} (${clear[cls].cleared}/${RUNS} clear)`,
-       clear[cls].rate >= FLOORS[cls],
-       JSON.stringify(clear[cls]));
+  for (const cls of ['bio', 'sym', 'base', 'psy']) {
+    const g = clear.greedy[cls], s2 = clear.skilled[cls];
+    const pct = r => r.reachedBoss ? Math.round(r.cleared / r.reachedBoss * 100) + '%' : '—';
+    say(`first boss cleared as ${cls}`,
+        `${pct(g)} mashed (${g.cleared}/${g.reachedBoss}),  ${pct(s2)} played (${s2.cleared}/${s2.reachedBoss})`);
+  }
 
-  // A sanity floor under the numbers above: if a class stopped reaching the boss
-  // at all, its clear rate would read 0 and look like a boss problem when it was
-  // an earlier one. Assert the boss is actually being TESTED.
-  ok('runs actually reach the first boss',
-     ['bio', 'sym', 'base'].every(c => clear[c].reachedBoss >= RUNS * 0.8),
-     JSON.stringify(clear));
+  // THE ONE CHECK LEFT, and it is not a judgement about difficulty: the rates
+  // above are meaningless if the runs never got to wave 5, because "died on
+  // wave 3" and "the boss is unbeatable" would print the same 0%. This says the
+  // measurement measured something.
+  const reaching = ['bio', 'sym', 'base', 'psy']
+    .filter(c => clear.greedy[c].reachedBoss === 0 && clear.skilled[c].reachedBoss === 0);
+  ok('the runs actually reach the first boss, so the rates above mean something',
+     reaching.length === 0,
+     reaching.length ? 'never reached it as: ' + reaching.join(', ') : '');
 }

@@ -47,13 +47,36 @@ export async function launch() {
   return chromium.launch(exe ? { executablePath: exe } : {});
 }
 
-// One suite's results. `ok` records rather than throws, so a failing assertion
-// does not hide the ones after it.
+// One suite's results, and there are TWO KINDS OF ROW because there are two
+// kinds of thing a suite can find out.
+//
+//   ok(label, cond)     A CHECK. Something is either wired up or broken:
+//                       the wound ticks, the save purges, a spoiled charge
+//                       lands between an ordinary hit and a full one. Facts
+//                       about whether the machine works. These can fail.
+//
+//   say(label, value)   A MEASUREMENT. A number the game currently produces:
+//                       a clear rate, a share of a bar, where two curves
+//                       cross. It is printed and NEVER fails.
+//
+// THE SPLIT EXISTS BECAUSE A THRESHOLD IS A DESIGN DECISION IN DISGUISE, and
+// this suite is not where design decisions get made. A test demanding "base
+// clears the first boss 50% of the time" reads like rigour and behaves like a
+// gate: the number moves, something goes red, and whoever is holding the
+// keyboard edits the game — or edits the threshold — before the owner has
+// seen the number at all. The measurement never arrives; a verdict arrives
+// instead, already acted on. That is backwards. Changes happen, numbers get
+// reported, and the person who plays the game decides what they mean.
+//
+// The test for whether something belongs in `ok`: if it failed, would you
+// have found a BUG, or would you have found out the game changed? Bugs go in
+// ok. Everything else says its number and shuts up.
 export function tracker() {
   const rows = [];
   return {
     rows,
-    ok(label, cond, detail = '') { rows.push({ label, pass: !!cond, detail: String(detail) }); }
+    ok(label, cond, detail = '') { rows.push({ label, pass: !!cond, detail: String(detail) }); },
+    say(label, value) { rows.push({ label, measure: true, value: String(value) }); }
   };
 }
 

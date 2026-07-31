@@ -32,6 +32,17 @@ A turn-based browser roguelite. Personal project, built for enjoyment.
   banks, damage math) should instead get fast suites through `simulateRun`:
   hundreds of assertions in seconds, no browser. Don't unit-test private
   internals in either style; drive the game through its real surfaces.
+- **NO TEST MAY HAVE AN OPINION ABOUT A BALANCE NUMBER.** A suite checks that
+  a mechanic works (`ok`) or reports a number (`say`) — never that a number
+  beats a threshold. "Base clears the first boss 50% of the time" is a design
+  decision wearing a test's clothes, and it does real damage: the number moves,
+  something goes red, and the change gets made — to the game or to the
+  threshold — before the owner has seen the number at all. The measurement
+  never arrives; a verdict arrives, already acted on. Same rule for `tools/`:
+  they print, they never conclude. **If a number moves, report it and let the
+  owner decide.** Never edit a threshold to make a run green — if you find one,
+  the threshold is the bug. The line: if the check failed, would you have found
+  a BUG, or found out the game changed? Only the first belongs in `ok`.
 - **The balance header's rules are defaults with named levers, not laws.**
   "Strains share one baseline", "damage is linear in Strength" bind the
   BASE sheet so feel stays judgeable — but talents and mutations may

@@ -1,16 +1,15 @@
-// A TELEGRAPH COSTS YOU HALF YOUR BAR, AND AN ANSWER IS NEVER WASTED.
+// WHAT A TELEGRAPH COSTS, AND THAT AN ANSWER IS NEVER WASTED — one half
+// reported, one half checked, and the split is the point.
 //
-// Two rules, both learned by dying to them in play, and both easy to undo by
-// accident because each is one number in a table.
+// REPORTED: the telegraph's share of the bar it lands on. Every note in the
+// enemy table reasoned about wave 5, where the pool is smallest, and concluded
+// the multiplier was safe because the pool grows — but enemy damage grows
+// faster, so the share climbed all run and the late-game telegraph quietly
+// became a one-shot. That is worth watching at every boss and elite forever;
+// it is not worth asserting, because "how much of your bar a boss may take" is
+// the owner's call and a threshold here would make it silently mine.
 //
-// FIRST: the telegraph's share of the bar it lands on. Every note in the enemy
-// table reasoned about wave 5, where the pool is smallest, and concluded the
-// multiplier was safe because the pool grows — but enemy damage grows faster,
-// so the share climbed all run and the late-game telegraph became a one-shot
-// (wave 13 elite: 235 against a ~200 bar). playability guards the FIRST boss;
-// this guards the ones after it, and elites, which nothing was watching.
-//
-// SECOND: a shrugged answer. Bosses alternate stagger resistance so a stun or
+// CHECKED: a shrugged answer. Bosses alternate stagger resistance so a stun or
 // a Provoke cannot lock them out of a telegraph forever — but a TOTAL shrug
 // meant psy and sym had their only answer deleted on every second one, while
 // bio's Chitin and base's Brace (mitigation, not stagger) answered every one.
@@ -18,75 +17,71 @@
 // The failure mode this catches is the spoil silently becoming a full shrug
 // again, which reads in play as "my button does nothing" and is invisible in
 // any win rate.
-export default async function ({ page, ok }) {
+export default async function ({ page, ok, say }) {
 
   // ---- The share of the bar ----------------------------------------------
-  // THE YARDSTICK IS A SHEET THAT BOUGHT SURVIVAL, and that choice is the
-  // whole meaning of the assertion. Measured against a SPREAD build the wave-15
-  // telegraph is still 113% of the bar — and that is allowed, because a player
-  // arriving at the last boss with 8 Vitality has made a build decision and
-  // Vitality has to be able to be wrong. What must never happen is the other
-  // thing: a player who DID invest in surviving being deleted anyway, which is
-  // an outcome no decision can answer. So the pool here is what an all-Vitality
-  // run actually arrives with, and every ceiling below is a claim about that.
+  // REPORTED, NOT GATED. What a telegraph costs is the single number this whole
+  // change was about, so it is exactly the number that must arrive as a fact
+  // rather than as a pass mark somebody can move. Two yardsticks, because they
+  // say different things: the bar an all-Vitality run arrives with, and the bar
+  // a spread build arrives with. A blow at 60% of one and 130% of the other is
+  // a statement about whether Vitality is doing its job — and a single ceiling
+  // would have hidden it behind a tick.
   const shares = await page.evaluate(() => {
+    const med = a => { a.sort((x, y) => x - y); return a.length ? a[Math.floor(a.length / 2)] : null; };
     const pools = {};
     for (const wave of [5, 10, 15]) {
-      const runs = [];
-      // Every strain, so the number is about the wave and not about one kit.
-      for (const cls of ['bio', 'psy', 'sym', 'base']) {
-        for (let n = 0; n < 8; n++) {
-          const r = simulateRun(cls, Object.assign({}, BOTS.skilled, {
-            allocate: () => 'vit',
-            stopWhen: s => s.wave >= wave
-          }));
-          if (r && r.derived && r.wave >= wave) runs.push(r.derived.maxHp);
+      pools[wave] = {};
+      for (const [plan, opts] of [['invested', { allocate: () => 'vit' }], ['spread', {}]]) {
+        const runs = [];
+        // Every strain, so the number is about the wave and not about one kit.
+        for (const cls of ['bio', 'psy', 'sym', 'base']) {
+          for (let n = 0; n < 6; n++) {
+            const r = simulateRun(cls, Object.assign({}, BOTS.skilled, opts, {
+              stopWhen: s => s.wave >= wave
+            }));
+            if (r && r.derived && r.wave >= wave) runs.push(r.derived.maxHp);
+          }
         }
+        pools[wave][plan] = med(runs);
       }
-      runs.sort((a, b) => a - b);
-      pools[wave] = runs.length ? runs[Math.floor(runs.length / 2)] : null;
     }
     const out = [];
     for (const wave of [5, 10, 15]) {
       const e = makeEnemy(wave);
-      if (!e.isBoss || !pools[wave]) continue;
-      out.push({ wave, pool: pools[wave],
-                 windup: Math.round(e.damage * windupMultFor(e)) });
+      if (e.isBoss) out.push({ label: 'wave ' + wave + ' boss', pools: pools[wave],
+                               windup: Math.round(e.damage * windupMultFor(e)) });
     }
-    // An elite is built by hand: makeEnemy ROLLS for one, and a test that waits
-    // on a 16-40% roll is a test that fails on a bad day. Wave 13 against the
-    // wave-10 pool, since that is the bar you meet it with.
+    // An elite is built by hand: makeEnemy ROLLS for one, and a measurement that
+    // waits on a 16-40% roll is one that reports nothing on a bad day. Wave 13
+    // against the wave-10 pool, since that is the bar you meet it with.
     const elite = makeEnemy(13);
     elite.elite = ELITES[Object.keys(ELITES)[0]];
-    if (pools[10]) out.push({ wave: 13, elite: true, pool: pools[10],
-                              windup: Math.round(elite.damage * windupMultFor(elite)) });
+    out.push({ label: 'wave 13 elite', pools: pools[10],
+               windup: Math.round(elite.damage * windupMultFor(elite)) });
     return out;
   });
-  ok('the pools were actually measured', shares.length === 4, JSON.stringify(shares));
   for (const row of shares) {
-    const label = 'wave ' + row.wave + (row.elite ? ' elite' : ' boss');
-    // Wide ceilings, in the spirit of the balance header: not a claim that the
-    // number is TUNED, only that a telegraph costs a bar rather than ending a
-    // run. Measured shares when this was written: 45% / 47% / 62% for the three
-    // bosses and 39% for the elite, so there is real headroom before either
-    // trips. An elite gets the tighter one because you meet a dozen a run.
-    const ceiling = row.elite ? 0.65 : 0.85;
-    ok(label + ' cannot erase an invested bar',
-       row.windup < row.pool * ceiling,
-       label + ': ' + row.windup + ' vs pool ' + row.pool
-         + ' (' + Math.round(row.windup / row.pool * 100) + '%)');
+    const of = (pool, what) => pool
+      ? Math.round(row.windup / pool * 100) + '% of ' + what + ' (' + pool + ')'
+      : 'no ' + what.replace(/^an? /, '') + ' run got this far';
+    say(row.label + ' telegraph',
+        `${row.windup} damage — ${of(row.pools.invested, 'an invested bar')}, `
+        + `${of(row.pools.spread, 'a spread bar')}`);
   }
 
-  // An elite telegraph must stay SMALLER than a boss's — the whole reason it
-  // has its own multiplier is that you meet a dozen of them and three bosses.
+  // The two multipliers, side by side. They were split because you meet a dozen
+  // elites a run and three bosses — but whether they SHOULD differ, and by how
+  // much, is a design question, so this prints them and asks nothing.
   const mults = await page.evaluate(() => {
     const boss = makeEnemy(10);
     const elite = makeEnemy(13);
     elite.elite = ELITES[Object.keys(ELITES)[0]];
-    return { boss: windupMultFor(boss), elite: windupMultFor(elite) };
+    return { boss: windupMultFor(boss), elite: windupMultFor(elite),
+             spoil: BALANCE.enemy.windupSpoilFrac };
   });
-  ok('an elite telegraphs smaller than a boss', mults.elite < mults.boss,
-     JSON.stringify(mults));
+  say('telegraph multipliers', `boss ×${mults.boss}, elite ×${mults.elite}, `
+      + `spoiled answer keeps ×${mults.spoil} of it off`);
 
   // ---- A shrugged stun spoils the charge (psy) ----------------------------
   const stun = await page.evaluate(() => {

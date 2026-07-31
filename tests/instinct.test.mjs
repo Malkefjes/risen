@@ -17,7 +17,7 @@
 //
 // A fast suite: no clicking, no browser waits. Everything here is the real rules
 // read off a real sheet through applyDerivedStats and simulateRun.
-export default async function ({ page, ok }) {
+export default async function ({ page, ok, say }) {
   // ---- The pair ----------------------------------------------------------
   // sheetAt drives the real derived-stat path rather than re-implementing the
   // formula, so a change to either lands here as a failure instead of quietly
@@ -48,50 +48,48 @@ export default async function ({ page, ok }) {
   });
   const at = n => curve.find(r => r.ins === n);
 
-  ok('a starting sheet still crits 10% of the time', at(5).chance === 0.10, JSON.stringify(at(5)));
-  ok('crit chance is twice Instinct as a percent',
-     curve.filter(r => r.chance < 0.90).every(r => Math.abs(r.chance - r.ins * 0.02) < 1e-9),
-     JSON.stringify(curve.map(r => [r.ins, r.chance])));
-  ok('crit chance caps at 90%', at(45).chance === 0.90 && at(50).chance === 0.90,
-     JSON.stringify([at(45).chance, at(50).chance]));
+  // THE CURVE IS REPORTED, NOT PRESCRIBED. What crit chance a point buys, where
+  // it stops climbing, and where Instinct overtakes Strength are the balance
+  // decisions this stat IS — so pinning them here would mean any future change
+  // to how Instinct feels has to argue with a test first. Printed instead, at
+  // every sheet the run can reach, so a change shows up as a moved curve.
+  say('crit chance by Instinct',
+      curve.map(r => r.ins + ':' + Math.round(r.chance * 100) + '%').join('  '));
+  say('crit damage by Instinct',
+      curve.map(r => r.ins + ':×' + r.mult.toFixed(2)).join('  '));
   // Not 100%: a crit that always happens stops being an event, and the gold
   // floater stops naming one. One plain hit in ten is the point.
   ok('the cap leaves room for a plain hit', at(50).chance < 1, String(at(50).chance));
 
+  // THESE STAY CHECKS, and the line is not arbitrary: none of them names a
+  // number. They say a point of Instinct is never WASTED — the two terms only
+  // ever go up, and they keep going up past the chance cap. If one of these
+  // fails, a player has spent a point and got nothing or got less, which is a
+  // bug in any balance you might want, not a balance you might want.
   ok('crit damage climbs with Instinct from point one',
      curve.every((r, i) => !i || r.mult > curve[i-1].mult), JSON.stringify(curve.map(r => r.mult)));
-  ok('a point of Instinct is worth 25% crit damage',
-     Math.abs((at(20).mult - at(10).mult) - 2.5) < 1e-9, at(10).mult + ' -> ' + at(20).mult);
   ok('both terms rise together', at(45).chance > at(25).chance && at(45).mult > at(25).mult,
      JSON.stringify([at(25), at(45)]));
   ok('overinvestment is never wasted — damage keeps climbing past the chance cap',
      at(50).mult > at(45).mult, JSON.stringify([at(45).mult, at(50).mult]));
 
-  // ---- The parity --------------------------------------------------------
-  // The reason a quadratic is allowed at all. If this drifts, Instinct is
-  // either a trap again or the only stat worth taking, and either way the
-  // argument written into the balance header has stopped being true.
-  // Within 30% at the top of a run's budget. A window rather than an equality
-  // because the exact endpoint depends on how many levels a run reaches, which
-  // is a balance number that moves; what must not drift is the two being in the
-  // same league there, since that is the entire argument for the quadratic.
-  ok('Instinct reaches Strength at full investment',
-     Math.abs(at(45).gain - at(45).strGain) / at(45).strGain < 0.30,
-     JSON.stringify({ ins: at(45).gain, str: at(45).strGain }));
-  ok('they are dead level at 40 Instinct', Math.abs(at(40).gain - at(40).strGain) < 0.01,
-     JSON.stringify({ ins: at(40).gain, str: at(40).strGain }));
-  ok('Strength is the better buy early',
-     at(15).gain < at(15).strGain && at(25).gain < at(25).strGain,
-     JSON.stringify(curve.map(r => [r.ins, r.gain, r.strGain])));
-  ok('Instinct is the better buy at the end', at(45).gain > at(45).strGain,
-     JSON.stringify({ ins: at(45).gain, str: at(45).strGain }));
-  // A square and a line cross exactly once. A second crossing would mean one of
-  // the two had stopped being the shape the header claims it is — and it is also
-  // how the double-counted version of this comparison announced itself, by
-  // showing Instinct ahead at the anchor before it had bought anything.
-  const crossings = curve.reduce((n, r, i) =>
-    !i ? 0 : n + ((curve[i-1].gain > curve[i-1].strGain) !== (r.gain > r.strGain) ? 1 : 0), 0);
-  ok('the two curves cross exactly once', crossings === 1, String(crossings));
+  // ---- Instinct against Strength -----------------------------------------
+  // The comparison the quadratic exists to win, reported as the two curves and
+  // where they cross. This used to assert four things at once: that Strength
+  // wins early, that Instinct wins late, that they are level within 1% at 40,
+  // and that they cross exactly once. All four are opinions about how a stat
+  // should feel over a run — real opinions, argued for in the balance header —
+  // and none of them is a fact a test can own. Wanting Instinct good early is
+  // now a design change, not a fight with a test suite.
+  say('Instinct vs Strength, damage multiple at the same point spend',
+      curve.map(r => r.ins + ': ins ' + r.gain.toFixed(2) + ' / str ' + r.strGain.toFixed(2)).join('   '));
+  const crossings = [];
+  curve.forEach((r, i) => {
+    if (i && (curve[i-1].gain > curve[i-1].strGain) !== (r.gain > r.strGain))
+      crossings.push(curve[i-1].ins + '->' + r.ins);
+  });
+  say('where the two curves cross',
+      crossings.length ? crossings.join(', ') : 'they never cross in this range');
 
   // A mutation's flat crit chance is not Instinct, so it must not also pay out
   // as crit damage — one pick quietly buying two things is the thing the

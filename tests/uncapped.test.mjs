@@ -16,7 +16,7 @@
 // never acting; an uncapped count with unbounded damage reduction is immunity.
 // Uncapped number, bounded effect — asserted here as a pair, because either one
 // alone is the wrong design.
-export default async function ({ page, ok }) {
+export default async function ({ page, ok, say }) {
 
   // ---- The banks are gone -------------------------------------------------
   const gone = await page.evaluate(() => ({
@@ -86,11 +86,15 @@ export default async function ({ page, ok }) {
     return { none: read(0), some: read(10), absurd: read(10000) };
   });
   ok('holding RESOLVE reduces damage taken', guard.some < guard.none, JSON.stringify(guard));
+  // STILL A CHECK: a hit always lands. Zero damage from an uncapped pile is
+  // invulnerability, which ends the game rather than balancing it — that is the
+  // owner's own "uncapped number, bounded effect" rule, and it is structural.
   ok('an absurd pile is still not immunity', guard.absurd >= 1, JSON.stringify(guard));
-  // 85% is the hard cap on the summed reduction, so ~15% always lands. Without
-  // it an uncapped count would simply be invulnerability with extra steps.
-  ok('the reduction is capped, so the pile cannot buy invulnerability',
-     guard.absurd >= guard.none * 0.14, JSON.stringify(guard));
+  // WHERE the bound sits is a balance number, so it is reported rather than
+  // demanded: the old assertion required at least 14% of a blow to survive the
+  // pile, which is a cap of 85% asserted in disguise.
+  say('what a 10000-RESOLVE pile leaves of a hit',
+      `${guard.absurd} of ${guard.none} (${Math.round(guard.absurd / guard.none * 100)}%)`);
 
   // ---- DREAD: uncapped count, saturating slow -----------------------------
   const dread = await page.evaluate(() => {
@@ -114,8 +118,11 @@ export default async function ({ page, ok }) {
   ok('the slow saturates instead of running away',
      dread.absurd.aps === dread.twenty.aps && dread.absurd.aps > 0,
      JSON.stringify([dread.six.aps, dread.twenty.aps, dread.absurd.aps]));
-  ok('a marked enemy never stops acting entirely', dread.absurd.aps >= 0.2,
+  // Same split: that it never stops is structural, how slow it gets is balance.
+  ok('a marked enemy never stops acting entirely', dread.absurd.aps > 0,
      String(dread.absurd.aps));
+  say('slowest a marked enemy can be dragged',
+      `${dread.absurd.aps}× its own rate, saturating (6 stacks: ${dread.six.aps}, 20: ${dread.twenty.aps})`);
 
   // ---- POISON and BLEED: the twins share one shape ------------------------
   const ailments = await page.evaluate(() => {
