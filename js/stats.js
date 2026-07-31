@@ -270,10 +270,19 @@ function formatNum(n) {
 // RESOLVE on a card and the RESOLVE bank under the health bar read as one
 // thing rather than as a word that happens to be capitalised.
 //
-// The value is the CSS variable suffix, so an entry and a matching `.kw-<x>`
-// rule are the whole cost of adding MOMENTUM ('psy'), SPORES ('sym') or
-// POISON ('bio') when their cards get the same treatment.
-const DESC_KEYWORDS = { RESOLVE: 'base', POISON: 'bio', CHITIN: 'bio', WEAK: 'weak', THORNS: 'sym' };
+// EVERY MECHANIC NAMED ON A CARD WEARS ITS BADGE'S COLOUR. The word in the
+// sentence and the badge under the health bar are the same thing, so they have
+// to look like it — read "+1 BLEED" on the card, then find BLEED on the enemy
+// in the same red. A mechanic that is named here but not coloured reads as
+// ordinary prose, which is exactly how DREAD and BLEED went unnoticed: both
+// were live, both were named on four cards between them, and neither was in
+// this map.
+//
+// The value is the CSS variable suffix, so an entry plus a matching `.kw-<x>`
+// rule is the whole cost of adding one. Keep the suffix matched to the status'
+// `tone` in STATUSES — if the two disagree, the card and the badge disagree.
+const DESC_KEYWORDS = { RESOLVE: 'base', POISON: 'bio', CHITIN: 'bio', WEAK: 'weak',
+                        THORNS: 'sym', BLEED: 'bleed', DREAD: 'dread' };
 const KEYWORD_RE = new RegExp('\\b(' + Object.keys(DESC_KEYWORDS).join('|') + ')\\b', 'g');
 function highlightKeywords(html) {
   return html.replace(KEYWORD_RE, w => '<span class="kw kw-' + DESC_KEYWORDS[w] + '">' + w + '</span>');

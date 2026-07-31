@@ -88,17 +88,25 @@ A turn-based browser roguelite. Personal project, built for enjoyment.
   a telegraph out as an ordinary hit). Its numbers are early and owner-tuned by
   play. Speed is deliberately a COST for this class — more of your turns means
   fewer enemy swings, and swings are food.
-- **Unmutated still cannot beat the first boss** — 4 of 40, up from 0 once BLEED
-  landed, and the one failing assertion in `npm test playability`. IT IS NOT A
-  DAMAGE PROBLEM, which was worth learning the hard way: bleed is a real source
-  (31-40% of base's boss damage) and moved the clear rate barely at all, and
-  sweeping the depth dial from flat to triple only bought 4/40 -> 6/40. The
-  reason is that **60% of base's deaths are the ×5 heavy landing**, not
-  attrition — killing faster does not help when the thing that kills you is one
-  blow. Base is the only strain whose answer to a telegraph lasts a single turn
-  (Counterpunch's brace, 1 turn on a 4-turn cooldown, against a windup every
-  ~4 player turns), so it is a coin flip whether the answer is even available.
-  That is the next lever, and it is an owner decision, not a quiet nudge.
+- **Base was never underpowered — it was unforgiving of one mistake.** 60% of
+  its deaths were the ×5 heavy landing, and its answer (Counterpunch's brace)
+  was fired as filler the moment it came off cooldown, so it met 3% of heavies.
+  Measured before anything moved: hold the brace and cast it on the exact
+  pre-heavy turn and the first-boss clear went 20% -> 100% with no balance
+  number touched. Bleed was NOT the fix — it is a real damage source (31-40% of
+  base's boss damage) but sweeping its depth dial did almost nothing, because
+  killing faster cannot help when one blow is what kills you.
+  Now: brace lasts 2 turns (strict, not broken) and the skilled bot holds it for
+  the telegraph. Skilled clears the first boss 40/40. **`playability` still
+  fails for base because it measures GREEDY**, which is frozen and deliberately
+  unclever — it still spends the brace as filler and clears ~12/40. Worth
+  deciding whether "beatable" should mean "beatable while mashing"; for the one
+  class whose identity is reading the telegraph, mashing arguably should fail.
+- **A skill can declare how it wants to be played**, and the bot reads it off
+  the card rather than learning classes by name: `spendAt` (the count at which a
+  spender is worth pressing) and `holdFor: 'windup'` (do not burn this as
+  filler; it answers the telegraph). Reach for a declared field before adding a
+  class check to `js/sim.js`.
 - **No banks, and no stack ceilings.** Every strain runs on ONE UNCAPPED NUMBER
   worn as a status badge: bio POISON and psy DREAD on the enemy, sym THORNS and
   base RESOLVE on the player. Only THORNS is run-permanent; the other three

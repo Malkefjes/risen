@@ -143,8 +143,19 @@ function skilledPolicy(p) {
     // heavy one land — the margin here is for a crit landing on top, and
     // nothing else.
     const canBait = !e.stunImmune && (e.damage || 0) * 1.5 < p.hp;
+    // A BRACE ONLY COVERS THE TURNS IT IS UP FOR, so it is cast when the blow
+    // is actually next rather than the moment the charge appears — the gauges
+    // often give the player two turns inside one telegraph, and a brace thrown
+    // on the first of them has expired by the time the swing lands.
+    //
+    // Not gated on `scary`, unlike the fallback below, and deliberately: a
+    // skill flagged holdFor is barred from filler use (rule 6), so there is no
+    // opportunity cost left to weigh. Declining to spend it here spends it on
+    // nothing.
+    const swingsNext = forecastTurns(1)[0] === 'foe';
     const answer = (!e.stunImmune && pick(s => s.stun))
                 || (canBait && pick(s => s.type === 'provoke'))
+                || (swingsNext && pick(s => s.holdFor === 'windup'))
                 || (scary && (pick(s => s.type === 'buff') || pick(s => s.type === 'heal')));
     if (answer) return answer;
   }
@@ -177,6 +188,15 @@ function skilledPolicy(p) {
     //    the deliberate exception: there the swing is coming regardless, and
     //    baiting it out is what makes it smaller.
     if (s.type === 'provoke' && p.hp / Math.max(1, p.maxHp) < 0.5) return false;
+    // 7. HOLD YOUR ANSWER FOR THE BLOW IT ANSWERS — rule 3's habit, applied to
+    //    anything that declares itself an answer rather than only to stuns.
+    //    This was the single largest measured gap in the bot: base's brace was
+    //    fired as filler the moment it came off cooldown, so it met 3% of
+    //    heavies, and 60% of base's deaths were a heavy landing. Holding it
+    //    took the first-boss clear from 20% to 100% with no balance number
+    //    touched. `holdFor` is data on the skill, like spendAt, so this reads
+    //    the card's own terms and never learns a class by name.
+    if (s.holdFor === 'windup' && holdStun) return false;
     return true;
   });
   return usable[0] || basic;

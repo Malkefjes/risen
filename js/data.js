@@ -837,7 +837,22 @@ const CLASSES = {
     skills: [
       { id:'jab', name:'Strike', desc:'Attack the enemy for {power!} damage. +{buildsResolve} RESOLVE, and open a wound: +{bleed} BLEED, as deep as the RESOLVE behind it', type:'attack', power:1.0, buildsResolve:1, bleed:1, target:'enemy', basic:true },
       { id:'bandage', name:'Bandage', desc:'Heal {healFrac%} of max HP and +{resolveHealBonus%} per held RESOLVE', type:'heal', healFrac:0.14, resolveHealBonus:0.02, target:'self', cdTurns:4 },
-      { id:'counter', name:'Counterpunch', desc:'Brace for {duration#turn}: −{power%} damage taken, stacking with RESOLVE. A hit taken while braced strikes back for {counterPower!} damage and +{counterBleed} BLEED', type:'buff', buff:'brace', duration:1, power:0.60, counterPower:1.20, counterBleed:1, target:'self', cdTurns:4 },
+      // BRACE LASTS TWO TURNS, NOT ONE, and the reason is measured. This is
+      // base's answer to the telegraph, and it was the only answer in the game
+      // that had to be timed to the exact turn — one turn of cover on a 4-turn
+      // cooldown, against a windup every ~4 player turns, so it was a coin flip
+      // whether it was even available, and using it as filler (the obvious
+      // thing to do with an off-cooldown button) guaranteed it was not. 60% of
+      // base's deaths were a heavy landing.
+      //
+      // Perfect timing was measured first, before the number moved: holding it
+      // and casting it on the exact pre-heavy turn took base's first-boss clear
+      // from 20% to 100% with nothing rebalanced. So the ANSWER was never
+      // insufficient — the window was. Two turns keeps the read (you still have
+      // to see the telegraph and act on it) while forgiving a turn of
+      // misjudgement, which is the difference between strict and broken.
+      // `holdFor` tells the bot the same thing the card tells the player.
+      { id:'counter', name:'Counterpunch', desc:'Brace for {duration#turn}: −{power%} damage taken, stacking with RESOLVE. A hit taken while braced strikes back for {counterPower!} damage and +{counterBleed} BLEED', type:'buff', buff:'brace', duration:2, power:0.60, counterPower:1.20, counterBleed:1, holdFor:'windup', target:'self', cdTurns:4 },
       { id:'laststand', name:'Last Stand', desc:'Attack the enemy for {power!} damage, +{perResolvePower!} per RESOLVE consumed. Spends all RESOLVE', type:'attack', power:1.20, perResolvePower:0.40, consumesResolve:true, spendAt:4, target:'enemy', cdTurns:5 }
     ]
   }

@@ -143,4 +143,52 @@ export default async function ({ page, ok }) {
     Object.entries(CLASSES).map(([id, c]) => [id, c.skills.some(s => s.bleed || s.counterBleed)]));
   ok('bleed belongs to Unmutated alone',
      whose.every(([id, has]) => has === (id === 'base')), JSON.stringify(whose));
+
+  // ---- Every mechanic named on a card wears its badge's colour ------------
+  // Not a bleed rule, but this is where it bit: BLEED and DREAD were both live
+  // and both named on cards while neither was in DESC_KEYWORDS, so they
+  // rendered as ordinary prose. Nothing would ever have failed. Generic on
+  // purpose — it walks the real card text, so a mechanic added later is caught
+  // the moment it is mentioned.
+  const words = await page.evaluate(() => {
+    const named = new Set();
+    for (const c of Object.values(CLASSES))
+      for (const s of c.skills)
+        for (const w of (s.desc || '').match(/\b[A-Z]{4,}\b/g) || []) named.add(w);
+    // Names of statuses that actually exist are the ones that must be coloured;
+    // shouted prose ("DEVOUR") is not a mechanic with a badge.
+    const statuses = new Set(Object.values(STATUSES).map(d => d.name));
+    const shouldColour = [...named].filter(w => statuses.has(w));
+    return { shouldColour, missing: shouldColour.filter(w => !DESC_KEYWORDS[w]) };
+  });
+  ok('cards really do name mechanics', words.shouldColour.length >= 5,
+     JSON.stringify(words.shouldColour));
+  ok('every mechanic named on a card is coloured', words.missing.length === 0,
+     'uncoloured: ' + JSON.stringify(words.missing));
+
+  // ...and the colour must be the SAME one its badge uses, or the card and the
+  // fighter panel disagree about what the word means.
+  const matched = await page.evaluate(() => {
+    // Two different ladders: a card word is `.kw.kw-<suffix>`, a badge is
+    // `.status.<tone>`. Probing both with the same class name says nothing —
+    // there is no `.kw-poison`, so the comparison silently measured the
+    // default colour against itself.
+    const probe = className => {
+      const el = document.createElement('span');
+      el.className = className;
+      document.body.appendChild(el);
+      const c = getComputedStyle(el).color;
+      el.remove();
+      return c;
+    };
+    const out = [];
+    for (const [word, suffix] of Object.entries(DESC_KEYWORDS)) {
+      const def = Object.values(STATUSES).find(d => d.name === word);
+      if (!def) continue;                       // RESOLVE-style words with no badge
+      out.push([word, probe('kw kw-' + suffix), probe('status ' + (def.tone || def.kind))]);
+    }
+    return out;
+  });
+  ok('a keyword wears the same colour as its badge',
+     matched.every(([, kw, badge]) => kw === badge), JSON.stringify(matched));
 }

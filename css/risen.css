@@ -1146,7 +1146,10 @@ body {
 .status.stun { color: var(--psy); }
 .status.predator { color: var(--accent); }
 .status.spines { color: var(--sym); }
-.status.resolve { color: #ffffff; }
+/* var(--base), not a hardcoded white: Unmutated's word on a skill card is
+   .kw-base, and a badge that is a different white from the word naming it is
+   the same disagreement in miniature. */
+.status.resolve { color: var(--base); }
 .status.dread { color: var(--psy); }
 .status.brace { color: var(--base); }
 
@@ -1399,6 +1402,10 @@ body {
 .kw-bio { color: var(--bio); }
 .kw-sym { color: var(--sym); }
 .kw-weak { color: var(--weak); }
+/* Matched to the matching status' tone above, so the word on the card and the
+   badge under the health bar are visibly the same thing. */
+.kw-bleed { color: var(--enemy); }
+.kw-dread { color: var(--psy); }
 
 .skill-desc {
   font-size: 0.72rem;
