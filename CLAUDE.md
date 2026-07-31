@@ -88,15 +88,17 @@ A turn-based browser roguelite. Personal project, built for enjoyment.
   a telegraph out as an ordinary hit). Its numbers are early and owner-tuned by
   play. Speed is deliberately a COST for this class — more of your turns means
   fewer enemy swings, and swings are food.
-- **Unmutated cannot beat the first boss** — 0 of 40, measured, and the failing
-  assertion in `npm test playability` says so out loud. This predates the sym
-  pass (it was three failures before it) and is the point-scarcity wall the DEV
-  TOOLS skip already found: level 2 with 100 max HP against a 90-damage
-  telegraph. Base drowns first because its sustain is flat and rare, exactly as
-  the enemy-table note predicts. Not a regression, and not fixed — it wants an
-  owner decision about act 1, not a quiet nudge. Bio sits right on its 0.5 floor
-  and flakes across runs (18-27 of 40), so that assertion goes red and green on
-  its own; psy cleared comfortably once DREAD lost its cap.
+- **Unmutated still cannot beat the first boss** — 4 of 40, up from 0 once BLEED
+  landed, and the one failing assertion in `npm test playability`. IT IS NOT A
+  DAMAGE PROBLEM, which was worth learning the hard way: bleed is a real source
+  (31-40% of base's boss damage) and moved the clear rate barely at all, and
+  sweeping the depth dial from flat to triple only bought 4/40 -> 6/40. The
+  reason is that **60% of base's deaths are the ×5 heavy landing**, not
+  attrition — killing faster does not help when the thing that kills you is one
+  blow. Base is the only strain whose answer to a telegraph lasts a single turn
+  (Counterpunch's brace, 1 turn on a 4-turn cooldown, against a windup every
+  ~4 player turns), so it is a coin flip whether the answer is even available.
+  That is the next lever, and it is an owner decision, not a quiet nudge.
 - **No banks, and no stack ceilings.** Every strain runs on ONE UNCAPPED NUMBER
   worn as a status badge: bio POISON and psy DREAD on the enemy, sym THORNS and
   base RESOLVE on the player. Only THORNS is run-permanent; the other three

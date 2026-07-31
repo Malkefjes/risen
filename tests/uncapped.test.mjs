@@ -71,7 +71,12 @@ export default async function ({ page, ok }) {
     const read = stacks => {
       startGame(true, 'base');
       const p = state.player, e = state.enemy;
-      p.evadeChance = 0; p.blockChance = 0; p.maxHp = 1e9; p.hp = 1e9;
+      // The pool is bought with VITALITY rather than written onto maxHp by
+      // hand. Taking a hit calls gainResolve, which recomputes the sheet — a
+      // hand-set maxHp is thrown away mid-measurement and the reading becomes
+      // "the fake bar collapsed", not "the guard held".
+      p.vit = 100000; applyDerivedStats(p); p.hp = p.maxHp;
+      p.evadeChance = 0; p.blockChance = 0;
       e.damage = 10000; e.critChance = 0;
       if (stacks) applyStatus(p, 'resolve', { stacks });
       const before = p.hp;

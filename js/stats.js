@@ -65,7 +65,21 @@ function applyStatus(unit, id, opts) {
         const extra = Math.max(0, want - limit);
         st.stacks = Math.min(limit, want);
         st.duration = fresh.duration;
-        if (fresh.perStack != null) st.perStack = Math.max(st.perStack || 0, fresh.perStack);
+        // WHAT ONE STACK TICKS FOR, when a new stack lands on an old pile.
+        // The default is the HIGHEST ever applied, which is right for poison:
+        // its per-stack value comes off Attack Damage and only ever climbs, so
+        // "highest" and "newest" agree, and taking the max means a WEAK debuff
+        // cannot retroactively thin rot that was already in the blood.
+        //
+        // 'newest' exists for bleed, where they deliberately disagree. A cut is
+        // as deep as the RESOLVE behind it, so spending that Resolve has to
+        // shallow the cuts that come after — under the max rule one deep strike
+        // would set the depth for the whole fight and the decision would
+        // evaporate. The wound is as deep as the last thing you did to it.
+        if (fresh.perStack != null)
+          st.perStack = def.perStackRule === 'newest'
+            ? fresh.perStack
+            : Math.max(st.perStack || 0, fresh.perStack);
         if (fresh.power != null) st.power = Math.max(st.power || 0, fresh.power);
         if (extra > 0 && def.onOverflow) def.onOverflow(unit, st, extra);
         break;
@@ -109,6 +123,7 @@ function skillStatusOpts(skill) {
   if (skill.duration != null) opts.duration = skill.duration;
   if (skill.power != null) opts.power = skill.power;
   if (skill.counterPower != null) opts.counter = skill.counterPower;
+  if (skill.counterBleed != null) opts.counterBleed = skill.counterBleed;
   if (skill.stacks != null) opts.stacks = skill.stacks;
   if (skill.perStack != null) opts.perStack = skill.perStack;
   return opts;
@@ -416,9 +431,33 @@ function applyDerivedStats(p) {
   const basicPoisons = p.class === 'bio' && !!(p.basicSkill && p.basicSkill.poison > 0);
   p.poisonChance = Math.min(1, (basicPoisons ? 1 : 0) + (t.poisonChance || 0));
   p.poisonDamage = p.poisonPerStack;
-  p.bleedChance = Math.min(1, (t.bleedChance || 0));
-  p.bleedDamage = Math.max(1, Math.round(ailmentDmg * (t.bleedMult || 1)));
+  // Unmutated bleeds on every landed basic, the way bio poisons on every
+  // landed basic — so the chance reads 100% for him and 0% for everyone else
+  // until a talent raises it.
+  const basicBleeds = p.class === 'base' && !!(p.basicSkill && p.basicSkill.bleed > 0);
+  p.bleedChance = Math.min(1, (basicBleeds ? 1 : 0) + (t.bleedChance || 0));
+  // What a cut opened RIGHT NOW would tick for. Live rather than baked, because
+  // the depth rides held RESOLVE — the readout has to move when the number it
+  // depends on moves, or the sheet would disagree with the next Strike.
+  p.bleedDamage = bleedDepth(p);
   return p;
+}
+
+// HOW DEEP A CUT GOES. The ailment base, deepened by the RESOLVE behind the
+// swing: a man with nothing banked scratches, a man who has been standing there
+// taking it for ten turns opens something that will not close. Snapshotted into
+// the stack at application (perStackRule 'newest'), so spending Resolve costs
+// you the depth of every wound you open afterwards.
+//
+// Non-base strains still get a number here rather than a zero: it is what a
+// stack WOULD tick for if some future source ever applied one, which is the
+// same way crit damage reads while crit chance is 0.
+function bleedDepth(p) {
+  if (!p) return 1;
+  const B = P(), t = p.talents || {};
+  const ail = Math.max(1, Math.round(attackDamage(p) * B.ailmentDamageFrac));
+  const held = p.class === 'base' ? statusStacks(p, 'resolve') : 0;
+  return Math.max(1, Math.round(ail * (1 + held * (B.bleedPerResolve || 0)) * (t.bleedMult || 1)));
 }
 
 // What the sidebar reads. Every entry is an exact value the fight actually

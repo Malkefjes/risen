@@ -323,10 +323,33 @@ const BALANCE = {
     // Chitin's numbers live on the skill card, like Miasma's.)
     // Bleed: the same damage-over-time shape as poison, its own knobs so the
     // two can be tuned apart. Nothing applies bleed yet.
-    // Bleed is poison's twin and now shares its shape completely: UNCAPPED, for
-    // the same reason poison is. A stack ceiling turns a ramp into a plateau
-    // you reach and then stop thinking about. Nothing applies bleed yet.
-    bleedDuration: 4,                        // TURNS
+    // ---- BLEED (Unmutated) ------------------------------------------------
+    // Poison's twin, and UNCAPPED for the same reason it is. It is Unmutated's
+    // second number, and the ONLY strain given two: he is the one who refused
+    // the infection, so his mechanic is just the ordinary consequence of a long
+    // fight — you get harder to move, they get cut. Two halves of one exchange.
+    //
+    // IT MUST NOT BECOME BIO IN RED. A stacking tick on the enemy is bio's
+    // whole identity, and "a worse version of another class in a different
+    // colour" is precisely the failure the sym pass just finished undoing. Two
+    // rules keep them apart, and both have to hold:
+    //
+    //   POISON IS PERMANENT; BLEED IS ON A TIMER that each new stack refreshes.
+    //   Bio infects and waits — the rot is a clock that never stops. Base has
+    //   to keep cutting, and four turns of not attacking closes the wound
+    //   entirely. One class ramps and coasts; the other cannot stop working.
+    //
+    //   POISON IS FREE; BLEED IS BOUGHT WITH PUNISHMENT. The rot ticks whether
+    //   or not bio is ever touched. A cut is only as deep as the RESOLVE behind
+    //   it, and Resolve comes from landing hits and taking them — so base's
+    //   damage-over-time is paid for in damage absorbed.
+    //
+    // The depth is snapshotted when the cut is made, NEWEST-wins (see
+    // perStackRule on the bleed status): spend your Resolve on Last Stand and
+    // the wounds you open afterwards are shallower. That is the cost that makes
+    // hold-vs-spend a real question rather than a formality.
+    bleedDuration: 4,                        // TURNS — refreshed by each new stack
+    bleedPerResolve: 0.10,                   // each held RESOLVE deepens a NEW cut by this share of the ailment base
     // ---- THORNS (sym) -----------------------------------------------------
     // SYM'S MECHANIC IS ONE NUMBER THAT GROWS, and thorns is that number —
     // not a bank beside it. The old kit had both: thorns as a passive share of
@@ -787,18 +810,34 @@ const CLASSES = {
     ]
   },
   // Base Sonny, reached via "RESIST MUTATION". Refused the infection, so he has
-  // no strain mechanic and never drafts mutations. He runs on RESOLVE — a bank
-  // built by landing hits and by taking them, worth flat damage reduction while
-  // held and burst when spent. The defiant human: endure, then everything at
-  // once. His damage comes off Strength like everyone else's; the "scales off
-  // your highest stat" rule went when Attack Damage was unified.
+  // no strain mechanic and never drafts mutations. His damage comes off
+  // Strength like everyone else's; the "scales off your highest stat" rule went
+  // when Attack Damage was unified.
+  //
+  // THE ONLY STRAIN WITH TWO NUMBERS, and it is the refusal that earns them.
+  // RESOLVE on himself, BLEED on them — not two mechanics but two halves of one
+  // exchange, because a man with no venom and no fear has nothing to fight with
+  // except what an ordinary long fight does to both bodies. Resolve is bought by
+  // landing hits and taking them; the cut is only as deep as the Resolve behind
+  // it. One number feeds the other, which is what keeps it from reading as a
+  // second currency to manage.
+  //
+  // BLEED IS WHY THE KIT NEEDED ANYTHING AT ALL. Measured before the pass, base
+  // died at the first boss with 57% of its bar untouched — it needed roughly
+  // twice the damage — and 48% of everything it dealt was locked in Last Stand,
+  // a 5-turn cooldown. Between spikes it swung for 25 and nothing else happened.
+  // A wound that keeps working across those turns is exactly the shape of the
+  // hole, which is why the fix is a rider on the basic rather than a rebalance.
+  //
+  // The sentence is unchanged and now actually true: endure, then everything at
+  // once — except the enduring is doing damage the whole time.
   base: {
     name: 'Unmutated', color: 'base',
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
-      { id:'jab', name:'Strike', desc:'Attack the enemy for {power!} damage. +{buildsResolve} RESOLVE', type:'attack', power:1.0, buildsResolve:1, target:'enemy', basic:true },
+      { id:'jab', name:'Strike', desc:'Attack the enemy for {power!} damage. +{buildsResolve} RESOLVE, and open a wound: +{bleed} BLEED, as deep as the RESOLVE behind it', type:'attack', power:1.0, buildsResolve:1, bleed:1, target:'enemy', basic:true },
       { id:'bandage', name:'Bandage', desc:'Heal {healFrac%} of max HP and +{resolveHealBonus%} per held RESOLVE', type:'heal', healFrac:0.14, resolveHealBonus:0.02, target:'self', cdTurns:4 },
-      { id:'counter', name:'Counterpunch', desc:'Brace for {duration#turn}: −{power%} damage taken, stacking with RESOLVE. A hit taken while braced strikes back for {counterPower!} damage', type:'buff', buff:'brace', duration:1, power:0.60, counterPower:1.20, target:'self', cdTurns:4 },
+      { id:'counter', name:'Counterpunch', desc:'Brace for {duration#turn}: −{power%} damage taken, stacking with RESOLVE. A hit taken while braced strikes back for {counterPower!} damage and +{counterBleed} BLEED', type:'buff', buff:'brace', duration:1, power:0.60, counterPower:1.20, counterBleed:1, target:'self', cdTurns:4 },
       { id:'laststand', name:'Last Stand', desc:'Attack the enemy for {power!} damage, +{perResolvePower!} per RESOLVE consumed. Spends all RESOLVE', type:'attack', power:1.20, perResolvePower:0.40, consumesResolve:true, spendAt:4, target:'enemy', cdTurns:5 }
     ]
   }
@@ -1025,6 +1064,12 @@ const STATUSES = {
         if (unit.hp <= 0) break;
         const dmg = Math.max(1, Math.floor((st.perStack||1) * (st.stacks||1)));
         unit.hp = Math.max(0, unit.hp - dmg);
+        // AN AILMENT TICK IS DAMAGE THE PLAYER DEALT, and it was not being
+        // counted — so the result screen, and every balance measurement taken
+        // through simulateRun, has been under-reporting bio by most of its
+        // output for as long as poison has been its ramp. Guarded on the
+        // target, because an elite's venom ticking on YOU is not yours.
+        if (!unit.isPlayer) state.damageDealt += dmg;
         floatText(unit, dmg, 'poison');
         logDamage('POISON', unit, dmg, [
           '×' + (st.stacks||1) + ' @ ' + logNum(st.perStack||1) + '/stack',
@@ -1047,23 +1092,29 @@ const STATUSES = {
     incomingMult: (u, st) => 1 - (st.power || 0)
   },
 
-  // Bleed is poison with different flavour: a stacking tick on whatever you hit.
-  // Kept as its own entry rather than a re-skin of poison so the two can stack
-  // independently and be raised by different sources — an AILMENT is the shared
-  // idea, not the shared object.
+  // UNMUTATED'S WOUND. Poison's twin in shape and its opposite in source: the
+  // rot is alien and free, a cut is ordinary and paid for. See the BLEED block
+  // in BALANCE for the two rules that keep this from being bio in red.
   //
   // Deliberately plainer than poison: no double-tick interaction (that is bio's
   // trick, not a property of damage-over-time) and it does not persist between
-  // fights. Nothing applies it yet; applyStatus(e, 'bleed', {...}) is all it
-  // takes when something should.
+  // fights.
+  //
+  // THE TIMER IS THE POINT, not an oversight — it is half of what separates
+  // this from the rot. Each new stack refreshes the whole wound, so bleeding
+  // an enemy out means never stopping; four turns of not cutting and it closes.
   bleed: {
     id:'bleed', name:'BLEED', tone:'bleed', kind:'debuff',
     // No maxStacks, exactly like poison: the twin shares the shape.
     stacking:'stack', defaults:{ duration:4, stacks:1, perStack:1 },
+    // The wound is as deep as the LAST cut, not the deepest one ever made —
+    // which is what gives spending Resolve a price. See applyStatus.
+    perStackRule:'newest',
     label: st => 'BLEED ×' + (st.stacks||1) + '  ' + Math.ceil(st.duration) + 't',
     onTurnStart(unit, st) {
       const dmg = Math.max(1, Math.floor((st.perStack||1) * (st.stacks||1)));
       unit.hp = Math.max(0, unit.hp - dmg);
+      if (!unit.isPlayer) state.damageDealt += dmg;   // see the note on poison's tick
       floatText(unit, dmg, 'damage');
       logDamage('BLEED', unit, dmg, [
         '×' + (st.stacks||1) + ' @ ' + logNum(st.perStack||1) + '/stack',
@@ -1131,6 +1182,12 @@ const STATUSES = {
       state.damageDealt += cdmg;
       if (e.hp <= 0) state._lastOverkill = Math.max(0, cdmg - before);
       floatText(e, cdmg, 'damage');
+      // The counter draws blood. Base's defensive turn used to produce one flat
+      // number and nothing lasting; now bracing is part of the offence, which
+      // is the whole reason a class built on absorbing hits can afford to spend
+      // a turn not attacking.
+      if (st.counterBleed && unit.class === 'base' && e.hp > 0)
+        applyStatus(e, 'bleed', { stacks: st.counterBleed, perStack: bleedDepth(unit), duration: P().bleedDuration });
       logDamage('COUNTER', e, cdmg, [
         'BRACE ×' + (st.counter||1.2).toFixed(2) + ' Attack Damage',
         logNum(e.hp) + '/' + logNum(e.maxHp) + ' left'

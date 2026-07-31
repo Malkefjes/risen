@@ -26,21 +26,35 @@ export default async function ({ page, ctx, ok }) {
   const run = await page.evaluate(async () => {
     window.scheduleTurn = (fn) => { if (state.turnTimer) clearTimeout(state.turnTimer);
       state.turnTimer = setTimeout(() => { state.turnTimer = null; fn(); }, 0); };
-    localStorage.clear(); goToMenu(); startGame(true, 'sym'); SETTINGS.fastTurns=true;
-    let g=0, sawOffer=false;
-    while (g++ < 60000) {
-      if (document.getElementById('result-screen').classList.contains('active')) break;
-      if (state.talentOffers) sawOffer = true;
-      if (state.player?.points > 0) adjustStat('vit', 1);
-      if (state.player?.points <= 0 && pendingTotal(state.player) > 0) commitStats();
-      if (state.awaitingInput && state.combatActive) {
-        const u = state.player.skills.filter(s => !s.basic && s.cd <= 0);
-        playerAct(u.length ? u[0] : state.player.skills[0]);
+    localStorage.clear();
+    // ONE RUN REACHING A DRAFT LEVEL IS A COIN FLIP, so this plays until one
+    // does. Asserting on a single run made the file go red on its own schedule
+    // rather than when the mutation system broke — a run dies somewhere around
+    // level 4 to 6, and the threshold sits right in the middle of that.
+    //
+    // Retrying does not weaken the real assertion, it strengthens it: sawOffer
+    // accumulates across every attempt, so each extra run is another set of
+    // level-ups on which a draft must fail to appear.
+    let sawOffer=false, best=0, ids=0, attempts=0;
+    while (best < BALANCE.talentEvery && attempts++ < 8) {
+      goToMenu(); startGame(true, 'sym'); SETTINGS.fastTurns=true;
+      let g=0;
+      while (g++ < 60000) {
+        if (document.getElementById('result-screen').classList.contains('active')) break;
+        if (state.talentOffers) sawOffer = true;
+        if (state.player?.points > 0) adjustStat('vit', 1);
+        if (state.player?.points <= 0 && pendingTotal(state.player) > 0) commitStats();
+        if (state.awaitingInput && state.combatActive) {
+          const u = state.player.skills.filter(s => !s.basic && s.cd <= 0);
+          playerAct(u.length ? u[0] : state.player.skills[0]);
+        }
+        await new Promise(r => setTimeout(r, 0));
       }
-      await new Promise(r => setTimeout(r, 0));
+      best = Math.max(best, state.player.level);
+      ids = Math.max(ids, state.player.talentIds.length);
     }
     switchTab('talents');
-    return { level: state.player.level, sawOffer, ids: state.player.talentIds.length,
+    return { level: best, sawOffer, ids, attempts,
              // Read off BALANCE, not hardcoded: this once asserted level >= 10,
              // which was really "a run levels plenty" back when one gave
              // sixteen. The level compression took a run to ~9 and tripped it
@@ -51,8 +65,8 @@ export default async function ({ page, ctx, ok }) {
              tabText: document.getElementById('talent-list').textContent.trim(),
              won: document.getElementById('result-title').textContent === 'RISEN' };
   });
-  ok('run passed a mutation level', run.level >= run.draftLevel,
-     'reached level ' + run.level + ', drafts fire every ' + run.draftLevel);
+  ok('a run passed a mutation level', run.level >= run.draftLevel,
+     'best level ' + run.level + ' over ' + run.attempts + ' run(s), drafts fire every ' + run.draftLevel);
   ok('no draft was ever offered', run.sawOffer === false);
   ok('no mutations acquired', run.ids === 0, String(run.ids));
   ok('tab shows the honest empty state', run.tabText === 'No mutations in the pool yet', JSON.stringify(run.tabText));

@@ -313,6 +313,10 @@ function growThorns(p, amount, why) {
 function gainResolve(p, amount, why) {
   if (!p || p.class !== 'base' || !(amount > 0) || p.hp <= 0) return 0;
   applyStatus(p, 'resolve', { stacks: amount });
+  // Recomputed because the sheet DEPENDS on the number that just moved: bleed
+  // depth rides held Resolve, so without this the readout would advertise a
+  // shallower cut than the next Strike is about to make.
+  applyDerivedStats(p);
   floatText(p, '+' + amount + ' RESOLVE', 'tally');
   return amount;
 }
@@ -675,6 +679,12 @@ function applyPlayerDamage(p, e, skill) {
 
   if (skill.poison && p.class === 'bio')
     applyStatus(e, 'poison', { stacks: skill.poison, perStack: p.poisonPerStack });
+  // Unmutated opens a wound. On-hit like the rot, so an evade costs the cut as
+  // well as the damage — and the depth is read HERE, at the moment of the
+  // swing, off the Resolve standing behind it. gainResolve fires earlier in
+  // this same function, so a Strike is cut with the Resolve it just earned.
+  if (skill.bleed && p.class === 'base' && e.hp > 0)
+    applyStatus(e, 'bleed', { stacks: skill.bleed, perStack: bleedDepth(p), duration: P().bleedDuration });
   // Terrify's burst of fear, the planted counterpart of Slash's poison. On-hit
   // rather than on-use, so the enemy dodging costs the fear along with the
   // damage. Lands after creditCrit: a critting Terrify plants its crit stack

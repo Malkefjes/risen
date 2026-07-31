@@ -33,6 +33,7 @@ behaviour that regressed rather than an internal detail:
 | `build` | the build stamp reaches the title, the log and the save |
 | `thorns` | sym grows one number, and it is the only thing it spends |
 | `uncapped` | every strain runs on one uncapped number, and there are no banks |
+| `bleed` | Unmutated cuts, and the wound is as deep as the grit behind it |
 
 ## Measuring
 
