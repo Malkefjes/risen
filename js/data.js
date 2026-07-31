@@ -154,7 +154,7 @@
 // KEEP THIS SEPARATE FROM BALANCE.saveKey. That one answers "are saved runs
 // still valid" and is bumped only when a change makes an old sheet wrong.
 // Deriving it from this would wipe every save on a typo fix.
-const BUILD = '2026-07-31g';
+const BUILD = '2026-07-31h';
 
 const BALANCE = {
   player: {
@@ -565,10 +565,20 @@ const BALANCE = {
     // WAS 0.026, which was a rounding error dressed as a mechanic: a baseline
     // enemy drifted 1.00 -> 1.05 across an entire run, so "standing still on
     // Speed loses you the tempo" was technically true and completely
-    // unfeelable. At 0.070 a Rank III enemy acts 1.14x per player turn — still
+    // unfeelable. At 0.070 it climbs 1.00 -> 1.35 across a full run — still
     // small beside what Speed can buy (up to 4x), which is the point: Speed
     // remains the answer, but now there is a question. It also gives the tier
     // step a second dimension, so a new rank is faster AND heavier.
+    //
+    // RATE COUNTS FROM THE RUN'S START, NOT THE ACT'S, and that is the one
+    // place the act-local rule is deliberately broken. Everything else about an
+    // enemy restarts per act — that is what lets act 2 field its own roster at
+    // its own floor — but rate restarting meant the Encampment's opening
+    // enforcers acted at 1.00 while the Laboratory's closing experiments acted
+    // at 1.14. The enemy got SLOWER at the boundary the game sells as stepping
+    // up a weight class, while the player's rate climbed straight through it.
+    // Tempo is the one axis where the player never resets, so it is the one
+    // axis the enemy cannot afford to.
     apsPerTier: 0.070,
     apsCap: 2.15,                      // same base-to-cap headroom as the old 0.70 / 1.5
     crit: 0.10, critMult: 1.5,
@@ -1021,7 +1031,18 @@ const ACTS = [
   { num: 2, name: 'MCP Encampment', startWave: 16, endWave: 30,
     zones: ['MCP ENCAMPMENT'],
     enemyName: 'MCP Enforcer', bossName: 'MCP Captain',
-    growthMult: 4.5, tierGrowth: 1.25, withinStep: 0.04 }
+    // TIERGROWTH 1.25 -> 1.45. At 1.25 act 2 grew 1.81x across its fifteen
+    // waves while the player's sheet grew about 1.9x in survivability over the
+    // same stretch — so the second half of the game got flatter the further you
+    // went, and the danger curve (your own turns before its hits add up to your
+    // bar) sat between 5 and 7 from wave 11 to the end. Measured: the most
+    // dangerous wave in the game was 11, not 30.
+    //
+    // Still gentler than act 1's 1.85, and deliberately: the player's growth
+    // slows in act 2 too (points arrive at the same rate but land on a much
+    // bigger base), so the enemy curve should slow with it. What it must not do
+    // is slow down MORE than the player does, which is what 1.25 did.
+    growthMult: 4.5, tierGrowth: 1.45, withinStep: 0.04 }
 ];
 function actForWave(wave) {
   return ACTS.find(a => wave >= a.startWave && wave <= a.endWave) || ACTS[ACTS.length - 1];

@@ -635,6 +635,9 @@ function makeEnemy(wave) {
   // from the act's first wave; only XP income keeps the global count.
   const w = wave - act.startWave;
   const tier = Math.floor(w/5), within = w%5;
+  // Rate alone counts from the RUN's start — see the apsPerTier note. Rank and
+  // growth stay act-local so each roster still debuts plain at its own floor.
+  const rateTier = Math.floor((wave - 1) / 5);
   const g = Math.pow(act.tierGrowth || E.tierGrowth, tier)
           * (1 + within*(act.withinStep != null ? act.withinStep : E.withinStep))
           * (act.growthMult || 1);
@@ -672,7 +675,7 @@ function makeEnemy(wave) {
     windupEvery: isBoss ? (isFinal ? E.finalWindupEvery : E.windupEvery) : (elite ? E.eliteWindupEvery : 0),
     maxHp: Math.max(1, Math.round(E.hpBase * g * (isBoss?E.bossHp:1) * (elite&&elite.hpMult?elite.hpMult:1))),
     damage: Math.max(1, Math.round(E.dmgBase * Math.pow(g, E.dmgExp) * (isBoss?E.bossDmg:E.trashDmgMult))),
-    attackSpeed: Math.min(E.apsCap, (E.apsBase + tier*E.apsPerTier) * (isBoss?E.bossAps:1) * (elite&&elite.apsMult?elite.apsMult:1)),
+    attackSpeed: Math.min(E.apsCap, (E.apsBase + rateTier*E.apsPerTier) * (isBoss?E.bossAps:1) * (elite&&elite.apsMult?elite.apsMult:1)),
     evadeChance: 0,
     critChance: E.crit, critMult: E.critMult,
     xpMult: (isBoss?E.bossXp:1) * (elite?elite.xp:1),
