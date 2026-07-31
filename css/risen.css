@@ -1065,9 +1065,14 @@ body {
   z-index: 2;
 }
 
+/* The gap does the work the chips used to. At 5px two plain labels of the same
+   tone sat close enough to read as one phrase — "SPINES 2t THORNS 22" — which
+   is exactly the failure the borders were hiding. Wider, because with nothing
+   drawn around a status the only thing separating it from its neighbour is
+   space. */
 .status-effects {
   display: flex;
-  gap: 5px;
+  gap: 11px;
   flex-wrap: wrap;
   justify-content: center;
   min-height: 20px;
@@ -1107,52 +1112,53 @@ body {
 }
 @media (prefers-reduced-motion: reduce) { .intent-badge.tone-heavy { animation: none; } }
 
+/* A STATUS IS THE WORD IN ITS OWN COLOUR — no chip, no border, no ground, on
+   EITHER side of the arena. Boxing every condition turned the space under a
+   health bar into a row of competing labels; colour alone tells them apart, and
+   it is the same colour the skill that applied it used.
+
+   The enemy got this treatment first and the player was deliberately left with
+   chips, because its statuses sat beside the bank pips and needed an edge to
+   read as separate things. That reason retired with sym's wallet: only
+   Unmutated draws pips at all now, so the row is statuses and nothing else and
+   the boxes were drawing a distinction that no longer exists. One rule, both
+   sides — and anything that renders into this row is a `.status` (THORNS is,
+   see buildStatusesHtml), so it inherits the treatment for free. */
 .status {
   font-size: 0.58rem;
-  padding: 2px 6px;
-  border-radius: 2px;
-  background: #151b28;
-  letter-spacing: 0.4px;
-  font-weight: 500;
-}
-
-/* On the ENEMY, a status is just the word in its own colour — no chip, no
-   border, no ground. The foe's card carries an intent badge, tags and a health
-   bar already, and boxing every condition on top turned the space under the bar
-   into a row of competing labels. Colour alone is enough to tell them apart,
-   and it is the same colour the skill that applied it used.
-
-   Scoped by the panel rather than by a class on each badge: buildStatusesHtml
-   is shared by both sides, so the side it is rendered into is the one thing
-   that already knows which is which. The player keeps its chips — its statuses
-   sit beside the bank pips and need the edge to read as separate things. */
-#enemy-side .status {
-  background: none;
-  border: none;
-  border-radius: 0;
   padding: 2px 0;
+  letter-spacing: 0.4px;
   font-weight: 600;
 }
 
 /* One tone per status, named by the `tone` field of its STATUSES entry. The
    generic buff/debuff pair is the fallback every new entry can use without
    touching this file — green-ish for something you want, red-ish for something
-   done to you — so adding a status is a data edit, never a CSS edit. */
-.status.buff { color: var(--bio); border: 1px solid rgba(125,255,160,0.45); }
-.status.debuff { color: var(--enemy); border: 1px solid rgba(251,113,133,0.45); }
+   done to you — so adding a status is a data edit, never a CSS edit. Colour
+   only: a tone that reaches for a border or a ground is re-introducing the
+   chip one status at a time. */
+.status.buff { color: var(--bio); }
+.status.debuff { color: var(--enemy); }
 
-.status.weak { color: var(--weak); border: 1px solid rgba(96,165,250,0.45); }
-.status.poison { color: var(--bio); border: 1px solid rgba(125,255,160,0.35); }
-.status.bleed { color: var(--enemy); border: 1px solid rgba(251,113,133,0.35); }
-.status.stun { color: var(--psy); border: 1px solid rgba(192,132,252,0.35); }
-.status.predator { color: var(--accent); border: 1px solid rgba(0,240,208,0.35); }
-.status.spines { color: var(--sym); border: 1px solid rgba(251,146,60,0.4); }
-.status.resolve { color: #ffffff; border: 1px solid rgba(255,255,255,0.5); }
-.status.dread { color: var(--psy); border: 1px solid rgba(192,132,252,0.55); background: rgba(192,132,252,0.08); }
-.status.brace { color: var(--base); border: 1px solid rgba(255,255,255,0.55); background: rgba(255,255,255,0.1); }
+.status.weak { color: var(--weak); }
+.status.poison { color: var(--bio); }
+.status.bleed { color: var(--enemy); }
+.status.stun { color: var(--psy); }
+.status.predator { color: var(--accent); }
+.status.spines { color: var(--sym); }
+.status.resolve { color: #ffffff; }
+.status.dread { color: var(--psy); }
+.status.brace { color: var(--base); }
 
-/* Class bank pips (Momentum / Spores / Resolve) */
+/* Class bank pips — Unmutated's Resolve, and nothing else now.
+   COLLAPSES WHEN THERE IS NOTHING TO DRAW. The row is emitted for every player
+   so updateUnitCard always has a node to repaint, but three of the four strains
+   render no pips into it, and a reserved 18px of nothing left a gap between the
+   health bar and the statuses that read as a missing element rather than as
+   spacing. :empty is the whole fix, and it keeps working by itself if a strain
+   ever gains or loses a bank. */
 .bank-row { display: flex; justify-content: center; min-height: 18px; margin-bottom: 2px; }
+.bank-row:empty { display: none; }
 .bank { display: inline-flex; align-items: center; gap: 7px; }
 .bank-label {
   font-family: 'Orbitron', sans-serif; font-weight: 700;
