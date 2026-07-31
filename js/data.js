@@ -115,10 +115,11 @@
 //    because it is written down here — they land when the classes feel right.
 //
 //      1. A CRIT FEEDS YOUR STRAIN — built, wired, and switched off at
-//         critStrainGain: 0 for sym, base and bio. PSY ALREADY LIVES THIS RULE:
-//         its crits plant DREAD on the enemy, as the kit itself rather than the
-//         parked scaffold (see creditCrit). Psy is the proof of concept the
-//         others can be judged against before the knob turns for them.
+//         critStrainGain: 0 for every strain. Psy used to be the living proof
+//         of it, planting DREAD on a crit as the kit itself rather than through
+//         the parked scaffold — that came out when Hunt started planting on
+//         hit, so there is nothing standing on the idea now. Switch it on
+//         deliberately for a strain that wants it; do not inherit it.
 //      2. INSTINCT SCALING WHAT A CHARGE IS WORTH — not built. The DREAD slow
 //         per stack, reduction per Resolve, the thorns multiplier, poison per
 //         stack: the magnitudes that are flat constants today (dreadSlowPerStack,
@@ -154,7 +155,7 @@
 // KEEP THIS SEPARATE FROM BALANCE.saveKey. That one answers "are saved runs
 // still valid" and is bumped only when a change makes an old sheet wrong.
 // Deriving it from this would wipe every save on a typo fix.
-const BUILD = '2026-07-31n';
+const BUILD = '2026-07-31o';
 
 const BALANCE = {
   player: {
@@ -270,18 +271,20 @@ const BALANCE = {
     // so it is a ceiling you touch rather than one you sit against. Points past
     // it still buy crit damage below, so nothing is ever wasted.
     critMultBase: 1.0, critMultPerInstinct: 0.25,   // crit damage = x(1 + 0.25 x Instinct)
-    // A CRIT FEEDS YOUR STRAIN — PARKED AT 0 for sym, base and bio; LIVE for
-    // psy, whose crits plant DREAD as the kit itself (Hunt's dreadOnCrit, not
-    // this knob — see creditCrit for how the two routes share one function).
+    // A CRIT FEEDS YOUR STRAIN — PARKED AT 0 FOR ALL FOUR STRAINS. Psy was the
+    // exception and is not any more: its fear rode crits, which meant the
+    // strain's number was fed by a roll on top of an attack rather than by the
+    // attack, and its basic's card had to describe the class instead of the
+    // button. Hunt plants on hit now (see its note in CLASSES).
     //
-    // The rule: a crit banks a charge of whatever the strain runs on — a Spore,
-    // Resolve, or a poison stack. It is the better long-term answer for this
-    // stat, because "my mechanic is online" is a verb Strength cannot buy at
-    // any price, and psy is now the living argument for it.
+    // The rule, whenever it is switched on: a crit banks a charge of whatever
+    // the strain runs on — a poison stack, Resolve, thorns. It is still the
+    // better long-term answer for this stat, because "my mechanic is online" is
+    // a verb Strength cannot buy at any price.
     //
-    // Off for the other three because THEIR designs are still being judged. A
-    // stat that accelerates a mechanic makes that mechanic harder to read, so
-    // Instinct pays them in crit alone until each stands up on its own.
+    // Off everywhere because the designs are still being judged. A stat that
+    // accelerates a mechanic makes that mechanic harder to read, so Instinct
+    // pays in crit alone until each strain stands up on its own.
     //
     // Set this back to 1 to switch it on for them. Nothing else needs touching —
     // creditCrit and its call site in applyPlayerDamage are still wired, and
@@ -454,9 +457,11 @@ const BALANCE = {
     // not fear eaten. Getting hit costs psy the meal along with the control,
     // which is the class's "don't get hit" pole enforced a third way.
     //
-    // Sustain through the mechanic means sustain through the class stats —
-    // Instinct and Speed plant the fear, so they now buy staying power too,
-    // which is what finally lets a teeth-first psy live without renting Vit.
+    // Sustain through the mechanic means sustain through TEMPO. Fear is planted
+    // by landing Hunt and by casting Terrify, so more of your turns is more
+    // fear, which is more food — Speed feeds the faucet directly. It used to be
+    // Instinct and Speed both, when crits and dodges planted; Instinct is a
+    // pure damage stat for psy now, and whether that is right is a play call.
     dreadFeedFrac: 0.03,     // heal per DREAD consumed, as a share of max HP (18% for a full 6)
     // THE SIPHON: fear feeds you passively while it sits on them — each stack
     // heals this share of max HP at the start of each of YOUR turns. On the
@@ -817,18 +822,22 @@ const CLASSES = {
   },
   // THE TERROR MUTANT. Psy's mechanic is DREAD, a mark stacked ON THE ENEMY —
   // see the DREAD block in BALANCE for why the number moved off the player and
-  // what killed Momentum. The kit is four verbs in order: Hunt (crits and
-  // dodges plant fear), Terrify (seize control — a burst of stacks, each one
+  // what killed Momentum. The kit is four verbs in order: Hunt (land a hit,
+  // plant fear), Terrify (seize control — a burst of stacks, each one
   // slowing the enemy's turn rate), Traumatize (at 3+ DREAD the mind breaks:
   // stun), Kill (cash every stack in as damage — and with the fear spent, the
   // enemy speeds back up, so the finisher is a real decision, not a rotation
   // button). Its sentence: "you were beaten before I ever touched you."
   //
-  // The class's stats are Speed and Instinct, enforced by hunger rather than
-  // by a discount: Instinct is the engine (crits plant DREAD), Speed is both
-  // halves of the ratio (your rate up, their whiffs planting more fear via
-  // dodges), and every point of Vit is a point the engine didn't get. Squishy
-  // because you chose teeth over hide, not because the sheet says so.
+  // THE CLASS'S STAT IS SPEED, and it used to be Speed and Instinct. Fear came
+  // from crits and from dodges, so Instinct was the engine and Speed was both
+  // halves of the ratio. Hunt plants on hit now, so tempo is the engine on its
+  // own — more turns is more fear is more slow is more turns. Instinct is a
+  // pure damage stat for psy, which is a real loss of identity for the stat and
+  // is left standing to be judged by play rather than patched over here.
+  //
+  // Still squishy by choice: every point of Vit is a point the engine didn't
+  // get, not because the sheet says so.
   //
   // Sustain is DEVOUR, never a bandage: consumed fear feeds you (see
   // dreadFeedFrac). The first pass shipped no heal at all on the theory that
@@ -840,7 +849,17 @@ const CLASSES = {
     name: 'Psychological', color: 'psy',
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
-      { id:'hunt', name:'Hunt', desc:'Deal {power!} damage. Your crits and your dodges plant +{dreadOnCrit} DREAD.', type:'attack', power:1.0, dreadOnCrit:1, dreadOnEvade:1, target:'enemy', basic:true },
+      // HUNT PLANTS FEAR BY LANDING, full stop. It used to plant none at all:
+      // the card read "your crits and your dodges plant +1 DREAD", which is a
+      // CLASS mechanic parked on a button that had no part in it. Measured —
+      // pressing Hunt without a crit gave zero, a critting TRAUMATIZE gave one,
+      // and a dodge on the enemy's turn gave one. The card explained the strain
+      // while lying about the skill, and the strain's number came from two
+      // rolls the player does not make instead of the button they press most.
+      //
+      // On-hit now, like bio's Slash and base's Strike: a basic in this game is
+      // the mechanic's trickle, every turn, for free.
+      { id:'hunt', name:'Hunt', desc:'Deal {power!} damage. +{dread} DREAD', type:'attack', power:1.0, dread:1, target:'enemy', basic:true },
       // Plants 4, one MORE than Traumatize needs, so the advertised combo
       // survives one steadying hit: at the 1:1 anchor the enemy usually lands
       // a blow between your Terrify and your Traumatize, shedding a stack —

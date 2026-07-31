@@ -454,11 +454,9 @@ function applyEnemyDamage(e, p, mult, opts) {
   else if (Math.random() < p.evadeChance) {
     state.dodges = (state.dodges || 0) + 1;
     logMiss(label, p, 'EVADED (' + Math.round(p.evadeChance * 100) + '%)');
-    // Psy: the hunter they cannot touch. A whiff plants fear, which is how
-    // Speed feeds the class engine — evade is the second mouth of DREAD,
-    // beside Instinct's crits. Read off the basic like bio's poison is.
-    if (p.class === 'psy' && e.hp > 0 && p.basicSkill && p.basicSkill.dreadOnEvade)
-      applyStatus(e, 'dread', { stacks: p.basicSkill.dreadOnEvade });
+    // A dodge used to plant DREAD for psy — the second mouth of the mechanic,
+    // beside crits. Both went when Hunt started planting on hit: fear should
+    // come from the button, not from two rolls the player does not make.
     floatText(p, 'EVADE', 'note'); playAttackAnim(e, p, false); return 0;
   }
   if (Math.random() < e.critChance) { dmg = Math.floor(dmg * e.critMult); notes.push('CRIT ×' + e.critMult.toFixed(1)); }
@@ -553,29 +551,26 @@ function applyEnemyDamage(e, p, mult, opts) {
   return dmg;
 }
 
-// A CRIT FEEDS YOUR STRAIN — LIVE FOR PSY, PARKED FOR THE REST.
+// A CRIT FEEDS YOUR STRAIN — PARKED FOR EVERY STRAIN, and psy was the last one
+// standing in it.
 //
 // One sentence, four meanings, because every strain runs on something that
-// wants filling: DREAD for psy, THORNS for sym, Resolve for Unmutated, and
-// for bio the rot itself. Instinct
-// buys the same sentence for everyone ("my mechanic is online when I need it")
-// and cashes out as whatever the strain in front of you is made of.
+// wants filling: DREAD for psy, THORNS for sym, Resolve for Unmutated, and for
+// bio the rot itself. Instinct buys the same sentence for everyone ("my
+// mechanic is online when I need it") and cashes out as whatever the strain in
+// front of you is made of.
 //
-// Psy's branch is its KIT — the terror class where a flash of the knife plants
-// fear — so it reads its strength off the basic (Hunt's dreadOnCrit, the same
-// pattern as bio's Slash carrying its poison) and ignores the parked knob.
-// The other three wait on critStrainGain, which sits at 0 until each class's
-// design is settled enough to judge an accelerator on top of it.
+// Psy's branch was live and is gone: its fear rode crits, so the strain's
+// number was fed by a roll rather than by a press, and the card had to explain
+// a class mechanic instead of a button. Hunt plants on hit now. What is left
+// here is scaffolding — critStrainGain sits at 0 — kept because the idea is
+// still the best long-term answer for Instinct, and switching it on is one
+// number when a strain wants it.
 //
 // Every enemy-side branch guards on the enemy still standing: a killing crit
 // has nothing left to frighten or rot, and a permanent status stacked onto a
 // corpse would log a number that never comes due.
 function creditCrit(p, e) {
-  if (p.class === 'psy') {
-    const dread = (p.basicSkill && p.basicSkill.dreadOnCrit) || 0;
-    if (dread && e && e.hp > 0) applyStatus(e, 'dread', { stacks: dread });
-    return;
-  }
   const gain = P().critStrainGain || 0;
   if (!gain) return;
   if (p.class === 'bio') {
@@ -732,8 +727,7 @@ function applyPlayerDamage(p, e, skill) {
   }
   // Resolve (base): landing a hit steadies you.
   if (skill.buildsResolve) gainResolve(p, skill.buildsResolve, skill.name);
-  // A crit feeds your strain — live for psy (crits plant DREAD), parked for
-  // the rest. See creditCrit.
+  // A crit feeds your strain — parked for every strain now. See creditCrit.
   if (isCrit) creditCrit(p, e);
 
   if (skill.poison && p.class === 'bio')

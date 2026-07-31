@@ -113,8 +113,8 @@ A turn-based browser roguelite. Personal project, built for enjoyment.
 
 ## Known soft spots (context, not a to-do list)
 
-- Psy was reworked around DREAD (a mark on the enemy: crits and dodges plant
-  it, stacks slow the enemy and open its guard, and fear feeds psy — a SIPHON
+- Psy was reworked around DREAD (a mark on the enemy: Hunt plants it on hit,
+  stacks slow the enemy and open its guard, and fear feeds psy — a SIPHON
   drip per stack each player turn, a DEVOUR burst when stacks are consumed by
   Kill or death) — the numbers are early and owner-tuned by play. Kill takes
   HALF the fear rather than all of it: spending the pile cost the slow, the
