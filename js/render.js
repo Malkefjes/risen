@@ -160,6 +160,9 @@ function createFighterPanel(unit) {
   // only when it isn't 1, so the common case leaves no style attribute behind.
   const artScale = foeArtScale(unit);
   const foeStyle = artScale !== 1 ? ' style="--foe-art:' + artScale + '"' : '';
+  // Art drawn facing right has to be flipped to face the player — see the
+  // `mirror` note in sprites.js.
+  const foeFlip = artMirrored(unit) ? ' art-mirrored' : '';
   div.innerHTML =
     '<div class="fighter-info">' +
       (unit.isPlayer ? '' : (function(){ const ib = intentBadge(unit); return '<div class="' + ib.cls + '">' + ib.html + '</div>'; })()) +
@@ -172,7 +175,7 @@ function createFighterPanel(unit) {
       '</div></div></div>' +
       '<div class="status-effects">' + buildStatusesHtml(unit) + '</div>' +
     '</div>' +
-    '<div class="char-figure ' + (unit.hp>0?'alive':'') + foeSize + '"' + foeStyle + '>' +
+    '<div class="char-figure ' + (unit.hp>0?'alive':'') + foeSize + foeFlip + '"' + foeStyle + '>' +
       makeCharSVG(type, colorClass, hasPoseSet(unit) ? 'ready' : 'idle', unit) +
       '<div class="ground-shadow"></div></div>';
   return div;

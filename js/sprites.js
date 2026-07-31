@@ -74,21 +74,33 @@ const SYMBIOTE_SPRITES = {
 };
 // The encampment: three soldiers and the Grenadier. Each has a ready stance and
 // a strike; `idle` falls back to `ready` in spriteSrcFor, so it is not repeated.
+//
+// mirror: THE ART IS DRAWN FACING RIGHT and the enemy stands on the right, so
+// without this every soldier aims off the edge of the screen away from the
+// player. Declared per SET rather than fixed in the files: it costs nothing,
+// it is reversible in one word, and it never touches the owner's art — a
+// redraw that already faces left just drops the flag. A boolean on purpose,
+// not the string 'left'/'right': preloadSprites walks these tables treating
+// every string as an image URL, and a word here would be requested as a file.
 const ENFORCER_SPRITES = {
   ready: 'assets/sprites/enforcer-ready.png',
-  strike: 'assets/sprites/enforcer-strike.png'
+  strike: 'assets/sprites/enforcer-strike.png',
+  mirror: true
 };
 const COMBATANT_SPRITES = {
   ready: 'assets/sprites/combatant-ready.png',
-  strike: 'assets/sprites/combatant-strike.png'
+  strike: 'assets/sprites/combatant-strike.png',
+  mirror: true
 };
 const RIFLEMAN_SPRITES = {
   ready: 'assets/sprites/rifleman-ready.png',
-  strike: 'assets/sprites/rifleman-strike.png'
+  strike: 'assets/sprites/rifleman-strike.png',
+  mirror: true
 };
 const GRENADIER_SPRITES = {
   ready: 'assets/sprites/grenadier-ready.png',
-  strike: 'assets/sprites/grenadier-strike.png'
+  strike: 'assets/sprites/grenadier-strike.png',
+  mirror: true
 };
 
 // trashScale: how big this act's rank-and-file stands relative to the player.
@@ -118,6 +130,14 @@ function enemyArtSet(unit) {
   if (unit.isBoss) return act.boss || GRENADIER_SPRITES;
   const pool = act.trash || {};
   return pool[unit.rosterId] || Object.values(pool)[0] || ENFORCER_SPRITES;
+}
+
+// Does this enemy's art need flipping to face the player? See the `mirror`
+// note above. Cosmetic; no rule reads it.
+function artMirrored(unit) {
+  if (!unit || unit.isPlayer) return false;
+  const set = enemyArtSet(unit);
+  return !!(set && set.mirror);
 }
 
 // The art scale for one foe, as a multiplier on whatever size tier it already

@@ -882,6 +882,14 @@ body {
   50% { transform: translateY(-2px); }
 }
 
+/* Art drawn facing right, flipped to face the player — see the `mirror` note in
+   js/sprites.js. Uses the standalone `scale` property rather than
+   transform:scaleX(-1) DELIBERATELY: this element's transform is already spoken
+   for by idleBob and the lunge/recoil keyframes, and a transform here would be
+   overwritten by whichever animation is running. `scale` composes with them
+   instead of competing. */
+.char-figure.art-mirrored .char-svg { scale: -1 1; }
+
 /* Ground shadow under each fighter — aligns with feet on the floor */
 .ground-shadow {
   position: absolute;
