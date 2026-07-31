@@ -18,7 +18,8 @@ const Store = (function () {
 
 // ---- Settings -------------------------------------------------
 const SETTINGS_KEY = 'risen_settings_v1';
-const DEFAULT_SETTINGS = { shake: true, floaters: true, fastTurns: false, backdrop: true };
+const DEFAULT_SETTINGS = { shake: true, floaters: true, fastTurns: false, backdrop: true,
+                           statColors: true };
 let SETTINGS = Object.assign({}, DEFAULT_SETTINGS);
 
 function showBuildVersion() {
@@ -48,6 +49,10 @@ function syncSettingsUI() {
   // must never touch the fight.
   const arena = document.getElementById('arena-card');
   if (arena) arena.classList.toggle('backdrop-on', !!SETTINGS.backdrop);
+  // Stat colours are pure CSS behind one class, for the same reason the
+  // backdrop is: a look the owner may not keep should be one flag to kill, and
+  // must never be something the rules or the render path can see.
+  document.body.classList.toggle('stat-colors-on', !!SETTINGS.statColors);
 }
 
 // ---- Menu / pause navigation ----------------------------------

@@ -162,7 +162,7 @@
                 <div class="xp-track"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div>
               </div>
             </div>
-            <div class="side-stat-row">
+            <div class="side-stat-row" data-stat="str">
               <div class="side-stat-info" title="Attack damage · poison (Biological)">
                 <div class="side-stat-name">STRENGTH</div>
                 <div class="stat-preview" id="preview-str"></div>
@@ -173,7 +173,7 @@
                 <button class="stat-btn plus" data-stat="str" onclick="adjustStat('str', 1)" onmouseenter="previewStat('str', true)" onmouseleave="previewStat('str', false)">+</button>
               </div>
             </div>
-            <div class="side-stat-row">
+            <div class="side-stat-row" data-stat="instinct">
               <div class="side-stat-info" title="Crit chance · crit damage">
                 <div class="side-stat-name">INSTINCT</div>
                 <div class="stat-preview" id="preview-instinct"></div>
@@ -184,7 +184,7 @@
                 <button class="stat-btn plus" data-stat="instinct" onclick="adjustStat('instinct', 1)" onmouseenter="previewStat('instinct', true)" onmouseleave="previewStat('instinct', false)">+</button>
               </div>
             </div>
-            <div class="side-stat-row">
+            <div class="side-stat-row" data-stat="speed">
               <div class="side-stat-info" title="Turn rate · evade · cooldowns">
                 <div class="side-stat-name">SPEED</div>
                 <div class="stat-preview" id="preview-speed"></div>
@@ -195,7 +195,7 @@
                 <button class="stat-btn plus" data-stat="speed" onclick="adjustStat('speed', 1)" onmouseenter="previewStat('speed', true)" onmouseleave="previewStat('speed', false)">+</button>
               </div>
             </div>
-            <div class="side-stat-row">
+            <div class="side-stat-row" data-stat="vit">
               <div class="side-stat-info" title="Health · block · thorns (Symbiotic)">
                 <div class="side-stat-name">VITALITY</div>
                 <div class="stat-preview" id="preview-vit"></div>
@@ -314,6 +314,14 @@
           <div class="setting-desc">Scenery behind the fight. Off is the clean arena.</div>
         </div>
         <button class="toggle" id="set-backdrop" onclick="toggleSetting('backdrop')"></button>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-name">STAT COLOURS</div>
+          <div class="setting-desc">A hue and a soft glow per stat. Off is the plain teal sheet.</div>
+        </div>
+        <button class="toggle" id="set-statColors" onclick="toggleSetting('statColors')"></button>
       </div>
 
       <div class="setting-row">

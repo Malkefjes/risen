@@ -48,6 +48,20 @@
   /* WEAK's own blue. Its own variable rather than a reused strain colour so the
      status and the keyword in a description can never drift apart. */
   --weak: #60a5fa;
+
+  /* ---- STAT COLOURS (eye candy, revertible) --------------------------------
+     One hue per stat in the sidebar. Their OWN variables rather than reusing
+     --psy and --bio, which are the nearest matches: a purple Speed row that
+     literally is psy's colour, and a green Vitality row that is bio's, would
+     tie a stat to a strain it has nothing to do with. Same palette family,
+     different job.
+     Retune the four hues here and the whole feature follows — nothing below
+     hardcodes a colour. To remove it entirely, see the block near
+     .side-stat-row further down. */
+  --stat-str: #ff6b6b;      --stat-str-glow: rgba(255,107,107,0.40);
+  --stat-instinct: #ffd15c; --stat-instinct-glow: rgba(255,209,92,0.40);
+  --stat-speed: #b98cff;    --stat-speed-glow: rgba(185,140,255,0.40);
+  --stat-vit: #5fe08a;      --stat-vit-glow: rgba(95,224,138,0.40);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1615,6 +1629,11 @@ body {
   font-family: 'Orbitron', sans-serif;
   font-weight: 600;
   font-size: 0.95rem;
+  /* Both of these fall back to exactly what they were before stat colours
+     existed, so the feature is entirely additive: with --stat-color unset the
+     name inherits and the value is --accent, which is the original sheet. */
+  color: var(--stat-color, inherit);
+  text-shadow: var(--stat-name-glow, none);
 }
 .side-stat-controls {
   display: flex;
@@ -1629,8 +1648,47 @@ body {
   font-size: 1.15rem;
   min-width: 32px;
   text-align: center;
-  color: var(--accent);
+  color: var(--stat-color, var(--accent));
+  text-shadow: var(--stat-value-glow, none);
 }
+
+/* ---- STAT COLOURS ---------------------------------------------------------
+   EYE CANDY, AND BUILT TO BE THROWN AWAY. Three ways out, cheapest first:
+     1. the player turns STAT COLOURS off in SETTINGS — nothing here applies,
+        because every rule is scoped to body.stat-colors-on;
+     2. retune the four hues in :root at the top of this file;
+     3. delete this block and the four --stat-* pairs in :root. Nothing else
+        needs touching: the two rules above fall back to their original values
+        the moment --stat-color is unset.
+
+   Set as VARIABLES on the row rather than as colours on the name and the value
+   directly, which is what keeps `.side-stat-value.pending` winning: an
+   unconfirmed point still turns the number amber, because that rule declares a
+   colour outright and this one only supplies the default it would otherwise
+   use. Colouring the two elements here instead would have silently outranked
+   it, and the pending state is load-bearing — it is the only thing telling you
+   a point is placed but not committed. */
+body.stat-colors-on .side-stat-row[data-stat="str"] {
+  --stat-color: var(--stat-str);      --stat-glow: var(--stat-str-glow);
+}
+body.stat-colors-on .side-stat-row[data-stat="instinct"] {
+  --stat-color: var(--stat-instinct); --stat-glow: var(--stat-instinct-glow);
+}
+body.stat-colors-on .side-stat-row[data-stat="speed"] {
+  --stat-color: var(--stat-speed);    --stat-glow: var(--stat-speed-glow);
+}
+body.stat-colors-on .side-stat-row[data-stat="vit"] {
+  --stat-color: var(--stat-vit);      --stat-glow: var(--stat-vit-glow);
+}
+/* The glow is soft and the NAME's is softer than the VALUE's: the number is
+   what you look at when spending a point, the word is what you read once. A
+   single blur on both made the label bloom into the row above it. */
+body.stat-colors-on .side-stat-row {
+  --stat-name-glow: 0 0 10px var(--stat-glow);
+  --stat-value-glow: 0 0 14px var(--stat-glow);
+}
+/* The +/- buttons stay neutral. The colour is there to name the STAT, and
+   tinting its controls too turns one accent into three things competing. */
 
 .derived-block {
   margin-top: 10px;
