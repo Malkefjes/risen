@@ -666,12 +666,23 @@ function makeEnemy(wave) {
   // and earns its numerals — the Enforcer walks in as Enforcer, not as "IV".
   const rank = tier + 1;
   const rankTag = rank > 1 ? ' ' + ['', 'I', 'II', 'III', 'IV', 'V'][rank] : '';
-  const name = (isBoss ? act.bossName : act.enemyName) + rankTag;
+
+  // WHICH FACE OF THE ROSTER. Rotated by wave rather than rolled, for two
+  // reasons. It touches no RNG at all, so adding a second trash type to an act
+  // cannot shift a single rules draw and desync a seeded replay — and a wave's
+  // identity is then STABLE: reload a save mid-act and the same soldier is
+  // standing there, where a roll would swap him for a different one.
+  // Boss waves consume a slot in the rotation, which is why the cycle is not
+  // perfectly even; that is cosmetic and not worth code to avoid.
+  const pool = act.enemies || [{ id: 'trash', name: act.enemyName }];
+  const face = pool[((w % pool.length) + pool.length) % pool.length];
+  const name = (isBoss ? act.bossName : face.name) + rankTag;
 
   const e = {
     id: 'enemy-' + wave + '-' + Math.floor(Math.random()*99999),
     name, class:'enemy', isPlayer:false, isBoss, isFinal, elite, rank,
     act: act.num,          // which act's roster (and art) this enemy belongs to
+    rosterId: face.id,     // which face of that roster — art only, never a rule
     windupEvery: isBoss ? (isFinal ? E.finalWindupEvery : E.windupEvery) : (elite ? E.eliteWindupEvery : 0),
     maxHp: Math.max(1, Math.round(E.hpBase * g * (isBoss?E.bossHp:1) * (elite&&elite.hpMult?elite.hpMult:1))),
     damage: Math.max(1, Math.round(E.dmgBase * Math.pow(g, E.dmgExp) * (isBoss?E.bossDmg:E.trashDmgMult))),

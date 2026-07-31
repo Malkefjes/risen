@@ -1,13 +1,5 @@
 // Character art — sprite tables pointing into assets/
 // ---- Character art ----
-const ENEMY_STANCE = 'assets/sprites/enemy-stance.png';
-const ENEMY_SPRITES = {
-  idle: ENEMY_STANCE,
-  ready: ENEMY_STANCE,
-  strike: 'assets/sprites/enemy-strike.png'
-};
-// Single-sprite fallback for callers that just want "the enemy look".
-const ENEMY_SPRITE = ENEMY_STANCE;
 const BIO_STANCE = 'assets/sprites/bio-stance.png';
 const BIO_SPRITES = {
   idle: BIO_STANCE,
@@ -60,18 +52,16 @@ const SYM_SPRITES = {
   strike: 'assets/sprites/sym-strike.png'
 };
 
-const BOSS_SPRITES = {
-  ready: 'assets/sprites/boss-ready.png',
-  strike: 'assets/sprites/boss-strike.png'
-};
-
 // ---- Act rosters ---------------------------------------------------------
-// Each act fields its own trash and boss art; makeEnemy stamps every enemy
-// with its act number and spriteSrcFor reads the roster off it. The
-// Laboratory's four files currently HOLD PLACEHOLDER COPIES of the
-// encampment art — overwrite experiment-stance/strike and
-// symbiote-ready/strike in assets/sprites/ with the real drawings and the
-// game wears them with no code change.
+// Each act fields a LIST of trash types and one boss. makeEnemy stamps every
+// enemy with its act number and its roster id, and spriteSrcFor looks the art
+// up from both — so adding a face to an act is a name in ACTS (js/data.js) and
+// an entry here, and nothing else in the game has to know.
+//
+// A trash type is ART AND A NAME ONLY. All three encampment soldiers share one
+// stat line, because they are the same wave-N enemy wearing different faces —
+// if one should ever hit differently, that is a design decision to make out
+// loud in the enemy table, not something to smuggle in with a sprite.
 const EXPERIMENT_STANCE = 'assets/sprites/experiment-stance.png';
 const EXPERIMENT_SPRITES = {
   idle: EXPERIMENT_STANCE,
@@ -82,17 +72,53 @@ const SYMBIOTE_SPRITES = {
   ready: 'assets/sprites/symbiote-ready.png',
   strike: 'assets/sprites/symbiote-strike.png'
 };
+// The encampment: three soldiers and the Grenadier. Each has a ready stance and
+// a strike; `idle` falls back to `ready` in spriteSrcFor, so it is not repeated.
+const ENFORCER_SPRITES = {
+  ready: 'assets/sprites/enforcer-ready.png',
+  strike: 'assets/sprites/enforcer-strike.png'
+};
+const COMBATANT_SPRITES = {
+  ready: 'assets/sprites/combatant-ready.png',
+  strike: 'assets/sprites/combatant-strike.png'
+};
+const RIFLEMAN_SPRITES = {
+  ready: 'assets/sprites/rifleman-ready.png',
+  strike: 'assets/sprites/rifleman-strike.png'
+};
+const GRENADIER_SPRITES = {
+  ready: 'assets/sprites/grenadier-ready.png',
+  strike: 'assets/sprites/grenadier-strike.png'
+};
+
 // trashScale: how big this act's rank-and-file stands relative to the player.
 // A DRAWING HAS A SIZE IT WANTS TO BE READ AT and it is not always eye-to-eye:
 // the Escaped Experiment is drawn hunched and heavy, and at 1.0 it read as a
 // man rather than as the thing that got out. 1.25 puts it clearly above the
 // player and clearly below the boss (1.56), which is the whole ladder — you
 // can tell what you are looking at by how much of the arena it takes up.
-// Omitted means 1.0, so the encampment's grunts stay eye-to-eye.
+// Omitted means 1.0, which is right for the encampment: its soldiers ARE men,
+// and the Grenadier looming over them is the act's size story.
 const ACT_SPRITES = {
-  1: { trash: EXPERIMENT_SPRITES, boss: SYMBIOTE_SPRITES, trashScale: 1.25 },
-  2: { trash: ENEMY_SPRITES, boss: BOSS_SPRITES }
+  1: { trash: { experiment: EXPERIMENT_SPRITES }, boss: SYMBIOTE_SPRITES,
+       trashScale: 1.25 },
+  2: { trash: { enforcer: ENFORCER_SPRITES, combatant: COMBATANT_SPRITES,
+                rifleman: RIFLEMAN_SPRITES },
+       boss: GRENADIER_SPRITES }
 };
+
+// Last resort when a unit carries no act stamp or an unknown roster id — an old
+// save, a hand-built enemy in a tool. The encampment's Enforcer stands in.
+const ENEMY_SPRITE = ENFORCER_SPRITES.ready;
+
+// The art set for one enemy: its act's boss, or its act's roster entry.
+function enemyArtSet(unit) {
+  const act = ACT_SPRITES[unit && unit.act];
+  if (!act) return ENFORCER_SPRITES;
+  if (unit.isBoss) return act.boss || GRENADIER_SPRITES;
+  const pool = act.trash || {};
+  return pool[unit.rosterId] || Object.values(pool)[0] || ENFORCER_SPRITES;
+}
 
 // The art scale for one foe, as a multiplier on whatever size tier it already
 // wears (plain / elite / boss). Purely cosmetic — no rule reads it.
@@ -122,7 +148,7 @@ const MUTATED_SPRITES = {};
 function hasPoseSet(unit) {
   if (!unit) return false;
   if (unit.isPlayer) return !!POSE_SPRITES[unit.class];
-  return !!(unit.isBoss ? BOSS_SPRITES : ENEMY_SPRITES);
+  return !!enemyArtSet(unit);
 }
 
 // The mutation tier whose art a player is currently wearing, if any.
@@ -154,12 +180,10 @@ function hasSkillArt(unit, skill) { return !!skillArtFor(unit, skill); }
 // A skill takes precedence over the generic pose when the strain has art for it.
 function spriteSrcFor(unit, pose, skill) {
   if (!unit.isPlayer) {
-    // Trash and bosses both pose-swap; the act's roster decides which art,
-    // falling back to the encampment sets for any unit with no act stamp,
-    // and to the set's ready stance for any pose it doesn't define.
-    const roster = ACT_SPRITES[unit.act];
-    const set = (roster && (unit.isBoss ? roster.boss : roster.trash))
-             || (unit.isBoss ? BOSS_SPRITES : ENEMY_SPRITES);
+    // Trash and bosses both pose-swap; the act and the roster id decide which
+    // art, falling back to the set's ready stance for any pose it doesn't
+    // define (nothing draws a separate idle for an enemy).
+    const set = enemyArtSet(unit);
     return (set && set[pose]) || (set && set.ready) || ENEMY_SPRITE;
   }
   const art = skillArtFor(unit, skill);
@@ -237,6 +261,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof v === 'string') { if (!seen.has(v)) { seen.add(v); new Image().src = v; } }
     else if (v && typeof v === 'object') Object.values(v).forEach(walk);
   };
-  [ENEMY_SPRITES, BOSS_SPRITES, ACT_SPRITES, POSE_SPRITES, MUTATED_SPRITES].forEach(walk);
+  [ACT_SPRITES, POSE_SPRITES, MUTATED_SPRITES].forEach(walk);
 })();
 

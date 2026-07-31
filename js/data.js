@@ -154,7 +154,7 @@
 // KEEP THIS SEPARATE FROM BALANCE.saveKey. That one answers "are saved runs
 // still valid" and is bumped only when a change makes an old sheet wrong.
 // Deriving it from this would wipe every save on a typo fix.
-const BUILD = '2026-07-31h';
+const BUILD = '2026-07-31i';
 
 const BALANCE = {
   player: {
@@ -1036,11 +1036,25 @@ const ELITES = {
 const ACTS = [
   { num: 1, name: 'The Laboratory', startWave: 1, endWave: 15,
     zones: ['THE LABORATORY'],
-    enemyName: 'Escaped Experiment', bossName: 'Prime Symbiote',
+    // enemies: the act's trash ROSTER. Each entry is an id (the key its art is
+    // filed under in sprites.js) and the name that appears on the card. One
+    // face here is a perfectly good roster — the Laboratory has exactly one
+    // thing loose in it.
+    enemies: [{ id: 'experiment', name: 'Escaped Experiment' }],
+    bossName: 'Prime Symbiote',
     growthMult: 1 },
   { num: 2, name: 'MCP Encampment', startWave: 16, endWave: 30,
     zones: ['MCP ENCAMPMENT'],
-    enemyName: 'MCP Enforcer', bossName: 'MCP Captain',
+    // THREE FACES, ONE STAT LINE. The encampment fields soldiers rather than
+    // one repeated silhouette, and they rotate by wave (see makeEnemy) so a
+    // stretch of act 2 shows you all of them. They are deliberately identical
+    // in numbers: a wave-N enemy is a wave-N enemy, and if a rifleman should
+    // ever fight differently from a combatant that is a decision for the enemy
+    // table to make out loud, not something a sprite quietly implies.
+    enemies: [{ id: 'enforcer',  name: 'MCP Enforcer'  },
+              { id: 'combatant', name: 'MCP Combatant' },
+              { id: 'rifleman',  name: 'MCP Rifleman'  }],
+    bossName: 'MCP Grenadier',
     // TIERGROWTH 1.25 -> 1.45. At 1.25 act 2 grew 1.81x across its fifteen
     // waves while the player's sheet grew about 1.9x in survivability over the
     // same stretch — so the second half of the game got flatter the further you
