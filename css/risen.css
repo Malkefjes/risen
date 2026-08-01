@@ -592,7 +592,11 @@ body {
   padding-top: clamp(16px, 2.6vh, 24px);
   border-top: 1px solid rgba(255, 255, 255, 0.10);
   text-align: center;
-  color: var(--accent);
+  /* White, like every other line on this screen. It was --accent teal, which
+     made the closing beat the one coloured thing in a column of white copy.
+     The teal halo below stays — the lead "You are Sonny." is white over the
+     same halo, so this now matches it exactly. */
+  color: var(--text);
   text-transform: uppercase;
   letter-spacing: 6px;
   font-size: clamp(0.82rem, 1.8vw, 1rem);
@@ -600,7 +604,7 @@ body {
 }
 
 /* TWO CHOICES AT ONE SIZE, WITH ONE OF THEM LOUD.
-   `OWNER:` MUTATE carries the three strain colours and RESIST MUTATION wears
+   `OWNER:` MUTATE carries bio green and psy purple, and RESIST MUTATION wears
    the quiet grey the BACK button below it uses — his call, made by looking at
    it. Note that only the STYLING is shared with BACK: RESIST keeps .intro-choice's
    size and its half of the grid, so the fork is still two equal slabs and the
@@ -631,13 +635,18 @@ body {
   letter-spacing: 2.4px;
 }
 
-/* ---- MUTATE: all three strains, circling ---------------------------------
-   THE ONE BUTTON IN THE GAME THAT IS NOT A FLAT COLOUR, and the reason is that
-   it is the only press that means "become one of these three" without saying
-   which. So it wears all of them: bio green, psy purple and sym orange in a
-   conic gradient that rotates forever around the edge. Its opposite number,
-   RESIST MUTATION, is the plain is-quiet grey — so the fork is every colour in
-   the game against no colour at all, at the same size.
+/* ---- MUTATE: green and purple, circling -----------------------------------
+   THE ONE BUTTON IN THE GAME THAT IS NOT A FLAT COLOUR, because it is the only
+   press that means "become one of these" without saying which. Bio green and
+   psy purple in a conic gradient that rotates forever around the edge. Its
+   opposite number, RESIST MUTATION, is the plain is-quiet grey, so the fork is
+   colour against no colour at all, at the same size.
+
+   `OWNER:` TWO STRAINS, NOT THREE — sym orange was in the rotation and he took
+   it out. Two hues 180 degrees apart also read cleaner in motion than three at
+   120: each colour gets a long sweep instead of a third of the ring, so the
+   travel is visible rather than a churn. If a third ever goes back in, the
+   stops are the only thing that changes.
 
    HOW IT IS BUILT, because the trick is not obvious. A conic-gradient cannot
    be a border-color, so the ring is a pseudo-element filled edge to edge with
@@ -655,8 +664,8 @@ body {
    inherited so both rings read the same angle and can never drift apart.
 
    The face and the label stay exactly .ui-btn's, and the green hover wash is
-   overridden away — a green tint under a tri-colour ring would name one strain
-   the winner, which is the one thing this button must not do. */
+   overridden away — a green tint under the ring would name bio the winner,
+   which is the one thing this button must not do. */
 @property --flow-angle {
   syntax: '<angle>';
   initial-value: 0deg;
@@ -681,7 +690,7 @@ body {
   border-radius: inherit;
   pointer-events: none;
   background: conic-gradient(from var(--flow-angle),
-    var(--bio) 0deg, var(--psy) 120deg, var(--sym) 240deg, var(--bio) 360deg);
+    var(--bio) 0deg, var(--psy) 180deg, var(--bio) 360deg);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
           mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
