@@ -634,7 +634,7 @@ function guardReadout(p) {
 // Rows carry a `num` (and its unit) as well as their text wherever a difference
 // between two sheets means something, so a delta can be reported as the amount
 // it ADDS \u2014 "+15" \u2014 rather than as the value it would become. Rows with no
-// sensible number (Per Momentum, Per Resolve) simply omit it and fall back to
+// sensible number (Per Resolve) simply omit it and fall back to
 // showing the replacement value.
 function readouts(p) {
   const pct = (id, v) => ({ id, text: Math.round(v*100) + '%', num: v*100, unit:'%' });

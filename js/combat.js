@@ -669,11 +669,6 @@ function applyPlayerDamage(p, e, skill) {
     dmg *= (1 + p.talents.execute);
     notes.push('EXECUTE +' + Math.round(p.talents.execute * 100) + '%');
   }
-  if (p.talents.momentum) {
-    const m = Math.min(0.40, state.combo * p.talents.momentum);
-    dmg *= (1 + m);
-    if (m > 0) notes.push('CHAIN +' + Math.round(m * 100) + '%');
-  }
   if (skill.thornsBurst) {
     const t = getThornsDamage(p) * skill.thornsBurst;
     dmg += t;
@@ -697,8 +692,6 @@ function applyPlayerDamage(p, e, skill) {
     // The evade chance is named because it is the whole explanation, and it is
     // the one number the player cannot see on the enemy anywhere else.
     logMiss(skill.name, e, 'EVADED (' + Math.round(e.evadeChance * 100) + '%)');
-    // Psy's nemesis made visible: an evade starves the streak.
-    if (p.class === 'psy') logEvent('MOMENTUM', p, 'not gained', ['attack evaded'], '');
     return false;
   }
 
@@ -930,10 +923,9 @@ function fireSkill(caster, skill, target) {
     if (dealt) {
       playAttackAnim(caster, target, true, skill);
       if (skill.lifesteal) {
-        // No skill carries this since Nerve Drain went with the psy rework
-        // (its healCost pricing went too — that read the Momentum bank, which
-        // no longer exists). Kept generic: the vampiric elite's lifesteal runs
-        // through its own path, so this seam is for a future player source.
+        // No skill carries this since Nerve Drain went with the psy rework.
+        // Kept generic: the vampiric elite's lifesteal runs through its own
+        // path, so this seam is for a future player source.
         const heal = Math.max(1, Math.floor(dealt * skill.lifesteal));
         const before = caster.hp;
         caster.hp = Math.min(caster.maxHp, caster.hp + heal);
@@ -1425,10 +1417,10 @@ function renderSkills(forceRebuild) {
     } else {
       btn.classList.remove('on-cd'); btn.classList.add('ready');
       btn.disabled = !yourTurn;
-      // Nothing gates a ready card any more — the bank-priced skills went with
-      // Momentum (Traumatize's DREAD threshold gates its STUN, not the cast).
-      // The cost line stays as the seam for the next card that is usable-but-
-      // not, so the reason can be said where the player is looking.
+      // Nothing gates a ready card any more (Traumatize's DREAD threshold
+      // gates its STUN, not the cast). The cost line stays as the seam for the
+      // next card that is usable-but-not, so the reason can be said where the
+      // player is looking.
       costEl.textContent = '';
       overlay.style.display = 'none';
       if (sweep) sweep.style.height = '0%';

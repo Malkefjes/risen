@@ -62,7 +62,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey — that answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-01af';
+const BUILD = '2026-08-01ag';
 
 const BALANCE = {
   player: {
@@ -803,7 +803,7 @@ function zoneForWave(wave) {
 //         a flag under p.talents. These p.talents hooks are all wired into the
 //         combat code and lie inert until an entry sets one:
 //           overflow, bloodMemory, harvest, cdrBonus, adrenaline, execute,
-//           momentum, evadeFlat, thornsMult, thornsHeal, poisonStackBonus,
+//           evadeFlat, thornsMult, thornsHeal, poisonStackBonus,
 //           poisonMult, critFlat
 //
 // BASIC-ATTACK RIDERS hang a status off the basic attack — the swing you always

@@ -12,8 +12,8 @@
 //      heavies is a reading problem, dying to ordinary hits is an economy one.
 //   3. WHICH SKILLS FIRE, per 100 of your turns. A button nobody presses is a
 //      design that is not in the game, and this is the only instrument that
-//      would notice — it is how old psy's Momentum problem surfaced, on a tool
-//      that has since been deleted.
+//      would notice — it is how the problem that led to psy's DREAD rework
+//      surfaced, on a tool that has since been deleted.
 //   4. THE DANGER CURVE — how many of your own turns a fight gives you before
 //      its hits add up to your bar. Hits-to-die alone lies, because you act
 //      more often than it does. This is the number that showed zone 2 going

@@ -52,6 +52,6 @@ The value is the SPREAD, not any single number — a lone win rate stops saying
 anything the moment it saturates. Read the columns comparatively, and remember
 that a class a bot cannot pilot is not necessarily one a person cannot. What
 these numbers are good for is spotting a mechanic that never engages at all,
-which is how old psy's Momentum problem surfaced: the bank drained faster than
-it filled, so its gated skills reported "not paid" a dozen times a run and never
-fired — the finding that led to the DREAD rework.
+which is how the problem that led to psy's DREAD rework surfaced: the resource
+it ran on drained faster than it filled, so its gated skills reported "not paid"
+a dozen times a run and never fired.
