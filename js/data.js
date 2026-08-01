@@ -59,7 +59,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey — that answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-01br';
+const BUILD = '2026-08-01bs';
 
 const BALANCE = {
   player: {
@@ -702,7 +702,7 @@ const ZONES = [
     bossName: 'Prime Symbiote',
     growthMult: 1 },
 
-  { num: 2, name: 'MCP Encampment', label: 'MCP ENCAMPMENT',
+  { num: 2, name: 'The Laboratory: Mutant Pest Control', label: 'THE LABORATORY: MUTANT PEST CONTROL',
     startWave: 16, endWave: 30,
     // THREE FACES, ONE STAT LINE. The encampment fields soldiers rather than
     // one repeated silhouette, and they rotate by wave (see makeEnemy). They

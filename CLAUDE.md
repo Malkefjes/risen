@@ -183,8 +183,8 @@ did not say.
 - **The player sheet is the anchor** (5/5/5/5, 25 dmg, 100 HP, 1.00 turn
   rate); enemies are fitted to it and computed by separate functions. See
   the header comment in `js/data.js` before touching balance.
-- **The run is 45 waves across three ZONES** — The Laboratory, MCP Encampment,
-  City Streets — a boss every 5th, and WINNING MEANS CLEARING WAVE 45. The
+- **The run is 45 waves across three ZONES** — The Laboratory, The Laboratory:
+  Mutant Pest Control, City Streets — a boss every 5th, and WINNING MEANS CLEARING WAVE 45. The
   whole run is act 1; the zone is the unit that shapes difficulty. Read the
   count off `BALANCE.finalWave`, never from a literal: a hardcoded 30 in
   `tools/autopsy.mjs` went on reporting a 30-wave game after the run grew.

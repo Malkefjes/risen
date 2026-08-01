@@ -1077,7 +1077,7 @@ body {
   background:
     radial-gradient(ellipse 130% 60% at 50% 100%, rgba(4,6,10,0.72) 0%, rgba(4,6,10,0.28) 45%, transparent 75%),
     linear-gradient(180deg, rgba(7,10,16,0.55) 0%, rgba(7,10,16,0.2) 35%, transparent 65%),
-    url('../assets/zones/arena-backdrop-1.jpg') center bottom / cover no-repeat;
+    url('../assets/zones/mpc-1.jpg') center bottom / cover no-repeat;
   filter: blur(1.2px) saturate(0.9) brightness(1.02);
 }
 /* Zone 1's corridor is the unlit version of zone 2's, so it takes a lighter
