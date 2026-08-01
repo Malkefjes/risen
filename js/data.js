@@ -62,7 +62,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey — that answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-01f';
+const BUILD = '2026-08-01g';
 
 const BALANCE = {
   player: {
@@ -337,7 +337,10 @@ const BALANCE = {
     // the Laboratory's closing experiments, at the boundary the game sells as a
     // step up. Tempo is the one axis the player never resets, so it is the one
     // the enemy cannot afford to either.
-    apsPerTier: 0.070,                 // 1.00 -> 1.35 across a run
+    // 1.00 -> 1.56 across a 45-wave run. This was fitted when a run was 30
+    // waves and topped out at 1.35, so the last zone meets a tempo nobody chose
+    // — it arrived with the run getting longer. Flagged, not changed.
+    apsPerTier: 0.070,
     apsCap: 2.15,
     crit: 0.10, critMult: 1.5,
     // bossHp came DOWN from 5.27 to soften the FIRST boss; bossDmg and bossAps

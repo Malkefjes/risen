@@ -1114,6 +1114,15 @@ function endRun(won) {
   }
 }
 
+// THE WAVE THE RUN ACTUALLY REACHED. state.wave is incremented the moment a
+// kill lands and BEFORE the win is checked, so a finished run leaves it sitting
+// one past the end — the result screen read "WAVE 46 of 45" and the copy block
+// said "Wave 46/45". Clamped here rather than by not incrementing, because the
+// increment is what spawns the next wave on every other kill in the game.
+function waveReached() {
+  return state.won ? BALANCE.finalWave : state.wave;
+}
+
 // The four strains wear their number under different names, and the result
 // screen has to say which one it is reporting.
 const STRAIN_LABEL = { bio:'POISON', psy:'DREAD', sym:'THORNS', base:'RESOLVE' };
@@ -1153,12 +1162,12 @@ function runReport() {
   // evidence.
   const N = n => Math.floor(Number(n) || 0).toLocaleString('en-US');
   const mins = Math.max(1, Math.round((Date.now() - state.runStart) / 60000));
-  const zone = zoneForWave(state.wave);
+  const zone = zoneForWave(waveReached());
   const L = [];
   const pad = (s, n) => String(s) + ' '.repeat(Math.max(0, n - String(s).length));
 
   L.push('RISEN run report — build ' + BUILD);
-  L.push((won ? 'RISEN (won)' : 'DEFEATED') + ' · Wave ' + state.wave + '/' + BALANCE.finalWave
+  L.push((won ? 'RISEN (won)' : 'DEFEATED') + ' · Wave ' + waveReached() + '/' + BALANCE.finalWave
          + ' · Zone ' + zone.num + ': ' + zone.name);
   L.push(CLASSES[p.class].name + ' · Level ' + p.level + ' · ~' + mins + ' min');
   L.push('');
@@ -1247,7 +1256,7 @@ function showResultScreen() {
   title.className = 'result-title ' + (won ? 'win' : 'lose');
 
   const esc = t => String(t).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-  const zone = zoneForWave(state.wave);
+  const zone = zoneForWave(waveReached());
 
   // ONE SENTENCE, and on a loss it names the blow. "Wave 14" and "wave 14 to a
   // heavy you did not answer" are different readings, and the second one is the
@@ -1302,7 +1311,7 @@ function showResultScreen() {
       '</div>' +
 
       '<div class="rs-heroes">' +
-        hero('WAVE', state.wave, 'of ' + BALANCE.finalWave) +
+        hero('WAVE', waveReached(), 'of ' + BALANCE.finalWave) +
         hero('LEVEL', p.level, formatNum((p.level - 1) * P().pointsPerLevel) + ' pts') +
         hero('TURNS', formatNum(state.runTurns || 0), '~' + mins + ' min') +
         hero('KILLS', formatNum(state.kills), (state.bestCombo || 0) + '× chain') +
