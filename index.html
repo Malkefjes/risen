@@ -103,6 +103,15 @@
     <p class="resist-line">You have chosen to resist your new powers…</p>
   </div>
 
+  <!-- INTRO CINEMATIC — plays once after EVOLVE, before the run starts.
+       MUTED: the game is silent by choice, and muted is also the only state
+       browsers will autoplay. Skippable, and any load failure falls straight
+       through to the fight (see playIntroCinematic). -->
+  <div id="cinematic-screen" class="screen">
+    <video id="intro-video" muted playsinline preload="auto"
+           src="assets/video/intro-1.mp4"></video>
+  </div>
+
   <!-- CLASS SELECT. Built on the same glass the title-screen buttons use: the
        card IS a .ui-btn variant in everything but name — one shape, one size,
        and only the border and the glow change per strain. -->
@@ -130,7 +139,7 @@
     </div>
     <div class="class-actions">
       <button class="ui-btn is-quiet" onclick="goToMenu()">BACK</button>
-      <button class="ui-btn is-primary" id="start-btn" onclick="startGame()" disabled>EVOLVE</button>
+      <button class="ui-btn is-primary" id="start-btn" onclick="startGameFromSelect()" disabled>EVOLVE</button>
     </div>
   </div>
 

@@ -146,6 +146,46 @@ function resetRunState(classId) {
 // If neither yields a real strain the run does NOT start. Falling back to
 // state.classId is exactly the behaviour that produced the wrong-strain bug —
 // better to do nothing visible than to silently start the wrong run.
+// EVOLVE goes through the cinematic; everything else calls startGame directly.
+// The strain is claimed BEFORE the video so the pending choice cannot be
+// cleared while it plays, and it is passed explicitly on the far side.
+function startGameFromSelect() {
+  const cls = claimPendingClass();
+  if (!CLASSES[cls]) return;
+  playIntroCinematic(() => startGame(true, cls));
+}
+
+// Plays the intro once, then runs `done`. EVERY failure path also runs `done`:
+// a missing file, a decode error, a browser that refuses to autoplay, or a
+// stall — a cinematic that cannot play must never be a locked door in front of
+// the game. SKIP (and spacebar, which it is bound to) ends it early.
+function playIntroCinematic(done) {
+  const screen = document.getElementById('cinematic-screen');
+  const vid = document.getElementById('intro-video');
+  if (HEADLESS.on || !screen || !vid) return done();
+
+  let over = false;
+  const finish = () => {
+    if (over) return;
+    over = true;
+    clearTimeout(stall);
+    offerSkip(null);
+    try { vid.pause(); } catch (e) {}
+    done();
+  };
+  vid.onended = finish;
+  vid.onerror = finish;
+  // A file that never starts (offline, blocked, still moving its index) must
+  // not hold the run hostage: if nothing has buffered in 6s, go without it.
+  const stall = setTimeout(() => { if (vid.readyState < 2) finish(); }, 6000);
+
+  showScreen('cinematic-screen');
+  offerSkip(finish);
+  try { vid.currentTime = 0; } catch (e) {}
+  const p = vid.play();
+  if (p && p.catch) p.catch(finish);
+}
+
 function startGame(skipReveal, classId) {
   const cls = classId || claimPendingClass();
   if (!CLASSES[cls]) return;

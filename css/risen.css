@@ -589,6 +589,25 @@ body {
   .title-sub { margin-top: 6px; }
 }
 
+/* ---- Intro cinematic ---------------------------------------------------
+   Full-bleed and out of #app's padding, like the title screen. Below the SKIP
+   button's z-index so the escape hatch stays on top. */
+#cinematic-screen.active {
+  display: flex;
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: #000;
+  align-items: center;
+  justify-content: center;
+}
+#intro-video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
 /* ---- Intro ---------------------------------------------------------------
    NO PANEL. It had a glass card and the owner took it off: the copy reads
    perfectly well straight on the room, and a box around it only shrank the
