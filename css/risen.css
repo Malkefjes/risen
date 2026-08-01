@@ -43,10 +43,7 @@
      which is the point of the class. Aliased rather than copied so it cannot
      drift from --text. */
   --base: var(--text);
-  /* The same colour as bare channels, for the rgba() alphas the title-screen
-     button edges need. Kept beside --base so the two cannot drift; if --text
-     ever moves, move this with it. */
-  --base-rgb: 238, 242, 255;
+  --base-rgb: 238, 242, 255;   /* --base as bare channels, for rgba() alphas */
   --enemy: #fb7185;
   --xp: #fbbf24;
   /* WEAK's own blue. Its own variable rather than a reused strain colour so the
@@ -289,8 +286,6 @@ body {
      .is-psy       the strain-purple alternative — a real second choice, not a
                    lesser one, so it is equal in weight and different in colour.
      .is-quiet     escape hatches and workbench doors: same shape, less voice.
-                   RESIST MUTATION uses it at .intro-choice's full size, so
-                   "quiet" is about voice and never about scale.
      .is-danger    destructive. Not used yet; here so the next screen that needs
                    it does not invent its own.
      :disabled / .is-disabled */
@@ -507,26 +502,11 @@ body {
   font-size: clamp(0.68rem, 1.5vw, 0.8rem);
 }
 
-/* ---- Being tried: base Sonny's colour on the EDGE ONLY --------------------
-   The main-menu buttons take unmutated Sonny's white for their border and
-   nothing else. Face, label, hover wash and glow all stay the green they were
-   — this is a one-variable test of whether the menu wants a neutral edge, not
-   a recolour of the button.
-
-   Base's colour is --text, aliased not copied, because unmutated has no strain
-   tint. So the edge is the same white the unit names are, and the alphas below
-   are .ui-btn's own (0.28 rest, 0.62 primary, 0.75 hover) with only the hue
-   swapped — the weight difference between NEW GAME and SETTINGS is preserved
-   exactly.
-
-   Scoped to .title-btn on purpose. Strain select and the intro run on plain
-   .ui-btn and are untouched, so the two looks can be compared side by side.
-   Deleting this block is the whole revert. */
+/* Main-menu edges only: base Sonny's white, at .ui-btn's own alphas. Face,
+   label, hover wash and glow stay green. */
 .title-btn { border-color: rgba(var(--base-rgb), 0.28); }
 .title-btn.is-primary { border-color: rgba(var(--base-rgb), 0.62); }
 .title-btn:hover { border-color: rgba(var(--base-rgb), 0.75); }
-/* Quiet and disabled already edge in white at a low alpha, so they need no
-   override — they were base's hue before this block existed. */
 
 .title-foot { text-align: center; }
 .build-tag {
@@ -592,10 +572,6 @@ body {
   padding-top: clamp(16px, 2.6vh, 24px);
   border-top: 1px solid rgba(255, 255, 255, 0.10);
   text-align: center;
-  /* White, like every other line on this screen. It was --accent teal, which
-     made the closing beat the one coloured thing in a column of white copy.
-     The teal halo below stays — the lead "You are Sonny." is white over the
-     same halo, so this now matches it exactly. */
   color: var(--text);
   text-transform: uppercase;
   letter-spacing: 6px;
@@ -603,21 +579,10 @@ body {
   text-shadow: 0 2px 12px rgba(0,0,0,0.9), 0 0 26px rgba(0, 240, 208, 0.40);
 }
 
-/* TWO CHOICES AT ONE SIZE, WITH ONE OF THEM LOUD.
-   `OWNER:` MUTATE is the green is-primary and RESIST MUTATION wears the quiet
-   grey the BACK button below it uses — his call, made by looking at it. Note
-   that only the STYLING is shared with BACK: RESIST keeps .intro-choice's
-   size and its half of the grid, so the fork is still two equal slabs and the
-   escape hatch under it is still visibly smaller than both.
-
-   This block used to argue the opposite — that the two are equally real ways to
-   play and must therefore differ only in colour, never in weight. That was a
-   past session's reasoning, not a rule, and it is superseded. What the earlier
-   note was actually reacting to is still worth keeping: the ROW before it put a
-   ghost BACK, a solid teal slab and a purple outline side by side at three
-   different sizes, and mismatched sizes are what made MUTATE read as the answer
-   and RESIST as a warning. Equal SIZE is what fixed that, and equal size is
-   what survives here. */
+/* `OWNER:` MUTATE is green is-primary, RESIST MUTATION the same quiet grey as
+   BACK — styling only; RESIST keeps .intro-choice's size. Both stay the same
+   size on purpose: the row before this had three buttons at three sizes and
+   MUTATE read as the answer, RESIST as a warning. */
 /* A GRID, not a flex row, so the two are exactly equal regardless of label
    length — "MUTATE" and "RESIST MUTATION" are six characters apart and a flex
    row sized them to their text, which made the shorter one look like the
@@ -635,26 +600,9 @@ body {
   letter-spacing: 2.4px;
 }
 
-/* ---- MUTATE ---------------------------------------------------------------
-   `OWNER:` PLAIN GREEN, ON A THICKER EDGE. It is is-primary with one override.
-   This button spent the session as the only one in the game that was not a
-   flat colour — a conic gradient of bio green and psy purple rotating forever
-   around a masked ring, with a registered @property to make the angle
-   interpolate and, briefly, a turbulence filter to make the edge wander. He
-   looked at each version and asked for plain green, so all of that was
-   deleted rather than switched off; the commit history has a working flowing
-   edge if one is ever wanted again.
-
-   THE 2px IS THE ONE THING THAT MAKES IT NOT JUST NEW GAME. Every other button
-   in the game edges at 1px, and that is the family rule — so this is the
-   deliberate exception, not a drift, and it is here rather than in .ui-btn so
-   nothing else can pick it up by accident.
-
-   BORDER WIDTH, NOT A SECOND SHADOW. A border participates in layout: raising
-   it to 2px would grow the button by a pixel on every side and knock it out of
-   step with RESIST MUTATION beside it, which is the one thing the grid above
-   exists to prevent. The padding drops by the same pixel it gains, so the box
-   is identical and only the line is heavier. */
+/* `OWNER:` MUTATE is plain green on a 2px edge. Scoped here, not on .ui-btn —
+   every other edge in the game is 1px. Padding drops the pixel the border
+   gains so it stays the same size as RESIST beside it. */
 .intro-choice.is-primary {
   border-width: 2px;
   padding: 14px 19px;
@@ -731,43 +679,15 @@ body {
   transform: none;
 }
 
-/* ---- CLASS SELECT --------------------------------------------------------
-   REBUILT ON .ui-btn's LOOK, because the owner picked those buttons out as the
-   target for the rest of the game. A strain card is that button at card scale:
-   same glass face, same 1px edge, same 6px radius, same blur. What changes per
-   strain is BORDER AND GLOW ONLY — the three cards are one shape at one size,
-   so the row reads as a family with a choice in it rather than three different
-   objects.
-
-   The old card was the opposite of that: an opaque --panel fill, a 2px grey
-   border, and a radial-gradient ::before that lit the whole top edge. Solid
-   panels sit ON the room; glass sits IN it, which is the whole reason the
-   title screen works over the wallpaper.
-
-   NARROW AND TALL IS THE LAYOUT, and the width is the only dial. Three cards
-   used to split the full 1680px app — ~517px each, which made the description
-   four short lines and the card a wide letterbox. At 300px the same copy wraps
-   to roughly eleven, and the card grows tall on its own. Nothing sets a
-   height.
-
-   Centred on the viewport, not hung off the top: #class-screen.active is a
-   centring flex column with a min-height, so a short screen just grows past it
-   and scrolls instead of clipping the heading. */
+/* CLASS SELECT. Cards use .ui-btn's glass; only border and glow vary per
+   strain. 300px wide — the description wraps and the card grows on its own. */
 #class-screen.active {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  /* #app's own 20px/28px padding, so this is the room actually left over. */
   min-height: calc(var(--vh) * 100 - 48px);
-  /* SITS ABOVE CENTRE, and the padding is how. Dead-centred, the block read as
-     low — the wallpaper's floor takes up the bottom third and the eye lands
-     above it, so true centre is not where centre looks. Padding shrinks the
-     box the flex centring happens in, which lifts the whole screen (heading,
-     cards and buttons together) by half of whatever this is. Owner-set by
-     eye; scales with the window so it holds on a laptop. When the content is
-     taller than the box there is nothing to centre and this just trails off
-     the bottom, which is the right thing to happen. */
+  /* Lifts the block above true centre by half of this. */
   padding-bottom: clamp(56px, 14vh, 170px);
 }
 
@@ -783,8 +703,6 @@ body {
 
 .class-desc { text-align: center; color: var(--muted); margin-bottom: 36px; font-size: 0.9rem; }
 
-/* Flex, not a 3-column grid: the cards carry their own width, so wrapping to
-   two-up and then one-up on a narrow window needs no breakpoint. */
 .classes {
   display: flex;
   flex-wrap: wrap;
@@ -813,8 +731,7 @@ body {
               box-shadow 0.18s ease, transform 0.18s ease;
 }
 
-/* --class-rgb is the same hue as --class-color, as bare channels, because a
-   card needs it at five different alphas and rgba() cannot take a hex var. */
+/* Bare channels: a card needs the hue at several alphas, rgba() can't take a hex var. */
 .class-card.bio { --class-color: var(--bio); --class-rgb: 125, 255, 160; }
 .class-card.psy { --class-color: var(--psy); --class-rgb: 192, 132, 252; }
 .class-card.sym { --class-color: var(--sym); --class-rgb: 251, 146, 60; }
@@ -826,15 +743,8 @@ body {
   transform: translateY(-3px);
 }
 
-/* Lit from inside, the way .ui-btn.is-primary is. The inset glow is what the
-   ::before radial used to do, minus a pseudo-element and a second transition.
-
-   THE FACE WASH IS DELIBERATELY WEAKER THAN THE BUTTON'S (0.07 against 0.13).
-   A button is a word on a slab; a card is a paragraph, and at the button's
-   alpha the strain hue sat under 200-odd characters of --muted grey and took
-   the description down with it — the selected card was the hardest of the
-   three to read, which is backwards. The border and the glow carry "chosen"
-   instead, and the copy brightens rather than dims. */
+/* Face wash is 0.07, weaker than the button's 0.13 — at 0.13 the hue dulled a
+   whole paragraph of --muted grey underneath it. */
 .class-card.selected {
   background: rgba(var(--class-rgb), 0.07);
   border-color: rgba(var(--class-rgb), 0.85);
@@ -877,10 +787,7 @@ body {
   transform: translateY(-4px) scale(1.04);
 }
 
-/* ONE NUMBER, and .char-figure derives the rest — its own rules already set
-   width to --sprite-h x 1.9 and size the ground shadow off it. The old block
-   restated all three by hand and they had to be kept in step; the cap here is
-   what keeps the ~1.83:1 art inside a 300px card. */
+/* .char-figure derives width and shadow from this. */
 .class-preview .char-figure { --sprite-h: clamp(104px, 12.5vh, 130px); }
 
 .class-name {
@@ -904,8 +811,6 @@ body {
   line-height: 1.6;
 }
 
-/* One row, sized like the title menu's stack so BACK and EVOLVE read as a
-   matched pair — the variants carry the weight difference, never the size. */
 .class-actions {
   display: flex;
   flex-wrap: wrap;
@@ -916,10 +821,7 @@ body {
 }
 .class-actions .ui-btn { min-width: 190px; }
 
-/* Three 300px cards plus their gaps plus #app's padding need ~984px. Below
-   that, go straight to ONE column rather than letting flex wrap to 2 + 1 — a
-   pair with an orphan under it reads as a layout that broke, and the choice is
-   a row of three or it is a list. */
+/* Three cards need ~984px. Below that go to one column, not a 2 + 1 wrap. */
 @media (max-width: 1000px) {
   .classes { flex-direction: column; align-items: center; }
 }
