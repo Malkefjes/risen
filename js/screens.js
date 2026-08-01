@@ -220,15 +220,7 @@ function stageCombatReveal(onDone) {
   }, 2600));
 }
 
-function getZoneName(wave) {
-  const a = actForWave(wave);
-  const idx = Math.min(Math.floor((wave - a.startWave) / 5), a.zones.length - 1);
-  return a.zones[idx];
-}
-function getActLabel(wave) {
-  const a = actForWave(wave);
-  return 'ACT ' + a.num + ' · ' + a.name.toUpperCase();
-}
+function getZoneName(wave) { return zoneForWave(wave).label; }
 
 function spawnEnemy() {
   state.enemy = makeEnemy(state.wave);
@@ -236,13 +228,11 @@ function spawnEnemy() {
 
   const zn = document.getElementById('zone-name');
   if (zn) zn.textContent = getZoneName(state.wave);
-  const an = document.getElementById('act-name');
-  if (an) an.textContent = getActLabel(state.wave);
-  // The act stamp is what lets CSS dress the arena per zone (the Laboratory
+  // The zone stamp is what lets CSS dress the arena per zone (the Laboratory
   // painting keys off it); scenery stays a class/attr concern, never a
   // re-render, same contract as backdrop-on.
   const ac = document.getElementById('arena-card');
-  if (ac) ac.dataset.act = actForWave(state.wave).num;
+  if (ac) ac.dataset.zone = zoneForWave(state.wave).num;
 
   // Every wave gets a header, not just bosses and elites. A transcript with
   // silent waves in it cannot be read back — the reader has no way to tell

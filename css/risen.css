@@ -673,7 +673,7 @@ body {
   filter: blur(1.2px) saturate(0.8);
 }
 /* THE LABORATORY zone art (act 1) — the owner's painting under the same
-   treatment stack, keyed off data-act (stamped by spawnEnemy). The value
+   treatment stack, keyed off data-zone (stamped by spawnEnemy). The value
    band is pinched at both ends per the ship-art lessons: a top wash keeps
    the sky and lit windows under the unit names, the clarity pocket keeps
    the floor line darkest, and the scene breathes through the middle where
@@ -681,7 +681,7 @@ body {
    so it falls through to the CSS room above. Two one-step reverts, as
    before: SETTINGS > BACKDROP off is the clean arena, and deleting this
    block drops act 1 back to the CSS room. */
-.arena-card[data-act="1"] .arena-backdrop {
+.arena-card[data-zone="1"] .arena-backdrop {
   background:
     radial-gradient(ellipse 130% 60% at 50% 100%, rgba(4,6,10,0.88) 0%, rgba(4,6,10,0.4) 45%, transparent 75%),
     linear-gradient(180deg, rgba(7,10,16,0.6) 0%, rgba(7,10,16,0.22) 35%, rgba(7,10,16,0.15) 60%, rgba(7,10,16,0.5) 100%),
@@ -699,7 +699,7 @@ body {
    wash at the floor line would bury the truck. The fighters stand at the
    frame's outer thirds and the truck holds the middle gap between them,
    so both survive the sharing. */
-.arena-card[data-act="2"] .arena-backdrop {
+.arena-card[data-zone="2"] .arena-backdrop {
   background:
     radial-gradient(ellipse 130% 55% at 50% 100%, rgba(4,6,10,0.62) 0%, rgba(4,6,10,0.22) 45%, transparent 75%),
     linear-gradient(180deg, rgba(7,10,16,0.55) 0%, rgba(7,10,16,0.2) 35%, transparent 65%),
@@ -860,7 +860,7 @@ body {
    Every sprite's solid body fills 98.9-100% of its own canvas, so these ratios
    are literally how tall each character reads on screen.
    --foe-art is the ACT's own art scale, set per fighter by createFighterPanel
-   (see ACT_SPRITES.trashScale) and defaulting to 1. It MULTIPLIES the tier
+   (see ZONE_SPRITES.trashScale) and defaulting to 1. It MULTIPLIES the tier
    rather than replacing it, so the ladder within an act survives: an elite
    Experiment still stands taller than a plain one. */
 .char-figure.foe       { --sprite-h: calc(var(--fig, 200px) * var(--foe-art, 1)); }

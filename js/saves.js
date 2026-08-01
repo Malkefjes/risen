@@ -87,7 +87,7 @@ function devEnterCombat(handoverLine) {
   const an = document.getElementById('act-name');
   if (an) an.textContent = getActLabel(state.wave);
   const ac = document.getElementById('arena-card');
-  if (ac) ac.dataset.act = actForWave(state.wave).num;
+  if (ac) ac.dataset.zone = zoneForWave(state.wave).num;
   updateHud(); refreshTalentUI(); renderCombat(true); renderSkills(); updateTurnInfo();
   showScreen('combat-screen');
   document.getElementById('combat-screen').classList.remove('staged', 'reveal');
@@ -96,24 +96,24 @@ function devEnterCombat(handoverLine) {
   saveRun();
 }
 
-function devSkipToAct2(classId) {
+function devSkipToZone(classId) {
   if (!CLASSES[classId]) return;
-  const gate = ACTS[0].endWave;
+  const gate = ZONES[0].endWave;
   const status = document.getElementById('dev-status');
-  // First choice: the bot EARNS the sheet — act 1 played by the real rules.
+  // First choice: the bot EARNS the sheet — zone 1 played by the real rules.
   // 20 tries separates bad dice from "the bot cannot do it".
   for (let attempt = 1; attempt <= 20; attempt++) {
     simulateRun(classId, Object.assign({}, BOTS.smart, { stopWhen: s => s.wave > gate }));
     if (state.runOver || state.wave <= gate) continue;
-    devEnterCombat('DEV · the bot played act 1 (cleared on try ' + attempt
+    devEnterCombat('DEV · the bot played zone 1 (cleared on try ' + attempt
       + ') · handed over at wave ' + state.wave + ' · level ' + state.player.level);
     return;
   }
-  // Fallback: a STANDARD act-1 graduate, synthesized — level 7, the act's
+  // Fallback: a STANDARD zone-1 graduate, synthesized — level 7, the zone's
   // ~18 points spent along the class's skilled plan, full bar. Less organic
   // than an earned sheet, but a dev tool that sometimes refuses to open the
   // door is worse than one that hands you a template. The bot failing 20
-  // straight is itself a reading: act 1 is currently harder than the
+  // straight is itself a reading: zone 1 is currently harder than the
   // competence floor, and the log line below says so out loud.
   resetRunState(classId);
   state.saveSlot = 0;
@@ -125,12 +125,12 @@ function devSkipToAct2(classId) {
   for (let i = 0; i < 6 * P().pointsPerLevel; i++) p[plan[i % plan.length]] += 1;
   recalcPlayerStats();
   p.hp = p.maxHp;
-  state.wave = ACTS[1].startWave;
-  state.kills = ACTS[0].endWave;
+  state.wave = ZONES[1].startWave;
+  state.kills = ZONES[0].endWave;
   state.runStart = Date.now();
   state.combatActive = true;
   spawnEnemy();
-  devEnterCombat('DEV · synthetic act-1 graduate (the bot went 0 for 20 on act 1 — '
+  devEnterCombat('DEV · synthetic zone-1 graduate (the bot went 0 for 20 on zone 1 — '
     + 'worth knowing) · wave ' + state.wave + ' · level ' + p.level);
   if (status) status.textContent = 'Note: the bot could not clear act 1 as '
     + CLASSES[classId].name + ' in 20 tries, so you got a standard level-7 sheet instead.';

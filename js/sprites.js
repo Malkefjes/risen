@@ -52,10 +52,10 @@ const SYM_SPRITES = {
   strike: 'assets/sprites/sym-strike.png'
 };
 
-// ---- Act rosters ---------------------------------------------------------
-// Each act fields a LIST of trash types and one boss. makeEnemy stamps every
-// enemy with its act number and its roster id, and spriteSrcFor looks the art
-// up from both — so adding a face to an act is a name in ACTS (js/data.js) and
+// ---- Zone rosters ---------------------------------------------------------
+// Each zone fields a LIST of trash types and one boss. makeEnemy stamps every
+// enemy with its zone number and its roster id, and spriteSrcFor looks the art
+// up from both — so adding a face to a zone is a name in ZONES (js/data.js) and
 // an entry here, and nothing else in the game has to know.
 //
 // A trash type is ART AND A NAME ONLY. All three encampment soldiers share one
@@ -102,8 +102,16 @@ const GRENADIER_SPRITES = {
   strike: 'assets/sprites/grenadier-strike.png',
   mirror: true
 };
+// City Streets. One face so far, and the zone's boss wears it too — see the
+// note on zone 3 in ZONES. Same set by reference rather than a second copy, so
+// when the Captain gets his own drawing there is exactly one place to change.
+const MERCENARY_SPRITES = {
+  ready: 'assets/sprites/mercenary-ready.png',
+  strike: 'assets/sprites/mercenary-strike.png',
+  mirror: true
+};
 
-// trashScale: how big this act's rank-and-file stands relative to the player.
+// trashScale: how big this zone's rank-and-file stands relative to the player.
 // A DRAWING HAS A SIZE IT WANTS TO BE READ AT and it is not always eye-to-eye:
 // the Escaped Experiment is drawn hunched and heavy, and at 1.0 it read as a
 // man rather than as the thing that got out. 1.25 puts it clearly above the
@@ -115,12 +123,14 @@ const GRENADIER_SPRITES = {
 // effect and not a height one (measured: both figures render at exactly the same
 // pixel height, and all this art fills 98.5-100% of its own canvas). 1.15 buys
 // back the presence the drawing loses to being slim.
-const ACT_SPRITES = {
+const ZONE_SPRITES = {
   1: { trash: { experiment: EXPERIMENT_SPRITES }, boss: SYMBIOTE_SPRITES,
        trashScale: 1.25 },
   2: { trash: { enforcer: ENFORCER_SPRITES, combatant: COMBATANT_SPRITES,
                 rifleman: RIFLEMAN_SPRITES },
-       boss: GRENADIER_SPRITES, trashScale: 1.15 }
+       boss: GRENADIER_SPRITES, trashScale: 1.15 },
+  3: { trash: { mercenary: MERCENARY_SPRITES }, boss: MERCENARY_SPRITES,
+       trashScale: 1.15 }
 };
 
 // Last resort when a unit carries no act stamp or an unknown roster id — an old
@@ -129,10 +139,10 @@ const ENEMY_SPRITE = ENFORCER_SPRITES.ready;
 
 // The art set for one enemy: its act's boss, or its act's roster entry.
 function enemyArtSet(unit) {
-  const act = ACT_SPRITES[unit && unit.act];
-  if (!act) return ENFORCER_SPRITES;
-  if (unit.isBoss) return act.boss || GRENADIER_SPRITES;
-  const pool = act.trash || {};
+  const zone = ZONE_SPRITES[unit && unit.zone];
+  if (!zone) return ENFORCER_SPRITES;
+  if (unit.isBoss) return zone.boss || GRENADIER_SPRITES;
+  const pool = zone.trash || {};
   return pool[unit.rosterId] || Object.values(pool)[0] || ENFORCER_SPRITES;
 }
 
@@ -148,7 +158,7 @@ function artMirrored(unit) {
 // wears (plain / elite / boss). Purely cosmetic — no rule reads it.
 function foeArtScale(unit) {
   if (!unit || unit.isPlayer || unit.isBoss) return 1;
-  const roster = ACT_SPRITES[unit.act];
+  const roster = ZONE_SPRITES[unit.zone];
   return (roster && roster.trashScale) || 1;
 }
 
@@ -285,6 +295,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof v === 'string') { if (!seen.has(v)) { seen.add(v); new Image().src = v; } }
     else if (v && typeof v === 'object') Object.values(v).forEach(walk);
   };
-  [ACT_SPRITES, POSE_SPRITES, MUTATED_SPRITES].forEach(walk);
+  [ZONE_SPRITES, POSE_SPRITES, MUTATED_SPRITES].forEach(walk);
 })();
 

@@ -279,13 +279,13 @@ function doSpawn() {
 // table's default. A boss telegraph is the fight; an elite telegraph is a skill
 // check you meet a dozen times a run; and an act-2 telegraph lands on a bar
 // that stopped growing while enemy damage did not — see the act-2 windupMult
-// note in ACTS for the measurement that forced the override.
+// note in ZONES for the measurement that forced the override.
 function windupMultFor(e) {
   const E = BALANCE.enemy;
-  const act = (e && e.act) ? ACTS.find(a => a.num === e.act) : null;
+  const zone = (e && e.zone) ? ZONES.find(z => z.num === e.zone) : null;
   if (e && e.elite && !e.isBoss)
-    return (act && act.eliteWindupMult) || E.eliteWindupMult || E.windupMult;
-  return (act && act.windupMult) || E.windupMult;
+    return (zone && zone.eliteWindupMult) || E.eliteWindupMult || E.windupMult;
+  return (zone && zone.windupMult) || E.windupMult;
 }
 
 // opts carries what a PROVOKED swing changes: it cannot be evaded, and (when
@@ -1153,13 +1153,13 @@ function runReport() {
   // evidence.
   const N = n => Math.floor(Number(n) || 0).toLocaleString('en-US');
   const mins = Math.max(1, Math.round((Date.now() - state.runStart) / 60000));
-  const act = actForWave(state.wave);
+  const zone = zoneForWave(state.wave);
   const L = [];
   const pad = (s, n) => String(s) + ' '.repeat(Math.max(0, n - String(s).length));
 
   L.push('RISEN run report — build ' + BUILD);
   L.push((won ? 'RISEN (won)' : 'DEFEATED') + ' · Wave ' + state.wave + '/' + BALANCE.finalWave
-         + ' · Act ' + act.num + ': ' + act.name);
+         + ' · Zone ' + zone.num + ': ' + zone.name);
   L.push(CLASSES[p.class].name + ' · Level ' + p.level + ' · ~' + mins + ' min');
   L.push('');
   if (!won && state.killedBy) {
@@ -1247,7 +1247,7 @@ function showResultScreen() {
   title.className = 'result-title ' + (won ? 'win' : 'lose');
 
   const esc = t => String(t).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-  const act = actForWave(state.wave);
+  const zone = zoneForWave(state.wave);
 
   // ONE SENTENCE, and on a loss it names the blow. "Wave 14" and "wave 14 to a
   // heavy you did not answer" are different readings, and the second one is the

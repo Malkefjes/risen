@@ -711,20 +711,20 @@ function renderDeltas(view) {
 // ---- Enemy stats (fully independent of the player's formulas) ----
 function makeEnemy(wave) {
   const E = BALANCE.enemy;
-  const act = actForWave(wave);
-  // DIFFICULTY IS ACT-LOCAL. Each act retraces the tier curve from its own
-  // floor (act.growthMult), at its own steepness if it declares one — see
-  // the note on ACTS for why the old single curve could not reach wave 30.
+  const zone = zoneForWave(wave);
+  // DIFFICULTY IS ZONE-LOCAL. Each zone retraces the tier curve from its own
+  // floor (zone.growthMult), at its own steepness if it declares one — see
+  // the note on ZONES for why the old single curve could not reach wave 30.
   // Tier, and everything that hangs off it (growth, rank, rate), counts
-  // from the act's first wave; only XP income keeps the global count.
-  const w = wave - act.startWave;
+  // from the zone's first wave; only XP income keeps the global count.
+  const w = wave - zone.startWave;
   const tier = Math.floor(w/5), within = w%5;
   // Rate alone counts from the RUN's start — see the apsPerTier note. Rank and
-  // growth stay act-local so each roster still debuts plain at its own floor.
+  // growth stay zone-local so each roster still debuts plain at its own floor.
   const rateTier = Math.floor((wave - 1) / 5);
-  const g = Math.pow(act.tierGrowth || E.tierGrowth, tier)
-          * (1 + within*(act.withinStep != null ? act.withinStep : E.withinStep))
-          * (act.growthMult || 1);
+  const g = Math.pow(zone.tierGrowth || E.tierGrowth, tier)
+          * (1 + within*(zone.withinStep != null ? zone.withinStep : E.withinStep))
+          * (zone.growthMult || 1);
   const isBoss = wave % BALANCE.bossEvery === 0;
   const isFinal = wave === BALANCE.finalWave;
 
@@ -758,14 +758,14 @@ function makeEnemy(wave) {
   // standing there, where a roll would swap him for a different one.
   // Boss waves consume a slot in the rotation, which is why the cycle is not
   // perfectly even; that is cosmetic and not worth code to avoid.
-  const pool = act.enemies || [{ id: 'trash', name: act.enemyName }];
+  const pool = zone.enemies || [{ id: 'trash', name: zone.enemyName }];
   const face = pool[((w % pool.length) + pool.length) % pool.length];
-  const name = (isBoss ? act.bossName : face.name) + rankTag;
+  const name = (isBoss ? zone.bossName : face.name) + rankTag;
 
   const e = {
     id: 'enemy-' + wave + '-' + Math.floor(Math.random()*99999),
     name, class:'enemy', isPlayer:false, isBoss, isFinal, elite, rank,
-    act: act.num,          // which act's roster (and art) this enemy belongs to
+    zone: zone.num,        // which zone's roster (and art) this enemy belongs to
     rosterId: face.id,     // which face of that roster — art only, never a rule
     windupEvery: isBoss ? (isFinal ? E.finalWindupEvery : E.windupEvery) : (elite ? E.eliteWindupEvery : 0),
     maxHp: Math.max(1, Math.round(E.hpBase * g * (isBoss?E.bossHp:1) * (elite&&elite.hpMult?elite.hpMult:1))),

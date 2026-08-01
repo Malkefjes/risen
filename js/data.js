@@ -62,7 +62,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey — that answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-01e';
+const BUILD = '2026-08-01f';
 
 const BALANCE = {
   player: {
@@ -419,7 +419,7 @@ const BALANCE = {
   combo: { maxEnemyActionsPerKill: 3, xpPerStack: 0.05, maxStack: 20 },   // chain continues if the kill let the enemy act <= N times (speed-fair)
   bossEvery: 5,          // boss on every Nth wave
   talentEvery: 5,        // choose a mutation every Nth level
-  finalWave: 30,         // beating this wave's boss wins the run (act 2's finale)
+  finalWave: 45,         // beating this wave's boss wins the run (zone 3's finale)
   spawnDelay: 0.16,
   // saveKey is a PREFIX, not a key: each slot stores under `<saveKey>_s<n>`.
   //
@@ -438,7 +438,12 @@ const BALANCE = {
   // Old saves are DROPPED, never migrated. Every player gets empty slots on the
   // next load, which is the honest outcome: those runs are not playable as the
   // game now works. (Full bump history is in git.)
-  saveKey: 'risen_run_v11',
+  // v11 -> v12 is the three-zone run. The run went from 30 waves across two
+  // acts to 45 across three zones, every enemy now carries a `zone` stamp where
+  // it carried `act`, and the wave a save stores describes a different place in
+  // a different structure. A v11 run saved at wave 25 was two thirds through
+  // its game and would load back as barely half of this one.
+  saveKey: 'risen_run_v12',
   // Storage keys from older versions, cleared once on load so they cannot
   // accumulate invisibly. Oldest first; add the outgoing prefix here on a bump.
   // Slot keys are listed explicitly because the purge removes literal keys.
@@ -449,7 +454,8 @@ const BALANCE = {
                 'risen_run_v7', 'risen_run_v7_s1', 'risen_run_v7_s2',
                 'risen_run_v8', 'risen_run_v8_s1', 'risen_run_v8_s2',
                 'risen_run_v9', 'risen_run_v9_s0', 'risen_run_v9_s1', 'risen_run_v9_s2',
-                'risen_run_v10', 'risen_run_v10_s0', 'risen_run_v10_s1', 'risen_run_v10_s2'],
+                'risen_run_v10', 'risen_run_v10_s0', 'risen_run_v10_s1', 'risen_run_v10_s2',
+                'risen_run_v11', 'risen_run_v11_s0', 'risen_run_v11_s1', 'risen_run_v11_s2'],
   saveSlots: 2
 };
 
@@ -654,99 +660,120 @@ const ELITES = {
   volatile: { id:'volatile', tag:'VOLATILE', xp:1.8, deathNova:0.14 }
 };
 
-// Act structure. Two acts of 15 waves, three bosses each. Each act owns its zone
-// label, its enemy roster (names here, art in sprites.js keyed by act), and:
+// ZONE STRUCTURE. The whole run is ACT 1; a zone is the unit that actually
+// shapes it. Three zones of 15 waves, three bosses each, 45 waves total. Each
+// zone owns its label, its enemy roster (names here, art in sprites.js keyed by
+// zone number), its difficulty floor, and its telegraph.
 //
-//   growthMult   the act's DIFFICULTY FLOOR — enemy hp/dmg growth restarts from
-//                here, so within an act the tier curve retraces at a higher
-//                altitude instead of compounding forever. Without it, extending
-//                act 1's 1.85^tier ride to wave 30 put the last boss at ~390
-//                damage against a ~300 HP pool: not hard, unwinnable. Rank and
-//                rate are act-local for the same reason — the roster debuts at
+//   growthMult   the zone's DIFFICULTY FLOOR — enemy hp/dmg growth restarts
+//                from here, so within a zone the tier curve retraces at a
+//                higher altitude instead of compounding forever. Without it,
+//                extending zone 1's 1.85^tier ride across the whole run puts
+//                the last boss somewhere unwinnable rather than hard. Rank and
+//                rate are zone-local for the same reason — a roster debuts at
 //                Rank I, not Rank IV.
-//   tierGrowth / withinStep   optional per-act steepness overrides. Act 2 climbs
-//                more gently because the player's own growth flattens (~9 points
-//                across the act against act 1's ~18).
-//
-// Act 2's numbers are a FIRST GUESS at extrapolation, not a tuning.
-const ACTS = [
-  { num: 1, name: 'The Laboratory', startWave: 1, endWave: 15,
-    zones: ['THE LABORATORY'],
-    // enemies: the act's trash ROSTER. Each entry is an id (the key its art is
+//   tierGrowth / withinStep   per-zone steepness. Each zone climbs more gently
+//                than the last, because the player's own growth flattens as the
+//                run goes: points arrive at a fixed rate onto an ever bigger
+//                base. What a zone must NOT do is flatten faster than the
+//                player does — that is what made wave 11 the most dangerous
+//                wave in the game back when zone 2 sat at 1.25.
+//   windupMult / eliteWindupMult   the zone's telegraph. Per-zone because a
+//                flat multiplier on a number that outruns your bar is a
+//                one-shot eventually — see the table on zone 2.
+const ZONES = [
+  { num: 1, name: 'The Laboratory', label: 'THE LABORATORY',
+    startWave: 1, endWave: 15,
+    // enemies: the zone's trash ROSTER. Each entry is an id (the key its art is
     // filed under in sprites.js) and the name that appears on the card. One
-    // face here is a perfectly good roster — the Laboratory has exactly one
-    // thing loose in it.
+    // face is a perfectly good roster — the Laboratory has exactly one thing
+    // loose in it.
     enemies: [{ id: 'experiment', name: 'Escaped Experiment' }],
     bossName: 'Prime Symbiote',
     growthMult: 1 },
-  { num: 2, name: 'MCP Encampment', startWave: 16, endWave: 30,
-    zones: ['MCP ENCAMPMENT'],
+
+  { num: 2, name: 'MCP Encampment', label: 'MCP ENCAMPMENT',
+    startWave: 16, endWave: 30,
     // THREE FACES, ONE STAT LINE. The encampment fields soldiers rather than
-    // one repeated silhouette, and they rotate by wave (see makeEnemy) so a
-    // stretch of act 2 shows you all of them. They are deliberately identical
-    // in numbers: a wave-N enemy is a wave-N enemy, and if a rifleman should
-    // ever fight differently from a combatant that is a decision for the enemy
-    // table to make out loud, not something a sprite quietly implies.
+    // one repeated silhouette, and they rotate by wave (see makeEnemy). They
+    // are deliberately identical in numbers: a wave-N enemy is a wave-N enemy,
+    // and if a rifleman should ever fight differently from a combatant that is
+    // a decision for the enemy table to make out loud, not something a sprite
+    // quietly implies.
     enemies: [{ id: 'enforcer',  name: 'MCP Enforcer'  },
               { id: 'combatant', name: 'MCP Combatant' },
               { id: 'rifleman',  name: 'MCP Rifleman'  }],
     bossName: 'MCP Grenadier',
-    // TIERGROWTH 1.25 -> 1.45. At 1.25 act 2 grew 1.81x across its fifteen
-    // waves while the player's sheet grew about 1.9x in survivability over the
-    // same stretch — so the second half of the game got flatter the further you
-    // went, and the danger curve (your own turns before its hits add up to your
-    // bar) sat between 5 and 7 from wave 11 to the end. Measured: the most
-    // dangerous wave in the game was 11, not 30.
-    //
-    // Still gentler than act 1's 1.85, and deliberately: the player's growth
-    // slows in act 2 too (points arrive at the same rate but land on a much
-    // bigger base), so the enemy curve should slow with it. What it must not do
-    // is slow down MORE than the player does, which is what 1.25 did.
     growthMult: 4.5, tierGrowth: 1.45, withinStep: 0.04,
-    // ---- ACT 2 GETS ITS OWN TELEGRAPH ------------------------------------
+    // ---- WHY A TELEGRAPH IS PER-ZONE -------------------------------------
     // A FLAT MULTIPLIER ON A NUMBER THAT OUTRUNS YOUR BAR IS A ONE-SHOT
     // EVENTUALLY, and that is arithmetic rather than tuning: enemy damage grows
-    // 8.9x from wave 5 to wave 30 while the biggest bar anyone can buy grows
-    // 4x. At the shared x4.0 the telegraph crossed the bar somewhere in act 2
-    // and never came back.
+    // far faster across a run than the biggest bar anyone can buy. At the
+    // shared x4.0 the telegraph crossed the bar in zone 2 and never came back.
     //
     // Measured on a real run (owner's, build 2026-08-01d): base died on wave 25
     // to a 426 telegraph on a 340 bar — 125%, dead from full, no build and no
-    // play answers it. The table below is where that came from. Bars for waves
-    // 20+ are read off the level schedule (L8/L10/L11 -> 21/27/30 points),
-    // because too few runs reach those waves to sample: at 120 runs a cell,
-    // wave 25 returned n=1-3 and wave 30 n=0. The wave-20 row was ALSO measured
-    // and matched the schedule exactly, which is what makes the rest usable.
+    // play answering it. Bars for waves 20+ are read off the level schedule,
+    // because too few runs reach those waves to sample.
     //
-    //   telegraph, and what share of the bar it takes
-    //   mult    wave 20                 wave 25                 wave 30
-    //           spread/VIT/SPD+VIT      spread/VIT/SPD+VIT      spread/VIT/SPD+VIT
-    //   x4.0    304  152/58/98%         440  187/69/119%        640  256/91/160%
-    //   x3.0    228  114/44/74%         330  140/52/89%         480  192/69/120%
-    //   x2.5    190   95/37/61%         275  117/43/74%         400  160/57/100%
-    //   x2.0    152   76/29/49%         220   94/34/59%         320  128/46/80%
+    //   telegraph, and its share of bar (spread / all-VIT / SPD+VIT)
+    //   mult    wave 20              wave 25              wave 30
+    //   x4.0    304  152/58/98%      440  187/69/119%     640  256/91/160%
+    //   x2.5    190   95/37/61%      275  117/43/74%      400  160/57/100%
     //
-    // 2.5, which puts the owner's actual sheet at 81% on wave 25 — a blow that
-    // nearly ends you from full and does end you from anywhere else, against
-    // 125% where nothing mattered. With Counterpunch up it is 32%, so the
-    // ANSWER works and the window is what was missing.
+    // 2.5 puts the owner's actual sheet at 81% on wave 25 — a blow that nearly
+    // ends you from full and does end you from anywhere else. With Counterpunch
+    // up it is 32%, so the ANSWER works and the window was what was missing.
+    // Zone 1 stays at the table default 4.0: it pays 45-72% of bar at waves
+    // 5-10, which is what this game says a telegraph is for.
     //
-    // Act 1 is untouched at 4.0 and should stay there: it pays 45-72% of bar at
-    // waves 5-10, which is the rule this game states for a telegraph — costs you
-    // half your bar and a turn spent reacting, not the run.
+    // Elites keep the 0.75 ratio to the zone's boss rather than being picked
+    // again — an elite telegraph is a skill check you meet a dozen times a run,
+    // a boss telegraph is the fight.
+    windupMult: 2.5, eliteWindupMult: 2.0 },
+
+  { num: 3, name: 'City Streets', label: 'CITY STREETS',
+    startWave: 31, endWave: 45,
+    // ONE FACE, AND THE BOSS WEARS IT TOO. The Mercenary is the only art this
+    // zone has so far, so its boss is the same drawing at boss scale under its
+    // own name — an honest placeholder rather than a borrowed silhouette from
+    // another zone. Replace ZONE_SPRITES[3].boss when the art exists; nothing
+    // else needs touching.
+    enemies: [{ id: 'mercenary', name: 'Mercenary' }],
+    bossName: 'Mercenary Captain',
+    // ---- FITTED, NOT GUESSED, BUT NOTHING HAS PLAYED IT ------------------
+    // growthMult starts where zone 2 ends (its wave-30 ceiling is g ~10.97), so
+    // the seam between zones is a +5% step rather than a cliff.
     //
-    // STILL ON THE EDGE AT WAVE 30 for a split build (100%) and comfortable for
-    // all-in Vitality (57%). Left there deliberately rather than tuned blind:
-    // nothing reaches wave 30 yet, so the honest move is to fix the wave people
-    // actually die on and re-read this when someone gets further.
+    // tierGrowth continues the pattern each zone has followed, and the pattern
+    // is the player flattening: internal growth ran 4.25x across zone 1 and
+    // 2.44x across zone 2, because points arrive at a fixed rate onto an
+    // ever-bigger base. 1.22 puts zone 3 at 1.67x, which is the next step in
+    // that sequence.
     //
-    // The elite value keeps its old ratio to the boss (0.75, was 3.0 against
-    // 4.0) rather than being picked separately — an elite telegraph is a skill
-    // check you meet a dozen times a run, a boss telegraph is the fight.
-    windupMult: 2.5, eliteWindupMult: 2.0 }
+    // The first pass here was 1.30, and it was measured and thrown out. Across
+    // waves 15 to 45 it grew the enemy 5.1x while the player grows 2.35x — the
+    // enemy outrunning the sheet by 2.2x — which put the wave-45 boss at 15,672
+    // HP and 317 damage against a spread build's 310 bar. An ORDINARY hit was a
+    // one-shot and the kill took ~200 turns: not hard, unwinnable, which is
+    // exactly what the zone-2 note warns a single unchecked curve does.
+    //
+    // Measured progression, so the fit can be re-derived when it moves (bots
+    // driven to each wave with survivability inflated — this measures the XP
+    // curve, not difficulty):
+    //   wave 15  L6  15 pts     wave 30  L11  30 pts     wave 45  L15  42 pts
+    //
+    // THE TELEGRAPH KEEPS SHRINKING PER ZONE — 4.0, 2.5, now 1.6 — and that is
+    // a symptom worth naming rather than a tuning choice. A telegraph is a
+    // multiple of ENEMY damage, and enemy damage outruns the biggest bar anyone
+    // can buy, so the multiplier has to fall every zone just to stay survivable.
+    // The real fix is for a telegraph to be priced against the PLAYER's bar
+    // instead; until then, each zone gets its own number.
+    growthMult: 11.5, tierGrowth: 1.22, withinStep: 0.03,
+    windupMult: 1.6, eliteWindupMult: 1.2 }
 ];
-function actForWave(wave) {
-  return ACTS.find(a => wave >= a.startWave && wave <= a.endWave) || ACTS[ACTS.length - 1];
+function zoneForWave(wave) {
+  return ZONES.find(a => wave >= a.startWave && wave <= a.endWave) || ZONES[ZONES.length - 1];
 }
 
 // ---- Talents -------------------------------------------------
