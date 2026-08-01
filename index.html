@@ -35,10 +35,10 @@
       </header>
 
       <nav class="title-menu">
-        <button class="title-btn is-primary" onclick="newGame()">NEW GAME</button>
-        <button class="title-btn is-disabled" id="continue-btn" onclick="openLoadScreen()">LOAD GAME</button>
-        <button class="title-btn" onclick="openSettings()">SETTINGS</button>
-        <button class="title-btn is-quiet" onclick="openDevTools()">DEV TOOLS</button>
+        <button class="ui-btn title-btn is-primary" onclick="newGame()">NEW GAME</button>
+        <button class="ui-btn title-btn is-disabled" id="continue-btn" onclick="openLoadScreen()">LOAD GAME</button>
+        <button class="ui-btn title-btn" onclick="openSettings()">SETTINGS</button>
+        <button class="ui-btn title-btn is-quiet" onclick="openDevTools()">DEV TOOLS</button>
       </nav>
 
       <!-- Filled by showBuildVersion() so the string lives in one place. -->
@@ -78,18 +78,26 @@
   </div>
 
   <!-- INTRO / STORY (shown once on NEW GAME, before strain select) -->
+  <!-- INTRO. The story sits in a glass card so it is legible anywhere in the
+       room, and the fork below it is TWO EQUAL CHOICES — mutate or refuse —
+       with BACK demoted out of that row entirely. -->
   <div id="intro-screen" class="screen">
-    <div class="intro-story">
+    <div class="intro-card">
       <p class="intro-lead">You are Sonny.</p>
-      <p>You survived a lethal laboratory infection that should have killed you — or turned you into one of the mindless, aggressive mutants now roaming the containment zones. Instead, your mind stayed intact. As far as you know, you are the only one.</p>
-      <p>Mutant Pest Control has orders to eradicate every infected individual. They do not care that you can still think. To them, a lucid mutant is simply a more dangerous pest.</p>
-      <p>The infection is still rewriting you. Your body is changing. The hunters are closing in.</p>
+      <div class="intro-body">
+        <p>You survived a lethal laboratory infection that should have killed you — or turned you into one of the mindless, aggressive mutants now roaming the containment zones. Instead, your mind stayed intact. As far as you know, you are the only one.</p>
+        <p>Mutant Pest Control has orders to eradicate every infected individual. They do not care that you can still think. To them, a lucid mutant is simply a more dangerous pest.</p>
+        <p>The infection is still rewriting you. Your body is changing. The hunters are closing in.</p>
+      </div>
       <p class="intro-final">Evolve… or die.</p>
     </div>
-    <div style="display:flex;gap:14px;justify-content:center;align-items:center;flex-wrap:wrap">
-      <button class="btn btn-ghost" onclick="goToMenu()">BACK</button>
-      <button class="btn btn-evolve" onclick="openClassSelect()">MUTATE</button>
-      <button class="btn btn-resist" onclick="resistMutation()">RESIST MUTATION</button>
+
+    <div class="intro-fork">
+      <button class="ui-btn is-primary intro-choice" onclick="openClassSelect()">MUTATE</button>
+      <button class="ui-btn is-psy intro-choice" onclick="resistMutation()">RESIST MUTATION</button>
+    </div>
+    <div class="intro-back">
+      <button class="ui-btn is-quiet" onclick="goToMenu()">BACK</button>
     </div>
   </div>
 

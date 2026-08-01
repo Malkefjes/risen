@@ -32,7 +32,7 @@ export default async function ({ page, ctx, ok }) {
   await page.click('#title-screen button:has-text("NEW GAME")');
   ok('NEW GAME goes straight to the intro, no picker',
      await page.evaluate(()=>document.querySelector('.screen.active')?.id)==='intro-screen');
-  await page.click('#intro-screen .btn-evolve');
+  await page.click('#intro-screen button:has-text("MUTATE")');
   await page.click('.class-card.bio');
   await page.click('#start-btn');
   await page.click('#skip-btn');

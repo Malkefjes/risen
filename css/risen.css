@@ -260,6 +260,112 @@ body {
 /* Sits under the logo, quiet enough to ignore and present enough to quote in
    a bug report. The logo's 54px bottom margin is moved here so the tag tucks
    under it rather than pushing the menu down. */
+/* ---- ui-btn: the shared button ------------------------------------------
+   THE ONE BUTTON THE GAME IS BEING REBUILT ON, screen by screen. Its look is
+   lifted verbatim from the title-screen buttons — the owner picked those out as
+   the target — so .title-btn now only carries what is genuinely title-specific
+   (its width and its responsive type) and inherits the rest from here. Two
+   copies of a look is how the two drift apart.
+
+   Glass rather than a fill: dark enough to seat a label anywhere in the room,
+   translucent and blurred enough that the light behind it still comes through.
+   The variants change BORDER AND GLOW, never size or shape — a row of buttons
+   should read as one family with one of them emphasised, not as three different
+   kinds of control.
+
+   Variants:
+     .is-primary   the thing this screen is for. One per screen, at most.
+     .is-psy       the strain-purple alternative — a real second choice, not a
+                   lesser one, so it is equal in weight and different in colour.
+     .is-quiet     escape hatches and workbench doors: same shape, less voice.
+     .is-danger    destructive. Not used yet; here so the next screen that needs
+                   it does not invent its own.
+     :disabled / .is-disabled */
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 28px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 3px;
+  color: #dcf3e4;
+  background: rgba(6, 11, 10, 0.52);
+  border: 1px solid rgba(0, 240, 208, 0.30);
+  border-radius: 6px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease,
+              color 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease;
+}
+.ui-btn:hover {
+  background: rgba(0, 240, 208, 0.14);
+  border-color: rgba(0, 240, 208, 0.78);
+  color: #ffffff;
+  box-shadow: 0 0 26px rgba(0, 240, 208, 0.26);
+}
+.ui-btn:active { transform: translateY(1px); }
+.ui-btn:focus-visible {
+  outline: 2px solid rgba(0, 240, 208, 0.9);
+  outline-offset: 3px;
+}
+.ui-btn.is-primary {
+  border-color: rgba(0, 240, 208, 0.62);
+  color: #f2fff7;
+  box-shadow: inset 0 0 26px rgba(0, 240, 208, 0.10), 0 0 20px rgba(0, 240, 208, 0.12);
+}
+.ui-btn.is-psy {
+  border-color: rgba(192, 132, 252, 0.70);
+  color: #ecdcff;
+  box-shadow: inset 0 0 26px rgba(192, 132, 252, 0.12), 0 0 20px rgba(192, 132, 252, 0.14);
+}
+.ui-btn.is-psy:hover {
+  background: rgba(192, 132, 252, 0.15);
+  border-color: rgba(192, 132, 252, 0.88);
+  color: #ffffff;
+  box-shadow: 0 0 28px rgba(192, 132, 252, 0.30);
+}
+.ui-btn.is-psy:focus-visible { outline-color: rgba(192, 132, 252, 0.9); }
+.ui-btn.is-quiet {
+  border-color: rgba(255, 255, 255, 0.14);
+  color: rgba(226, 236, 230, 0.55);
+  letter-spacing: 2.4px;
+}
+.ui-btn.is-quiet:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  color: rgba(240, 246, 242, 0.9);
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: none;
+}
+.ui-btn.is-danger {
+  border-color: rgba(255, 45, 106, 0.45);
+  color: #ffd6e2;
+}
+.ui-btn.is-danger:hover {
+  background: rgba(255, 45, 106, 0.15);
+  border-color: rgba(255, 45, 106, 0.85);
+  color: #ffffff;
+  box-shadow: 0 0 26px rgba(255, 45, 106, 0.28);
+}
+.ui-btn:disabled,
+.ui-btn.is-disabled {
+  opacity: 0.34;
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.14);
+  color: var(--muted);
+  background: rgba(6, 11, 10, 0.4);
+  box-shadow: none;
+}
+.ui-btn:disabled:hover,
+.ui-btn.is-disabled:hover {
+  background: rgba(6, 11, 10, 0.4);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: var(--muted);
+  box-shadow: none;
+}
+
 /* ---- Title screen --------------------------------------------------------
    FULL-BLEED, AND THAT IS WHY IT IS FIXED. Every other screen lives inside
    #app, which is centred with a max-width and padding — fine for a UI, fatal
@@ -379,70 +485,13 @@ body {
   gap: clamp(8px, 1.4vh, 13px);
 }
 
+/* Only what is title-specific: a fixed width so the stack is a column of equal
+   slabs, and type that scales with the viewport because this screen is the one
+   that goes full-bleed. Everything else comes from .ui-btn. */
 .title-btn {
   width: min(330px, 80vw);
   padding: clamp(10px, 1.5vh, 14px) 18px;
-  font-family: 'Orbitron', sans-serif;
   font-size: clamp(0.68rem, 1.5vw, 0.8rem);
-  font-weight: 600;
-  letter-spacing: 3px;
-  color: #dcf3e4;
-  background: rgba(6,11,10,0.52);
-  border: 1px solid rgba(125,255,160,0.28);
-  border-radius: 6px;
-  /* The blur is what lets a button sit on a busy painting and still be read
-     without a solid slab hiding the art behind it. */
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  cursor: pointer;
-  transition: background 0.18s ease, border-color 0.18s ease,
-              color 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease;
-}
-.title-btn:hover {
-  background: rgba(125,255,160,0.13);
-  border-color: rgba(125,255,160,0.75);
-  color: #ffffff;
-  box-shadow: 0 0 26px rgba(125,255,160,0.24);
-}
-.title-btn:active { transform: translateY(1px); }
-.title-btn:focus-visible {
-  outline: 2px solid rgba(125,255,160,0.9);
-  outline-offset: 3px;
-}
-/* NEW GAME is the one thing most visits are here to press, so it carries a
-   brighter edge and an inner lift. One emphasised button, not four. */
-.title-btn.is-primary {
-  border-color: rgba(125,255,160,0.62);
-  color: #f2fff7;
-  box-shadow: inset 0 0 26px rgba(125,255,160,0.10), 0 0 20px rgba(125,255,160,0.12);
-}
-/* DEV TOOLS is a workbench door, not a play option — same shape, less voice. */
-.title-btn.is-quiet {
-  border-color: rgba(255,255,255,0.14);
-  color: rgba(226,236,230,0.55);
-  letter-spacing: 2.4px;
-}
-.title-btn.is-quiet:hover {
-  border-color: rgba(255,255,255,0.4);
-  color: rgba(240,246,242,0.9);
-  background: rgba(255,255,255,0.07);
-  box-shadow: none;
-}
-.title-btn:disabled,
-.title-btn.is-disabled {
-  opacity: 0.34;
-  cursor: not-allowed;
-  border-color: rgba(255,255,255,0.14);
-  color: var(--muted);
-  background: rgba(6,11,10,0.4);
-  box-shadow: none;
-}
-.title-btn:disabled:hover,
-.title-btn.is-disabled:hover {
-  background: rgba(6,11,10,0.4);
-  border-color: rgba(255,255,255,0.14);
-  color: var(--muted);
-  box-shadow: none;
 }
 
 .title-foot { text-align: center; }
@@ -465,28 +514,89 @@ body {
   .title-sub { margin-top: 6px; }
 }
 
-.intro-story {
-  max-width: 600px;
-  margin: 0 auto 44px;
-  color: var(--muted);
-  font-size: 0.98rem;
-  line-height: 1.65;
+/* ---- Intro ---------------------------------------------------------------
+   A GLASS CARD, for the same reason the menu buttons are glass: the room behind
+   is at full strength now, and body copy floating straight on a lit floor is
+   the one thing that cannot survive it. The panel is the readable surface; the
+   room still shows through it.
+
+   The body copy is LEFT-ALIGNED inside a centred card. Five centred paragraphs
+   is five ragged left edges, which is what made this screen read as unfinished
+   — the eye has to find the start of every line. The lead and the closing line
+   stay centred because each is one line and carries the beat. */
+.intro-card {
+  max-width: 680px;
+  margin: clamp(16px, 4vh, 46px) auto clamp(22px, 4vh, 38px);
+  padding: clamp(24px, 4vh, 40px) clamp(24px, 4vw, 46px);
+  background: rgba(10, 14, 21, 0.72);
+  border: 1px solid rgba(0, 240, 208, 0.16);
+  border-radius: 14px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+.intro-lead {
+  margin: 0 0 clamp(16px, 2.6vh, 26px);
   text-align: center;
-}
-.intro-story p { margin: 0 0 14px; }
-.intro-story .intro-lead {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: clamp(1.15rem, 2.6vw, 1.6rem);
+  letter-spacing: 2px;
   color: var(--text);
-  font-weight: 600;
-  letter-spacing: 1px;
+  text-shadow: 0 0 26px rgba(0, 240, 208, 0.28);
 }
-.intro-story .intro-final {
-  margin: 22px 0 0;
+.intro-body {
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.72;
+  text-align: left;
+}
+.intro-body p { margin: 0 0 14px; }
+.intro-body p:last-child { margin-bottom: 0; }
+/* A rule rather than more whitespace: the closing line is a different KIND of
+   sentence from the paragraphs above it, and the divider says so in one pixel. */
+.intro-final {
+  margin: clamp(18px, 3vh, 28px) 0 0;
+  padding-top: clamp(16px, 2.6vh, 24px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: center;
   color: var(--accent);
   text-transform: uppercase;
-  letter-spacing: 5px;
-  font-size: 1.05rem;
-  text-align: center;
+  letter-spacing: 6px;
+  font-size: clamp(0.82rem, 1.8vw, 1rem);
+  text-shadow: 0 0 24px rgba(0, 240, 208, 0.35);
 }
+
+/* TWO EQUAL CHOICES. The old row put a small ghost BACK, a solid teal slab and
+   a purple outline side by side at three different sizes, which made MUTATE
+   look like the answer and RESIST look like a warning. They are both real ways
+   to play, so they are the same size and shape and differ only in colour;
+   BACK leaves the row entirely and becomes an escape hatch under it. */
+/* A GRID, not a flex row, so the two are exactly equal regardless of label
+   length — "MUTATE" and "RESIST MUTATION" are six characters apart and a flex
+   row sized them to their text, which made the shorter one look like the
+   smaller choice. Folds to one column when there is no room for two. */
+.intro-fork {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  max-width: 540px;
+  margin: 0 auto;
+}
+.intro-choice {
+  padding: 15px 20px;
+  font-size: 0.82rem;
+  letter-spacing: 2.4px;
+}
+@media (max-width: 560px) {
+  .intro-fork { grid-template-columns: 1fr; max-width: 320px; }
+}
+.intro-back {
+  display: flex;
+  justify-content: center;
+  margin-top: clamp(14px, 2.4vh, 22px);
+}
+.intro-back .ui-btn { padding: 10px 30px; font-size: 0.7rem; }
 
 /* NOT TRANSPARENT ANY MORE, and the room is why. These buttons were see-through
    over a flat dark page, which was fine when there was nothing behind them.
@@ -2243,35 +2353,6 @@ body.stat-colors-on .side-stat-row {
 }
 .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
 
-/* Intro fork: EVOLVE is the bold, obvious primary; RESIST MUTATION is the
-   tempting alternative in strain-purple. */
-.btn-evolve {
-  background: var(--accent);
-  color: #07090f;
-  border-color: var(--accent);
-  padding: 15px 48px;
-  font-size: 1rem;
-  box-shadow: 0 0 30px rgba(0,240,208,0.42);
-}
-.btn-evolve:hover {
-  background: var(--accent);
-  color: #07090f;
-  box-shadow: 0 0 46px rgba(0,240,208,0.72);
-  transform: translateY(-2px);
-}
-.btn-resist {
-  border-color: var(--psy);
-  color: var(--psy);
-  padding: 15px 40px;
-  box-shadow: 0 0 22px rgba(192,132,252,0.20);
-}
-.btn-resist:hover {
-  background: var(--psy);
-  color: #07090f;
-  border-color: var(--psy);
-  box-shadow: 0 0 42px rgba(192,132,252,0.55);
-  transform: translateY(-2px);
-}
 
 .hud-menu-btn {
   font-family: 'Orbitron', sans-serif;
