@@ -85,8 +85,6 @@ function devEnterCombat(handoverLine) {
   if (zn) zn.textContent = getZoneName(state.wave);
   const an = document.getElementById('act-name');
   if (an) an.textContent = getActLabel(state.wave);
-  const ac = document.getElementById('arena-card');
-  if (ac) ac.dataset.zone = zoneForWave(state.wave).num;
   updateHud(); renderCombat(true); renderSkills(); updateTurnInfo();
   showScreen('combat-screen');
   document.getElementById('combat-screen').classList.remove('staged', 'reveal');

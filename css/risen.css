@@ -1037,16 +1037,14 @@ body {
 }
 
 /* ---- Zone backdrop (SETTINGS.backdrop) ----
-   Scenery on its own layers, opacity-gated by .backdrop-on so OFF is exactly
-   the clean arena. The readability contract, in order of importance:
+   ONE PAINTING FOR EVERY ZONE (the owner's corridor banner), opacity-gated by
+   .backdrop-on so OFF is exactly the clean arena. The readability contract:
      1. VALUE BAND — nothing back here gets brighter than the floor plane;
-        sprites keep the full range, so contrast alone sorts the depth.
-     2. FOCUS — the whole layer is slightly blurred and desaturated;
-        the fight is the only thing in focus.
-     3. CLARITY POCKET — darkest directly behind the fighters and at the
-        floor line, haziest at the top, so the eye lands where the game is.
-   This is the CSS prototype of THE SHIP; real zone art drops into
-   .arena-backdrop as a background-image later and inherits the same stack. */
+     2. FOCUS — the layer is slightly blurred and desaturated;
+     3. CLARITY POCKET — darkest behind the fighters and at the floor line.
+   Versioned filename on purpose: GitHub Pages caches for ~10 minutes, so a
+   swapped painting under the SAME name shows the old one until the cache
+   turns over. Bump the number when the art changes. */
 .arena-backdrop, .arena-haze {
   position: absolute; inset: 0; z-index: 0;
   pointer-events: none;
@@ -1055,51 +1053,10 @@ body {
 .backdrop-on .arena-backdrop, .backdrop-on .arena-haze { opacity: 1; }
 .arena-backdrop {
   background:
-    /* clarity pocket: darkest at the floor, behind the fight */
-    radial-gradient(ellipse 130% 60% at 50% 100%, rgba(4,6,10,0.85) 0%, rgba(4,6,10,0.35) 45%, transparent 75%),
-    /* distant glow spots: portholes and a console, dim by contract */
-    radial-gradient(circle 90px at 16% 28%, rgba(238,242,255,0.045), transparent 70%),
-    radial-gradient(circle 55px at 79% 22%, rgba(238,242,255,0.04), transparent 70%),
-    radial-gradient(circle 75px at 54% 15%, rgba(255,45,106,0.035), transparent 70%),
-    /* hull ribs: structure you sense rather than read */
-    repeating-linear-gradient(90deg, transparent 0 120px, rgba(255,255,255,0.022) 120px 126px),
-    /* ceiling-to-floor depth */
-    linear-gradient(180deg, #0c1119 0%, #0a0e16 55%, #070a10 100%);
-  filter: blur(1.2px) saturate(0.8);
-}
-/* THE LABORATORY zone art (act 1) — the owner's painting under the same
-   treatment stack, keyed off data-zone (stamped by spawnEnemy). The value
-   band is pinched at both ends per the ship-art lessons: a top wash keeps
-   the sky and lit windows under the unit names, the clarity pocket keeps
-   the floor line darkest, and the scene breathes through the middle where
-   the biohazard sign and the teal windows live. Act 2 has no painting yet,
-   so it falls through to the CSS room above. Two one-step reverts, as
-   before: SETTINGS > BACKDROP off is the clean arena, and deleting this
-   block drops act 1 back to the CSS room. */
-.arena-card[data-zone="1"] .arena-backdrop {
-  background:
-    radial-gradient(ellipse 130% 60% at 50% 100%, rgba(4,6,10,0.88) 0%, rgba(4,6,10,0.4) 45%, transparent 75%),
-    linear-gradient(180deg, rgba(7,10,16,0.6) 0%, rgba(7,10,16,0.22) 35%, rgba(7,10,16,0.15) 60%, rgba(7,10,16,0.5) 100%),
-    /* Versioned filename on purpose: GitHub Pages caches for ~10 minutes,
-       so replacing a painting under the SAME name shows the old one until
-       the cache turns over. A new name is a new URL — bump the number when
-       a backdrop is swapped and the change is visible on the next deploy. */
-    url('../assets/zones/the-laboratory-2.jpg') center 55% / cover no-repeat;
-  filter: blur(1.4px) saturate(0.9) brightness(1.05);
-}
-/* MCP ENCAMPMENT zone art (act 2). Anchored to the BOTTOM edge by the
-   owner's call — the armored truck is the painting's subject and it lives
-   at the floor, so cover-cropping happens at the sky instead. The floor
-   pocket is softer than act 1's for the same reason: the usual near-black
-   wash at the floor line would bury the truck. The fighters stand at the
-   frame's outer thirds and the truck holds the middle gap between them,
-   so both survive the sharing. */
-.arena-card[data-zone="2"] .arena-backdrop {
-  background:
-    radial-gradient(ellipse 130% 55% at 50% 100%, rgba(4,6,10,0.62) 0%, rgba(4,6,10,0.22) 45%, transparent 75%),
+    radial-gradient(ellipse 130% 60% at 50% 100%, rgba(4,6,10,0.72) 0%, rgba(4,6,10,0.28) 45%, transparent 75%),
     linear-gradient(180deg, rgba(7,10,16,0.55) 0%, rgba(7,10,16,0.2) 35%, transparent 65%),
-    url('../assets/zones/mcp-encampment-1.jpg') center bottom / cover no-repeat;
-  filter: blur(1.2px) saturate(0.92) brightness(1.02);
+    url('../assets/zones/arena-backdrop-1.jpg') center bottom / cover no-repeat;
+  filter: blur(1.2px) saturate(0.9) brightness(1.02);
 }
 .arena-haze {
   background:
