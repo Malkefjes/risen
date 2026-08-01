@@ -59,7 +59,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey — that answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-01at';
+const BUILD = '2026-08-01au';
 
 const BALANCE = {
   player: {
@@ -429,7 +429,7 @@ const BALANCE = {
   // figure multiplied by this: 1 is the pace the game has always run at, 0.5 is
   // twice as fast, 1.5 is slower. Purely how it is watched — cooldowns tick on
   // turns, not on a clock, so no number in a fight moves with it.
-  turnPace: 1.0,
+  turnPace: 0.75,
   // saveKey is a PREFIX, not a key: each slot stores under `<saveKey>_s<n>`.
   //
   // BUMP IT WHENEVER A CHANGE INVALIDATES A SAVED SHEET, and add the outgoing
