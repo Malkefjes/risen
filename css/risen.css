@@ -515,25 +515,19 @@ body {
 }
 
 /* ---- Intro ---------------------------------------------------------------
-   A GLASS CARD, for the same reason the menu buttons are glass: the room behind
-   is at full strength now, and body copy floating straight on a lit floor is
-   the one thing that cannot survive it. The panel is the readable surface; the
-   room still shows through it.
+   NO PANEL. It had a glass card and the owner took it off: the copy reads
+   perfectly well straight on the room, and a box around it only shrank the
+   painting for no gain. What the card was really buying was contrast, and a
+   text-shadow buys that without drawing a border.
 
-   The body copy is LEFT-ALIGNED inside a centred card. Five centred paragraphs
-   is five ragged left edges, which is what made this screen read as unfinished
-   — the eye has to find the start of every line. The lead and the closing line
-   stay centred because each is one line and carries the beat. */
+   The body copy is LEFT-ALIGNED inside a centred column. Five centred
+   paragraphs is five ragged left edges, which is what made this screen read as
+   unfinished — the eye has to find the start of every line. The lead and the
+   closing line stay centred because each is one line and carries the beat. */
 .intro-card {
-  max-width: 680px;
-  margin: clamp(16px, 4vh, 46px) auto clamp(22px, 4vh, 38px);
-  padding: clamp(24px, 4vh, 40px) clamp(24px, 4vw, 46px);
-  background: rgba(10, 14, 21, 0.72);
-  border: 1px solid rgba(0, 240, 208, 0.16);
-  border-radius: 14px;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  max-width: 660px;
+  margin: clamp(20px, 6vh, 64px) auto clamp(24px, 4.5vh, 44px);
+  padding: 0 clamp(18px, 4vw, 30px);
 }
 .intro-lead {
   margin: 0 0 clamp(16px, 2.6vh, 26px);
@@ -543,13 +537,17 @@ body {
   font-size: clamp(1.15rem, 2.6vw, 1.6rem);
   letter-spacing: 2px;
   color: var(--text);
-  text-shadow: 0 0 26px rgba(0, 240, 208, 0.28);
+  text-shadow: 0 2px 14px rgba(0,0,0,0.9), 0 0 30px rgba(0, 240, 208, 0.30);
 }
+/* Brighter than the old muted grey, because muted grey was a colour chosen to
+   sit on a flat dark page and this now sits on a lit room. The stacked dark
+   shadows are the halo doing what the card used to do. */
 .intro-body {
-  color: var(--muted);
+  color: rgba(226, 236, 244, 0.88);
   font-size: 0.95rem;
-  line-height: 1.72;
+  line-height: 1.75;
   text-align: left;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.95), 0 2px 16px rgba(0,0,0,0.85);
 }
 .intro-body p { margin: 0 0 14px; }
 .intro-body p:last-child { margin-bottom: 0; }
@@ -558,13 +556,13 @@ body {
 .intro-final {
   margin: clamp(18px, 3vh, 28px) 0 0;
   padding-top: clamp(16px, 2.6vh, 24px);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
   text-align: center;
   color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 6px;
   font-size: clamp(0.82rem, 1.8vw, 1rem);
-  text-shadow: 0 0 24px rgba(0, 240, 208, 0.35);
+  text-shadow: 0 2px 12px rgba(0,0,0,0.9), 0 0 26px rgba(0, 240, 208, 0.40);
 }
 
 /* TWO EQUAL CHOICES. The old row put a small ghost BACK, a solid teal slab and
