@@ -284,8 +284,7 @@ function openLoadScreen(){
   showScreen('load-screen');
 }
 function slotSummary(d){
-  return 'LV ' + d.player.level + ' · Wave ' + d.wave + ' · ' + getZoneName(d.wave) +
-    ' · ' + d.kills + ' kills' + (d.bestCombo ? ' · best chain ' + d.bestCombo + '×' : '');
+  return 'LV ' + d.player.level + ' · Wave ' + d.wave + ' · ' + getZoneName(d.wave);
 }
 
 // Deleting is two clicks rather than a window.confirm(): a run is hours of play,
