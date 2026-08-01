@@ -282,7 +282,6 @@ function cosmeticRandom() {
 let _floaters = 0;
 function floatText(unit, value, type, isCrit) {
   if (HEADLESS.on) return;
-  if (!SETTINGS.floaters) return;
   if (_floaters > 26) return;
   const card = getFighterPanel(unit); if (!card) return;
   const el = document.createElement('div');
