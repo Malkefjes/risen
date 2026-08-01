@@ -305,24 +305,20 @@ function renderSlotList(listId){
   slotNumbers().forEach(n => {
     const d = slotData(n);
     const row = document.createElement('div');
-    row.className = 'save-slot' + (d ? '' : ' empty');
+    // The strain class drives the row's border, glow and title colour from CSS.
+    row.className = 'save-slot' + (d ? ' strain-' + d.classId : ' empty');
 
     const body = document.createElement('button');
     body.type = 'button';
     body.className = 'save-slot-body';
     // An empty slot has nothing behind it to open.
     body.disabled = !d;
-    const colorVar = d ? (d.classId === 'base' ? 'var(--text)' : 'var(--' + d.classId + ')') : '';
     // Spans, not divs: the body is a <button>, whose content model is phrasing
     // content. The two are blocks by CSS instead.
     body.innerHTML =
-      '<span class="save-slot-title"' + (d ? ' style="color:' + colorVar + '"' : '') + '>' +
-        (d ? CLASSES[d.classId].name : 'EMPTY') +
-        '<span class="save-slot-num">SLOT ' + n + '</span>' +
-      '</span>' +
-      '<span class="save-slot-meta">' +
-        (d ? slotSummary(d) : 'No run saved') +
-      '</span>';
+      '<span class="save-slot-num">SLOT ' + n + '</span>' +
+      '<span class="save-slot-title">' + (d ? CLASSES[d.classId].name : 'EMPTY') + '</span>' +
+      '<span class="save-slot-meta">' + (d ? slotSummary(d) : 'No run saved') + '</span>';
     if (d) body.addEventListener('click', () => continueRun(n));
     row.appendChild(body);
 

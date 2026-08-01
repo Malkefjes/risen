@@ -62,7 +62,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey — that answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-01ak';
+const BUILD = '2026-08-01al';
 
 const BALANCE = {
   player: {
@@ -458,6 +458,7 @@ const BALANCE = {
   // Storage keys from older versions, cleared once on load so they cannot
   // accumulate invisibly. Oldest first; add the outgoing prefix here on a bump.
   // Slot keys are listed explicitly because the purge removes literal keys.
+  // On a bump, list _s0 through _s<saveSlots> for the outgoing prefix.
   oldSaveKeys: ['risen_run_v3', 'risen_run_v3_s1', 'risen_run_v3_s2',
                 'risen_run_v4', 'risen_run_v4_s1', 'risen_run_v4_s2',
                 'risen_run_v5', 'risen_run_v5_s1', 'risen_run_v5_s2',
@@ -467,7 +468,7 @@ const BALANCE = {
                 'risen_run_v9', 'risen_run_v9_s0', 'risen_run_v9_s1', 'risen_run_v9_s2',
                 'risen_run_v10', 'risen_run_v10_s0', 'risen_run_v10_s1', 'risen_run_v10_s2',
                 'risen_run_v11', 'risen_run_v11_s0', 'risen_run_v11_s1', 'risen_run_v11_s2'],
-  saveSlots: 2
+  saveSlots: 4
 };
 
 // Each strain: linear damage off Strength scaled by its own `power`, its own
