@@ -274,13 +274,18 @@ function doSpawn() {
   scheduleTurn(nextTurn, turnDelay(260));
 }
 
-// WHAT A TELEGRAPH IS WORTH, and it is not one number any more: a boss
-// telegraph is the fight, an elite telegraph is a skill check you meet a dozen
-// times a run. See the eliteWindupMult note in the enemy table.
+// WHAT A TELEGRAPH IS WORTH. Three things can set it, most specific first: the
+// ACT it happens in, then whether it is an elite rather than a boss, then the
+// table's default. A boss telegraph is the fight; an elite telegraph is a skill
+// check you meet a dozen times a run; and an act-2 telegraph lands on a bar
+// that stopped growing while enemy damage did not — see the act-2 windupMult
+// note in ACTS for the measurement that forced the override.
 function windupMultFor(e) {
   const E = BALANCE.enemy;
-  if (e && e.elite && !e.isBoss && E.eliteWindupMult) return E.eliteWindupMult;
-  return E.windupMult;
+  const act = (e && e.act) ? ACTS.find(a => a.num === e.act) : null;
+  if (e && e.elite && !e.isBoss)
+    return (act && act.eliteWindupMult) || E.eliteWindupMult || E.windupMult;
+  return (act && act.windupMult) || E.windupMult;
 }
 
 // opts carries what a PROVOKED swing changes: it cannot be evaded, and (when

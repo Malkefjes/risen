@@ -62,7 +62,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey — that answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-01d';
+const BUILD = '2026-08-01e';
 
 const BALANCE = {
   player: {
@@ -702,7 +702,48 @@ const ACTS = [
     // slows in act 2 too (points arrive at the same rate but land on a much
     // bigger base), so the enemy curve should slow with it. What it must not do
     // is slow down MORE than the player does, which is what 1.25 did.
-    growthMult: 4.5, tierGrowth: 1.45, withinStep: 0.04 }
+    growthMult: 4.5, tierGrowth: 1.45, withinStep: 0.04,
+    // ---- ACT 2 GETS ITS OWN TELEGRAPH ------------------------------------
+    // A FLAT MULTIPLIER ON A NUMBER THAT OUTRUNS YOUR BAR IS A ONE-SHOT
+    // EVENTUALLY, and that is arithmetic rather than tuning: enemy damage grows
+    // 8.9x from wave 5 to wave 30 while the biggest bar anyone can buy grows
+    // 4x. At the shared x4.0 the telegraph crossed the bar somewhere in act 2
+    // and never came back.
+    //
+    // Measured on a real run (owner's, build 2026-08-01d): base died on wave 25
+    // to a 426 telegraph on a 340 bar — 125%, dead from full, no build and no
+    // play answers it. The table below is where that came from. Bars for waves
+    // 20+ are read off the level schedule (L8/L10/L11 -> 21/27/30 points),
+    // because too few runs reach those waves to sample: at 120 runs a cell,
+    // wave 25 returned n=1-3 and wave 30 n=0. The wave-20 row was ALSO measured
+    // and matched the schedule exactly, which is what makes the rest usable.
+    //
+    //   telegraph, and what share of the bar it takes
+    //   mult    wave 20                 wave 25                 wave 30
+    //           spread/VIT/SPD+VIT      spread/VIT/SPD+VIT      spread/VIT/SPD+VIT
+    //   x4.0    304  152/58/98%         440  187/69/119%        640  256/91/160%
+    //   x3.0    228  114/44/74%         330  140/52/89%         480  192/69/120%
+    //   x2.5    190   95/37/61%         275  117/43/74%         400  160/57/100%
+    //   x2.0    152   76/29/49%         220   94/34/59%         320  128/46/80%
+    //
+    // 2.5, which puts the owner's actual sheet at 81% on wave 25 — a blow that
+    // nearly ends you from full and does end you from anywhere else, against
+    // 125% where nothing mattered. With Counterpunch up it is 32%, so the
+    // ANSWER works and the window is what was missing.
+    //
+    // Act 1 is untouched at 4.0 and should stay there: it pays 45-72% of bar at
+    // waves 5-10, which is the rule this game states for a telegraph — costs you
+    // half your bar and a turn spent reacting, not the run.
+    //
+    // STILL ON THE EDGE AT WAVE 30 for a split build (100%) and comfortable for
+    // all-in Vitality (57%). Left there deliberately rather than tuned blind:
+    // nothing reaches wave 30 yet, so the honest move is to fix the wave people
+    // actually die on and re-read this when someone gets further.
+    //
+    // The elite value keeps its old ratio to the boss (0.75, was 3.0 against
+    // 4.0) rather than being picked separately — an elite telegraph is a skill
+    // check you meet a dozen times a run, a boss telegraph is the fight.
+    windupMult: 2.5, eliteWindupMult: 2.0 }
 ];
 function actForWave(wave) {
   return ACTS.find(a => wave >= a.startWave && wave <= a.endWave) || ACTS[ACTS.length - 1];
