@@ -102,12 +102,15 @@ const GRENADIER_SPRITES = {
   strike: 'assets/sprites/grenadier-strike.png',
   mirror: true
 };
-// City Streets. One face so far, and the zone's boss wears it too — see the
-// note on zone 3 in ZONES. Same set by reference rather than a second copy, so
-// when the Captain gets his own drawing there is exactly one place to change.
+// City Streets: the Mercenary on the street and the Brute who runs it.
 const MERCENARY_SPRITES = {
   ready: 'assets/sprites/mercenary-ready.png',
   strike: 'assets/sprites/mercenary-strike.png',
+  mirror: true
+};
+const BRUTE_SPRITES = {
+  ready: 'assets/sprites/brute-ready.png',
+  strike: 'assets/sprites/brute-strike.png',
   mirror: true
 };
 
@@ -129,7 +132,7 @@ const ZONE_SPRITES = {
   2: { trash: { enforcer: ENFORCER_SPRITES, combatant: COMBATANT_SPRITES,
                 rifleman: RIFLEMAN_SPRITES },
        boss: GRENADIER_SPRITES, trashScale: 1.15 },
-  3: { trash: { mercenary: MERCENARY_SPRITES }, boss: MERCENARY_SPRITES,
+  3: { trash: { mercenary: MERCENARY_SPRITES }, boss: BRUTE_SPRITES,
        trashScale: 1.15 }
 };
 

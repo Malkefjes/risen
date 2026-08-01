@@ -62,7 +62,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey — that answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-01g';
+const BUILD = '2026-08-01h';
 
 const BALANCE = {
   player: {
@@ -745,13 +745,8 @@ const ZONES = [
 
   { num: 3, name: 'City Streets', label: 'CITY STREETS',
     startWave: 31, endWave: 45,
-    // ONE FACE, AND THE BOSS WEARS IT TOO. The Mercenary is the only art this
-    // zone has so far, so its boss is the same drawing at boss scale under its
-    // own name — an honest placeholder rather than a borrowed silhouette from
-    // another zone. Replace ZONE_SPRITES[3].boss when the art exists; nothing
-    // else needs touching.
     enemies: [{ id: 'mercenary', name: 'Mercenary' }],
-    bossName: 'Mercenary Captain',
+    bossName: 'Mercenary Brute',
     // ---- FITTED, NOT GUESSED, BUT NOTHING HAS PLAYED IT ------------------
     // growthMult starts where zone 2 ends (its wave-30 ceiling is g ~10.97), so
     // the seam between zones is a +5% step rather than a cliff.
