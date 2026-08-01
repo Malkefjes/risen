@@ -2325,9 +2325,9 @@ body {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(3, 6, 9, 0.72);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgba(3, 6, 9, 0.48);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
   display: none;
   align-items: center;
   justify-content: center;
@@ -2338,11 +2338,11 @@ body {
 .modal-overlay.show { display: flex; animation: fadeIn 0.2s ease; }
 
 .modal {
-  background: rgba(6, 11, 10, 0.72);
+  background: rgba(6, 11, 10, 0.40);
   border: 1px solid rgba(var(--base-rgb), 0.62);
   border-radius: 6px;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   box-shadow: 0 24px 70px rgba(0,0,0,0.6);
   padding: 28px 26px 24px;
   max-width: 440px;
