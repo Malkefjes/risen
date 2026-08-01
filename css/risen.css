@@ -1926,7 +1926,7 @@ body {
 
 .sidebar-tabs {
   display: flex;
-  border-bottom: 2px solid rgba(255,255,255,0.10);
+  border-bottom: 2px solid transparent;
   flex-shrink: 0;
 }
 
