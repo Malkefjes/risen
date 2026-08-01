@@ -604,9 +604,9 @@ body {
 }
 
 /* TWO CHOICES AT ONE SIZE, WITH ONE OF THEM LOUD.
-   `OWNER:` MUTATE carries bio green and psy purple, and RESIST MUTATION wears
-   the quiet grey the BACK button below it uses — his call, made by looking at
-   it. Note that only the STYLING is shared with BACK: RESIST keeps .intro-choice's
+   `OWNER:` MUTATE is the green is-primary and RESIST MUTATION wears the quiet
+   grey the BACK button below it uses — his call, made by looking at it. Note
+   that only the STYLING is shared with BACK: RESIST keeps .intro-choice's
    size and its half of the grid, so the fork is still two equal slabs and the
    escape hatch under it is still visibly smaller than both.
 
@@ -635,113 +635,18 @@ body {
   letter-spacing: 2.4px;
 }
 
-/* ---- MUTATE: green and purple, circling -----------------------------------
-   THE ONE BUTTON IN THE GAME THAT IS NOT A FLAT COLOUR, because it is the only
-   press that means "become one of these" without saying which. Bio green and
-   psy purple in a conic gradient that rotates forever around the edge. Its
-   opposite number, RESIST MUTATION, is the plain is-quiet grey, so the fork is
-   colour against no colour at all, at the same size.
+/* ---- MUTATE ---------------------------------------------------------------
+   `OWNER:` PLAIN GREEN, and it is is-primary with nothing added. It spent this
+   session as the one button in the game that was not a flat colour — a conic
+   gradient of bio green and psy purple rotating forever around a masked ring,
+   with a registered @property to make the angle interpolate and, briefly, a
+   turbulence filter to make the edge wander. He looked at each version and
+   asked for plain green, so all of that is deleted rather than switched off.
+   The button is now exactly what NEW GAME is: the thing this screen is for.
 
-   `OWNER:` TWO STRAINS, NOT THREE, AND NO BLEND BETWEEN THEM — sym orange was
-   in the rotation and he took it out, then the green-to-purple fade was going
-   through teal and he took that out too. Every pixel of the ring is now one
-   strain colour or the other. If a third ever goes back in, the stop list is
-   the only thing that changes.
-
-   One honest caveat: ::before is the same ring blurred, and a blur across a
-   hard edge does average the two sides. So the GLOW carries a short blended
-   arc at each of the two boundaries — about 18px of a 620px perimeter, soft
-   and dim. The crisp edge, which is what you actually read, has none.
-
-   HOW IT IS BUILT, because the trick is not obvious. A conic-gradient cannot
-   be a border-color, so the ring is a pseudo-element filled edge to edge with
-   the gradient and then MASKED down to its own outline: two stacked masks, one
-   clipped to the content box and one to the whole box, composited to cancel
-   each other everywhere except the padding band. What survives is a 1px ring
-   of gradient. ::after is that ring crisp; ::before is the same ring blurred,
-   which is the glow. ::before paints first so the crisp edge stays on top.
-
-   --flow-angle has to be a REGISTERED property (@property below) or the
-   rotation does not happen: an unregistered custom property is an untyped
-   string, and CSS interpolates those DISCRETELY — the ring would sit still and
-   then snap 360 degrees halfway through. Registering it as an <angle> is what
-   makes the value animate continuously. It is declared on the button and
-   inherited so both rings read the same angle and can never drift apart.
-
-   The face and the label stay exactly .ui-btn's, and the green hover wash is
-   overridden away — a green tint under the ring would name bio the winner,
-   which is the one thing this button must not do. */
-@property --flow-angle {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: true;
-}
-
-@keyframes strainFlow {
-  to { --flow-angle: 360deg; }
-}
-
-.ui-btn.is-mutate {
-  position: relative;
-  border-color: transparent;
-  color: #ffffff;
-  animation: strainFlow 7s linear infinite;
-}
-
-.ui-btn.is-mutate::before,
-.ui-btn.is-mutate::after {
-  content: '';
-  position: absolute;
-  border-radius: inherit;
-  pointer-events: none;
-  /* HARD STOPS, NOT A FADE. Each colour is given a start AND an end angle, so
-     there is no interpolation anywhere on the ring — half is bio, half is psy,
-     and the two boundaries are instantaneous.
-     A fade between these two specific colours cannot stay in the family: bio
-     is #7dffa0 and psy is #c084fc, and their midpoint in sRGB is #9EC2CE, a
-     pale blue-teal that belongs to neither strain. Every gradient version of
-     this button therefore spent a third of its ring showing a colour that is
-     not in the game. */
-  background: conic-gradient(from var(--flow-angle),
-    var(--bio) 0deg 180deg, var(--psy) 180deg 360deg);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-          mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-          mask-composite: exclude;
-}
-
-/* The glow: the same ring, blurred outward. Sits under the crisp one.
-   The SOURCE ring is 3px, not the 1px the crisp edge uses — blur spreads a
-   thin ring into something too faint to read as a glow at all, and thickening
-   the thing being blurred is what makes it carry. Measured by eye against the
-   green glow the other buttons throw on hover; this had to match it. */
-.ui-btn.is-mutate::before {
-  inset: -3px;
-  padding: 3px;
-  filter: blur(9px);
-  opacity: 1;
-}
-
-/* The edge itself, 1px, matching every other button's edge weight. */
-.ui-btn.is-mutate::after {
-  inset: -1px;
-  padding: 1px;
-}
-
-.ui-btn.is-mutate:hover {
-  /* Neutral, not green — see above. The ring brightens instead. */
-  background: rgba(255, 255, 255, 0.07);
-  border-color: transparent;
-  box-shadow: none;
-}
-.ui-btn.is-mutate:hover::before { filter: blur(11px); opacity: 1; }
-.ui-btn.is-mutate:focus-visible { outline-color: rgba(255, 255, 255, 0.9); }
-
-/* An animation that never stops is exactly the kind this setting is for. The
-   ring keeps all three colours; it just holds still. */
-@media (prefers-reduced-motion: reduce) {
-  .ui-btn.is-mutate { animation: none; }
-}
+   Nothing bespoke is left here on purpose. If a flowing edge is ever wanted
+   again the commit history has a working one; a disabled copy sitting in the
+   stylesheet would only be a thing to maintain and misread. */
 
 @media (max-width: 560px) {
   .intro-fork { grid-template-columns: 1fr; max-width: 320px; }
