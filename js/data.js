@@ -1,4 +1,4 @@
-// Balance, build stamp, classes, talents, statuses — the numbers and tables
+// Balance, build stamp, classes, statuses — the numbers and tables
 // ============================================================
 // RISEN — balance & systems
 //
@@ -46,13 +46,10 @@
 //    wants a MULTIPLIER on the rate, never an additive base — a base hands out
 //    speed nobody paid for.
 //
-//  * Mutations prefer p.dmgMult / p.hpMult / p.apsMult over raw stats, so one
-//    pick cannot quietly buy two things.
-//
 //  * SWITCHED OFF, NOT MISSING, so it does not read as a bug: critStrainGain is
 //    0 for every strain (a crit feeding your strain is built and wired but
-//    inert), and cdrBonus has no source, so the cooldown-reduction readout row
-//    stays hidden.
+//    inert). Cooldown reduction is not a seam any more — p.cdr is 0 and nothing
+//    can set it, so the readout row stays hidden.
 // ============================================================
 
 // ---- Build ----------------------------------------------------
@@ -62,7 +59,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey — that answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-01ao';
+const BUILD = '2026-08-01ap';
 
 const BALANCE = {
   player: {
@@ -137,9 +134,6 @@ const BALANCE = {
     // runs on. creditCrit and its call site in applyPlayerDamage are still
     // wired — set this to 1 to switch it on for a strain that wants it.
     critStrainGain: 0,
-    // Cooldown reduction is a live seam with NO SOURCE: nothing sets t.cdrBonus,
-    // so the readout row stays hidden until a mutation grants some.
-    //
     // Speed deliberately does not feed it. Cooldowns tick on the player's own
     // turns, so rate never changes your rotation — a 4-turn cooldown is 4 of
     // your turns at x1 and at x4. Stacking CDR on Speed would pay twice.
@@ -429,7 +423,6 @@ const BALANCE = {
         killBase: 46, killWave: 15, killTier: 36 },
   combo: { maxEnemyActionsPerKill: 3, xpPerStack: 0.05, maxStack: 20 },   // chain continues if the kill let the enemy act <= N times (speed-fair)
   bossEvery: 5,          // boss on every Nth wave
-  talentEvery: 5,        // choose a mutation every Nth level
   finalWave: 45,         // beating this wave's boss wins the run (zone 3's finale)
   spawnDelay: 0.16,
   // saveKey is a PREFIX, not a key: each slot stores under `<saveKey>_s<n>`.
@@ -782,63 +775,6 @@ const ZONES = [
 function zoneForWave(wave) {
   return ZONES.find(a => wave >= a.startWave && wave <= a.endWave) || ZONES[ZONES.length - 1];
 }
-
-// ---- Talents -------------------------------------------------
-// Damage talents scale dmgMult. Defensive talents scale hpMult or flat traits.
-// Nothing scales a raw stat, so no talent can quietly buy two things at once.
-//
-// Every mutation is available to every strain — there is no strain gating and
-// no per-strain pool. Write each entry to be worth taking whoever draws it; if
-// one only makes sense for a single strain, that is a sign it wants to be a
-// skill on that strain rather than a mutation.
-//
-// Entry contract:
-//   id    matches the key; this is what lands in player.talentIds
-//   tag   short label shown on the choice card
-//   desc  a fmtDesc template, not prose — put the number in a field and
-//         reference it ({key}, {key%}, {key#noun}) so the card can never
-//         disagree with what apply() actually does. Write apply() as a method
-//         and read the field off `this` so the number lives exactly once —
-//         `power:0.20, desc:'-{power%} damage', apply(p){ ...this.power... }`.
-//   apply(p)  scale p.dmgMult / p.hpMult / p.apsMult, bump a raw stat, or set
-//         a flag under p.talents. These p.talents hooks are all wired into the
-//         combat code and lie inert until an entry sets one:
-//           overflow, bloodMemory, harvest, cdrBonus, adrenaline, execute,
-//           evadeFlat, thornsMult, thornsHeal, poisonStackBonus,
-//           poisonMult, critFlat
-//
-// BASIC-ATTACK RIDERS hang a status off the basic attack — the swing you always
-// have, on no cooldown, that otherwise stops mattering once the specials come
-// online. Each rider is one line of data: name a status from STATUSES and the
-// values to apply it with. Whether it lands on you or the enemy is not stored —
-// the registry knows, since a 'buff' goes to the caster and a 'debuff' to the
-// target. Adding another is one entry and nothing else; applyPlayerDamage
-// already walks whatever this leaves on p.talents.basicRiders.
-function addBasicRider(p, id, opts) {
-  p.talents.basicRiders = (p.talents.basicRiders || []).concat([Object.assign({ id }, opts)]);
-}
-
-const TALENTS = {
-  // DELIBERATELY EMPTY. The mutation SYSTEM is intact — drafting, picking,
-  // stacking, the MUTATIONS tab, save persistence and every p.talents hook are
-  // all wired. There is simply no content in the pool, so levels pass without
-  // offering a draft (rollTalentOffers returns nothing).
-  //
-  // The seven basic-attack riders that lived here were cleared while the strains
-  // and the starting sheet are being tuned: a draft that hands out WEAK, HASTE or
-  // REGEN changes what a class feels like, which makes it impossible to judge
-  // whether the class itself is fun. They come back once the four stand up alone.
-  //
-  // The rider family read like this — one entry, nothing else:
-  //
-  //   atrophy: {
-  //     id:'atrophy', name:'Atrophic Strike', tag:'Basic Attack',
-  //     power:0.20, duration:2,
-  //     desc:'Your basic attack also rots what it touches: WEAK for ' +
-  //          '{duration#turn}, -{power%} to its damage.',
-  //     apply(p){ addBasicRider(p, 'weak', { power:this.power, duration:this.duration }); }
-  //   }
-};
 
 // ---- Statuses ------------------------------------------------
 // One registry for every timed effect that can sit on a unit, player or enemy.

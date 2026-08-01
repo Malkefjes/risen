@@ -88,7 +88,7 @@ function devEnterCombat(handoverLine) {
   if (an) an.textContent = getActLabel(state.wave);
   const ac = document.getElementById('arena-card');
   if (ac) ac.dataset.zone = zoneForWave(state.wave).num;
-  updateHud(); refreshTalentUI(); renderCombat(true); renderSkills(); updateTurnInfo();
+  updateHud(); refreshVowUI(); renderCombat(true); renderSkills(); updateTurnInfo();
   showScreen('combat-screen');
   document.getElementById('combat-screen').classList.remove('staged', 'reveal');
   log(handoverLine, 'important');
@@ -187,7 +187,7 @@ document.addEventListener('keydown', ev => {
 function serializeRun() {
   const p = state.player; if (!p) return null;
   return { v:2, build:BUILD, classId:state.classId, wave:state.wave,
-    overkillCarry:state.overkillCarry, talentQueue:state.talentQueue,
+    overkillCarry:state.overkillCarry,
     damageDealt:state.damageDealt, runStart:state.runStart,
     // The result card's run-lifetime counters. Additive fields: a save written
     // before they existed loads them as 0, counted from the reload on.
@@ -204,7 +204,7 @@ function serializeRun() {
     player:{ level:p.level, xp:p.xp, xpNext:p.xpNext, points:p.points + pendingTotal(p),
       str:p.str, instinct:p.instinct, speed:p.speed, vit:p.vit,
       dmgMult:p.dmgMult, hpMult:p.hpMult, apsMult:p.apsMult,
-      talents:p.talents, talentIds:p.talentIds, hp:p.hp, maxHp:p.maxHp,
+      hp:p.hp, maxHp:p.maxHp,
       // thornsGrown is the one raw value that is NOT a stat: sym's ramp, banked
       // across the whole run by being hit. The derived sheet recomputes thorns
       // from it on load (see applyDerivedStats), so losing it would silently
@@ -353,7 +353,6 @@ function continueRun(slot){
   Object.assign(p,{ level:sp.level||1, xp:sp.xp||0, xpNext:sp.xpNext||xpForLevel(sp.level||1),
     points:sp.points||0, str:sp.str, instinct:sp.instinct, speed:sp.speed, vit:sp.vit,
     dmgMult:sp.dmgMult||1, hpMult:sp.hpMult||1, apsMult:sp.apsMult||1,
-    talents:sp.talents||{}, talentIds:sp.talentIds||[],
     thornsGrown:sp.thornsGrown||0 });
   state.player=p;
   // Saves written before statuses were persisted simply have none; anything
@@ -371,7 +370,7 @@ function continueRun(slot){
   // it is not serialized, and a chain is a property of an unbroken streak of
   // kills rather than of a run.
   state.overkillCarry=d.overkillCarry||0;
-  state.talentQueue=d.talentQueue||[]; state.wave=d.wave||1;
+  state.wave=d.wave||1;
   // kills and bestCombo are not saved. They stay at resetRunState's 0 and count
   // from the reload on; the end-of-run report is the only thing that reads them.
   state.damageDealt=d.damageDealt||0;
@@ -382,7 +381,7 @@ function continueRun(slot){
   state.runStart=d.runStart||Date.now();
   recalcPlayerStats();
   p.hp = (sp.hp && sp.maxHp) ? Math.max(1, Math.floor(p.maxHp * Math.min(1, Math.max(P().reloadHpFloor, sp.hp/sp.maxHp)))) : p.maxHp;
-  updateHud(); refreshTalentUI();
+  updateHud(); refreshVowUI();
   showScreen('combat-screen');
   document.getElementById('combat-screen').classList.remove('staged', 'reveal');
   state.combatActive = true;

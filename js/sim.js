@@ -261,9 +261,6 @@ function simulateRun(classId, opts) {
       // the previous one produced.
       if (p.points > 0) { adjustStat(allocate(p), 1); continue; }
       if (pendingTotal(p) > 0) { commitStats(); continue; }
-      if (state.talentOffers && state.talentOffers.picks && state.talentOffers.picks.length) {
-        pickTalent(state.talentOffers.picks[0].id); continue;
-      }
       const skill = policy(p);
       if (!skill) break;
       playerAct(skill);

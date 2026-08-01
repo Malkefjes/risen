@@ -244,7 +244,7 @@ function survivingStatuses(unit) {
 
 let state = {
   classId:null, player:null, enemy:null, wave:1,
-  talentOffers:null, talentQueue:[], overkillCarry:0, kills:0,
+  overkillCarry:0, kills:0,
   combatActive:false, turnTimer:null,
   // Which save slot the live run writes to. Set when a run starts (claimSaveSlot)
   // or is loaded (continueRun); every saveRun/clearSavedRun targets it.
@@ -380,7 +380,6 @@ function applyDerivedStats(p) {
   // CLASSES is no longer consulted here: apsBase was the last per-strain
   // number in the derived sheet, and it went when turn rate became a pure stat.
   const B = P();
-  const t = p.talents || {};
 
   p.dmgMult = p.dmgMult || 1;
   p.hpMult  = p.hpMult  || 1;
@@ -449,18 +448,16 @@ function applyDerivedStats(p) {
     (1 + Math.max(0, (p.level || 1) - 1) * (B.healAnchorPerLevel || 0))
   ));
 
-  p.evadeChance = Math.min(B.evadeCap, B.evadeBase + p.speed*B.evadePerSpeed + (t.evadeFlat||0));
+  p.evadeChance = Math.min(B.evadeCap, B.evadeBase + p.speed*B.evadePerSpeed);
   p.blockChance = Math.min(B.blockCap, B.blockBase + p.vit*B.blockPerVit);
   p.blockReduction = B.blockReduction;
-  p.critChance = Math.min(B.critCap, B.critBase + p.instinct*B.critPerInstinct + (t.critFlat||0));
+  p.critChance = Math.min(B.critCap, B.critBase + p.instinct*B.critPerInstinct);
   // CRIT DAMAGE CLIMBS WITH THE SAME POINTS, from point one rather than as an
   // overflow past the chance cap. Both terms rising at once is what makes
   // Instinct quadratic and what lets it reach Strength at all; the balance
   // header carries the arithmetic and the crossover.
   //
-  // Off the STAT only, never off t.critFlat. A talent's flat crit chance is not
-  // Instinct, so it must not also pay out as crit damage — one pick would
-  // quietly buy two things, which is the thing the mutation rules exist to
+  // Off the STAT, so crit chance and crit damage are the same purchase and
   // prevent.
   //
   // No cap of its own, and it needs none: Instinct is the only source, the
@@ -471,7 +468,7 @@ function applyDerivedStats(p) {
   // again sooner are the same idea, and it gives Speed somewhere to go once
   // the attack-rate term saturates at 23 points.
   // Earned sources only — Speed does not feed this (see the note in BALANCE).
-  p.cdr = Math.min(B.cdrCap, t.cdrBonus || 0);
+  p.cdr = 0;                       // no source: nothing grants cooldown reduction
 
   // A fifth of Attack Damage and a twentieth of max HP — both already carry
   // dmgMult / hpMult through those two, so neither is applied again here.
@@ -479,17 +476,15 @@ function applyDerivedStats(p) {
   // rounding keeps it exact if the anchors ever stop being multiples of 5.
   const ailmentDmg = Math.max(1, Math.round(attackDamage(p) * B.ailmentDamageFrac));
   p.poisonPerStack = p.class === 'bio'
-    ? Math.max(1, Math.round(ailmentDmg * (t.poisonMult||1))) : 0;
+    ? Math.max(1, ailmentDmg) : 0;
   // THORNS IS THE ONE DERIVED NUMBER THAT REMEMBERS. Everything else on this
   // sheet is a pure function of the stats above it, recomputed from scratch —
   // thorns is stat-derived PLUS p.thornsGrown, a raw value the run accumulates
   // by being hit (see growThorns). The innate share of max HP is the floor Shed
   // can never eat into, so a sym who has spent everything is still spiky; the
-  // grown part is the class. Both go through thornsMult together, so a talent
-  // that multiplies thorns multiplies what you have become, not just what you
-  // were born with.
+  // grown part is the class.
   p.thorns = p.class === 'sym'
-    ? Math.max(0, Math.round((p.maxHp * B.thornsFrac + (p.thornsGrown || 0)) * (t.thornsMult||1))) : 0;
+    ? Math.max(0, Math.round((p.maxHp * B.thornsFrac + (p.thornsGrown || 0)))) : 0;
 
   // ---- Ailments ----
   // Bleed and poison are one mechanic wearing two coats: a stacking tick on
@@ -504,13 +499,12 @@ function applyDerivedStats(p) {
   // damage is what a stack WOULD tick for if one landed, the same way crit
   // damage reads while crit chance is 0.
   const basicPoisons = p.class === 'bio' && !!(p.basicSkill && p.basicSkill.poison > 0);
-  p.poisonChance = Math.min(1, (basicPoisons ? 1 : 0) + (t.poisonChance || 0));
+  p.poisonChance = Math.min(1, basicPoisons ? 1 : 0);
   p.poisonDamage = p.poisonPerStack;
   // Unmutated bleeds on every landed basic, the way bio poisons on every
-  // landed basic — so the chance reads 100% for him and 0% for everyone else
-  // until a talent raises it.
+  // landed basic — so the chance reads 100% for him and 0% for everyone else.
   const basicBleeds = p.class === 'base' && !!(p.basicSkill && p.basicSkill.bleed > 0);
-  p.bleedChance = Math.min(1, (basicBleeds ? 1 : 0) + (t.bleedChance || 0));
+  p.bleedChance = Math.min(1, basicBleeds ? 1 : 0);
   // What a cut opened RIGHT NOW would tick for. Live rather than baked, because
   // the depth rides held RESOLVE — the readout has to move when the number it
   // depends on moves, or the sheet would disagree with the next Strike.
@@ -540,10 +534,10 @@ function bleedStacks(p) {
 
 function bleedDepth(p) {
   if (!p) return 1;
-  const B = P(), t = p.talents || {};
+  const B = P();
   const ail = Math.max(1, Math.round(attackDamage(p) * B.ailmentDamageFrac));
   const held = p.class === 'base' ? statusStacks(p, 'resolve') : 0;
-  return Math.max(1, Math.round(ail * (1 + held * (B.bleedPerResolve || 0)) * (t.bleedMult || 1)));
+  return Math.max(1, Math.round(ail * (1 + held * (B.bleedPerResolve || 0))));
 }
 
 // What the sidebar reads. Every entry is an exact value the fight actually

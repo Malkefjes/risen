@@ -558,21 +558,10 @@ function applyEnemyDamage(e, p, mult, opts) {
     if (e.hp <= 0) state._lastOverkill = Math.max(0, thorns - tBefore);
     floatText(e, thorns, 'damage');
     logDamage('THORNS', e, thorns, tNotes);
-    // THORNS FEED IS OFF BY DEFAULT NOW, and the default is the whole change:
-    // it used to lifesteal a flat 25% of every thorns tick. That was fine when
-    // thorns were a static twentieth of max HP, but against a number that grows
-    // all run it becomes sustain that scales with the ramp and asks nothing —
-    // timing-immune healing, which the enemy-table note names as the exact
-    // reason enemy numbers cannot make this game hard. Sym's faucet is SHED,
-    // on a cooldown, paid for out of the ramp itself. The hook stays live so a
-    // talent or mutation can hand the drip back as a visible pick.
-    const healPct = p.talents.thornsHeal || 0;
-    if (healPct > 0) {
-      const feed = Math.max(1, Math.floor(thorns * healPct));
-      const hpBefore = p.hp;
-      p.hp = Math.min(p.maxHp, p.hp + feed);
-      if (p.hp > hpBefore) logHeal('THORNS FEED', p, p.hp - hpBefore, [Math.round(healPct * 100) + '% of thorns']);
-    }
+    // NO THORNS FEED. It used to lifesteal a flat 25% of every thorns tick,
+    // which against a number that grows all run is sustain that scales with the
+    // ramp and asks nothing — timing-immune healing. Sym's faucet is SHED, on a
+    // cooldown, paid for out of the ramp itself.
   }
   return dmg;
 }
@@ -661,14 +650,6 @@ function applyPlayerDamage(p, e, skill) {
   notes.push(...statusNotes(p, 'outgoingMult', { target: e }));
   notes.push(...statusNotes(e, 'incomingMult', { attacker: p }));
   dmg *= statusMult(p, 'outgoingMult', { target: e }) * statusMult(e, 'incomingMult', { attacker: p });
-  if (p.talents.adrenaline && p.hp/p.maxHp < 0.35) {
-    dmg *= (1 + p.talents.adrenaline);
-    notes.push('ADRENALINE +' + Math.round(p.talents.adrenaline * 100) + '%');
-  }
-  if (p.talents.execute && e.hp/e.maxHp < 0.30) {
-    dmg *= (1 + p.talents.execute);
-    notes.push('EXECUTE +' + Math.round(p.talents.execute * 100) + '%');
-  }
   if (skill.thornsBurst) {
     const t = getThornsDamage(p) * skill.thornsBurst;
     dmg += t;
@@ -761,18 +742,6 @@ function applyPlayerDamage(p, e, skill) {
     applyStatus(e, 'dread', { stacks: skill.dread });
 
   applySkillStatuses(p, skill, e);
-
-  // Basic-attack riders (see the TALENTS block). They resolve here, after the
-  // damage, so the swing that applies one is not also the swing that benefits
-  // from it — the rider pays off on the next exchange, the way poison does.
-  // On-hit, not on-use: an evade costs you the rider along with the damage.
-  if (skill.basic && p.talents.basicRiders) {
-    for (const rider of p.talents.basicRiders) {
-      const def = statusDef(rider.id);
-      if (!def) continue;
-      applyStatus(def.kind === 'buff' ? p : e, rider.id, { power: rider.power, duration: rider.duration });
-    }
-  }
 
   if (skill.stun) {
     const stunTurns = skill.stun;
@@ -999,20 +968,6 @@ function onEnemyDefeated() {
     shake(12);
   }
 
-  if (p.talents.overflow && overkill > 0) {
-    state.overkillCarry = Math.floor(overkill * p.talents.overflow);
-    if (state.overkillCarry > 0)
-      logEvent('OVERFLOW', null, logNum(state.overkillCarry) + ' carried',
-               [Math.round(p.talents.overflow * 100) + '% of overkill'], 'xp');
-  }
-  if (p.talents.harvest) {
-    const heal = Math.floor(healAnchorFor(p) * p.talents.harvest);
-    const before = p.hp;
-    p.hp = Math.min(p.maxHp, p.hp + heal);
-    floatText(p, heal, 'heal');
-    if (p.hp > before) logHeal('HARVEST', p, p.hp - before, [Math.round(p.talents.harvest * 100) + '% of ' + logNum(healAnchorFor(p))]);
-  }
-
   const tier = Math.floor((state.wave-1)/5);
   const comboBonus = 1 + Math.min(BALANCE.combo.maxStack, state.combo) * BALANCE.combo.xpPerStack;
   const xp = Math.floor((BALANCE.xp.killBase + state.wave*BALANCE.xp.killWave + tier*BALANCE.xp.killTier)
@@ -1171,8 +1126,6 @@ function runReport() {
   L.push('Sheet: STR ' + p.str + ' · INS ' + p.instinct + ' · SPD ' + p.speed + ' · VIT ' + p.vit
          + '  ->  ' + N(attackDamage(p)) + ' dmg · ' + N(p.maxHp) + ' HP · '
          + p.attackSpeed.toFixed(2) + 'x rate');
-  L.push('Mutations: ' + (p.talentIds.length
-         ? p.talentIds.map(id => (TALENTS[id] && TALENTS[id].name) || id).join(', ') : 'none'));
   L.push('Peak ' + (STRAIN_LABEL[p.class] || 'strain') + ': ' + N(state.peakStrain || 0));
   L.push('');
   L.push('Turns ' + N(state.runTurns || 0)
@@ -1428,7 +1381,7 @@ function renderSkills(forceRebuild) {
   });
 }
 
-// Keyboard: 1-3 fire specials. When the TALENTS tab is open and a choice is waiting, 1-3 pick instead.
+// Keyboard: 1-4 fire the skill in that slot.
 // A clicked <button> keeps focus, and a focused button natively activates on
 // Space/Enter — neither of which this handler claims. That let a stray Space
 // re-fire the last skill you clicked, or re-open the pause menu. Dropping focus
@@ -1445,13 +1398,6 @@ document.addEventListener('pointerup', ev => {
 document.addEventListener('keydown', ev => {
   const n = parseInt(ev.key, 10);
   if (!(n >= 1 && n <= 4)) return;
-  // 1-3 still pick a mutation while that tab is open and a choice is waiting.
-  const talentsTab = document.getElementById('tab-talents');
-  if (n <= 3 && talentsTab && talentsTab.classList.contains('active') && state.talentOffers && state.talentOffers.picks) {
-    const picks = state.talentOffers.picks;
-    if (picks[n - 1]) pickTalent(picks[n - 1].id);
-    return;
-  }
   const p = state.player;
   if (!p || !state.combatActive) return;
   // Straight 1:1 with the four buttons; basic attack is always slot 0.

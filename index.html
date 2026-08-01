@@ -170,7 +170,7 @@
       <aside class="sidebar">
         <div class="sidebar-tabs">
           <button class="sidebar-tab active" data-tab="stats" onclick="switchTab('stats')">STATS</button>
-          <button class="sidebar-tab" data-tab="talents" onclick="switchTab('talents')" id="tab-btn-talents">MUTATIONS</button>
+          <button class="sidebar-tab" data-tab="vow" onclick="switchTab('vow')" id="tab-btn-vow">WILLPOWER</button>
           <button class="sidebar-tab" data-tab="log" onclick="switchTab('log')" id="tab-btn-log">LOG</button>
           <button class="sidebar-tab" data-tab="menu" onclick="switchTab('menu')">MENU</button>
         </div>
@@ -283,14 +283,9 @@
               </div>
             </div>
           </div>
-          <div class="sidebar-panel" id="tab-talents">
-            <div class="talent-pick-inline" id="talent-pick-inline" style="display:none">
-              <div class="talent-pick-header" id="talent-pick-header">Mutation available — choose one</div>
-              <div class="talent-choices-inline" id="talent-choices-inline"></div>
-            </div>
-            <div class="talent-list" id="talent-list">
-              <div class="talent-empty">You have not mutated further yet</div>
-            </div>
+          <!-- UNMUTATED only. Shown/hidden by updateHud. -->
+          <div class="sidebar-panel" id="tab-vow">
+            <div id="vow-list"></div>
           </div>
           <div class="sidebar-panel" id="tab-log">
             <div class="combat-log" id="combat-log"></div>

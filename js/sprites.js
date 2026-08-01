@@ -192,9 +192,10 @@ function hasPoseSet(unit) {
 function mutatedSetFor(unit) {
   const tiers = MUTATED_SPRITES[unit.class];
   if (!tiers) return null;
-  const muts = (unit.talentIds || []).length;
+  // Tiers were keyed to how many mutations you had taken. With no mutations in
+  // the game the lowest tier is the only one that can ever apply.
   let chosen = null;
-  for (const t of tiers) if (muts >= t.minMutations) chosen = t.set;   // highest matching tier
+  for (const t of tiers) if (t.minMutations === 0) chosen = t.set;
   return chosen;
 }
 

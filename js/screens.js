@@ -1,4 +1,4 @@
-// Screens, intros, HUD, talent UI, sidebar, stat allocation
+// Screens, intros, HUD, sidebar, stat allocation
 // ---- Screens & setup ----------------------------------------
 function showScreen(id) {
   if (HEADLESS.on) return;
@@ -64,7 +64,6 @@ function freshPlayer(classId) {
     id:'player', name:'Sonny', class:classId, level:1, xp:0, xpNext:xpForLevel(1), points:0,
     str:b.str, instinct:b.instinct, speed:b.speed, vit:b.vit,
     dmgMult:1, hpMult:1, apsMult:1,
-    talents:{}, talentIds:[],
     hp:0, maxHp:0,
     // Points moved onto a stat but not yet committed. They are NOT in str /
     // instinct / speed / vit, so nothing in combat can see them until you
@@ -98,8 +97,6 @@ function resetRunState(classId) {
   state.enemy = null;
   state.wave = 1;
   state.kills = 0;
-  state.talentOffers = null;
-  state.talentQueue = [];
   state.overkillCarry = 0;
   state.awaitingSpawn = false;
   state.awaitingInput = false;
@@ -159,7 +156,7 @@ function startGame(skipReveal, classId) {
   recalcPlayerStats();
   state.player.hp = state.player.maxHp;
   clearSavedRun();
-  updateHud(); refreshTalentUI();
+  updateHud(); refreshVowUI();
   showScreen('combat-screen');
   spawnEnemy();
   saveRun();
@@ -255,11 +252,6 @@ function spawnEnemy() {
   // Everything that lands on the fight before the first turn is logged under
   // that header, in the order it applies, so an enemy that arrives already
   // wounded is explained rather than just odd.
-  if (p.talents.bloodMemory && state.kills > 0) {
-    e.hp = Math.max(1, Math.floor(e.maxHp * p.talents.bloodMemory));
-    logEvent('BLOOD MEMORY', e, 'starts at ' + Math.round(p.talents.bloodMemory*100) + '% HP', null, 'damage');
-  }
-
   if (state.overkillCarry > 0) {
     const carry = state.overkillCarry; state.overkillCarry = 0;
     const before = e.hp;
@@ -327,11 +319,10 @@ function updateHud() {
     strainEl.className = 'strain-word' + (p.class ? ' ' + p.class : '');
   }
   document.getElementById('xp-fill').style.width = Math.min(100,(p.xp/p.xpNext)*100) + '%';
-  const tabBtn = document.getElementById('tab-btn-talents');
-  if (tabBtn) {
-    tabBtn.textContent = p.class === 'base' ? 'WILLPOWER' : 'MUTATIONS';
-    tabBtn.classList.toggle('alert', p.class !== 'base' && (!!state.talentOffers || (state.talentQueue||[]).length>0));
-  }
+  // Only UNMUTATED has anything to say here. For the other three the tab held
+  // nothing but a line about mutations that cannot happen, so it is not shown.
+  const tabBtn = document.getElementById('tab-btn-vow');
+  if (tabBtn) tabBtn.style.display = p.class === 'base' ? '' : 'none';
   // Soft alert on STATS tab while anything is outstanding — points still to
   // place, or points placed and waiting on a confirm.
   const statsTab = document.querySelector('.sidebar-tab[data-tab="stats"]');
@@ -395,15 +386,9 @@ function gainXP(amount, bonus) {
     }
   }
   updateHud();
-  // Base Sonny resists mutation: he levels up (stat points) but never drafts one.
-  if (state.player.class !== 'base')
-    gained.forEach(lv => { if (lv % BALANCE.talentEvery === 0) queueTalentOffer(lv); });
-  refreshTalentUI();
+  refreshVowUI();
 }
 
-// ---- Talents -------------------------------------------------
-// Mutations unlock every BALANCE.talentEvery levels. Choices live in the
-// TALENTS tab only — no popup.
 // Low-level swap: which tab looks active and which panel is visible. No side
 // effects, so leaving a run can park the sidebar without waking the fight.
 function showSidebarTab(tabId) {
@@ -424,7 +409,7 @@ function switchTab(tabId) {
   const from = activeTabId();
   if (tabId === 'menu' && from !== 'menu') _tabBeforeMenu = from || 'stats';
   showSidebarTab(tabId);
-  if (tabId === 'talents') refreshTalentUI();
+  if (tabId === 'vow') refreshVowUI();
   if (tabId === 'log') { const el = document.getElementById('combat-log'); if (el) el.scrollTop = el.scrollHeight; }
 }
 
@@ -435,170 +420,19 @@ function leaveMenuTab() {
   showSidebarTab('stats');
   offerSkip(null);
 }
-function queueTalentOffer(level) {
-  const p = state.player; if (!p) return false;
-  if (state.talentOffers && state.talentOffers.level === level) return false;
-  if (state.talentQueue.includes(level)) return false;
-  const earned = Math.floor(level / BALANCE.talentEvery);
-  const pending = (state.talentOffers ? 1 : 0) + state.talentQueue.length;
-  if (p.talentIds.length + pending >= earned) return false;
-  if (state.talentOffers) { state.talentQueue.push(level); return false; }
-  const picks = rollTalentOffers(p);
-  if (!picks.length) return false;
-  state.talentOffers = { level, picks };
-  logEvent('MUTATION available', null, 'level ' + level, ['pick one in MUTATIONS'], 'level');
-  return true;
-}
-
-function promoteQueuedTalent() {
-  if (state.talentOffers || !state.talentQueue.length) return;
-  const level = state.talentQueue.shift();
-  const picks = rollTalentOffers(state.player);
-  if (!picks.length) { if (state.talentQueue.length) promoteQueuedTalent(); return; }
-  state.talentOffers = { level, picks };
-  refreshTalentUI();
-  logEvent('MUTATION available', null, 'level ' + level, ['pick one in MUTATIONS'], 'level');
-}
-
-// Up to three options, drawn from TALENTS and nothing else.
-//
-// There is no filler tier. A second pool of generic stat bumps used to top a
-// short draft up to three, which meant the draft never admitted the mutation
-// set was thin — it padded instead, and a pick that reads "+32% damage" is not
-// a decision. A draft now offers what actually exists: three mutations, or two,
-// or none.
-function rollTalentOffers(player) {
-  const owned = new Set(player.talentIds);
-  // Every mutation is offered to every strain. The draft used to reserve one of
-  // the three slots for a pick tagged with your strain, which quietly meant a
-  // mutation could only be built for one of them — three separate small pools
-  // instead of one good one. Now the only thing that narrows the pool is what
-  // you already own, so any strain can be built in any direction.
-  const pool = Object.values(TALENTS).filter(t => !owned.has(t.id));
-  const picks = [];
-  while (picks.length < 3 && pool.length) {
-    picks.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
-  }
-  // May be empty, and that is a supported answer rather than an error case:
-  // queueTalentOffer declines without creating an offer or queueing the level,
-  // so a level simply passes with no draft.
-  return picks;
-}
-
-// TALENTS is the only registry. Returns null for an id from an older build,
-// which callers already handle — see the "Legacy mutation" branch in
-// refreshTalentUI.
-function findTalentDef(id) {
-  return TALENTS[id] || null;
-}
-
-function pickTalent(id) {
-  const p = state.player;
-  const offered = state.talentOffers && state.talentOffers.picks.find(t => t.id === id);
-  const t = offered || findTalentDef(id);
-  if (!p || !t) return;
-  t.apply(p);
-  p.talentIds.push(id);
-  recalcPlayerStats();
-  p.hp = Math.min(p.maxHp, p.hp);
-  state.talentOffers = null;
-  logEvent('MUTATION taken', null, t.name, [t.tag], 'level');
-  promoteQueuedTalent();
-  updateHud(); refreshTalentUI(); renderCombat(); renderSkills(); saveRun();
-}
-
-function refreshTalentUI() {
+// The MUTATIONS tab is gone with the mutation system; UNMUTATED keeps its panel
+// because THE VOW is the one thing in there a player ever actually read.
+function refreshVowUI() {
   if (HEADLESS.on) return;
-  const list = document.getElementById('talent-list');
-  const pickInline = document.getElementById('talent-pick-inline');
-  const choicesEl = document.getElementById('talent-choices-inline');
-  const headerEl = document.getElementById('talent-pick-header');
+  const list = document.getElementById('vow-list');
   if (!list || !state.player) return;
-
-  // Unmutated resisted the infection: no mutations, a vow instead.
-  if (state.player.class === 'base') {
-    if (pickInline) pickInline.style.display = 'none';
-    if (choicesEl) choicesEl.innerHTML = '';
-    list.innerHTML =
-      '<div class="willpower-vow">'
-        + '<div class="vow-title">THE VOW</div>'
-        + '<p>You felt the infection reach for your mind — and you refused it. Where the others surrendered their humanity for power, you kept yours. No mutation will ever move your hand.</p>'
-        + '<p>All you carry is <span class="vow-emph">Resolve</span>: it hardens with every blow you land and every blow you endure, blunting the pain while it holds — until you spend it all in one defiant answer.</p>'
-        + '<p class="vow-emph">You will not let it control you.</p>'
-      + '</div>';
-    return;
-  }
-
-  // Promote any queued offer if the slot is free
-  if (!state.talentOffers && state.talentQueue.length) promoteQueuedTalent();
-
-  // Asked once and reused below, so the choice cards and the empty state can
-  // never disagree about whether a draft is on screen.
-  const drafting = !!(state.talentOffers && state.talentOffers.picks && state.talentOffers.picks.length);
-
-  // Choice cards at the top of the tab
-  if (pickInline && choicesEl) {
-    if (drafting) {
-      pickInline.style.display = 'block';
-      const q = state.talentQueue.length;
-      if (headerEl) {
-        headerEl.textContent = 'Level ' + state.talentOffers.level + ' mutation — choose one'
-          + (q ? '  ·  ' + q + ' more queued' : '');
-      }
-      choicesEl.innerHTML = '';
-      state.talentOffers.picks.forEach((t, i) => {
-        const card = document.createElement('div');
-        card.className = 'talent-card';
-        card.innerHTML = '<div class="talent-card-key">' + (i + 1) + '</div>'
-          + '<div class="talent-card-tag">' + t.tag + '</div>'
-          + '<div class="talent-card-name">' + t.name + '</div>'
-          + '<div class="talent-card-desc">' + fmtDesc(t) + '</div>';
-        card.onclick = () => pickTalent(t.id);
-        choicesEl.appendChild(card);
-      });
-    } else {
-      pickInline.style.display = 'none';
-      choicesEl.innerHTML = '';
-    }
-  }
-
-  // Acquired list
-  const ids = state.player.talentIds;
-  if (!ids.length) {
-    // Says where you are, not how the system works — the tab reports on your
-    // run rather than explaining the cadence to you.
-    //
-    // Silent while a draft is up: three cards asking you to choose, with "you
-    // have not mutated" printed underneath them, contradicts itself.
-    // Two different empty states. "You have not mutated FURTHER yet" implies a
-    // draft is coming, which is a lie while the pool is empty — so the message
-    // reads off the pool rather than being hardcoded, and reverts on its own
-    // the moment a mutation is added back.
-    const poolEmpty = !Object.keys(TALENTS).length;
-    list.innerHTML = drafting ? ''
-      : '<div class="talent-empty">'
-        + (poolEmpty ? 'No mutations in the pool yet' : 'You have not mutated further yet')
-        + '</div>';
-  } else {
-    const counts = {};
-    ids.forEach(id => counts[id] = (counts[id] || 0) + 1);
-    list.innerHTML = Object.keys(counts).map(id => {
-      const t = findTalentDef(id);
-      const n = counts[id];
-      // A run saved before the mutation set was cleared still carries the id.
-      // Its effect is intact (multipliers are serialized on the player, not
-      // recomputed from the definition) — only the description is gone.
-      if (!t) {
-        return '<div class="talent-owned"><div class="talent-owned-name">Legacy mutation'
-          + (n > 1 ? ' <span class="talent-stack">×' + n + '</span>' : '')
-          + '</div><div class="talent-owned-desc">From an earlier build. Its effect is still active.</div></div>';
-      }
-      return '<div class="talent-owned"><div class="talent-owned-name">' + t.name
-        + (n > 1 ? ' <span class="talent-stack">×' + n + '</span>' : '')
-        + '</div><div class="talent-owned-desc">' + fmtDesc(t) + '</div></div>';
-    }).join('');
-  }
-
+  list.innerHTML =
+    '<div class="willpower-vow">'
+      + '<div class="vow-title">THE VOW</div>'
+      + '<p>You felt the infection reach for your mind — and you refused it. Where the others surrendered their humanity for power, you kept yours. No mutation will ever move your hand.</p>'
+      + '<p>All you carry is <span class="vow-emph">Resolve</span>: it hardens with every blow you land and every blow you endure, blunting the pain while it holds — until you spend it all in one defiant answer.</p>'
+      + '<p class="vow-emph">You will not let it control you.</p>'
+    + '</div>';
 }
 
 // ---- Sidebar -------------------------------------------------

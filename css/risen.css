@@ -2298,44 +2298,7 @@ body.stat-colors-on .side-stat-row {
 .log-entry.level { color: #fbbf24; font-weight: 600; }
 /* border accents are defined earlier with the combat-log block */
 
-/* ===== TALENTS ===== */
-.talent-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  overflow-y: auto;
-  flex: 1;
-  min-height: 0;
-  max-height: none;
-  padding-right: 4px;
-}
-.talent-owned {
-  background: var(--panel2);
-  border: 1px solid var(--border);
-  padding: 10px 12px;
-  border-left: 3px solid var(--accent);
-}
-.talent-owned-name {
-  font-family: 'Orbitron', sans-serif;
-  font-weight: 600;
-  font-size: 0.82rem;
-  letter-spacing: 0.5px;
-  margin-bottom: 3px;
-}
-.talent-owned-desc {
-  font-size: 0.7rem;
-  color: var(--muted);
-  line-height: 1.35;
-}
-/* The only thing in the panel when it shows, so it is centred rather than
-   hanging off the left edge like a list item with nothing under it. */
-.talent-empty {
-  color: var(--muted);
-  font-size: 0.8rem;
-  line-height: 1.5;
-  padding: 8px 0;
-  text-align: center;
-}
+/* ===== WILLPOWER (UNMUTATED only) ===== */
 .willpower-vow {
   border: 1px solid rgba(201,169,120,0.35);
   background: rgba(201,169,120,0.06);
@@ -2358,82 +2321,6 @@ body.stat-colors-on .side-stat-row {
 }
 .willpower-vow p:last-child { margin-bottom: 0; }
 .willpower-vow .vow-emph { color: var(--base); }
-
-/* In-tab talent picker (no modal) */
-.talent-pick-inline {
-  flex-shrink: 0;
-  margin-bottom: 16px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--border);
-}
-.talent-pick-header {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 0.78rem;
-  letter-spacing: 1.5px;
-  color: var(--accent);
-  margin-bottom: 10px;
-  text-align: center;
-  animation: pulsePoints 1.5s ease infinite;
-}
-.talent-choices-inline {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.talent-card {
-  background: var(--panel2);
-  border: 2px solid var(--border);
-  padding: 12px 12px 12px 14px;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-align: left;
-  position: relative;
-}
-.talent-card:hover {
-  border-color: var(--accent);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.35), 0 0 12px rgba(0,240,208,0.12);
-  background: #1a2233;
-}
-/* A one-word category chip with the whole card width to sit in, so nothing was
-   forcing it down to 12px — the same mistake the stat sub-tabs were making.
-   Still clearly under the name below it; just no longer the smallest thing on
-   screen. Tracking in rem so it shrinks with the root font at narrow widths. */
-.talent-card-tag {
-  font-size: 0.7rem;
-  letter-spacing: 0.075rem;
-  color: var(--accent);
-  margin-bottom: 4px;
-  text-transform: uppercase;
-}
-.talent-card-name {
-  font-family: 'Orbitron', sans-serif;
-  font-weight: 700;
-  font-size: 0.88rem;
-  margin-bottom: 5px;
-  padding-right: 22px;
-}
-.talent-card-desc {
-  font-size: 0.72rem;
-  color: var(--muted);
-  line-height: 1.35;
-}
-/* This is a keybind, not decoration — 1/2/3 actually pick the mutation — so it
-   has to be readable at a glance. It sits in the corner with nothing competing
-   for the space; .talent-card-name reserves 22px of padding-right to clear it,
-   which still holds at this size. */
-.talent-card-key {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 0.74rem;
-  font-weight: 700;
-  color: var(--muted);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  padding: 1px 6px;
-}
 
 /* ===== STATS MODAL ===== */
 /* ---- Main menu ---- */
@@ -3130,7 +3017,6 @@ body.stat-colors-on .side-stat-row {
 .sidebar-tab.alert { color: var(--xp); border-color: var(--xp); }
 .sidebar-tab.points-alert { color: var(--xp); }
 
-.talent-stack { color: var(--xp); font-size: 0.85em; }
 .result-build { color: var(--muted); font-size: 0.82rem; letter-spacing: 0.5px; }
 
 @media (prefers-reduced-motion: reduce) {
