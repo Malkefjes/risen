@@ -190,6 +190,32 @@ body {
   74%  { opacity: 1; transform: translateY(0); }
   100% { opacity: 0; transform: translateY(-8px); }
 }
+#dev-screen.active {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(var(--vh) * 100 - 48px);
+  padding-bottom: clamp(56px, 14vh, 170px);
+}
+#dev-screen h2 {
+  font-family: 'Orbitron', sans-serif;
+  text-align: center;
+  font-size: 1.7rem;
+  margin-bottom: clamp(20px, 3.6vh, 38px);
+  letter-spacing: 3px;
+  text-shadow: 0 2px 16px rgba(0,0,0,0.85);
+}
+.dev-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(8px, 1.4vh, 13px);
+}
+.dev-stack .ui-btn { width: min(330px, 80vw); }
+.dev-actions { margin-top: clamp(20px, 3.4vh, 34px); }
+.dev-actions .ui-btn { min-width: 190px; }
+
 #load-screen.active {
   display: flex;
   flex-direction: column;
@@ -305,7 +331,6 @@ body {
 /* Armed state: the first click asks, the second deletes. See deleteSlot. */
 .save-slot-del.armed { color: var(--accent2); background: rgba(255, 45, 106, 0.14); font-size: 0.66rem; }
 
-.save-hint { color: var(--muted); font-size: 0.8rem; text-align: center; margin-top: 18px; letter-spacing: 0.4px; }
 
 /* Sits under the logo, quiet enough to ignore and present enough to quote in
    a bug report. The logo's 54px bottom margin is moved here so the tag tucks
@@ -739,7 +764,6 @@ body {
   text-shadow: 0 2px 16px rgba(0,0,0,0.85);
 }
 
-.class-desc { text-align: center; color: var(--muted); margin-bottom: 36px; font-size: 0.9rem; }
 
 .classes {
   display: flex;

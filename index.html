@@ -50,19 +50,14 @@
        is a workbench door, not a play option. -->
   <div id="dev-screen" class="screen">
     <h2>DEV TOOLS</h2>
-    <p class="class-desc">Skip to Zone 2 — the skilled bot plays Zone 1 for you
-      (the real rules, in milliseconds) and hands over at the Encampment gate
-      with whatever sheet it earned.</p>
-    <div class="menu-stack">
-      <button class="btn" onclick="devSkipToZone('bio')">AS BIOLOGICAL</button>
-      <button class="btn" onclick="devSkipToZone('psy')">AS PSYCHOLOGICAL</button>
-      <button class="btn" onclick="devSkipToZone('sym')">AS SYMBIOTIC</button>
-      <button class="btn" onclick="devSkipToZone('base')">AS UNMUTATED</button>
+    <div class="dev-stack">
+      <button class="ui-btn" onclick="devSkipToZone('bio')">AS BIOLOGICAL</button>
+      <button class="ui-btn" onclick="devSkipToZone('psy')">AS PSYCHOLOGICAL</button>
+      <button class="ui-btn" onclick="devSkipToZone('sym')">AS SYMBIOTIC</button>
+      <button class="ui-btn" onclick="devSkipToZone('base')">AS UNMUTATED</button>
     </div>
-    <p class="save-hint" id="dev-status">Dev runs live in their own hidden slot —
-      your saved runs are never touched.</p>
-    <div style="text-align:center;margin-top:30px">
-      <button class="btn btn-ghost" onclick="goToMenu()">BACK</button>
+    <div class="dev-actions">
+      <button class="ui-btn is-quiet" onclick="goToMenu()">BACK</button>
     </div>
   </div>
 

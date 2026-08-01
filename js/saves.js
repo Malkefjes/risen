@@ -98,7 +98,6 @@ function devEnterCombat(handoverLine) {
 function devSkipToZone(classId) {
   if (!CLASSES[classId]) return;
   const gate = ZONES[0].endWave;
-  const status = document.getElementById('dev-status');
   // First choice: the bot EARNS the sheet — zone 1 played by the real rules.
   // 20 tries separates bad dice from "the bot cannot do it".
   for (let attempt = 1; attempt <= 20; attempt++) {
@@ -131,8 +130,6 @@ function devSkipToZone(classId) {
   spawnEnemy();
   devEnterCombat('DEV · synthetic zone-1 graduate (the bot went 0 for 20 on zone 1 — '
     + 'worth knowing) · wave ' + state.wave + ' · level ' + p.level);
-  if (status) status.textContent = 'Note: the bot could not clear zone 1 as '
-    + CLASSES[classId].name + ' in 20 tries, so you got a standard level-7 sheet instead.';
 }
 
 // RESIST MUTATION: a quiet transition beat, then drop into the run as base Sonny.
