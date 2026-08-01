@@ -16,32 +16,6 @@
 <link rel="stylesheet" href="css/risen.css">
 </head>
 <body>
-
-<!-- FILTER DEFS. An SVG that draws nothing — it exists so CSS can point at a
-     filter by id. Sized 0x0 and positioned out of the way rather than hidden
-     with display:none, which stops some browsers resolving the reference.
-
-     #mutate-wiggle is what makes the MUTATE button's edge wander instead of
-     running straight. feTurbulence generates a noise field; feDisplacementMap
-     reads it and shifts every pixel of whatever it is applied to by that much,
-     so a straight ring comes out wobbling. Two dials: baseFrequency is how
-     tight the wiggles are (higher = busier) and scale is how far they wander
-     in pixels. seed just picks which random field you get — change it for a
-     different squiggle at the same character.
-
-     sRGB interpolation is set explicitly. The SVG default is linearRGB, which
-     would quietly wash out the strain colours the moment the filter touched
-     them. -->
-<svg class="fx-defs" width="0" height="0" aria-hidden="true" focusable="false">
-  <filter id="mutate-wiggle" x="-30%" y="-80%" width="160%" height="260%"
-          color-interpolation-filters="sRGB">
-    <feTurbulence type="fractalNoise" baseFrequency="0.022 0.055"
-                  numOctaves="2" seed="11" result="noise"/>
-    <feDisplacementMap in="SourceGraphic" in2="noise" scale="5"
-                       xChannelSelector="R" yChannelSelector="G"/>
-  </filter>
-</svg>
-
 <div id="app">
 
   <!-- TITLE -->
@@ -119,7 +93,7 @@
     </div>
 
     <div class="intro-fork">
-      <button class="ui-btn is-mutate intro-choice" onclick="openClassSelect()"><span class="mutate-edge" aria-hidden="true"></span>MUTATE</button>
+      <button class="ui-btn is-mutate intro-choice" onclick="openClassSelect()">MUTATE</button>
       <button class="ui-btn is-quiet intro-choice" onclick="resistMutation()">RESIST MUTATION</button>
     </div>
     <div class="intro-back">

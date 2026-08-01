@@ -70,10 +70,6 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* The filter-defs SVG at the top of the body. It has no visible content; this
-   only stops a 0x0 inline element from taking part in layout at all. */
-.fx-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
-
 /* The browser's default focus ring is `outline: auto` — a 3px two-tone ring
    whose outer band is white, which reads as a stray white border on these dark
    panels. Replace it rather than delete it: :focus-visible only fires for
@@ -692,32 +688,11 @@ body {
   animation: strainFlow 7s linear infinite;
 }
 
-/* WHY THERE IS A SPAN IN THE BUTTON, and it is not decoration for its own sake.
-   The wobble is an SVG turbulence filter (#mutate-wiggle in index.html) that
-   pushes each pixel sideways by a noise value, so a straight ring comes out
-   wandering. It CANNOT go on the same element as the mask: CSS renders an
-   element by applying filter FIRST and mask second, so a filter here would
-   have wobbled the conic gradient and then cut it with a perfectly straight
-   stencil — the exact shape we are trying to bend, unchanged.
-   Nesting is the fix and the only one that does not need generated path data.
-   .mutate-edge carries the filter; its two pseudo-elements carry the masked
-   rings. The child finishes masking, the parent then bends the finished
-   result. It also has to be a real element because pseudo-elements are
-   siblings and cannot nest inside each other.
-   The span is empty and aria-hidden, so the button still reads as "MUTATE". */
-.mutate-edge {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  border-radius: inherit;
-  filter: url(#mutate-wiggle);
-}
-
-.mutate-edge::before,
-.mutate-edge::after {
+.ui-btn.is-mutate::before,
+.ui-btn.is-mutate::after {
   content: '';
   position: absolute;
-  border-radius: 7px;
+  border-radius: inherit;
   pointer-events: none;
   /* HARD STOPS, NOT A FADE. Each colour is given a start AND an end angle, so
      there is no interpolation anywhere on the ring — half is bio, half is psy,
@@ -740,20 +715,17 @@ body {
    thin ring into something too faint to read as a glow at all, and thickening
    the thing being blurred is what makes it carry. Measured by eye against the
    green glow the other buttons throw on hover; this had to match it. */
-.mutate-edge::before {
+.ui-btn.is-mutate::before {
   inset: -3px;
   padding: 3px;
   filter: blur(9px);
   opacity: 1;
 }
 
-/* The edge itself. 2px, not the 1px every other button uses, and the wobble is
-   why: displacement moves neighbouring pixels by different amounts, and a 1px
-   line pulled apart that way breaks into dashes. Two pixels survives it and
-   still reads as a line rather than a band. */
-.mutate-edge::after {
-  inset: -2px;
-  padding: 2px;
+/* The edge itself, 1px, matching every other button's edge weight. */
+.ui-btn.is-mutate::after {
+  inset: -1px;
+  padding: 1px;
 }
 
 .ui-btn.is-mutate:hover {
@@ -762,7 +734,7 @@ body {
   border-color: transparent;
   box-shadow: none;
 }
-.ui-btn.is-mutate:hover .mutate-edge::before { filter: blur(11px); opacity: 1; }
+.ui-btn.is-mutate:hover::before { filter: blur(11px); opacity: 1; }
 .ui-btn.is-mutate:focus-visible { outline-color: rgba(255, 255, 255, 0.9); }
 
 /* An animation that never stops is exactly the kind this setting is for. The
