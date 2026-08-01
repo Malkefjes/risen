@@ -193,6 +193,10 @@ function serializeRun() {
     // before they existed loads them as 0, counted from the reload on.
     runTurns:state.runTurns||0, damageTaken:state.damageTaken||0,
     critsLanded:state.critsLanded||0, dodges:state.dodges||0,
+    // The run ledger rides along, or a reloaded run's result screen would
+    // report a breakdown that starts from the moment you pressed CONTINUE.
+    dmgBySource:state.dmgBySource||{}, skillUses:state.skillUses||{},
+    peakStrain:state.peakStrain||0,
     // An unconfirmed allocation is not saved — it is refunded. The stats
     // written here are the committed ones, so the points sitting in pending
     // would otherwise vanish with it; reloading puts you back at "N to place,
@@ -376,6 +380,8 @@ function continueRun(slot){
   state.bestCombo=d.bestCombo||0; state.damageDealt=d.damageDealt||0;
   state.runTurns=d.runTurns||0; state.damageTaken=d.damageTaken||0;
   state.critsLanded=d.critsLanded||0; state.dodges=d.dodges||0;
+  state.dmgBySource=d.dmgBySource||{}; state.skillUses=d.skillUses||{};
+  state.peakStrain=d.peakStrain||0;
   state.runStart=d.runStart||Date.now();
   recalcPlayerStats();
   p.hp = (sp.hp && sp.maxHp) ? Math.max(1, Math.floor(p.maxHp * Math.min(1, Math.max(P().reloadHpFloor, sp.hp/sp.maxHp)))) : p.maxHp;

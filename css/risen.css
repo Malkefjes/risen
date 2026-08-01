@@ -2286,11 +2286,19 @@ body.stat-colors-on .side-stat-row {
   font-size: 0.95rem;
 }
 
-/* The run's ledger — save-slot family styling on purpose (same panel, same
-   1px border, same 10px radius), so the end of a run and the start of one
-   read as the same kind of object. */
-.result-card {
-  max-width: 460px;
+/* ---- Result screen -------------------------------------------------------
+   SKIMMABLE FIRST. Three tiers of weight, so the eye lands in the right order:
+   the HERO numbers are the only large type, section headings are small caps
+   that can be skipped entirely, and the bars carry proportion by length so a
+   breakdown reads without anyone doing arithmetic.
+
+   --rc is the strain's tint, set once on the card and inherited by every
+   accent inside it. One hue per card rather than a colour per row: the bars
+   are comparing magnitudes of the same thing, so varying their colour would
+   encode a difference that is not there. */
+.rs-card {
+  --rc: var(--text);
+  max-width: 620px;
   margin: 0 auto;
   background: var(--panel);
   border: 1px solid var(--border);
@@ -2298,56 +2306,177 @@ body.stat-colors-on .side-stat-row {
   overflow: hidden;
   text-align: left;
 }
-.result-card-head {
-  padding: 15px 18px 12px;
-  border-bottom: 1px solid var(--border);
-}
-.result-card-class {
+.rs-card.bio { --rc: var(--bio); }
+.rs-card.psy { --rc: var(--psy); }
+.rs-card.sym { --rc: var(--sym); }
+
+.rs-head { padding: 14px 18px 12px; border-bottom: 1px solid var(--border); }
+.rs-class {
   display: block;
   font-family: 'Orbitron', sans-serif;
-  font-weight: 600;
-  font-size: 1.05rem;
+  font-weight: 600; font-size: 1.05rem;
+  color: var(--rc);
   margin-bottom: 4px;
-  color: var(--text);
 }
-.result-card-class i { font-style: normal; font-weight: 400; font-size: 0.75rem; color: var(--muted); letter-spacing: 1px; }
-.result-card-class.bio  { color: var(--bio); }
-.result-card-class.psy  { color: var(--psy); }
-.result-card-class.sym  { color: var(--sym); }
-.result-card-sub { display: block; color: var(--muted); font-size: 0.82rem; letter-spacing: 0.4px; line-height: 1.5; }
-.result-grid {
+.rs-story { display: block; color: var(--muted); font-size: 0.82rem; line-height: 1.5; }
+.rs-story b { color: var(--text); font-weight: 500; }
+/* The one thing on a loss screen worth pulling the eye: a heavy that landed is
+   a turn you could have answered, and it reads differently from attrition. */
+.rs-story b.rs-heavy { color: var(--accent2); }
+
+/* HERO ROW — four numbers, equal width, big enough to read at a glance. */
+.rs-heroes {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1px solid var(--border);
+  background: var(--panel2);
+}
+.rs-hero {
+  padding: 12px 8px 11px;
+  text-align: center;
+  border-right: 1px solid var(--border);
+}
+.rs-hero:last-child { border-right: 0; }
+.rs-hero-k {
+  display: block;
+  font-size: 0.6rem; letter-spacing: 1.6px;
+  color: var(--muted); margin-bottom: 3px;
+}
+.rs-hero-v {
+  display: block;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.55rem; font-weight: 700;
+  color: var(--text); line-height: 1.1;
+}
+.rs-hero-s {
+  display: block;
+  font-size: 0.63rem; letter-spacing: 0.6px;
+  color: var(--muted); margin-top: 2px;
+}
+
+.rs-body {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0 22px;
-  padding: 10px 18px;
+  gap: 0 20px;
+  padding: 4px 18px 12px;
 }
-.result-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
-  padding: 6px 0;
+.rs-sec { padding: 12px 0 4px; min-width: 0; }
+.rs-wide { grid-column: 1 / -1; }
+.rs-sec h4 {
+  font-size: 0.6rem; letter-spacing: 1.8px;
+  color: var(--muted); font-weight: 600;
+  margin: 0 0 8px;
+}
+
+/* The sheet as four cells with a fill under each — the shape of a build is the
+   point, and four bare numbers do not have one. */
+.rs-sheet { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
+.rs-sheet-cell {
+  position: relative;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 6px 4px 7px;
+  text-align: center;
+  overflow: hidden;
+}
+.rs-sheet-cell span { display: block; font-size: 0.58rem; letter-spacing: 1.2px; color: var(--muted); }
+.rs-sheet-cell b {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.95rem; color: var(--text);
+}
+.rs-sheet-cell i {
+  position: absolute; left: 0; bottom: 0; height: 2px;
+  background: var(--rc); opacity: 0.75;
+}
+
+.rs-stats { display: flex; flex-direction: column; }
+.rs-stat {
+  display: flex; justify-content: space-between; align-items: baseline;
+  gap: 10px; padding: 5px 0;
   border-bottom: 1px solid rgba(255,255,255,0.05);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
 }
-/* Kill the rule under the last row of EACH column, not just the last child. */
-.result-row:nth-last-child(-n+2) { border-bottom: 0; }
-.result-row span { color: var(--muted); letter-spacing: 0.4px; }
-.result-row b { font-family: 'JetBrains Mono', monospace; font-weight: 500; color: var(--text); white-space: nowrap; }
-.result-card-foot {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 18px 14px;
+.rs-stat:last-child { border-bottom: 0; }
+.rs-stat span { color: var(--muted); }
+.rs-stat b {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500; color: var(--text); white-space: nowrap;
+}
+
+/* BARS — label, track, value, share. Fixed label and value columns so the
+   tracks all start and end on the same two lines and lengths are comparable
+   down the column, which is the only reason a bar beats a number here. */
+.rs-bar {
+  display: grid;
+  grid-template-columns: 96px 1fr 58px 34px;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+  font-size: 0.8rem;
+}
+.rs-bar-k { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rs-bar-track {
+  height: 7px; border-radius: 4px;
+  background: rgba(255,255,255,0.06);
+  overflow: hidden;
+}
+.rs-bar-track i {
+  display: block; height: 100%;
+  background: var(--rc); opacity: 0.85;
+  border-radius: 4px;
+}
+.rs-bar-v {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500; color: var(--text);
+  text-align: right; white-space: nowrap;
+}
+.rs-bar-p {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--muted); text-align: right; font-size: 0.75rem;
+}
+/* A button nobody pressed is a finding, not a blank — it stays on the list and
+   says zero rather than being dropped for looking untidy. */
+.rs-bar-dead .rs-bar-k,
+.rs-bar-dead .rs-bar-v { color: var(--accent2); opacity: 0.75; }
+.rs-bar-dead .rs-bar-track i { background: var(--accent2); opacity: 0.4; }
+
+.rs-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 18px 13px;
   border-top: 1px solid var(--border);
   background: var(--panel2);
 }
-/* The two-column grid needs the width; on a phone it folds to one column and
-   every row keeps its own rule except the true last. */
-@media (max-width: 480px) {
-  .result-grid { grid-template-columns: 1fr; }
-  .result-row:nth-last-child(-n+2) { border-bottom: 1px solid rgba(255,255,255,0.05); }
-  .result-row:last-child { border-bottom: 0; }
+.rs-copy {
+  flex: 1;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.7rem; letter-spacing: 1.4px; font-weight: 600;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--rc);
+  border-radius: 6px;
+  padding: 9px 12px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.rs-copy:hover { background: color-mix(in srgb, var(--rc) 18%, transparent); }
+.rs-copy.copied { background: var(--rc); color: var(--bg); border-color: var(--rc); }
+.rs-build {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.66rem; color: var(--muted); white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .rs-body { grid-template-columns: 1fr; }
+  .rs-heroes { grid-template-columns: repeat(2, 1fr); }
+  .rs-hero:nth-child(2) { border-right: 0; }
+  .rs-hero:nth-child(-n+2) { border-bottom: 1px solid var(--border); }
+  .rs-bar { grid-template-columns: 76px 1fr 52px 30px; gap: 8px; font-size: 0.75rem; }
+  .rs-foot { flex-direction: column; align-items: stretch; }
+  .rs-build { text-align: center; }
+}
+
 }
 
 /* Last resort. Everything above exists so this fires as late as possible:

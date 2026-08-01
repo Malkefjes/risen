@@ -179,6 +179,10 @@ function tickTurnStart(unit) {
     unit.skills.forEach(s => { if (!s.basic && s.cd > 0) s.cd--; });
     state.fightTurns++;
     state.runTurns = (state.runTurns || 0) + 1;
+    // High-water mark of the strain number, for the result screen. Sampled at
+    // the top of your turn, which is the moment the readout shows.
+    const sn = strainNumberNow(unit);
+    if (sn > (state.peakStrain || 0)) state.peakStrain = sn;
     // THE SIPHON — psy feeds on fear while it sits on the enemy: each DREAD
     // stack drips a share of max HP at the start of your turn. Ticks on YOUR
     // turns so it scales with the turn advantage the slow already bought.
@@ -213,6 +217,11 @@ function playerAct(skill) {
   if (needsEnemy && (!state.enemy || state.enemy.hp <= 0 || state.enemy._defeated)) return;
 
   state.awaitingInput = false;
+  // Counted here rather than in fireSkill: this is the point a press has passed
+  // every guard and is definitely spending the turn, so the tally matches what
+  // the player experienced pressing.
+  state.skillUses = state.skillUses || {};
+  state.skillUses[skill.id] = (state.skillUses[skill.id] || 0) + 1;
   fireSkill(p, skill, needsEnemy ? state.enemy : p);
   updateTurnInfo(); renderSkills();
 
@@ -496,6 +505,11 @@ function applyEnemyDamage(e, p, mult, opts) {
   dmg = Math.max(1, dmg);
   p.hp = Math.max(0, p.hp - dmg);
   state.damageTaken = (state.damageTaken || 0) + dmg;
+  // WHAT FINALLY DID IT, recorded at the blow rather than reconstructed after.
+  // A telegraphed heavy and an ordinary swing are the same event to a total but
+  // completely different readings — one is a turn you failed to answer, the
+  // other is an economy you were losing anyway.
+  if (p.hp <= 0) state.killedBy = { name: e ? e.name : 'unknown', heavy: mult > 1, dmg };
   logDamage(label, p, dmg, notes.concat([logNum(p.hp) + '/' + logNum(p.maxHp) + ' left']));
   // Psy: an enemy that gets its hands on you regains its nerve — the mark
   // eases instead of a player-side number draining. Same pressure, honest owner: being
@@ -535,7 +549,7 @@ function applyEnemyDamage(e, p, mult, opts) {
   if (thorns > 0 && e.hp > 0) {
     const tBefore = e.hp;
     e.hp = Math.max(0, e.hp - thorns);
-    state.damageDealt += thorns;
+    creditDamage('Thorns', thorns);
     if (e.hp <= 0) state._lastOverkill = Math.max(0, thorns - tBefore);
     floatText(e, thorns, 'damage');
     logDamage('THORNS', e, thorns, tNotes);
@@ -696,7 +710,7 @@ function applyPlayerDamage(p, e, skill) {
   dmg = Math.max(1, Math.floor(dmg));
   const before = e.hp;
   e.hp = Math.max(0, e.hp - dmg);
-  state.damageDealt += dmg;
+  creditDamage(skill.name, dmg);
   if (e.hp <= 0 && before > 0) state._lastOverkill = Math.max(0, dmg - before);
 
   // The hit itself, with the remaining HP: the number that says whether the
@@ -1037,6 +1051,36 @@ function onEnemyDefeated() {
   scheduleTurn(doSpawn, turnDelay(BALANCE.spawnDelay * 1000 + 320));
 }
 
+// ---- The run ledger -------------------------------------------
+// ONE FUNNEL FOR EVERY POINT OF DAMAGE THE PLAYER DEALS, so the run total and
+// the per-source breakdown cannot disagree: the total is the sum of the sources
+// by construction rather than by two call sites staying in step.
+//
+// The label is what the result screen and its COPY block group by, so it should
+// read as the thing the player pressed or grew — a skill name, 'Bleed',
+// 'Thorns'. A new damage source that forgets to come through here is invisible
+// in the breakdown AND missing from the total, which is the loud failure rather
+// than the quiet one.
+function creditDamage(source, amount) {
+  if (!(amount > 0)) return;
+  state.damageDealt += amount;
+  const t = (state.dmgBySource = state.dmgBySource || {});
+  t[source] = (t[source] || 0) + Math.floor(amount);
+}
+
+// The strain number, whichever one this class runs on — sym and base wear it,
+// bio and psy stack it on the enemy. Sampled rather than hooked into each
+// mechanic so a new strain gets a peak for free.
+function strainNumberNow(p) {
+  if (!p) return 0;
+  const e = state.enemy, live = e && e.hp > 0 && !e._defeated;
+  if (p.class === 'sym')  return p.thorns || 0;
+  if (p.class === 'base') return statusStacks(p, 'resolve');
+  if (p.class === 'psy')  return live ? statusStacks(e, 'dread') : 0;
+  if (p.class === 'bio')  return live ? statusStacks(e, 'poison') : 0;
+  return 0;
+}
+
 function endRun(won) {
   // Re-entry guarded by state rather than by asking the result screen whether
   // it is visible — headless never shows it, and a run ending is a fact about
@@ -1065,6 +1109,124 @@ function endRun(won) {
   }
 }
 
+// The four strains wear their number under different names, and the result
+// screen has to say which one it is reporting.
+const STRAIN_LABEL = { bio:'POISON', psy:'DREAD', sym:'THORNS', base:'RESOLVE' };
+
+// Damage by source, biggest first, with each share of the run's total. Returns
+// [] when a run predates the ledger (an old save mid-run), so the section can
+// drop out rather than render an empty frame.
+function damageBreakdown() {
+  const t = state.dmgBySource || {};
+  const rows = Object.keys(t).map(k => ({ name: k, dmg: t[k] })).filter(r => r.dmg > 0);
+  const total = rows.reduce((a, r) => a + r.dmg, 0);
+  rows.sort((a, b) => b.dmg - a.dmg);
+  rows.forEach(r => { r.pct = total ? r.dmg / total : 0; });
+  return rows;
+}
+
+// Presses per button, in the order the class lists them, so a card that was
+// never pressed still shows — a zero is the whole point of this section.
+function buttonUsage(p) {
+  const u = state.skillUses || {};
+  return (p.skills || []).map(sk => ({ name: sk.name, uses: u[sk.id] || 0 }));
+}
+
+// ---- The COPY block -------------------------------------------
+// PLAIN TEXT, PASTEABLE, AND COMPLETE ENOUGH TO DIAGNOSE A RUN WITHOUT THE
+// PLAYER DESCRIBING IT. The owner does not read code and should never have to
+// summarise a run by hand — this is the whole conversation in one paste.
+//
+// Ordered by what gets asked first: verdict, then the sheet that produced it,
+// then what actually killed him, then the breakdown. The build stamp leads,
+// because a number measured on a build nobody can name is not a measurement.
+function runReport() {
+  const p = state.player, won = state.won;
+  // EXACT NUMBERS, not formatNum's "6.6k". On screen the abbreviation is what
+  // makes the card skimmable; in a report it throws away the precision the
+  // report exists to carry — 6.6k and 6,649 are the same glance and different
+  // evidence.
+  const N = n => Math.floor(Number(n) || 0).toLocaleString('en-US');
+  const mins = Math.max(1, Math.round((Date.now() - state.runStart) / 60000));
+  const act = actForWave(state.wave);
+  const L = [];
+  const pad = (s, n) => String(s) + ' '.repeat(Math.max(0, n - String(s).length));
+
+  L.push('RISEN run report — build ' + BUILD);
+  L.push((won ? 'RISEN (won)' : 'DEFEATED') + ' · Wave ' + state.wave + '/' + BALANCE.finalWave
+         + ' · Act ' + act.num + ': ' + act.name);
+  L.push(CLASSES[p.class].name + ' · Level ' + p.level + ' · ~' + mins + ' min');
+  L.push('');
+  if (!won && state.killedBy) {
+    L.push('Killed by: ' + state.killedBy.name
+           + (state.killedBy.heavy ? ' — TELEGRAPHED HEAVY' : ' — ordinary hit')
+           + ' for ' + N(state.killedBy.dmg));
+  }
+  L.push('Sheet: STR ' + p.str + ' · INS ' + p.instinct + ' · SPD ' + p.speed + ' · VIT ' + p.vit
+         + '  ->  ' + N(attackDamage(p)) + ' dmg · ' + N(p.maxHp) + ' HP · '
+         + p.attackSpeed.toFixed(2) + 'x rate');
+  L.push('Mutations: ' + (p.talentIds.length
+         ? p.talentIds.map(id => (TALENTS[id] && TALENTS[id].name) || id).join(', ') : 'none'));
+  L.push('Peak ' + (STRAIN_LABEL[p.class] || 'strain') + ': ' + N(state.peakStrain || 0));
+  L.push('');
+  L.push('Turns ' + N(state.runTurns || 0)
+         + ' · Kills ' + N(state.kills)
+         + ' · Best chain ' + (state.bestCombo || 0) + 'x'
+         + ' · Crits ' + N(state.critsLanded || 0)
+         + ' · Dodges ' + N(state.dodges || 0));
+  L.push('Damage dealt ' + N(Math.floor(state.damageDealt))
+         + ' · taken ' + N(Math.floor(state.damageTaken || 0)));
+
+  const brk = damageBreakdown();
+  if (brk.length) {
+    L.push('');
+    L.push('Damage by source');
+    brk.forEach(r => L.push('  ' + pad(r.name, 16) + pad(N(r.dmg), 9)
+                            + Math.round(r.pct * 100) + '%'));
+  }
+  const btn = buttonUsage(p);
+  if (btn.length) {
+    L.push('');
+    L.push('Buttons pressed');
+    btn.forEach(b => L.push('  ' + pad(b.name, 16) + N(b.uses)));
+  }
+  return L.join('\n');
+}
+
+// Clipboard with a fallback, because navigator.clipboard is unavailable on
+// insecure origins and the file:// case is exactly how this game gets opened.
+function copyRunReport(btn) {
+  const text = runReport();
+  const done = ok => {
+    if (!btn) return;
+    btn.classList.toggle('copied', ok);
+    btn.textContent = ok ? 'COPIED TO CLIPBOARD' : 'PRESS Ctrl+C';
+    setTimeout(() => { btn.classList.remove('copied'); btn.textContent = 'COPY RUN REPORT'; }, 2000);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => done(true), () => done(false));
+    return;
+  }
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;left:-9999px;top:0';
+  document.body.appendChild(ta);
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+  document.body.removeChild(ta);
+  done(ok);
+}
+
+// ---- The result screen ----------------------------------------
+// SKIMMABLE FIRST, COMPLETE SECOND. The old card was one flat 8-row grid, which
+// meant the wave you died on — the only number most runs are actually about —
+// sat between "Dodges" and "Best chain" at the same weight as everything else.
+//
+// Now it reads in three passes: the verdict and one sentence of what happened,
+// then four HERO numbers big enough to take in at a glance, then the sections
+// you only read when you want them. Every value is a counter the rules
+// incremented at the moment the event happened — nothing is recomputed here.
 function showResultScreen() {
   // A new run can start during the beat (menu shortcuts); if the ended run is
   // no longer the current fact, the verdict belongs to nobody — skip it.
@@ -1073,44 +1235,106 @@ function showResultScreen() {
   const combatScreen = document.getElementById('combat-screen');
   if (combatScreen) combatScreen.classList.remove('won-beat', 'defeat-beat');
   const p = state.player;
-  const mins = Math.max(1, Math.round((Date.now()-state.runStart)/60000));
+  const mins = Math.max(1, Math.round((Date.now() - state.runStart) / 60000));
   showScreen('result-screen');
   const title = document.getElementById('result-title');
   title.textContent = won ? 'RISEN' : 'DEFEATED';
   title.className = 'result-title ' + (won ? 'win' : 'lose');
-  const finalAct = actForWave(BALANCE.finalWave);
-  const opening = won
-    ? 'Act ' + finalAct.num + ': ' + finalAct.name + ' — all ' + BALANCE.finalWave + ' waves cleared. You rose.'
-    : 'You fell on <b>Wave ' + state.wave + '</b> in ' + getZoneName(state.wave) + '.';
 
-  // The run's ledger, as a card in the save-slot family: same panel, same
-  // rounded border, stats as labelled rows rather than a sentence with the
-  // numbers baked in. Every value is a counter the rules incremented at the
-  // moment the event happened — nothing here is recomputed or estimated.
-  const row = (label, value) =>
-    '<div class="result-row"><span>' + label + '</span><b>' + value + '</b></div>';
+  const esc = t => String(t).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const act = actForWave(state.wave);
+
+  // ONE SENTENCE, and on a loss it names the blow. "Wave 14" and "wave 14 to a
+  // heavy you did not answer" are different readings, and the second one is the
+  // one that says what to do about it.
+  const story = won
+    ? 'All ' + BALANCE.finalWave + ' waves cleared. You rose.'
+    : 'Fell on wave ' + state.wave + ' in ' + esc(getZoneName(state.wave))
+      + (state.killedBy
+          ? ' — ' + (state.killedBy.heavy
+              ? '<b class="rs-heavy">a telegraphed heavy</b>'
+              : 'an ordinary hit')
+            + ' from ' + esc(state.killedBy.name) + ' for ' + formatNum(state.killedBy.dmg)
+          : '');
+
+  const hero = (label, value, sub) =>
+    '<div class="rs-hero"><span class="rs-hero-k">' + label + '</span>' +
+      '<b class="rs-hero-v">' + value + '</b>' +
+      (sub ? '<span class="rs-hero-s">' + sub + '</span>' : '') + '</div>';
+
+  const stat = (label, value) =>
+    '<div class="rs-stat"><span>' + label + '</span><b>' + value + '</b></div>';
+
+  const brk = damageBreakdown();
+  const bars = brk.map(r =>
+    '<div class="rs-bar">' +
+      '<span class="rs-bar-k">' + esc(r.name) + '</span>' +
+      '<span class="rs-bar-track"><i style="width:' + Math.max(2, r.pct * 100).toFixed(1) + '%"></i></span>' +
+      '<b class="rs-bar-v">' + formatNum(r.dmg) + '</b>' +
+      '<span class="rs-bar-p">' + Math.round(r.pct * 100) + '%</span>' +
+    '</div>').join('');
+
+  const btn = buttonUsage(p);
+  const maxUse = Math.max(1, ...btn.map(b => b.uses));
+  const buttons = btn.map(b =>
+    '<div class="rs-bar' + (b.uses ? '' : ' rs-bar-dead') + '">' +
+      '<span class="rs-bar-k">' + esc(b.name) + '</span>' +
+      '<span class="rs-bar-track"><i style="width:' + Math.max(2, b.uses / maxUse * 100).toFixed(1) + '%"></i></span>' +
+      '<b class="rs-bar-v">' + formatNum(b.uses) + '</b>' +
+    '</div>').join('');
+
+  const sheet = [['STR', p.str], ['INS', p.instinct], ['SPD', p.speed], ['VIT', p.vit]];
+  const maxStat = Math.max(...sheet.map(s => s[1]));
+  const sheetHtml = sheet.map(([k, v]) =>
+    '<div class="rs-sheet-cell"><span>' + k + '</span><b>' + v + '</b>' +
+      '<i style="width:' + (v / maxStat * 100).toFixed(0) + '%"></i></div>').join('');
+
   document.getElementById('result-stats').innerHTML =
-    '<div class="result-card">' +
-      '<div class="result-card-head">' +
-        '<span class="result-card-class ' + p.class + '">' + CLASSES[p.class].name +
-          ' <i>· Level ' + p.level + '</i></span>' +
-        '<span class="result-card-sub">' + opening + '</span>' +
+    '<div class="rs-card ' + p.class + '">' +
+      '<div class="rs-head">' +
+        '<span class="rs-class">' + esc(CLASSES[p.class].name) + '</span>' +
+        '<span class="rs-story">' + story + '</span>' +
       '</div>' +
-      '<div class="result-grid">' +
-        row(won ? 'Turns to win' : 'Turns survived', formatNum(state.runTurns || 0)) +
-        row('Time', '~' + mins + ' min') +
-        row('Damage dealt', formatNum(Math.floor(state.damageDealt))) +
-        row('Damage taken', formatNum(Math.floor(state.damageTaken || 0))) +
-        row('Kills', formatNum(state.kills)) +
-        row('Best chain', state.bestCombo + '×') +
-        row('Crits landed', formatNum(state.critsLanded || 0)) +
-        row('Dodges', formatNum(state.dodges || 0)) +
+
+      '<div class="rs-heroes">' +
+        hero('WAVE', state.wave, 'of ' + BALANCE.finalWave) +
+        hero('LEVEL', p.level, formatNum((p.level - 1) * P().pointsPerLevel) + ' pts') +
+        hero('TURNS', formatNum(state.runTurns || 0), '~' + mins + ' min') +
+        hero('KILLS', formatNum(state.kills), (state.bestCombo || 0) + '× chain') +
       '</div>' +
-      '<div class="result-card-foot">' +
-        '<span class="result-build">Str ' + p.str + ' · Ins ' + p.instinct +
-          ' · Spd ' + p.speed + ' · Vit ' + p.vit + '</span>' +
-        '<span class="result-build">' + p.talentIds.length + ' mutation' +
-          (p.talentIds.length === 1 ? '' : 's') + '</span>' +
+
+      '<div class="rs-body">' +
+        '<section class="rs-sec">' +
+          '<h4>SHEET</h4>' +
+          '<div class="rs-sheet">' + sheetHtml + '</div>' +
+          '<div class="rs-stats">' +
+            stat('Attack damage', formatNum(attackDamage(p))) +
+            stat('Max HP', formatNum(p.maxHp)) +
+            stat('Turn rate', p.attackSpeed.toFixed(2) + '×') +
+            stat('Peak ' + (STRAIN_LABEL[p.class] || 'strain'), formatNum(state.peakStrain || 0)) +
+          '</div>' +
+        '</section>' +
+
+        '<section class="rs-sec">' +
+          '<h4>COMBAT</h4>' +
+          '<div class="rs-stats">' +
+            stat('Damage dealt', formatNum(Math.floor(state.damageDealt))) +
+            stat('Damage taken', formatNum(Math.floor(state.damageTaken || 0))) +
+            stat('Crits landed', formatNum(state.critsLanded || 0)) +
+            stat('Dodges', formatNum(state.dodges || 0)) +
+          '</div>' +
+        '</section>' +
+
+        (bars ? '<section class="rs-sec rs-wide">' +
+          '<h4>DAMAGE BY SOURCE</h4>' + bars + '</section>' : '') +
+
+        (buttons ? '<section class="rs-sec rs-wide">' +
+          '<h4>BUTTONS PRESSED</h4>' + buttons + '</section>' : '') +
+      '</div>' +
+
+      '<div class="rs-foot">' +
+        '<button class="rs-copy" onclick="copyRunReport(this)">COPY RUN REPORT</button>' +
+        '<span class="rs-build">build ' + BUILD + '</span>' +
       '</div>' +
     '</div>';
 }

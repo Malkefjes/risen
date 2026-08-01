@@ -115,6 +115,13 @@ function resetRunState(classId) {
   state.damageTaken = 0;
   state.critsLanded = 0;
   state.dodges = 0;
+  // THE RUN LEDGER, for the result screen and its COPY block. Four things a
+  // total cannot say: where the damage came from, which buttons were actually
+  // pressed, how big the strain number ever got, and what finally did it.
+  state.dmgBySource = {};      // label -> damage the PLAYER dealt through it
+  state.skillUses = {};        // skill id -> presses that resolved
+  state.peakStrain = 0;        // high-water mark of the strain number
+  state.killedBy = null;       // { name, heavy } — set by the fatal blow
   state.runStart = Date.now();
   state._defeatLock = false;
   state._lastOverkill = 0;

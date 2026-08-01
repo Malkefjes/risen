@@ -62,7 +62,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey — that answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-01c';
+const BUILD = '2026-08-01d';
 
 const BALANCE = {
   player: {
@@ -849,7 +849,7 @@ const STATUSES = {
         // through simulateRun, has been under-reporting bio by most of its
         // output for as long as poison has been its ramp. Guarded on the
         // target, because an elite's venom ticking on YOU is not yours.
-        if (!unit.isPlayer) state.damageDealt += dmg;
+        if (!unit.isPlayer) creditDamage('Poison', dmg);
         floatText(unit, dmg, 'poison');
         logDamage('POISON', unit, dmg, [
           '×' + (st.stacks||1) + ' @ ' + logNum(st.perStack||1) + '/stack',
@@ -906,7 +906,7 @@ const STATUSES = {
       // stacking hard is the play rather than topping up.
       const dmg = Math.max(1, Math.floor((st.perStack||1) * (st.stacks||1)));
       unit.hp = Math.max(0, unit.hp - dmg);
-      if (!unit.isPlayer) state.damageDealt += dmg;   // see the note on poison's tick
+      if (!unit.isPlayer) creditDamage('Bleed', dmg);   // see the note on poison's tick
       floatText(unit, dmg, 'damage');
       logDamage('BLEED', unit, dmg, [
         '×' + (st.stacks||1) + ' @ ' + logNum(st.perStack||1) + '/stack',
@@ -976,7 +976,7 @@ const STATUSES = {
       const cdmg = Math.max(1, Math.floor(unit.atkPower * (st.counter||1.2)));
       const before = e.hp;
       e.hp = Math.max(0, e.hp - cdmg);
-      state.damageDealt += cdmg;
+      creditDamage('Counterpunch', cdmg);
       if (e.hp <= 0) state._lastOverkill = Math.max(0, cdmg - before);
       floatText(e, cdmg, 'damage');
       // The counter draws blood. Base's defensive turn used to produce one flat
