@@ -89,16 +89,41 @@ html { font-size: 17.5px; } /* was ~16px — scales all rem text up slightly */
   html { font-size: clamp(11.5px, 1.45vw, 17.5px); }
 }
 
+/* ---- The room the UI stands in -------------------------------------------
+   The chamber wallpaper behind every screen, as ATMOSPHERE AND NOTHING ELSE.
+   It is the columnless painting on purpose: no focal point to compete with a
+   panel, and its darkest, quietest region is the middle — exactly where the
+   densest UI sits.
+
+   ON body ITSELF, not on a body::before layer, and that is not a style
+   preference. A background set on body PROPAGATES to the canvas when html has
+   none, and the canvas is painted across the whole viewport beneath everything
+   — which beat a `body::before { z-index: -1 }` outright. Verified by forcing
+   that layer to solid red on the combat screen: it never appeared once.
+   Painting straight onto body uses the propagation instead of fighting it, and
+   needs no z-index, no pseudo-element and no stacking context.
+
+   `fixed` on the image so the room does not scroll with the content — the UI
+   moves through it rather than dragging it along.
+
+   THE SCRIM IS THE WHOLE JOB. Under a combat screen this has to read as depth
+   and never as detail, so two dark washes take the painting down to a hint. The
+   two faint corner glows the body already carried stay on top of it; they tint
+   the corners the wallpaper barely reaches. */
 body {
-  background: var(--bg);
   color: var(--text);
   font-family: 'JetBrains Mono', monospace;
   min-height: calc(var(--vh) * 100);
   overflow-x: hidden;
-  background-image:
+  background:
     radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0,240,208,0.07), transparent),
-    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(255,45,106,0.05), transparent);
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(255,45,106,0.05), transparent),
+    linear-gradient(to bottom, rgba(6,9,14,0.80) 0%, rgba(6,9,14,0.70) 45%, rgba(6,9,14,0.88) 100%),
+    radial-gradient(ellipse 130% 100% at 50% 45%, rgba(6,9,14,0.30) 0%, rgba(6,9,14,0.80) 100%),
+    url('../assets/ui/menu-wallpaper-chamber.jpg') center / cover no-repeat fixed;
+  background-color: var(--bg);
 }
+
 
 #app {
   max-width: min(1680px, 96vw);
@@ -1419,6 +1444,24 @@ body {
 }
 
 /* Action panel */
+/* ---- Panels over the room ------------------------------------------------
+   The three big combat surfaces are translucent so the chamber behind them
+   registers as depth instead of stopping dead at a panel edge. 0.82 is chosen
+   against the densest thing each one holds — a stat column, four skill cards, a
+   scrolling log — so the text still sits on a near-solid bed; the blur is what
+   keeps whatever shows through from reading as detail.
+
+   The ARENA CARD is deliberately left opaque: it carries its own zone painting,
+   and two paintings competing inside one frame is the one place this effect
+   would cost more than it buys. */
+.sidebar,
+.action-panel,
+.combat-log {
+  background: rgba(14, 18, 27, 0.82);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}
+
 .action-panel {
   background: var(--panel);
   border: 2px solid var(--border);
