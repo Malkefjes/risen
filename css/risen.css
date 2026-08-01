@@ -43,6 +43,10 @@
      which is the point of the class. Aliased rather than copied so it cannot
      drift from --text. */
   --base: var(--text);
+  /* The same colour as bare channels, for the rgba() alphas the title-screen
+     button edges need. Kept beside --base so the two cannot drift; if --text
+     ever moves, move this with it. */
+  --base-rgb: 238, 242, 255;
   --enemy: #fb7185;
   --xp: #fbbf24;
   /* WEAK's own blue. Its own variable rather than a reused strain colour so the
@@ -500,6 +504,27 @@ body {
   padding: clamp(10px, 1.5vh, 14px) 18px;
   font-size: clamp(0.68rem, 1.5vw, 0.8rem);
 }
+
+/* ---- Being tried: base Sonny's colour on the EDGE ONLY --------------------
+   The main-menu buttons take unmutated Sonny's white for their border and
+   nothing else. Face, label, hover wash and glow all stay the green they were
+   — this is a one-variable test of whether the menu wants a neutral edge, not
+   a recolour of the button.
+
+   Base's colour is --text, aliased not copied, because unmutated has no strain
+   tint. So the edge is the same white the unit names are, and the alphas below
+   are .ui-btn's own (0.28 rest, 0.62 primary, 0.75 hover) with only the hue
+   swapped — the weight difference between NEW GAME and SETTINGS is preserved
+   exactly.
+
+   Scoped to .title-btn on purpose. Strain select and the intro run on plain
+   .ui-btn and are untouched, so the two looks can be compared side by side.
+   Deleting this block is the whole revert. */
+.title-btn { border-color: rgba(var(--base-rgb), 0.28); }
+.title-btn.is-primary { border-color: rgba(var(--base-rgb), 0.62); }
+.title-btn:hover { border-color: rgba(var(--base-rgb), 0.75); }
+/* Quiet and disabled already edge in white at a low alpha, so they need no
+   override — they were base's hue before this block existed. */
 
 .title-foot { text-align: center; }
 .build-tag {
