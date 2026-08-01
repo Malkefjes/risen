@@ -1994,13 +1994,18 @@ body {
 
 /* Floats over whichever intro is running, out of the way in the corner. Sits
    above the staged fades, which is why it carries its own z-index. */
+/* is-quiet, at the intro BACK button's size. Sits a step below even that —
+   it interrupts a scene, so it should be findable and never inviting. */
 .skip-btn {
   position: fixed;
   right: 26px;
   bottom: 26px;
   z-index: 60;
-  opacity: 0.5;
-  letter-spacing: 2px;
+  padding: 10px 24px;
+  font-size: 0.7rem;
+  opacity: 0.72;
+  transition: opacity 0.18s ease, background 0.18s ease,
+              border-color 0.18s ease, color 0.18s ease;
 }
 .skip-btn:hover { opacity: 1; }
 
