@@ -642,11 +642,16 @@ body {
    opposite number, RESIST MUTATION, is the plain is-quiet grey, so the fork is
    colour against no colour at all, at the same size.
 
-   `OWNER:` TWO STRAINS, NOT THREE — sym orange was in the rotation and he took
-   it out. Two hues 180 degrees apart also read cleaner in motion than three at
-   120: each colour gets a long sweep instead of a third of the ring, so the
-   travel is visible rather than a churn. If a third ever goes back in, the
-   stops are the only thing that changes.
+   `OWNER:` TWO STRAINS, NOT THREE, AND NO BLEND BETWEEN THEM — sym orange was
+   in the rotation and he took it out, then the green-to-purple fade was going
+   through teal and he took that out too. Every pixel of the ring is now one
+   strain colour or the other. If a third ever goes back in, the stop list is
+   the only thing that changes.
+
+   One honest caveat: ::before is the same ring blurred, and a blur across a
+   hard edge does average the two sides. So the GLOW carries a short blended
+   arc at each of the two boundaries — about 18px of a 620px perimeter, soft
+   and dim. The crisp edge, which is what you actually read, has none.
 
    HOW IT IS BUILT, because the trick is not obvious. A conic-gradient cannot
    be a border-color, so the ring is a pseudo-element filled edge to edge with
@@ -689,8 +694,16 @@ body {
   position: absolute;
   border-radius: inherit;
   pointer-events: none;
+  /* HARD STOPS, NOT A FADE. Each colour is given a start AND an end angle, so
+     there is no interpolation anywhere on the ring — half is bio, half is psy,
+     and the two boundaries are instantaneous.
+     A fade between these two specific colours cannot stay in the family: bio
+     is #7dffa0 and psy is #c084fc, and their midpoint in sRGB is #9EC2CE, a
+     pale blue-teal that belongs to neither strain. Every gradient version of
+     this button therefore spent a third of its ring showing a colour that is
+     not in the game. */
   background: conic-gradient(from var(--flow-angle),
-    var(--bio) 0deg, var(--psy) 180deg, var(--bio) 360deg);
+    var(--bio) 0deg 180deg, var(--psy) 180deg 360deg);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
           mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
