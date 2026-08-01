@@ -150,12 +150,10 @@ body {
 #combat-screen.staged .hud,
 #combat-screen.staged .combat-header,
 #combat-screen.staged .action-panel,
-#combat-screen.staged .combat-log,
 #combat-screen.staged .sidebar { opacity: 0; }
 #combat-screen.staged.reveal .hud,
 #combat-screen.staged.reveal .combat-header,
 #combat-screen.staged.reveal .action-panel,
-#combat-screen.staged.reveal .combat-log,
 #combat-screen.staged.reveal .sidebar { opacity: 1; transition: opacity 1s ease; }
 /* Hold black ~1s, then a slow arena fade-in. */
 #combat-screen.staged .battlefield { opacity: 0; animation: fadeIn 1.3s ease 1s forwards; }
@@ -1691,8 +1689,7 @@ body {
    and two paintings competing inside one frame is the one place this effect
    would cost more than it buys. */
 .sidebar,
-.action-panel,
-.combat-log {
+.action-panel {
   background: rgba(14, 18, 27, 0.90);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -1916,61 +1913,6 @@ body {
   50% { opacity: 1; }
 }
 
-.combat-log {
-  margin-top: 0;
-  background: #0a0d14;
-  border: 1px solid var(--border);
-  height: 120px;
-  min-height: 100px;
-  overflow-y: auto;
-  padding: 10px 14px;
-  font-size: 0.8rem;
-  line-height: 1.55;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
-}
-.combat-log::-webkit-scrollbar { width: 6px; }
-.combat-log::-webkit-scrollbar-track { background: transparent; }
-.combat-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-/* Log lives in the sidebar tab now — let it fill the panel. */
-#tab-log .combat-log {
-  flex: 1;
-  height: auto;
-  min-height: 0;
-}
-.log-entry { padding: 1px 0; border-left: 2px solid transparent; padding-left: 6px; margin-left: -2px; white-space: pre-wrap; }
-.log-entry.important { border-left-color: rgba(0,240,208,0.45); }
-.log-entry.damage { border-left-color: rgba(251,113,133,0.4); }
-.log-entry.heal { border-left-color: rgba(125,255,160,0.4); }
-.log-entry.xp { border-left-color: rgba(251,191,36,0.4); }
-.log-entry.level { border-left-color: rgba(251,191,36,0.7); }
-
-/* The log is a transcript with two levels: headers that say WHOSE turn or
-   WHICH wave, and the events that happened inside them. Events are indented
-   under their header so a glance down the column separates the two without
-   reading a word — which is the whole reason the turn markers exist. */
-/* Hanging indent: the sidebar is narrow enough that a qualifier list wraps
-   often, and a wrapped line starting level with the first reads as a new
-   event. The negative text-indent puts the first line at 20px and every
-   continuation at 28px, so one event stays visibly one block. */
-.log-entry.ev { padding-left: 28px; text-indent: -8px; }
-.log-entry.turn, .log-entry.wave {
-  margin-top: 7px;
-  letter-spacing: 1.5px;
-  font-size: 0.72rem;
-  color: var(--muted);
-}
-/* Whose turn it is is carried by the rail colour, the same white/red split the
-   turn-info strip above the skills uses, so the two never have to be reconciled. */
-.log-entry.turn.you { border-left-color: rgba(238,242,255,0.55); color: var(--text); }
-.log-entry.turn.foe { border-left-color: rgba(251,113,133,0.55); color: #fb7185; }
-.log-entry.wave { border-left-color: rgba(0,240,208,0.6); color: var(--accent); margin-top: 12px; }
-.log-entry.wave.boss { border-left-color: var(--accent2); color: var(--accent2); }
-/* The wave header's second line: the enemy's actual numbers. Muted because it
-   is reference material, not an event. */
-.log-entry.spec { padding-left: 20px; font-size: 0.74rem; }
-.log-entry:first-child { margin-top: 0; }
 
 /* ===== COMBAT LAYOUT + SIDEBAR ===== */
 .combat-layout {
@@ -2289,13 +2231,6 @@ body.stat-colors-on .side-stat-row {
 }
 .derived-item .delta.on { opacity: 1; }
 
-.log-entry { color: var(--muted); }
-.log-entry.important { color: var(--accent); }
-.log-entry.damage { color: #fb7185; }
-.log-entry.heal { color: var(--bio); }
-.log-entry.xp { color: var(--xp); }
-.log-entry.level { color: #fbbf24; font-weight: 600; }
-/* border accents are defined earlier with the combat-log block */
 
 
 /* ===== STATS MODAL ===== */

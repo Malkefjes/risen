@@ -357,28 +357,18 @@ function clearFloaters() {
 //  5. NO PROSE. "The rot festers" told the player nothing they could act on;
 //     "POISON ×4 → TOXIN +32%" tells them the trade they just made. Flavour
 //     belongs on the skill cards, which have room for it.
-const LOG_MAX = 400;
-
+// THE LOG IS AN INSTRUMENT NOW, NOT A PANEL. The on-screen LOG tab is gone;
+// what these calls still feed is the headless transcript, which is what
+// tools/autopsy.mjs parses for "killed by" and "which skills fire" and what
+// tools/transcript.mjs dumps. On screen this is a no-op, so the `type` argument
+// every caller passes is kept and ignored rather than stripped from 40 sites.
 function log(msg, type) {
-  // Headless keeps the transcript — it is the cheapest way to see why a
-  // simulated run went the way it did — just not in the DOM.
-  if (HEADLESS.on) {
-    HEADLESS.log.push(msg);
-    if (HEADLESS.log.length > HEADLESS.logCap) HEADLESS.log.shift();
-    return;
-  }
-  const el = document.getElementById('combat-log'); if (!el) return;
-  const entry = document.createElement('div');
-  entry.className = 'log-entry ' + (type || '');
-  entry.textContent = msg;
-  el.appendChild(entry);
-  while (el.children.length > LOG_MAX) el.removeChild(el.firstChild);
-  el.scrollTop = el.scrollHeight;
+  if (!HEADLESS.on) return;
+  HEADLESS.log.push(msg);
+  if (HEADLESS.log.length > HEADLESS.logCap) HEADLESS.log.shift();
 }
 
-// Units name themselves the same way everywhere in the log. The player is
-// "You" rather than "Sonny" because the log is read from behind their eyes,
-// and it is two characters instead of five on every line that mentions them.
+// Units name themselves the same way everywhere in the transcript.
 function logName(u) { return !u ? '—' : (u.isPlayer ? 'You' : u.name); }
 
 // Amounts are integers, formatted the way every other number in the game is.
@@ -423,7 +413,7 @@ function logTurn(unit) {
   log('T' + state.turnNo + ' · ' + logName(unit).toUpperCase(),
       'turn ' + (unit && unit.isPlayer ? 'you' : 'foe'));
 }
-function clearLog(){ const el=document.getElementById('combat-log'); if(el) el.innerHTML=''; }
+function clearLog(){ if (HEADLESS.on) HEADLESS.log.length = 0; }
 
 // Pause when the tab is hidden so nothing accumulates in the background.
 document.addEventListener('visibilitychange', () => {

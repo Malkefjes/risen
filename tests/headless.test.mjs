@@ -37,13 +37,11 @@ export default async function ({ page, ok }) {
              savedWave: JSON.parse(localStorage.getItem(slotKey(1)) || '{}').wave,
              keys: Object.keys(localStorage).length,
              floaters: document.querySelectorAll('.float-dmg').length,
-             logNodes: document.querySelectorAll('#combat-log .log-entry').length,
              flagCleared: HEADLESS.on === false };
   });
   ok('a sim does not move the UI', safety.before === safety.after, safety.before + ' -> ' + safety.after);
   ok('a sim does not touch the save slots', safety.savedWave === 9 && safety.keys === 1, JSON.stringify(safety));
   ok('a sim draws no floaters', safety.floaters === 0, String(safety.floaters));
-  ok('a sim writes no log nodes', safety.logNodes === 0, String(safety.logNodes));
   ok('HEADLESS.on is restored afterwards', safety.flagCleared);
 
   // Cosmetic randomness must not share the rules' RNG stream. Drawing a damage

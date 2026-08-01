@@ -1,5 +1,8 @@
-// The build stamp must reach all three places it claims to, and must not be
-// derived from BALANCE.saveKey — coupling them would wipe saves on a typo fix.
+// The build stamp must reach both places it claims to — the title screen and
+// the save — and must not be derived from BALANCE.saveKey, since coupling them
+// would wipe saves on a typo fix. It used to have a third place, the first line
+// of the on-screen combat log; that log is an instrument now and no longer
+// drawn, so the resume check below reads the save instead.
 export default async function ({ page, ctx, ok }) {
   const v = await page.evaluate(()=>BUILD);
   console.log('build version:', v, '\n');
@@ -20,18 +23,23 @@ export default async function ({ page, ctx, ok }) {
   await page.click('#start-btn');
   await page.click('#skip-btn');
   await page.waitForFunction(()=>state.player&&state.combatActive);
-  const first = await page.evaluate(()=>document.querySelector('#combat-log .log-entry')?.textContent);
-  ok('combat log opens with the build line', first === 'RISEN · build '+v, first);
-
   await page.evaluate(()=>{ state.wave=4; saveRun(); });
   ok('the save records the build', await page.evaluate(()=>slotData(1)?.build) === v,
      String(await page.evaluate(()=>slotData(1)?.build)));
 
-  // Resuming must re-stamp, not inherit the saved build.
+  // Resuming must RE-STAMP, not inherit. Backdating the stored stamp is what
+  // makes the difference visible: if the next save carries 'ancient-build'
+  // forward, serializeRun is copying what it loaded instead of writing BUILD.
+  await page.evaluate(()=>{
+    const d = JSON.parse(localStorage.getItem(slotKey(1)));
+    d.build = 'ancient-build';
+    localStorage.setItem(slotKey(1), JSON.stringify(d));
+  });
   await page.click('.sidebar-tab[data-tab="menu"]'); await page.click('#tab-menu .btn-ghost');
   await page.click('#continue-btn');
   await page.click('#save-list .save-slot:nth-child(1) .save-slot-body');
   await page.waitForFunction(()=>state.player&&state.combatActive);
-  const firstResumed = await page.evaluate(()=>document.querySelector('#combat-log .log-entry')?.textContent);
-  ok('a resumed run also opens with the build line', firstResumed.startsWith('RISEN · build '+v), firstResumed);
+  await page.evaluate(()=>saveRun());
+  const resaved = await page.evaluate(()=>slotData(1)?.build);
+  ok('a resumed run re-stamps the build rather than inheriting it', resaved === v, String(resaved));
 }

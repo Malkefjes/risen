@@ -395,7 +395,6 @@ function switchTab(tabId) {
   const from = activeTabId();
   if (tabId === 'menu' && from !== 'menu') _tabBeforeMenu = from || 'stats';
   showSidebarTab(tabId);
-  if (tabId === 'log') { const el = document.getElementById('combat-log'); if (el) el.scrollTop = el.scrollHeight; }
 }
 
 // Changing runs: park the sidebar back on STATS so the next run does not open
