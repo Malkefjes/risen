@@ -167,7 +167,7 @@
 // KEEP THIS SEPARATE FROM BALANCE.saveKey. That one answers "are saved runs
 // still valid" and is bumped only when a change makes an old sheet wrong.
 // Deriving it from this would wipe every save on a typo fix.
-const BUILD = '2026-08-01';
+const BUILD = '2026-08-01b';
 
 const BALANCE = {
   player: {
@@ -590,19 +590,52 @@ const BALANCE = {
     // everything at once) finally being a curve instead of a plateau.
     //
     // PER FIGHT, NOT PER RUN, and that is forced arithmetic rather than taste.
-    // Resolve comes +1 a landed hit AND +1 a hit taken, so it accrues every
-    // single turn; carried across a run it would pass the reduction cap
-    // somewhere in act 1 and sit there for the rest of the game, which is not
-    // a break, it is an off switch. Per fight it starts at nothing and has to
-    // be rebuilt every time — the same shape as DREAD, and the reason sym's
-    // THORNS stays the only mechanic in the game that is run-permanent.
+    // Resolve comes +1 a landed hit and resolvePerHit a hit TAKEN, so it
+    // accrues every single turn; carried across a run it would pass the
+    // reduction cap somewhere in act 1 and sit there for the rest of the game,
+    // which is not a break, it is an off switch. Per fight it starts at nothing
+    // and has to be rebuilt every time — the same shape as DREAD, and the
+    // reason sym's THORNS stays the only mechanic in the game that is
+    // run-permanent.
     //
     // The reduction is linear per stack and the SUM with Brace is capped hard
     // in applyEnemyDamage — uncapped number, bounded effect. Overinvestment is
     // never wasted, because everything past the cap still cashes out through
     // Last Stand.
+    //
+    // ---- THE BUILD RATE IS THE LEVER, NOT THE PAYOUT ----------------------
+    // Both halves were swept before this moved, base only, 40 runs a cell.
+    // What a stack PAYS barely matters: resolveDR from x0 to x5 took the spread
+    // build 10w -> 15w, and most of that arrives past x3. How fast the pile
+    // BUILDS is where the class lives: resolvePerHit 1 -> 8 took it 12w -> 23w,
+    // still climbing at the end of the sweep.
+    //
+    // That asymmetry is the class stating what it is. Enduring is the verb, so
+    // the number that answers to being hit is the one with the class in it —
+    // and raising it sharpens base's sentence rather than blurring it, because
+    // a landed hit still gives exactly +1 through Strike's buildsResolve. At +3
+    // taking the blow is worth three times dealing one.
+    //
+    // 1 -> 3 because base was the outlier and nothing else was close: at +1 the
+    // spread build reached 12w against 13/17/15 for bio/psy/sym, and at +3 it
+    // reaches 14w — INSIDE the pack, not past it. The rest of the measured
+    // curve, if this wants moving: +2 13w, +4 15w, +6 20w, +8 23w.
+    //
+    // THE CAP IS NOT THE CONSTRAINT, which was worth checking before touching
+    // the rate: RESOLVE measured at the moment of every enemy hit sits at a
+    // median of 4 stacks (12% reduction) at +3, and 0% of hits land against a
+    // capped guard. Even +8 only pins 10% of them. The ramp stays a ramp at
+    // every value here — the plateau this mechanic was rebuilt to escape is
+    // nowhere near.
+    //
+    // ONE INTERACTION WORTH KNOWING, and it is a happy one: Speed does not
+    // benefit. More of your turns means fewer of the enemy's, and the enemy's
+    // turns are what feed this — so an all-Speed base sat at 12-15w across the
+    // WHOLE sweep while spread and Vitality climbed. Enduring and evading pull
+    // against each other, which is thematically right and means this lever
+    // cannot feed the build that is already strongest.
     resolveDR: 0.03,       // Unmutated: each held Resolve = 3% flat damage reduction
-    resolvePerHit: 1,      // Unmutated: Resolve gained whenever you take a hit
+    resolvePerHit: 3,      // Unmutated: Resolve gained whenever you take a hit
     reloadHpFloor: 0.15    // deliberate mercy: continuing a run never puts you below this
   },
   enemy: {
