@@ -1192,9 +1192,6 @@ function showResultScreen() {
   const p = state.player;
   const mins = Math.max(1, Math.round((Date.now() - state.runStart) / 60000));
   showScreen('result-screen');
-  const title = document.getElementById('result-title');
-  title.textContent = won ? 'RISEN' : 'DEFEATED';
-  title.className = 'result-title ' + (won ? 'win' : 'lose');
 
   const esc = t => String(t).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
   const zone = zoneForWave(waveReached());
@@ -1246,6 +1243,8 @@ function showResultScreen() {
 
   document.getElementById('result-stats').innerHTML =
     '<div class="rs-card ' + p.class + '">' +
+      '<div class="rs-verdict ' + (won ? 'win' : 'lose') + '">' +
+        (won ? 'RISEN' : 'DEFEATED') + '</div>' +
       '<div class="rs-head">' +
         '<span class="rs-class">' + esc(CLASSES[p.class].name) + '</span>' +
         '<span class="rs-story">' + story + '</span>' +
@@ -1290,6 +1289,9 @@ function showResultScreen() {
       '<div class="rs-foot">' +
         '<button class="rs-copy" onclick="copyRunReport(this)">COPY RUN REPORT</button>' +
         '<span class="rs-build">build ' + BUILD + '</span>' +
+      '</div>' +
+      '<div class="rs-actions">' +
+        '<button class="ui-btn is-quiet" onclick="goToMenu()">MAIN MENU</button>' +
       '</div>' +
     '</div>';
 }

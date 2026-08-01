@@ -671,6 +671,7 @@ body {
 }
 .intro-choice.is-primary:hover { border-color: rgba(125, 255, 160, 0.95); }
 
+
 @media (max-width: 560px) {
   .intro-fork { grid-template-columns: 1fr; max-width: 320px; }
 }
@@ -2418,30 +2419,36 @@ body {
   gap: 12px;
 }
 
-/* Result / Game Over */
-#result-screen { text-align: center; padding-top: 80px; }
-
-.result-title {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 2.5rem;
-  margin-bottom: 14px;
-  letter-spacing: 3px;
+/* Result / Game Over — one card, sized to fit the window without scrolling. */
+#result-screen.active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(var(--vh) * 100 - 48px);
+  text-align: center;
 }
+.result-stats { width: 100%; color: var(--muted); font-size: 0.95rem; }
 
-.result-title.win {
+.rs-verdict {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(1.5rem, 3.4vh, 2.1rem);
+  letter-spacing: 4px;
+  text-align: center;
+  padding: clamp(10px, 1.8vh, 18px) 18px clamp(8px, 1.4vh, 14px);
+  border-bottom: 1px solid var(--border);
+}
+.rs-verdict.win {
   background: linear-gradient(135deg, var(--accent), var(--bio));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+.rs-verdict.lose { color: var(--accent2); }
 
-.result-title.lose { color: var(--accent2); }
+.rs-actions { padding: 12px 18px 14px; border-top: 1px solid var(--border); }
+.rs-actions .ui-btn { width: 100%; }
 
-.result-stats {
-  color: var(--muted);
-  margin-bottom: 36px;
-  line-height: 1.8;
-  font-size: 0.95rem;
-}
+/* A short window trims the card's padding rather than scrolling: the run report
+   is a single glance, and half of it below the fold is not one. */
 
 /* ---- Result screen -------------------------------------------------------
    SKIMMABLE FIRST. Three tiers of weight, so the eye lands in the right order:
@@ -2455,17 +2462,21 @@ body {
    encode a difference that is not there. */
 .rs-card {
   --rc: var(--text);
-  max-width: 620px;
+  max-width: min(880px, 96vw);
   margin: 0 auto;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  background: rgba(6, 11, 10, 0.68);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(var(--rc-rgb, var(--base-rgb)), 0.50);
+  border-radius: 6px;
+  box-shadow: 0 0 26px rgba(var(--rc-rgb, var(--base-rgb)), 0.20),
+              inset 0 0 40px rgba(var(--rc-rgb, var(--base-rgb)), 0.05);
   overflow: hidden;
   text-align: left;
 }
-.rs-card.bio { --rc: var(--bio); }
-.rs-card.psy { --rc: var(--psy); }
-.rs-card.sym { --rc: var(--sym); }
+.rs-card.bio { --rc: var(--bio); --rc-rgb: 125, 255, 160; }
+.rs-card.psy { --rc: var(--psy); --rc-rgb: 192, 132, 252; }
+.rs-card.sym { --rc: var(--sym); --rc-rgb: 251, 146, 60; }
 
 .rs-head { padding: 14px 18px 12px; border-bottom: 1px solid var(--border); }
 .rs-class {
@@ -2513,12 +2524,12 @@ body {
 
 .rs-body {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 20px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0 16px;
   padding: 4px 18px 12px;
 }
 .rs-sec { padding: 12px 0 4px; min-width: 0; }
-.rs-wide { grid-column: 1 / -1; }
+.rs-wide { grid-column: auto; }
 .rs-sec h4 {
   font-size: 0.6rem; letter-spacing: 1.8px;
   color: var(--muted); font-weight: 600;
@@ -2567,12 +2578,13 @@ body {
    down the column, which is the only reason a bar beats a number here. */
 .rs-bar {
   display: grid;
-  grid-template-columns: 96px 1fr 58px 34px;
+  grid-template-columns: minmax(0, 64px) minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
-  padding: 4px 0;
-  font-size: 0.8rem;
+  gap: 7px;
+  padding: 3px 0;
+  font-size: 0.72rem;
 }
+.rs-bar-p { display: none; }
 .rs-bar-k { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rs-bar-track {
   height: 7px; border-radius: 4px;
@@ -2624,6 +2636,20 @@ body {
   font-size: 0.66rem; color: var(--muted); white-space: nowrap;
 }
 
+@media (max-height: 860px) {
+  .rs-verdict { font-size: 1.4rem; padding-top: 8px; padding-bottom: 6px; }
+  .rs-head { padding: 8px 18px 7px; }
+  .rs-hero { padding: 7px 8px 6px; }
+  .rs-hero-v { font-size: 1.25rem; }
+  .rs-sec { padding: 8px 0 3px; }
+  .rs-foot { padding: 8px 18px 9px; }
+  .rs-actions { padding: 8px 18px 10px; }
+}
+
+@media (max-width: 900px) {
+  .rs-body { grid-template-columns: 1fr 1fr; }
+  .rs-wide { grid-column: 1 / -1; }
+}
 @media (max-width: 560px) {
   .rs-body { grid-template-columns: 1fr; }
   .rs-heroes { grid-template-columns: repeat(2, 1fr); }
@@ -2632,8 +2658,6 @@ body {
   .rs-bar { grid-template-columns: 76px 1fr 52px 30px; gap: 8px; font-size: 0.75rem; }
   .rs-foot { flex-direction: column; align-items: stretch; }
   .rs-build { text-align: center; }
-}
-
 }
 
 /* Last resort. Everything above exists so this fires as late as possible:
