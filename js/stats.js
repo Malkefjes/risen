@@ -560,6 +560,22 @@ function healAnchorFor(unit) {
   return Math.max(1, unit.healAnchor || unit.maxHp);
 }
 
+// Rolls a heal crit and returns the MULTIPLIER, so a caller can price the whole
+// heal before spending anything on it — which is what lets a crit Shed cost
+// FEWER thorns instead of overhealing with the same handful.
+//
+// Math.random, not cosmeticRandom: this moves HP, so it belongs to the rules
+// stream like every other roll that decides an outcome.
+//
+// Enemies never crit-heal. The vampiric elite's lifesteal is a share of a blow
+// it already landed, and rolling a second time on top would be two rolls for
+// one bite.
+function healCritMult(unit) {
+  if (!unit || !unit.isPlayer) return 1;
+  const chance = Math.min(1, Math.max(0, unit.critChance || 0));
+  return Math.random() < chance ? (BALANCE.player.critHealMult || 1) : 1;
+}
+
 // Turn rate is the one number that had no meaning in a turn-based game: "1.15x"
 // of what? It is a RATIO — your turns per turn of whoever you are facing — so
 // that is what it reports, falling back to the raw gauge rate when there is

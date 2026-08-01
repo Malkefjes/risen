@@ -312,6 +312,31 @@ const BALANCE = {
     // so it is a ceiling you touch rather than one you sit against. Points past
     // it still buy crit damage below, so nothing is ever wasted.
     critMultBase: 1.0, critMultPerInstinct: 0.25,   // crit damage = x(1 + 0.25 x Instinct)
+    // ---- CRIT HEALS -------------------------------------------------------
+    // A HEAL YOU PRESS CAN CRIT, on the same chance as a blow. This is JUICE
+    // AND IS PRICED AS JUICE, which is worth stating because it was measured
+    // first as an Instinct fix and does not work as one.
+    //
+    // Measured before it was built, 30-40 runs a cell: running heals through
+    // the full DAMAGE crit formula — ~76% chance of x10.5 at a run's end, an
+    // 8x average multiplier on all sustain — bought an all-Instinct build
+    // +0 to +3 waves and left it last in every strain. At x1.5 or x2 the gain
+    // was zero to one. Healing throughput is simply not what is killing a
+    // build that is thin everywhere else, which is the same lesson the heal
+    // anchor taught from the other side. Instinct's real answer is the parked
+    // note in the header: scaling what a CHARGE is worth.
+    //
+    // So it gets its OWN flat multiplier and never touches critMult. A crit
+    // that scaled with Instinct would quietly rebuild the coupling the anchor
+    // just removed, in a stat that has an even steeper curve than Vitality
+    // did. Flat means the gold number is a moment, not an economy.
+    //
+    // TICKS DO NOT CRIT, ACTIONS DO — already true of damage (poison and bleed
+    // tick flat) and now true of healing, so REGEN, SIPHON and HARVEST stay
+    // steady while Bandage, Shed and DEVOUR can spike. It keeps the CRIT tag
+    // an event: a drip that crits every third turn teaches you to stop reading
+    // it.
+    critHealMult: 2.0,
     // A CRIT FEEDS YOUR STRAIN — PARKED AT 0 FOR ALL FOUR STRAINS. Psy was the
     // exception and is not any more: its fear rode crits, which meant the
     // strain's number was fed by a roll on top of an attack rather than by the

@@ -367,14 +367,17 @@ function thornsGrowthFor(p, damage) {
 // that max HP cannot hold — see the balance header). Only GROWN thorns are
 // spendable; the innate share of max HP is a floor, so shedding can never leave
 // you blunt.
-function shedForHeal(p, skill, already, notes) {
+function shedForHeal(p, skill, already, notes, critMult) {
   const grown = p.thornsGrown || 0;
   if (grown <= 0) { notes.push('nothing grown to shed'); return 0; }
   // What a thorn is WORTH is sustain, so it prices off the anchor. What you are
   // MISSING is a fact about your actual bar and stays on maxHp — a wide sym
   // still has a wide hole to fill, it just no longer fills it faster for being
   // wide.
-  const perThorn = Math.max(1, Math.floor(healAnchorFor(p) * (skill.hpPerThorn || 0)));
+  // The crit rides the exchange RATE, not the count: each spine is worth more,
+  // so the wound needs fewer of them. Passed in rather than rolled again — one
+  // press is one roll.
+  const perThorn = Math.max(1, Math.floor(healAnchorFor(p) * (skill.hpPerThorn || 0) * (critMult || 1)));
   const missing = Math.max(0, p.maxHp - p.hp - already);
   // At least one whenever anything is grown: floor()ing the cap alone would
   // make Shed a plain heal for the whole of act 1, which reads as the skill
@@ -597,13 +600,18 @@ function creditCrit(p, e) {
 // floater and a log line even when it lands on a full bar.
 function devour(p, stacks, why) {
   if (!p || p.class !== 'psy' || !(stacks > 0) || p.hp <= 0) return;
-  const heal = Math.max(1, Math.floor(healAnchorFor(p) * (P().dreadFeedFrac || 0) * stacks));
+  // The burst half of psy's sustain is an ACTION — Kill spending the pile, or
+  // the pile cashing out on a death — so it crits. The SIPHON drip beside it
+  // does not; that is the tick.
+  const critMult = healCritMult(p);
+  const heal = Math.max(1, Math.floor(healAnchorFor(p) * (P().dreadFeedFrac || 0) * stacks * critMult));
   const before = p.hp;
   p.hp = Math.min(p.maxHp, p.hp + heal);
   const gained = p.hp - before;
-  if (gained > 0) floatText(p, gained, 'heal');
+  if (gained > 0) floatText(p, gained, 'heal', critMult > 1);
   logHeal('DEVOUR', p, gained, [
     'DREAD ×' + stacks + ' @ ' + Math.round((P().dreadFeedFrac || 0) * 100) + '% of ' + logNum(healAnchorFor(p)),
+    critMult > 1 ? 'CRIT ×' + critMult : null,
     why,
     gained < heal ? 'overheal ' + (heal - gained) : null,
     logNum(p.hp) + '/' + logNum(p.maxHp)
@@ -868,14 +876,20 @@ function fireSkill(caster, skill, target) {
       if (bonus > 0) notes.push('RESOLVE ×' + statusStacks(caster, 'resolve') + ' +' + Math.round(bonus * 100) + '%');
     }
     notes.push(Math.round(frac * 100) + '% of ' + logNum(healAnchorFor(caster)));
-    let amount = Math.max(1, Math.floor(healAnchorFor(caster) * frac));
+    // Rolled BEFORE the amount so the crit is priced into everything below it,
+    // Shed's thorn cost included — a crit patch closes the same wound with
+    // half the spines, rather than tearing off the usual handful and wasting
+    // the surplus on a bar that cannot hold it.
+    const critMult = healCritMult(caster);
+    if (critMult > 1) notes.push('CRIT ×' + critMult);
+    let amount = Math.max(1, Math.floor(healAnchorFor(caster) * frac * critMult));
     // Sym: SHED covers whatever the base patch did not, out of grown thorns —
     // computed after the base amount so it only ever pays for the remainder.
-    if (skill.shedFuel) amount += shedForHeal(caster, skill, amount, notes);
+    if (skill.shedFuel) amount += shedForHeal(caster, skill, amount, notes, critMult);
     const before = caster.hp;
     caster.hp = Math.min(caster.maxHp, caster.hp + amount);
     const restored = caster.hp - before;
-    floatText(caster, amount, 'heal');
+    floatText(caster, amount, 'heal', critMult > 1);
     // The amount RESTORED, not the amount rolled: healing into a nearly-full
     // bar is the case where those two differ, and the restored number is the
     // one that actually happened. The overheal is named so the gap is not a

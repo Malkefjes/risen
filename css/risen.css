@@ -2523,6 +2523,14 @@ body.stat-colors-on .side-stat-row {
   text-shadow: 0 2px 8px rgba(0,0,0,0.9), 0 0 14px currentColor;
   animation: floatUpCrit 1.3s ease forwards;
 }
+/* A CRIT HEAL STAYS GREEN. Colour names the EVENT, and the event is healing —
+   letting the crit repaint it gold would put a heal in the XP family and break
+   the one rule the floater vocabulary has. It still reads as a crit from the
+   corner of the eye: it keeps the crit's size, weight, glow and overshoot, and
+   the gold CRIT tag rides alongside the number instead of consuming it. The
+   tag is the crit; the colour is the deed. */
+.float-dmg.crit.heal { color: #7dffa0; }
+
 .float-dmg .crit-tag {
   font-size: 0.55em;
   font-weight: 800;
