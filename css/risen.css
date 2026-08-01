@@ -713,11 +713,11 @@ body {
 }
 
 .class-card {
-  width: min(300px, 88vw);
+  width: min(340px, 88vw);
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 26px 22px 24px;
+  padding: 30px 26px 28px;
   text-align: center;
   cursor: pointer;
   position: relative;
@@ -773,7 +773,7 @@ body {
 
 .class-preview {
   width: 100%;
-  height: clamp(120px, 15vh, 150px);
+  height: clamp(134px, 16.5vh, 166px);
   margin: 0 auto 18px;
   position: relative;
   display: flex;
@@ -788,7 +788,7 @@ body {
 }
 
 /* .char-figure derives width and shadow from this. */
-.class-preview .char-figure { --sprite-h: clamp(104px, 12.5vh, 130px); }
+.class-preview .char-figure { --sprite-h: clamp(116px, 14vh, 146px); }
 
 .class-name {
   font-family: 'Orbitron', sans-serif;
@@ -821,8 +821,8 @@ body {
 }
 .class-actions .ui-btn { min-width: 190px; }
 
-/* Three cards need ~984px. Below that go to one column, not a 2 + 1 wrap. */
-@media (max-width: 1000px) {
+/* Three cards need ~1104px. Below that go to one column, not a 2 + 1 wrap. */
+@media (max-width: 1120px) {
   .classes { flex-direction: column; align-items: center; }
 }
 
