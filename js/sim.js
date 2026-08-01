@@ -102,7 +102,7 @@ function dumbAllocate() { return ROTATE_STATS[Math.floor(Math.random() * ROTATE_
 // stats and the sheet stays even the whole way up. The old per-strain plan
 // tables allocated per LEVEL against a 4-stat order, which meant a class whose
 // plan named Vitality last had none of it until its fifth level — psy played
-// all of act 1 on a 100 HP bar and the bracket read that as psy being weak.
+// all of zone 1 on a 100 HP bar and the bracket read that as psy being weak.
 // A plan that decides the run more than the piloting does is not a bot, it is
 // a build, and it belongs to whoever is playing.
 function rotateAllocate(p) {

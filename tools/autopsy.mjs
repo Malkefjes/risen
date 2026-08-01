@@ -16,7 +16,7 @@
 //      that has since been deleted.
 //   4. THE DANGER CURVE — how many of your own turns a fight gives you before
 //      its hits add up to your bar. Hits-to-die alone lies, because you act
-//      more often than it does. This is the number that showed act 2 going
+//      more often than it does. This is the number that showed zone 2 going
 //      flat while every other reading looked fine.
 //
 // ---- THE ALLOCATION PROBLEM, which decides whether any of it is true -------
@@ -126,8 +126,16 @@ const out = await page.evaluate(({ RUNS, CLS }) => {
   // Strains share one stat sheet, so this is a property of the enemy table
   // against a chosen allocation, not of a class. Measured at each boss wave
   // with the sheet a run of that allocation actually arrives holding.
+  //
+  // The boss waves are DERIVED, not listed: this used to be a literal
+  // [5,10,15,20,25,30] and would have gone on reporting a 30-wave game forever
+  // after the run grew to 45. Anything that hardcodes the shape of the run is a
+  // reading that silently stops being about the game.
   const curve = [];
-  for (const wave of [5, 10, 15, 20, 25, 30]) {
+  const BOSS_WAVES = [];
+  for (let w = BALANCE.bossEvery; w <= BALANCE.finalWave; w += BALANCE.bossEvery)
+    BOSS_WAVES.push(w);
+  for (const wave of BOSS_WAVES) {
     const row = { wave };
     for (const plan of [PLANS[0], { name:'invested', stats:['vit','speed'] }]) {
       const hp = [], rate = [];

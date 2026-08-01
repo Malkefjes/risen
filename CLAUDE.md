@@ -183,14 +183,22 @@ did not say.
 - **The player sheet is the anchor** (5/5/5/5, 25 dmg, 100 HP, 1.00 turn
   rate); enemies are fitted to it and computed by separate functions. See
   the header comment in `js/data.js` before touching balance.
-- **The run is 30 waves across two acts**, a boss every 5th, and winning means
-  clearing wave 30. A level grants exactly 3 stat points (`pointsPerLevel`).
-  **Measured, not assumed:** L6 (15 points) arriving at wave 15, L8 (21) at
-  wave 20, L11 (30) at wave 30, L12 (33) on a finish. The balance notes that
-  say "~18-20 points" describe a run that ENDS around wave 15 — they were
-  written when that was a good run — so act 2 is met by a sheet roughly double
-  what the enemy table was fitted against. See the note under `xp` in
-  `js/data.js` for the full table.
+- **The run is 45 waves across three ZONES** — The Laboratory, MCP Encampment,
+  City Streets — a boss every 5th, and WINNING MEANS CLEARING WAVE 45. The
+  whole run is act 1; the zone is the unit that shapes difficulty. Read the
+  count off `BALANCE.finalWave`, never from a literal: a hardcoded 30 in
+  `tools/autopsy.mjs` went on reporting a 30-wave game after the run grew.
+  A level grants exactly 3 stat points (`pointsPerLevel`).
+  **Measured, not assumed** — median level at each boss wave:
+  L6 (15 points) at wave 15, L8 (21) at 20, L11 (30) at 30, L15 (42) at 45.
+  Waves past 30 were measured with survivability inflated so a bot could reach
+  them at all; that reads the XP curve, not the difficulty.
+  Two consequences worth holding: the balance notes that say "~18-20 points"
+  describe a run that ENDS around wave 15, so the enemy table is fitted against
+  a sheet roughly HALF what the back half of the run actually meets; and across
+  waves 15-45 the enemy grows 5.1x while the player grows 2.35x, which is why
+  the telegraph multiplier has to shrink every zone (4.0 / 2.5 / 1.6). That
+  mismatch is a known open thread, not a settled design.
 - **No changelog files.** Git history is the changelog; commit messages
   carry the detail.
 
@@ -204,7 +212,7 @@ did not say.
   guard opening and the drip at once, so holding was correct at every count and
   the finisher was a card you never pressed.
   Psy's old bracket column was an artefact of the bot, not the class — the
-  retired per-strain plan tables named Vitality last, so psy played all of act 1
+  retired per-strain plan tables named Vitality last, so psy played all of zone 1
   on a 100 HP bar. Both bots spread points evenly now and the column is about
   psy again.
 - Cooldown reduction is a live seam with no source.

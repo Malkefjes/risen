@@ -394,7 +394,7 @@ function shedForHeal(p, skill, already, notes, critMult) {
   const perThorn = Math.max(1, Math.floor(healAnchorFor(p) * (skill.hpPerThorn || 0) * (critMult || 1)));
   const missing = Math.max(0, p.maxHp - p.hp - already);
   // At least one whenever anything is grown: floor()ing the cap alone would
-  // make Shed a plain heal for the whole of act 1, which reads as the skill
+  // make Shed a plain heal for the whole of zone 1, which reads as the skill
   // being broken rather than as sustain being tight.
   const cap = Math.max(1, Math.floor(grown * (skill.capFrac || 0.25)));
   const shed = Math.max(0, Math.min(Math.ceil(missing / perThorn), cap, grown));

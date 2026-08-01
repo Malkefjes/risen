@@ -69,8 +69,8 @@ function newGame() {
 }
 
 // ---- DEV TOOLS -----------------------------------------------
-// The owner's test rig, reachable from the title screen. SKIP TO ACT 2: the
-// skilled bot plays act 1 headlessly — the real rules, in milliseconds — and
+// The owner's test rig, reachable from the title screen. SKIP TO ZONE 2: the
+// skilled bot plays zone 1 headlessly — the real rules, in milliseconds — and
 // the run is handed over on-screen exactly where the sim stopped: wave 16
 // already spawned, the player's turn, whatever sheet the bot earned. No
 // respawn on handover, so the between-fight heal is not paid twice. Dev runs
@@ -132,7 +132,7 @@ function devSkipToZone(classId) {
   spawnEnemy();
   devEnterCombat('DEV · synthetic zone-1 graduate (the bot went 0 for 20 on zone 1 — '
     + 'worth knowing) · wave ' + state.wave + ' · level ' + p.level);
-  if (status) status.textContent = 'Note: the bot could not clear act 1 as '
+  if (status) status.textContent = 'Note: the bot could not clear zone 1 as '
     + CLASSES[classId].name + ' in 20 tries, so you got a standard level-7 sheet instead.';
 }
 

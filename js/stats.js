@@ -714,7 +714,7 @@ function makeEnemy(wave) {
   const zone = zoneForWave(wave);
   // DIFFICULTY IS ZONE-LOCAL. Each zone retraces the tier curve from its own
   // floor (zone.growthMult), at its own steepness if it declares one — see
-  // the note on ZONES for why the old single curve could not reach wave 30.
+  // the note on ZONES for why one curve cannot span the whole run.
   // Tier, and everything that hangs off it (growth, rank, rate), counts
   // from the zone's first wave; only XP income keeps the global count.
   const w = wave - zone.startWave;

@@ -22,7 +22,8 @@
 // the real game with a different hand on the controls. Standing caveat: a class
 // a bot cannot pilot is not necessarily one a person cannot.
 //
-// win% is winning the GAME — all 30 waves, both acts, the win screen.
+// win% is winning the GAME — every wave of every zone, the win screen. The
+// count is read off BALANCE.finalWave rather than written here.
 import { serve, launch } from '../tests/harness.mjs';
 
 const RUNS = Number(process.argv[2] || 40);

@@ -228,7 +228,7 @@ const BALANCE = {
     // so a 14% Bandage is still 14 on wave 1.
     //
     // healAnchorPerLevel IS THE DIAL: 0 freezes healing at 100 forever (every
-    // heal button dies by act 2); high values hand the old economy back to
+    // heal button dies by zone 2); high values hand the old economy back to
     // everyone. At 0.30, L11 is ~400 — between an even spread's ~250 bar and an
     // all-Vitality ~700. hpMult still rides it, so an HP mutation widens what
     // closes a wound on the body it widened.
@@ -278,7 +278,7 @@ const BALANCE = {
     // gets.
     //
     // PER FIGHT, NOT PER RUN. It accrues every single turn, so carried across a
-    // run it would pass the reduction cap in act 1 and sit there — an off switch,
+    // run it would pass the reduction cap in zone 1 and sit there — an off switch,
     // not a break. The reduction is linear per stack and its SUM with Brace is
     // capped hard in applyEnemyDamage: uncapped number, bounded effect.
     //
@@ -332,7 +332,7 @@ const BALANCE = {
     apsBase: 1.00,
     // RATE COUNTS FROM THE RUN'S START, NOT THE ACT'S — the one place the
     // act-local rule is deliberately broken. Everything else about an enemy
-    // restarts per act so act 2 can field its own roster at its own floor, but
+    // restarts per zone so a later zone can field its own roster at its own floor, but
     // rate restarting meant the Encampment's opening enforcers acted SLOWER than
     // the Laboratory's closing experiments, at the boundary the game sells as a
     // step up. Tempo is the one axis the player never resets, so it is the one
@@ -403,17 +403,25 @@ const BALANCE = {
   //
   //     wave  5    L2    3 points on top of 5/5/5/5
   //     wave 10    L4    9
-  //     wave 15    L6   15
+  //     wave 15    L6   15        end of zone 1
   //     wave 20    L8   21
   //     wave 25   L10   27
-  //     wave 30   L11   30
-  //     finished  L12   33
+  //     wave 30   L11   30        end of zone 2
+  //     wave 35   L12   33
+  //     wave 40   L14   39
+  //     wave 45   L15   42        the win
   //
-  // So the enemy table is fitted against a sheet holding ~15 points and meets
-  // one holding 21-33 for the whole second half. Chains drag every beat earlier.
-  // Reported, not acted on: whether act 2 should be met with double the sheet is
-  // a design question, and the levers (this curve, kill income, act 2's growth)
-  // are all still where they were.
+  // Waves past 30 were measured with survivability inflated so a bot could
+  // reach them at all — that reads the XP CURVE, not the difficulty, which is
+  // the only honest way to sample a stretch nothing survives yet.
+  //
+  // THE MISMATCH THIS EXPOSES, reported and not acted on: across waves 15 to 45
+  // the enemy grows 5.1x while the player grows 2.35x. The enemy table is
+  // fitted against a sheet holding ~15 points and meets one holding 21-42 for
+  // two thirds of the run. That is why the telegraph multiplier has to shrink
+  // every zone (4.0 / 2.5 / 1.6) just to stay survivable. The levers are all
+  // still where they were: this cost curve, the kill income beside it, or a
+  // zone's own growth.
   xp: { firstCost: 58, base: 485, pow: 2, powScale: 35,
         killBase: 46, killWave: 15, killTier: 36 },
   combo: { maxEnemyActionsPerKill: 3, xpPerStack: 0.05, maxStack: 20 },   // chain continues if the kill let the enemy act <= N times (speed-fair)

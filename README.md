@@ -1,8 +1,8 @@
 # RISEN
 
-A turn-based roguelite. You are Sonny, a lucid mutant hunted through thirty
-waves of containment, across two acts. Pick a strain — or refuse the infection
-entirely — and see how far the run goes.
+A turn-based roguelite. You are Sonny, a lucid mutant hunted through forty-five
+waves of containment, across three zones. Pick a strain — or refuse the
+infection entirely — and see how far the run goes.
 
 ## The game
 
