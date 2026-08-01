@@ -288,9 +288,9 @@ body {
      .is-primary   the thing this screen is for. One per screen, at most.
      .is-psy       the strain-purple alternative — a real second choice, not a
                    lesser one, so it is equal in weight and different in colour.
-     .is-base      unmutated Sonny's white, at is-psy's exact weights. For a
-                   choice that IS staying base, which is the intro fork.
      .is-quiet     escape hatches and workbench doors: same shape, less voice.
+                   RESIST MUTATION uses it at .intro-choice's full size, so
+                   "quiet" is about voice and never about scale.
      .is-danger    destructive. Not used yet; here so the next screen that needs
                    it does not invent its own.
      :disabled / .is-disabled */
@@ -341,21 +341,6 @@ body {
   box-shadow: 0 0 28px rgba(192, 132, 252, 0.30);
 }
 .ui-btn.is-psy:focus-visible { outline-color: rgba(192, 132, 252, 0.9); }
-/* is-psy's shape and weights with base's hue. RESIST MUTATION uses it, and it
-   is deliberately as loud as the strain colours are — refusing is a way to
-   play, not a lesser option, and the fork above it says so in its own comment. */
-.ui-btn.is-base {
-  border-color: rgba(var(--base-rgb), 0.70);
-  color: #ffffff;
-  box-shadow: inset 0 0 26px rgba(var(--base-rgb), 0.10), 0 0 20px rgba(var(--base-rgb), 0.12);
-}
-.ui-btn.is-base:hover {
-  background: rgba(var(--base-rgb), 0.13);
-  border-color: rgba(var(--base-rgb), 0.92);
-  color: #ffffff;
-  box-shadow: 0 0 28px rgba(var(--base-rgb), 0.28);
-}
-.ui-btn.is-base:focus-visible { outline-color: rgba(var(--base-rgb), 0.9); }
 .ui-btn.is-quiet {
   border-color: rgba(255, 255, 255, 0.14);
   color: rgba(226, 236, 230, 0.55);
@@ -614,11 +599,21 @@ body {
   text-shadow: 0 2px 12px rgba(0,0,0,0.9), 0 0 26px rgba(0, 240, 208, 0.40);
 }
 
-/* TWO EQUAL CHOICES. The old row put a small ghost BACK, a solid teal slab and
-   a purple outline side by side at three different sizes, which made MUTATE
-   look like the answer and RESIST look like a warning. They are both real ways
-   to play, so they are the same size and shape and differ only in colour;
-   BACK leaves the row entirely and becomes an escape hatch under it. */
+/* TWO CHOICES AT ONE SIZE, WITH ONE OF THEM LOUD.
+   `OWNER:` MUTATE carries the three strain colours and RESIST MUTATION wears
+   the quiet grey the BACK button below it uses — his call, made by looking at
+   it. Note that only the STYLING is shared with BACK: RESIST keeps .intro-choice's
+   size and its half of the grid, so the fork is still two equal slabs and the
+   escape hatch under it is still visibly smaller than both.
+
+   This block used to argue the opposite — that the two are equally real ways to
+   play and must therefore differ only in colour, never in weight. That was a
+   past session's reasoning, not a rule, and it is superseded. What the earlier
+   note was actually reacting to is still worth keeping: the ROW before it put a
+   ghost BACK, a solid teal slab and a purple outline side by side at three
+   different sizes, and mismatched sizes are what made MUTATE read as the answer
+   and RESIST as a warning. Equal SIZE is what fixed that, and equal size is
+   what survives here. */
 /* A GRID, not a flex row, so the two are exactly equal regardless of label
    length — "MUTATE" and "RESIST MUTATION" are six characters apart and a flex
    row sized them to their text, which made the shorter one look like the
@@ -641,8 +636,8 @@ body {
    it is the only press that means "become one of these three" without saying
    which. So it wears all of them: bio green, psy purple and sym orange in a
    conic gradient that rotates forever around the edge. Its opposite number,
-   RESIST MUTATION, is is-base white — the fork is literally three colours
-   against one.
+   RESIST MUTATION, is the plain is-quiet grey — so the fork is every colour in
+   the game against no colour at all, at the same size.
 
    HOW IT IS BUILT, because the trick is not obvious. A conic-gradient cannot
    be a border-color, so the ring is a pseudo-element filled edge to edge with
