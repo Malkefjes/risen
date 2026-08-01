@@ -270,9 +270,9 @@ function spawnEnemy() {
 
   if (state.kills > 0) {
     const before = p.hp;
-    p.hp = Math.min(p.maxHp, p.hp + Math.floor(p.maxHp * P().recoverHpFrac));
+    p.hp = Math.min(p.maxHp, p.hp + Math.floor(healAnchorFor(p) * P().recoverHpFrac));
     if (p.hp > before) logHeal('RECOVER', p, p.hp - before,
-      [Math.round(P().recoverHpFrac*100) + '% max HP between fights']);
+      [Math.round(P().recoverHpFrac*100) + '% of ' + logNum(healAnchorFor(p)) + ' between fights']);
     // Statuses that do not persist are dropped here; say which, or a buff
     // silently missing from the next fight looks like it stopped working.
     const lost = p.statuses.filter(s => { const dd = STATUSES[s.type]; return !(dd && dd.persists); });
@@ -373,7 +373,9 @@ function gainXP(amount, bonus) {
     const grant = P().pointsPerLevel;
     p.xp -= p.xpNext; p.level++; p.xpNext = xpForLevel(p.level); p.points += grant;
     recalcPlayerStats();
-    p.hp = Math.min(p.maxHp, p.hp + Math.floor(p.maxHp * P().levelUpHealFrac));
+    // recalcPlayerStats above has already moved the anchor to the NEW level, so
+    // the level-up heal pays at the size the level you just earned is worth.
+    p.hp = Math.min(p.maxHp, p.hp + Math.floor(healAnchorFor(p) * P().levelUpHealFrac));
     // A level is a rare event now (~6 a run), so it announces itself in
     // the arena, not just on the badge: amber, because a level-up is the XP
     // family's loudest member — see the floater vocabulary in the CSS.

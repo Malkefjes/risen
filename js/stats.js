@@ -320,7 +320,7 @@ function descField(def, key) {
 
 function fmtDesc(def) {
   if (!def || !def.desc) return '';
-  return highlightKeywords(def.desc.replace(/\{([\w.]+)(%|!|#[^}]+)?\}/g, (token, key, mode) => {
+  return highlightKeywords(def.desc.replace(/\{([\w.]+)(%|!|\+|#[^}]+)?\}/g, (token, key, mode) => {
     let v = descField(def, key);
     // A FIELD MAY BE A FUNCTION, read off the live sheet. Constants cover most
     // of a card, but some numbers are computed — a cut's depth rides held
@@ -348,6 +348,18 @@ function fmtDesc(def) {
       const p = state.player;
       if (!p) return Math.round(v * 100) + '%';
       return formatNum(Math.max(1, Math.floor(p.atkPower * v)));
+    }
+    // '+' is '!' for healing: the field is a share of the HEAL ANCHOR and the
+    // card prints the HP it restores right now. It exists because the honest
+    // answer changed — "14% of max HP" was at least a number the player could
+    // work out from a bar they can see, and "14% of the heal anchor" is not,
+    // so the card states the HP instead. Same read as the heal pipeline, so a
+    // card cannot drift from the button. The sign matches the floater
+    // vocabulary: healing is a green +.
+    if (mode === '+') {
+      const p = state.player;
+      if (!p) return Math.round(v * 100) + '%';
+      return formatNum(Math.max(1, Math.floor(healAnchorFor(p) * v)));
     }
     if (mode && mode[0] === '#') {
       const noun = mode.slice(1);
@@ -397,8 +409,8 @@ function applyDerivedStats(p) {
   // apsCap applies after apsMult and is a backstop for that multiplier alone.
   // The anchor is a pure stat read (5 Speed x 0.20 = 1.00); everything above it
   // is bought on a curve that flattens but never stops. See the apsGain note.
-  const anchor = BALANCE.player.speedAnchor * B.apsPerSpeed;
-  const above = Math.max(0, p.speed - BALANCE.player.speedAnchor);
+  const anchor = BALANCE.player.sheetAnchor * B.apsPerSpeed;
+  const above = Math.max(0, p.speed - BALANCE.player.sheetAnchor);
   const earned = B.apsGain * above / (above + B.apsHalfPoints);
   p.attackSpeed = Math.min(B.apsCap, (anchor + earned) * p.apsMult);
 
@@ -418,6 +430,19 @@ function applyDerivedStats(p) {
     p.hp = Math.min(newMax, Math.max(1, p.hp + (newMax - p.maxHp)));
     p.maxHp = newMax;
   } else p.maxHp = newMax;
+
+  // WHAT HEALING IS A SHARE OF, and it is deliberately NOT the line above.
+  // The starting bar (5 Vitality x 20 = 100), grown by LEVEL instead of by
+  // allocation, so Vitality buys the bar and nothing else. The full argument,
+  // and the measurements that forced it, live under healAnchorPerLevel in
+  // BALANCE — this is only the arithmetic.
+  //
+  // Read through healAnchorFor(), never directly: REGEN is a unit-generic
+  // status and an enemy carrying it has no anchor to read.
+  p.healAnchor = Math.max(1, Math.floor(
+    BALANCE.player.sheetAnchor * B.hpPerVit * p.hpMult *
+    (1 + Math.max(0, (p.level || 1) - 1) * (B.healAnchorPerLevel || 0))
+  ));
 
   p.evadeChance = Math.min(B.evadeCap, B.evadeBase + p.speed*B.evadePerSpeed + (t.evadeFlat||0));
   p.blockChance = Math.min(B.blockCap, B.blockBase + p.vit*B.blockPerVit);
@@ -515,6 +540,24 @@ function bleedDepth(p) {
 // coincidence — if a basic ever stops being 1.0, that is the thing to revisit.
 function attackDamage(p) {
   return Math.max(1, Math.floor(p.atkPower));
+}
+
+// THE ONE READ FOR EVERY HEAL IN THE GAME. Every "% of max HP" in a kit, a
+// status or a between-fight trickle goes through here instead of touching
+// unit.maxHp, which is what stops Vitality from quietly owning most of the
+// game's effective health (see healAnchorPerLevel in BALANCE).
+//
+// Enemies fall through to their own bar on purpose: the anchor is a fact about
+// the player sheet, and REGEN is unit-generic, so a healing enemy still heals
+// the way it always did rather than reading a number that does not describe it.
+//
+// Damage-proportional healing (elite lifesteal, the skill lifesteal seam, the
+// thorns-feed hook) never comes here — those are shares of a blow, not of a
+// body, and they were never part of the coupling.
+function healAnchorFor(unit) {
+  if (!unit) return 1;
+  if (!unit.isPlayer) return unit.maxHp;
+  return Math.max(1, unit.healAnchor || unit.maxHp);
 }
 
 // Turn rate is the one number that had no meaning in a turn-based game: "1.15x"

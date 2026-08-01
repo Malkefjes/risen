@@ -134,6 +134,18 @@
 //    anchors, so scaling them by a stat means those anchors stop carrying them
 //    for free.
 //
+//  * HEALING IS A SHARE OF THE HEAL ANCHOR, NEVER OF YOUR MAX HP, and this is
+//    the newest default here — it is what finally let Strength and Instinct be
+//    looked at honestly. Every heal used to scale with the bar, so Vitality
+//    bought the bar AND the multiplier on the refill, and the refill turned out
+//    to be 68-91% of all the punishment any build absorbed. One stat owned most
+//    of the game's effective health, and no damage number could chase it,
+//    because damage pays inside one fight while a bigger bar compounds across
+//    thirty. The anchor is the bar you would have at 5 Vitality, grown by LEVEL
+//    instead of by allocation. Full argument under healAnchorPerLevel; the one
+//    read is healAnchorFor() in stats.js. Damage-proportional healing
+//    (lifesteal, thorns-feed) is a different mechanic and was never coupled.
+//
 //  * Known soft spots, in case they read as bugs rather than gaps: cooldown
 //    reduction is a live seam with no source yet (no talent sets cdrBonus, so
 //    its readout row stays hidden); and healing outside class kits is down to
@@ -155,7 +167,7 @@
 // KEEP THIS SEPARATE FROM BALANCE.saveKey. That one answers "are saved runs
 // still valid" and is bumped only when a change makes an old sheet wrong.
 // Deriving it from this would wipe every save on a typo fix.
-const BUILD = '2026-07-31r';
+const BUILD = '2026-08-01';
 
 const BALANCE = {
   player: {
@@ -205,7 +217,11 @@ const BALANCE = {
     // The sheet everything is anchored to starts every stat at 5, so that is
     // where "points above the anchor" counts from. Named rather than a literal
     // 5 in the formula: the anchor is a design fact, not a magic number.
-    speedAnchor: 5,
+    //
+    // It was speedAnchor until the heal anchor needed the same 5 — one number
+    // meaning "the starting sheet" is the point of naming it, and two copies
+    // of it under different names would be the thing this line exists to stop.
+    sheetAnchor: 5,
     apsGain: 2.00, apsHalfPoints: 10,
     //   apsCap  absolute ceiling AFTER apsMult, and now the only cap left. It
     //           does not bind the stat (the curve tops out near x3 on its own);
@@ -434,6 +450,47 @@ const BALANCE = {
     // fraction deliberately STAYS 15% (~90% a run): the point-scarcity pass
     // wants the whole run poorer, and free healing is part of the shower.
     levelUpHealFrac: 0.15, recoverHpFrac: 0.08,
+    // ---- THE HEAL ANCHOR --------------------------------------------------
+    // EVERY FRACTION ABOVE, AND EVERY ONE IN THE KITS, IS A SHARE OF THE HEAL
+    // ANCHOR RATHER THAN OF YOUR MAX HP. That coupling was the single largest
+    // distortion ever measured in this game, so it is worth writing down what
+    // it did rather than only what replaced it.
+    //
+    // Measured, all-in on one stat, 40 runs each: healing was 68-91% of ALL
+    // the punishment every build absorbed. Your bar was the rounding error and
+    // your refill was the real health pool — and since every heal in the game
+    // was a share of max HP, Vitality bought the bar AND the multiplier on the
+    // refill. One stat, two jobs, and the second one compounded across thirty
+    // waves. Strength shortens the fight you are in; nothing carried it to the
+    // next one, because your HP persists between waves and the enemy's does
+    // not. All-in Strength reached wave 7-8 with 55 Attack Damage against 25,
+    // killing 40% faster and buying nothing. All-in Vitality reached 12-25.
+    // Per wave reached, VITALITY OUT-DAMAGED STRENGTH IN ALL FOUR STRAINS.
+    //
+    // So the stats were never the bug. No damage number can chase a stat that
+    // compounds; making Strength competitive by its own scalar would have
+    // meant fights ending in a turn or two, which is the cheap way to a game
+    // that is beaten once and never again.
+    //
+    // THE ANCHOR IS THE BAR YOU WOULD HAVE AT 5 VITALITY, grown by LEVEL. A
+    // level arrives on a fixed schedule nobody buys, so sustain keeps pace
+    // with the enemy curve while allocation no longer touches it. At the
+    // starting sheet the anchor and the bar are the same 100, which is the
+    // property that keeps the sheet legible: a 14% Bandage is still 14 on
+    // wave 1, exactly as it always was.
+    //
+    // healAnchorPerLevel IS THE DIAL, and it is the only one here. It sets how
+    // fast sustain tracks a run: 0 freezes healing at 100 HP forever (every
+    // heal button dies by act 2), high values hand the old economy back to
+    // everyone at once. At 0.30 a level is +30 HP of anchor, so L11 is ~400 —
+    // between an even spread's ~250 bar and an all-Vitality ~700. That is the
+    // redistribution on purpose: non-Vitality builds get MORE sustain than
+    // they had, Vitality stacking gets much less.
+    //
+    // hpMult still rides the anchor. A mutation that widens the whole body
+    // should widen what closes a wound on it — a visible pick doing a visible
+    // thing is the sanctioned way to break a default, and the only way.
+    healAnchorPerLevel: 0.30,
     // ---- DREAD (psy) ------------------------------------------------------
     // Psy's mechanic LIVES ON THE ENEMY, not on the player — the one bank in
     // the game that is a mark, not a wallet. Momentum (a player-side bank of
@@ -524,29 +581,31 @@ const BALANCE = {
     reloadHpFloor: 0.15    // deliberate mercy: continuing a run never puts you below this
   },
   enemy: {
-    // ---- WHY THIS TABLE CANNOT OPEN THE BRACKET (a read, not a plan) ------
-    // The bot bracket calls bio, psy and sym TOO EASY — the DUMB bot wins
-    // ~98% — and no knob in this table can change that verdict, because the
-    // margin it would have to eat is sustain, and strain sustain is a share
-    // of max HP that does not care when it is cast. Measured (dumb bot, per
-    // run): bio takes ~740 damage and heals ~550 back (Miasma's regen is
-    // ~475 of it, full value on cooldown-mash), sym takes ~1320 and heals
-    // ~875, psy takes ~500 and siphons/devours ~375. Every loss any bot
-    // suffers is at wave 15; waves 1-14 kill nobody. Proportional sustain
-    // cancels proportional damage at any multiplier, so raising this table
-    // only reorders who drowns first. Both obvious raises were tried and
-    // measured before being reverted:
+    // ---- WHY THIS TABLE IS NOT THE LEVER (a read, not a plan) -------------
+    // KEPT BECAUSE IT WAS RIGHT ABOUT THE MECHANISM, and the fix it pointed at
+    // eventually landed somewhere else entirely. The numbers below describe a
+    // build nobody plays any more — the dumb bot won ~98% then and medians
+    // wave 5-10 now — so read them as a worked example, not as today's game.
+    //
+    // The bracket used to call bio, psy and sym TOO EASY, and no knob in this
+    // table could change that, because the margin it would have to eat was
+    // sustain, and strain sustain was a share of max HP that did not care when
+    // it was cast. Measured then (dumb bot, per run): bio took ~740 damage and
+    // healed ~550 back, sym took ~1320 and healed ~875, psy took ~500 and
+    // siphoned ~375. Both obvious raises were tried and reverted:
     //   - elites at 2x chance, windup on the 2nd action: win rates unmoved.
     //     Heavies land on full bars the loop refills — and elite XP at 1.7x
     //     is itself a buff, so more elites made base EASIER, not harder.
     //   - trashDmgMult 1.45 -> 1.75 on top: the three strains' dumb bots
     //     still won 83-96% while base skilled sank to 38% — the one class
     //     whose sustain is flat and rare drowns first, every time.
-    // If autopilot wins should stop, the seam is in the KITS: sustain has to
-    // care about timing before enemy numbers can matter. Base already lives
-    // this (Bandage is all it has), which is why base is the only class the
-    // bracket calls hard — the enemy table is fitted against timing-immune
-    // healing three of the four classes carry.
+    //
+    // THE STANDING LESSON, which outlived every number in it: PROPORTIONAL
+    // SUSTAIN CANCELS PROPORTIONAL DAMAGE AT ANY MULTIPLIER. Raising this
+    // table only reorders who drowns first. That is why the heal anchor —
+    // which took sustain off max HP entirely — moved more than any enemy
+    // number ever did, and why reaching for this table should stay a late
+    // move rather than a first one.
     //
     // ---- THE TIER STEP ----------------------------------------------------
     // A TIER BOUNDARY MUST BE A STEP, AND IT USED TO BE FLAT — arithmetically,
@@ -802,9 +861,17 @@ const BALANCE = {
   // nothing, which is a live mechanic silently reset to zero rather than a
   // number merely mistuned.
   //
+  // v10 -> v11 is the heal anchor. Every heal in the game was a share of max
+  // HP and is now a share of a baseline body that grows with LEVEL, so a v10
+  // sheet was allocated under an economy where a Vitality point bought the bar
+  // and the refill both. A wide v10 sym or bio would load back healing at a
+  // fraction of what its wave count was earned on — the same silent re-read as
+  // every bump before it, and the largest one yet, because healing was 68-91%
+  // of all the punishment a build absorbed.
+  //
   // Bumping also gives every player empty slots on the next load, which is the
   // honest outcome — those runs are not playable as the game now works.
-  saveKey: 'risen_run_v10',
+  saveKey: 'risen_run_v11',
   // Storage keys from older versions, cleared once on load so they cannot
   // accumulate invisibly. Oldest first; add the outgoing prefix here on a bump.
   // Slot keys are listed explicitly because the purge removes literal keys.
@@ -814,7 +881,8 @@ const BALANCE = {
                 'risen_run_v6', 'risen_run_v6_s1', 'risen_run_v6_s2',
                 'risen_run_v7', 'risen_run_v7_s1', 'risen_run_v7_s2',
                 'risen_run_v8', 'risen_run_v8_s1', 'risen_run_v8_s2',
-                'risen_run_v9', 'risen_run_v9_s0', 'risen_run_v9_s1', 'risen_run_v9_s2'],
+                'risen_run_v9', 'risen_run_v9_s0', 'risen_run_v9_s1', 'risen_run_v9_s2',
+                'risen_run_v10', 'risen_run_v10_s0', 'risen_run_v10_s1', 'risen_run_v10_s2'],
   saveSlots: 2
 };
 
@@ -842,7 +910,7 @@ const CLASSES = {
       // honest way: died just past the first boss, holding the button that is
       // supposed to be the answer to attrition. 13% is the same shape (four
       // ticks, one press, still worth timing) paying 52% of a bar per cast.
-      { id:'miasma', name:'Miasma', desc:'For {duration#turn}: regenerate {power%} of max HP each turn. The enemy is WEAK for {weak.duration#turn}', type:'buff', buff:'regen', duration:4, power:0.13, applies:[{ id:'weak', power:0.25, duration:3 }], target:'self', cdTurns:5 }
+      { id:'miasma', name:'Miasma', desc:'For {duration#turn}: regenerate {power+} each turn. The enemy is WEAK for {weak.duration#turn}', type:'buff', buff:'regen', duration:4, power:0.13, applies:[{ id:'weak', power:0.25, duration:3 }], target:'self', cdTurns:5 }
     ]
   },
   // THE TERROR MUTANT. Psy's mechanic is DREAD, a mark stacked ON THE ENEMY —
@@ -926,7 +994,7 @@ const CLASSES = {
       //
       // Base power 1.20 -> 2.00: exactly twice Attack Damage, so the floor of
       // the finisher is legible without a pile behind it.
-      { id:'kill', name:'Kill', desc:'Deal {killTotal} damage. Tears away HALF the enemy’s DREAD — +{perDreadPower!} damage and {feedPerDread%} of max HP healed for each.', type:'attack', power:2.00, perDreadPower:0.60, consumesDread:true, consumeFrac:0.5, feedPerDread:BALANCE.player.dreadFeedFrac, target:'enemy', cdTurns:5,
+      { id:'kill', name:'Kill', desc:'Deal {killTotal} damage. Tears away HALF the enemy’s DREAD — +{perDreadPower!} damage and {feedPerDread+} healed for each.', type:'attack', power:2.00, perDreadPower:0.60, consumesDread:true, consumeFrac:0.5, feedPerDread:BALANCE.player.dreadFeedFrac, target:'enemy', cdTurns:5,
         killTotal: (p, s) => {
           const e = state.enemy;
           const held = (e && e.hp > 0 && !e._defeated) ? statusStacks(e, 'dread') : 0;
@@ -983,7 +1051,7 @@ const CLASSES = {
       // (it takes only what the heal needed, so a huge number makes it CHEAP
       // rather than expensive) was the half not said. Now the first sentence
       // is what you get, the second is what it costs, in that order.
-      { id:'shed', name:'Shed', desc:'Heal {healFrac%} of max HP, then tear off THORNS to heal {hpPerThorn%} more each. Takes only as many as the wound needed, up to {capFrac%} of what you have grown.', type:'heal', healFrac:0.08, shedFuel:true, hpPerThorn:BALANCE.player.shedHpPerThorn, capFrac:BALANCE.player.shedCapFrac, target:'self', cdTurns:3 },
+      { id:'shed', name:'Shed', desc:'Heal {healFrac+}, then tear off THORNS to heal {hpPerThorn+} more each. Takes only as many as the wound needed, up to {capFrac%} of what you have grown.', type:'heal', healFrac:0.08, shedFuel:true, hpPerThorn:BALANCE.player.shedHpPerThorn, capFrac:BALANCE.player.shedCapFrac, target:'self', cdTurns:3 },
       { id:'provoke', name:'Provoke', desc:'Bare your guard: the enemy strikes at once and cannot miss. +{growBonus} THORNS, and a charged telegraph comes out now — ordinary, or half-strength if it shrugs you off.', type:'provoke', growBonus:3, target:'enemy', cdTurns:4 }
     ]
   },
@@ -1020,7 +1088,7 @@ const CLASSES = {
       // field may be a function now (see fmtDesc), so the card prints what the
       // next Strike will actually open, and it moves as Resolve stacks up.
       { id:'jab', name:'Strike', desc:'Deal {power!} damage. +{buildsResolve} RESOLVE, and open a wound: +{bleedTick} BLEED a turn for {bleedTurns#turn}', type:'attack', power:1.0, buildsResolve:1, bleed:1, bleedTick:p => bleedDepth(p), bleedTurns:BALANCE.player.bleedDuration, target:'enemy', basic:true },
-      { id:'bandage', name:'Bandage', desc:'Heal {healFrac%} of max HP and +{resolveHealBonus%} per held RESOLVE', type:'heal', healFrac:0.14, resolveHealBonus:0.02, target:'self', cdTurns:4 },
+      { id:'bandage', name:'Bandage', desc:'Heal {healFrac+} and +{resolveHealBonus%} per held RESOLVE', type:'heal', healFrac:0.14, resolveHealBonus:0.02, target:'self', cdTurns:4 },
       // BRACE LASTS TWO TURNS, NOT ONE, and the reason is measured. This is
       // base's answer to the telegraph, and it was the only answer in the game
       // that had to be timed to the exact turn — one turn of cover on a 4-turn
@@ -1526,12 +1594,14 @@ const STATUSES = {
     label: st => 'REGEN ' + Math.ceil(st.duration) + 't',
     onTurnStart(unit, st) {
       if (unit.hp <= 0 || unit.hp >= unit.maxHp) return false;
-      const heal = Math.max(1, Math.floor(unit.maxHp * (st.power||0)));
+      // Anchored for the player, still off max HP for anybody else — see
+      // healAnchorFor(). A regenerating enemy has no anchor to read.
+      const heal = Math.max(1, Math.floor(healAnchorFor(unit) * (st.power||0)));
       const before = unit.hp;
       unit.hp = Math.min(unit.maxHp, unit.hp + heal);
       floatText(unit, heal, 'heal');
       logHeal('REGEN', unit, unit.hp - before, [
-        Math.round((st.power||0)*100) + '% max HP',
+        Math.round((st.power||0)*100) + '% of ' + logNum(healAnchorFor(unit)),
         logNum(unit.hp) + '/' + logNum(unit.maxHp)
       ]);
       updateUnitCard(unit);

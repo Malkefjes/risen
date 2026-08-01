@@ -188,7 +188,7 @@ function tickTurnStart(unit) {
     if (unit.class === 'psy' && unit.hp < unit.maxHp && foe && foe.hp > 0 && !foe._defeated) {
       const stacks = statusStacks(foe, 'dread');
       if (stacks > 0) {
-        const heal = Math.max(1, Math.floor(unit.maxHp * (P().dreadSiphonFrac || 0) * stacks));
+        const heal = Math.max(1, Math.floor(healAnchorFor(unit) * (P().dreadSiphonFrac || 0) * stacks));
         const before = unit.hp;
         unit.hp = Math.min(unit.maxHp, unit.hp + heal);
         floatText(unit, unit.hp - before, 'heal');
@@ -370,7 +370,11 @@ function thornsGrowthFor(p, damage) {
 function shedForHeal(p, skill, already, notes) {
   const grown = p.thornsGrown || 0;
   if (grown <= 0) { notes.push('nothing grown to shed'); return 0; }
-  const perThorn = Math.max(1, Math.floor(p.maxHp * (skill.hpPerThorn || 0)));
+  // What a thorn is WORTH is sustain, so it prices off the anchor. What you are
+  // MISSING is a fact about your actual bar and stays on maxHp — a wide sym
+  // still has a wide hole to fill, it just no longer fills it faster for being
+  // wide.
+  const perThorn = Math.max(1, Math.floor(healAnchorFor(p) * (skill.hpPerThorn || 0)));
   const missing = Math.max(0, p.maxHp - p.hp - already);
   // At least one whenever anything is grown: floor()ing the cap alone would
   // make Shed a plain heal for the whole of act 1, which reads as the skill
@@ -593,13 +597,13 @@ function creditCrit(p, e) {
 // floater and a log line even when it lands on a full bar.
 function devour(p, stacks, why) {
   if (!p || p.class !== 'psy' || !(stacks > 0) || p.hp <= 0) return;
-  const heal = Math.max(1, Math.floor(p.maxHp * (P().dreadFeedFrac || 0) * stacks));
+  const heal = Math.max(1, Math.floor(healAnchorFor(p) * (P().dreadFeedFrac || 0) * stacks));
   const before = p.hp;
   p.hp = Math.min(p.maxHp, p.hp + heal);
   const gained = p.hp - before;
   if (gained > 0) floatText(p, gained, 'heal');
   logHeal('DEVOUR', p, gained, [
-    'DREAD ×' + stacks + ' @ ' + Math.round((P().dreadFeedFrac || 0) * 100) + '% max HP',
+    'DREAD ×' + stacks + ' @ ' + Math.round((P().dreadFeedFrac || 0) * 100) + '% of ' + logNum(healAnchorFor(p)),
     why,
     gained < heal ? 'overheal ' + (heal - gained) : null,
     logNum(p.hp) + '/' + logNum(p.maxHp)
@@ -863,8 +867,8 @@ function fireSkill(caster, skill, target) {
       frac += bonus;
       if (bonus > 0) notes.push('RESOLVE ×' + statusStacks(caster, 'resolve') + ' +' + Math.round(bonus * 100) + '%');
     }
-    notes.push(Math.round(frac * 100) + '% max HP');
-    let amount = Math.max(1, Math.floor(caster.maxHp * frac));
+    notes.push(Math.round(frac * 100) + '% of ' + logNum(healAnchorFor(caster)));
+    let amount = Math.max(1, Math.floor(healAnchorFor(caster) * frac));
     // Sym: SHED covers whatever the base patch did not, out of grown thorns —
     // computed after the base amount so it only ever pays for the remainder.
     if (skill.shedFuel) amount += shedForHeal(caster, skill, amount, notes);
@@ -987,11 +991,11 @@ function onEnemyDefeated() {
                [Math.round(p.talents.overflow * 100) + '% of overkill'], 'xp');
   }
   if (p.talents.harvest) {
-    const heal = Math.floor(p.maxHp * p.talents.harvest);
+    const heal = Math.floor(healAnchorFor(p) * p.talents.harvest);
     const before = p.hp;
     p.hp = Math.min(p.maxHp, p.hp + heal);
     floatText(p, heal, 'heal');
-    if (p.hp > before) logHeal('HARVEST', p, p.hp - before, [Math.round(p.talents.harvest * 100) + '% max HP']);
+    if (p.hp > before) logHeal('HARVEST', p, p.hp - before, [Math.round(p.talents.harvest * 100) + '% of ' + logNum(healAnchorFor(p))]);
   }
 
   const tier = Math.floor((state.wave-1)/5);
