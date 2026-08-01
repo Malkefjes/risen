@@ -339,9 +339,15 @@ body {
 /* Pushed to the lower third on purpose: that is the reflective floor, the
    quietest part of the painting, and the only place a stack of buttons can sit
    without covering something worth looking at. */
+/* SPACED OFF THE HEADER, not pushed to the floor. `margin-top: auto` used to
+   shove this to the bottom of the screen, which left the wordmark stranded at
+   the top with a lot of nothing between them. The gap is explicit now and the
+   slack falls BELOW the menu instead — so the pair reads as one block sitting
+   high in the frame, and the extra room shows more of the floor rather than
+   more empty air in the middle. */
 .title-menu {
-  margin-top: auto;
-  margin-bottom: clamp(14px, 5vh, 52px);
+  margin-top: clamp(24px, 6vh, 62px);
+  margin-bottom: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -429,7 +435,7 @@ body {
 @media (max-height: 560px) {
   .title-logo { font-size: clamp(2.2rem, 8vh, 3.4rem); }
   .title-body { padding-top: clamp(16px, 4vh, 28px); }
-  .title-menu { margin-bottom: clamp(8px, 2vh, 18px); gap: 7px; }
+  .title-menu { margin-top: clamp(14px, 3.5vh, 26px); gap: 7px; }
   .title-btn { padding: 8px 16px; }
   .title-sub { margin-top: 6px; }
 }
