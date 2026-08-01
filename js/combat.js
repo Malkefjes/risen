@@ -20,7 +20,7 @@ function stopCombatLoop() {
   if (state.turnTimer) { clearTimeout(state.turnTimer); state.turnTimer = null; }
 }
 // FAST TURNS setting just compresses the pacing between actions.
-const turnDelay = ms => SETTINGS.fastTurns ? Math.round(ms * 0.45) : ms;
+const turnDelay = ms => Math.round(ms * BALANCE.turnPace);
 function scheduleTurn(fn, ms) {
   // Headless: hand the step to the pump instead of the clock. Same ordering,
   // none of the waiting.

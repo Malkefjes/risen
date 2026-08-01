@@ -18,8 +18,7 @@ const Store = (function () {
 
 // ---- Settings -------------------------------------------------
 const SETTINGS_KEY = 'risen_settings_v1';
-const DEFAULT_SETTINGS = { shake: true, floaters: true, fastTurns: false, backdrop: true,
-                           statColors: true };
+const DEFAULT_SETTINGS = { shake: true, floaters: true, backdrop: true, statColors: true };
 let SETTINGS = Object.assign({}, DEFAULT_SETTINGS);
 
 function showBuildVersion() {
@@ -30,7 +29,11 @@ function showBuildVersion() {
 function loadSettings() {
   try {
     const raw = Store.get(SETTINGS_KEY);
-    if (raw) SETTINGS = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(raw));
+    // Only keys that still exist are read back, so a setting that is deleted
+    // stops being carried around by everyone who ever had it switched.
+    const saved = raw ? JSON.parse(raw) : {};
+    SETTINGS = Object.assign({}, DEFAULT_SETTINGS);
+    Object.keys(DEFAULT_SETTINGS).forEach(k => { if (k in saved) SETTINGS[k] = saved[k]; });
   } catch (e) { SETTINGS = Object.assign({}, DEFAULT_SETTINGS); }
   syncSettingsUI();
 }
