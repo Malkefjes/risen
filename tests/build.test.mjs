@@ -35,7 +35,7 @@ export default async function ({ page, ctx, ok }) {
     d.build = 'ancient-build';
     localStorage.setItem(slotKey(1), JSON.stringify(d));
   });
-  await page.click('.sidebar-tab[data-tab="menu"]'); await page.click('#tab-menu .btn-ghost');
+  await page.click('.sidebar-tab[data-tab="menu"]'); await page.click('#tab-menu .ui-btn.is-quiet');
   await page.click('#continue-btn');
   await page.click('#save-list .save-slot:nth-child(1) .save-slot-body');
   await page.waitForFunction(()=>state.player&&state.combatActive);

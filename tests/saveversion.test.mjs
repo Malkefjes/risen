@@ -43,7 +43,7 @@ export default async function ({ page, ctx, ok }) {
   const retired = await page.evaluate(()=>BALANCE.oldSaveKeys);
   ok('writes to the current slot key', keys.includes(live), JSON.stringify(keys));
   ok('does not resurrect a retired key', !keys.some(k=>retired.includes(k)), JSON.stringify(keys));
-  await page.click('.sidebar-tab[data-tab="menu"]'); await page.click('#tab-menu .btn-ghost');
+  await page.click('.sidebar-tab[data-tab="menu"]'); await page.click('#tab-menu .ui-btn.is-quiet');
   await page.click('#continue-btn');
   await page.click('#save-list .save-slot:nth-child(1) .save-slot-body');
   await page.waitForFunction(()=>state.player&&state.combatActive);

@@ -32,7 +32,7 @@
   --panel: #0e121b;
   --panel2: #141a26;
   --border: #1c2433;
-  --accent: #00f0d0;
+  --accent: var(--base);
   --accent2: #ff2d6a;
   --text: #eef2ff;
   --muted: #7a8699;
@@ -117,7 +117,7 @@ body {
   min-height: calc(var(--vh) * 100);
   overflow-x: hidden;
   background:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0,240,208,0.07), transparent),
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(238,242,255,0.05), transparent),
     radial-gradient(ellipse 60% 40% at 100% 100%, rgba(255,45,106,0.05), transparent),
     linear-gradient(to bottom, rgba(6,9,14,0.30) 0%, rgba(6,9,14,0.10) 42%, rgba(6,9,14,0.26) 100%),
     radial-gradient(ellipse 135% 105% at 50% 45%, transparent 42%, rgba(6,9,14,0.42) 100%),
@@ -612,7 +612,7 @@ body {
   font-size: clamp(1.15rem, 2.6vw, 1.6rem);
   letter-spacing: 2px;
   color: var(--text);
-  text-shadow: 0 2px 14px rgba(0,0,0,0.9), 0 0 30px rgba(0, 240, 208, 0.30);
+  text-shadow: 0 2px 14px rgba(0,0,0,0.9), 0 0 30px rgba(238,242,255,0.28);
 }
 /* Brighter than the old muted grey, because muted grey was a colour chosen to
    sit on a flat dark page and this now sits on a lit room. The stacked dark
@@ -637,7 +637,7 @@ body {
   text-transform: uppercase;
   letter-spacing: 6px;
   font-size: clamp(0.82rem, 1.8vw, 1rem);
-  text-shadow: 0 2px 12px rgba(0,0,0,0.9), 0 0 26px rgba(0, 240, 208, 0.40);
+  text-shadow: 0 2px 12px rgba(0,0,0,0.9), 0 0 26px rgba(238,242,255,0.35);
 }
 
 /* `OWNER:` MUTATE is green is-primary, RESIST MUTATION the same quiet grey as
@@ -688,60 +688,6 @@ body {
    and EVOLVE on the strain select were the first casualties. The backing is
    dark enough to seat the label anywhere in the room and, on the screens that
    are still mostly panel, indistinguishable from the transparency it replaced. */
-.btn {
-  background: rgba(8, 12, 18, 0.72);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 2px solid var(--accent);
-  color: var(--accent);
-  font-family: 'Orbitron', sans-serif;
-  font-weight: 700;
-  font-size: 0.95rem;
-  padding: 13px 40px;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.3, 1);
-  letter-spacing: 2px;
-  position: relative;
-}
-
-.btn:hover {
-  background: var(--accent);
-  color: #07090f;
-  box-shadow: 0 0 32px rgba(0,240,208,0.45);
-  transform: translateY(-2px);
-}
-.btn:active {
-  transform: translateY(0);
-  box-shadow: 0 0 16px rgba(0,240,208,0.3);
-}
-
-.btn.danger { border-color: var(--accent2); color: var(--accent2); }
-.btn.danger:hover {
-  background: var(--accent2);
-  color: #fff;
-  box-shadow: 0 0 32px rgba(255,45,106,0.45);
-}
-
-.btn.small {
-  padding: 8px 18px;
-  font-size: 0.8rem;
-}
-
-.btn:disabled {
-  opacity: 0.32;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-  border-color: var(--border);
-  color: var(--muted);
-}
-.btn:disabled:hover {
-  background: transparent;
-  color: var(--muted);
-  box-shadow: none;
-  transform: none;
-}
-
 /* CLASS SELECT. Cards use .ui-btn's glass; only border and glow vary per
    strain. 300px wide — the description wraps and the card grows on its own. */
 #class-screen.active {
@@ -1059,7 +1005,8 @@ body {
     linear-gradient(180deg, rgba(14,18,27,0.2) 0%, transparent 40%),
     radial-gradient(ellipse 90% 50% at 50% 100%, rgba(0,0,0,0.55) 0%, transparent 70%),
     var(--panel);
-  border: 2px solid var(--border);
+  border: 1px solid rgba(var(--base-rgb), 0.28);
+  border-radius: 6px;
   padding: 16px 28px 22px;
   position: relative;
   overflow: hidden;
@@ -1111,8 +1058,8 @@ body {
     /* clarity pocket: darkest at the floor, behind the fight */
     radial-gradient(ellipse 130% 60% at 50% 100%, rgba(4,6,10,0.85) 0%, rgba(4,6,10,0.35) 45%, transparent 75%),
     /* distant glow spots: portholes and a console, dim by contract */
-    radial-gradient(circle 90px at 16% 28%, rgba(0,240,208,0.055), transparent 70%),
-    radial-gradient(circle 55px at 79% 22%, rgba(0,240,208,0.045), transparent 70%),
+    radial-gradient(circle 90px at 16% 28%, rgba(238,242,255,0.045), transparent 70%),
+    radial-gradient(circle 55px at 79% 22%, rgba(238,242,255,0.04), transparent 70%),
     radial-gradient(circle 75px at 54% 15%, rgba(255,45,106,0.035), transparent 70%),
     /* hull ribs: structure you sense rather than read */
     repeating-linear-gradient(90deg, transparent 0 120px, rgba(255,255,255,0.022) 120px 126px),
@@ -1181,7 +1128,7 @@ body {
     linear-gradient(180deg, rgba(28,36,51,0.0) 0%, rgba(28,36,51,0.7) 45%, rgba(12,16,24,0.95) 100%);
   border-radius: 50% / 100%;
   box-shadow:
-    0 0 40px rgba(0,240,208,0.04),
+    0 0 40px rgba(238,242,255,0.04),
     inset 0 1px 0 rgba(255,255,255,0.05);
   pointer-events: none;
   z-index: 1;
@@ -1703,14 +1650,14 @@ body {
    would cost more than it buys. */
 .sidebar,
 .action-panel {
-  background: rgba(14, 18, 27, 0.90);
+  background: rgba(6, 11, 10, 0.68);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(var(--base-rgb), 0.28);
+  border-radius: 6px;
 }
 
 .action-panel {
-  background: var(--panel);
-  border: 2px solid var(--border);
   padding: 16px 18px;
 }
 
@@ -1725,7 +1672,7 @@ body {
   color: var(--accent);
   font-weight: 700;
   padding: 1px 5px;
-  border: 1px solid rgba(0,240,208,0.35);
+  border: 1px solid rgba(238,242,255,0.35);
   border-radius: 3px;
   margin: 0 1px;
 }
@@ -1737,8 +1684,9 @@ body {
 }
 
 .skill-btn {
-  background: var(--panel2);
-  border: 2px solid #252d3d;
+  background: rgba(6, 11, 10, 0.52);
+  border: 1px solid rgba(var(--base-rgb), 0.28);
+  border-radius: 6px;
   color: var(--text);
   /* Deeper at the bottom than the sides because the strain strip lives in that
      padding: 6px of it is the glow, so an even 11px left the longest card
@@ -1765,7 +1713,8 @@ body {
    it was a second, differently-coloured answer to the same question. The lift
    and the lighter ground carry the hover on their own. */
 .skill-btn:hover:not(:disabled) {
-  background: #1a2233;
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(var(--base-rgb), 0.55);
   transform: translateY(-2px);
 }
 
@@ -1774,11 +1723,10 @@ body {
 .skill-btn.basic {
   opacity: 1;
   cursor: pointer;
-  border-style: solid;
-  border-color: #252d3d;
 }
 .skill-btn.basic:hover {
-  background: #1a2233;
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(var(--base-rgb), 0.55);
   transform: translateY(-2px);
 }
 .skill-btn.basic.auto-off {
@@ -1813,9 +1761,9 @@ body {
 }
 
 .skill-btn.selected {
-  border-color: var(--accent);
-  box-shadow: 0 0 18px rgba(0,240,208,0.2);
-  background: #15202b;
+  border-color: rgba(var(--base-rgb), 0.75);
+  box-shadow: 0 0 18px rgba(238,242,255,0.2);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 /* ===== The neon strip along the bottom of a skill card =====
@@ -1950,8 +1898,6 @@ body {
 }
 
 .sidebar {
-  background: var(--panel);
-  border: 2px solid var(--border);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -1962,7 +1908,7 @@ body {
 
 .sidebar-tabs {
   display: flex;
-  border-bottom: 2px solid var(--border);
+  border-bottom: 2px solid rgba(255,255,255,0.10);
   flex-shrink: 0;
 }
 
@@ -1992,7 +1938,7 @@ body {
 .sidebar-tab.active {
   color: var(--accent);
   border-bottom-color: var(--accent);
-  background: rgba(0,240,208,0.04);
+  background: rgba(255,255,255,0.05);
 }
 
 /* Floats over whichever intro is running, out of the way in the corner. Sits
@@ -2013,7 +1959,7 @@ body {
 .skip-btn:hover { opacity: 1; }
 
 .menu-panel { display: flex; flex-direction: column; gap: 12px; }
-.menu-panel .btn { width: 100%; }
+.menu-panel .ui-btn { width: 100%; }
 .menu-panel-note {
   color: var(--muted);
   font-size: 0.78rem;
@@ -2178,8 +2124,8 @@ body {
 .stat-subtab.active {
   opacity: 1;
   color: var(--text);
-  border-color: var(--border);
-  background: var(--panel2);
+  border-color: rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.06);
 }
 /* A point is waiting and it would move something in this group — say so, so
    switching panes is never the only way to find out. */
@@ -2252,16 +2198,7 @@ body {
   align-items: center;
   gap: 14px;
 }
-.menu-stack .btn { width: 290px; }
-
-.btn:disabled, .btn.is-disabled {
-  opacity: 0.32;
-  cursor: not-allowed;
-  border-color: var(--border);
-  color: var(--muted);
-  filter: none;
-}
-.btn:disabled:hover, .btn.is-disabled:hover { background: transparent; }
+.menu-stack .ui-btn { width: min(330px, 80vw); }
 
 .menu-meta {
   color: var(--muted);
@@ -2271,28 +2208,19 @@ body {
   min-height: 1.1em;
 }
 
-.btn-ghost {
-  border-color: var(--border);
-  color: var(--muted);
-  padding: 9px 26px;
-  font-size: 0.76rem;
-  letter-spacing: 1.5px;
-}
-.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
-
-
 .hud-menu-btn {
   font-family: 'Orbitron', sans-serif;
   font-size: 0.7rem;
   letter-spacing: 1.5px;
   padding: 6px 14px;
   background: transparent;
-  border: 2px solid var(--border);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 6px;
   color: var(--muted);
   cursor: pointer;
   transition: all 0.18s;
 }
-.hud-menu-btn:hover { border-color: var(--accent); color: var(--accent); }
+.hud-menu-btn:hover { border-color: rgba(var(--base-rgb), 0.55); color: var(--text); }
 
 /* ---- Settings ---- */
 .setting-row {
@@ -2431,8 +2359,9 @@ body {
 .stat-btn {
   width: 32px;
   height: 32px;
-  border: 2px solid var(--border);
-  background: var(--panel2);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 6px;
+  background: rgba(6, 11, 10, 0.52);
   color: var(--text);
   font-size: 1.1rem;
   cursor: pointer;
