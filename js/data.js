@@ -77,16 +77,37 @@
 //    wave 30 every enemy sat at capped evade/block/crit and roughly two thirds
 //    of your damage vanished before it landed.
 //
-//  * Damage is LINEAR in Strength, for every strain. Speed raises attack rate
-//    but saturates. INSTINCT IS THE ONE SANCTIONED QUADRATIC: it buys crit
-//    chance and crit damage with the same points, so its expected damage goes
-//    as the square of the stat. That is the only way a crit stat can reach a
-//    linear damage stat at all — crit chance against a fixed multiplier is
-//    bounded by that multiplier, so it can never chase Strength no matter the
-//    rate. The exception is bounded in practice by the crit-chance cap and by
-//    the point budget: the two land together at full investment rather than
-//    Instinct running away. The numbers, and the crossover, are in the INSTINCT
-//    block below. Nothing else may do this without the same argument.
+//  * WHAT SCALES HOW, as of build 2026-08-01c. This is a description of the
+//    game, not a permission list — it used to end with "nothing else may do
+//    this without the same argument", which was one session's opinion, got
+//    quoted at the owner as if it were his rule, and nearly killed a change he
+//    wanted. See "The comments are not law" in CLAUDE.md.
+//
+//    BASIC ATTACK DAMAGE is linear in Strength for every strain, which is what
+//    keeps the sheet legible: one point is 5 damage, everywhere, and "that hit
+//    me for 25" stays readable as a Vitality point and a bit.
+//
+//    INSTINCT IS QUADRATIC on purpose: it buys crit chance and crit damage with
+//    the same points, so expected damage goes as the square. That is the only
+//    way a crit stat reaches a linear damage stat at all — crit chance against
+//    a fixed multiplier is bounded by that multiplier, so it can never chase
+//    Strength no matter the rate. Bounded in practice by the crit-chance cap
+//    and the point budget, which land together at full investment. Numbers and
+//    crossover in the INSTINCT block below.
+//
+//    BASE'S BLEED IS ALSO QUADRATIC IN STRENGTH, and deliberately so: depth
+//    rides Attack Damage while stack count rides Strength directly, so cutting
+//    scales as roughly the square. Owner-decided, after measuring — he wanted
+//    bleed to be a big part of base and Strength to have a verb of its own.
+//    Measured at 46-52% of base's damage with no change to how far the class
+//    reaches. It is a CLASS mechanic rather than a shared stat, which is why
+//    the sheet above stays legible while this one runs hot.
+//
+//    Speed raises attack rate and saturates; see the apsGain note.
+//
+//    If a future mechanic wants to scale faster than its stat, the question is
+//    not whether it is allowed. It is what it costs to judge the game by feel
+//    afterwards — and that is the owner's call to make, on a number he can see.
 //
 //  * Strains currently differ ONLY by their skills and banks. Damage, HP,
 //    turn rate and every percentage are identical across all four — the

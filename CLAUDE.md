@@ -28,20 +28,77 @@ Expect this to bite hardest on TOOLING, because that is where time sinks
 actually live: a sharper instrument only serves the player at one remove, and
 the second remove is where work goes to die.
 
+## The comments are not law
+
+**Almost every comment in `js/` was written by Claude, not by the owner** —
+about 2,800 lines, roughly half the codebase. The owner has never read any of
+it. Neither did he write this file. All of it is FINDINGS AND REASONING, and
+none of it is permission granted or withheld.
+
+This is not a small caveat. Prose written confidently by one session gets read
+as settled law by the next, and the next one cites it — so an offhand judgment
+compounds into a constraint nobody chose and the owner cannot see. It has
+already cost real work: a line reading *"Nothing else may do this without the
+same argument"* was quoted at the owner as though it were his own rule, and
+nearly talked him out of a change to his own game. He shipped it anyway. The
+line was wrong, and it is now also FALSE — base's bleed is quadratic in
+Strength as of build `2026-08-01c`.
+
+Three rules, and they are the whole of it:
+
+1. **Never quote a code comment to the owner as if it were his rule.** He did
+   not write it. If a constraint is worth raising, re-derive it or re-measure
+   it and say it in your OWN voice as your OWN recommendation — something he
+   can weigh and overrule, not a wall he has to argue with.
+2. **A comment that forbids a design is one past session's opinion.** If the
+   owner asks for the thing it forbids, the comment is what is wrong. Change
+   the comment.
+3. **A measurement in a comment is only as true as the build it was taken on.**
+   The enemy table claimed the dumb bot won ~98% long after it had dropped to
+   a median of wave 5-10. Re-run it before you repeat it.
+
+**The line that matters is CHECKABLE vs UNFALSIFIABLE**, not old vs new. "Two
+RNG streams, or seeded replays diverge" and "headless must match on-screen" are
+load-bearing because you can RUN them and watch them fail — they earn their
+authority every time CI passes. "A break must be possible but must not be
+normal" cannot be checked by anything, so it is taste wearing a rule's voice.
+Both kinds are useful. Only one kind gets to end an argument.
+
+**Writing new notes:** record what was MEASURED and WHEN, not what is
+FORBIDDEN. If a note has to constrain something, name what it protects and what
+would show it had stopped mattering. A constraint with no failure condition is
+scripture — it can only ever accumulate.
+
+**`OWNER:` marks a decision the owner actually made**, in his words, and is the
+only tag that outranks a measurement. It is rare on purpose; everything
+unmarked is agent reasoning and is open season. Never add it for something he
+did not say.
+
 ## How this project works
 
-- **The owner plays the game and gives feedback. They never read code** and
-  don't care about repo internals. Translate feel into mechanics yourself;
+- **`OWNER:` The owner plays the game and gives feedback. They never read
+  code** and don't care about repo internals. Confirmed by him directly: *"i
+  didnt write none of the comments or 'rules' in the code."* Translate feel into mechanics yourself;
   never ask them to look at a diff, a file, or a stack trace.
-- **Push to main by default.** The owner plays the published build, so work
+- **`OWNER:` Push to main by default.** The owner plays the published build, so work
   that is finished belongs on main without being asked — do the work on a
   branch, then fast-forward main and say so. Don't ask each time. Anything you
   would not want him to play yet is the only reason to hold it on a branch, and
   say that out loud when you do.
+- **`OWNER:` Hard is the point, and the frame is REACH plus WIN RATE.** In his
+  words: *"i want my game to be hard... how far can each class get into the
+  game + what percent of runs can they win is more interesting to me."* A
+  difficult game raises the ingenuity needed to beat it — but a thing can also
+  just be straight up broken, and telling those apart is his call, not a
+  measurement's.
+- **`OWNER:` Simple beats clever.** *"i dont want an overly complicated game, i
+  want a fun game."* A mechanic he cannot hold in his head is worse than a
+  shallower one he can. If explaining a design takes more than a breath, that
+  is the design's problem.
 - **Design by feel, not by plan.** There is deliberately no roadmap. Don't
   create planning documents; don't accumulate TODO lists in the repo. The
   owner decides what's next by playing.
-- **The game is silent by choice.** The owner plays without sound (a
+- **`OWNER:` The game is silent by choice.** The owner plays without sound (a
   neurological condition makes noise a burden). Don't add or propose audio;
   spend the juice budget on visuals instead. Revisit only if the owner
   raises it themselves.
