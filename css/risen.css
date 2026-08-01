@@ -118,8 +118,8 @@ body {
   background:
     radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0,240,208,0.07), transparent),
     radial-gradient(ellipse 60% 40% at 100% 100%, rgba(255,45,106,0.05), transparent),
-    linear-gradient(to bottom, rgba(6,9,14,0.80) 0%, rgba(6,9,14,0.70) 45%, rgba(6,9,14,0.88) 100%),
-    radial-gradient(ellipse 130% 100% at 50% 45%, rgba(6,9,14,0.30) 0%, rgba(6,9,14,0.80) 100%),
+    linear-gradient(to bottom, rgba(6,9,14,0.30) 0%, rgba(6,9,14,0.10) 42%, rgba(6,9,14,0.26) 100%),
+    radial-gradient(ellipse 135% 105% at 50% 45%, transparent 42%, rgba(6,9,14,0.42) 100%),
     url('../assets/ui/menu-wallpaper-chamber.jpg') center / cover no-repeat fixed;
   background-color: var(--bg);
 }
@@ -488,8 +488,17 @@ body {
   text-align: center;
 }
 
+/* NOT TRANSPARENT ANY MORE, and the room is why. These buttons were see-through
+   over a flat dark page, which was fine when there was nothing behind them.
+   With the chamber running at close to full strength a button can land on a lit
+   floor, and teal-on-bright is the worst contrast pair in the palette — BACK
+   and EVOLVE on the strain select were the first casualties. The backing is
+   dark enough to seat the label anywhere in the room and, on the screens that
+   are still mostly panel, indistinguishable from the transparency it replaced. */
 .btn {
-  background: transparent;
+  background: rgba(8, 12, 18, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 2px solid var(--accent);
   color: var(--accent);
   font-family: 'Orbitron', sans-serif;
@@ -1445,11 +1454,15 @@ body {
 
 /* Action panel */
 /* ---- Panels over the room ------------------------------------------------
-   The three big combat surfaces are translucent so the chamber behind them
-   registers as depth instead of stopping dead at a panel edge. 0.82 is chosen
-   against the densest thing each one holds — a stat column, four skill cards, a
-   scrolling log — so the text still sits on a near-solid bed; the blur is what
-   keeps whatever shows through from reading as detail.
+   THE ROOM IS BRIGHT, SO THE PANELS DO THE READING. The first pass had this
+   backwards — a heavily darkened wallpaper under see-through panels — which
+   produced a background too dim to identify and text sitting on a muddy wash.
+   Inverted: the chamber runs at close to full strength, and these three
+   surfaces are nearly solid so nothing behind them reaches the text.
+
+   0.90 rather than 1.0, with a heavy blur, is what keeps a panel from reading
+   as a slab cut out of the room: the light and colour behind it still bleed
+   through at the edges, but as light, never as detail.
 
    The ARENA CARD is deliberately left opaque: it carries its own zone painting,
    and two paintings competing inside one frame is the one place this effect
@@ -1457,9 +1470,9 @@ body {
 .sidebar,
 .action-panel,
 .combat-log {
-  background: rgba(14, 18, 27, 0.82);
-  backdrop-filter: blur(7px);
-  -webkit-backdrop-filter: blur(7px);
+  background: rgba(14, 18, 27, 0.90);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .action-panel {
