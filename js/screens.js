@@ -282,8 +282,18 @@ function spawnEnemy() {
   // the threshold in zero time, so the player is next by the ordinary
   // comparison; acting spends it back to empty and the fight proceeds normally
   // from two empty gauges.
-  state.player.meter = 1;
+  //
+  // ONLY WHEN THE GAUGES WOULD NOT ALREADY GIVE IT TO YOU. Handing out the full
+  // meter unconditionally paid a fast player twice: psy opens at or above the
+  // wave-1 enemy's rate, so it won the opening on tempo AND got the free one on
+  // top, taking two turns while the forecast — which reads the gauges honestly
+  // — kept saying the enemy was next. The guarantee is a floor, not a bonus.
+  state.player.meter = 0;
   state.enemy.meter = 0;
+  // The same comparison advanceToNextActor makes from empty gauges, ties to the
+  // player. If the enemy is strictly faster it takes the opening, so buy it back.
+  const tp = 1 / effectiveAps(state.player), te = 1 / effectiveAps(state.enemy);
+  if (te < tp - 1e-9) state.player.meter = 1;
   state.fightTurns = 0;
   state.enemyActions = 0;
   state.turnNo = 0;
