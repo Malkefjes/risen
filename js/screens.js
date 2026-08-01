@@ -42,7 +42,7 @@ function openClassSelect() {
   _pendingClass = null;
   document.querySelectorAll('.class-card').forEach(c => c.classList.remove('selected'));
   const btn = document.getElementById('start-btn');
-  if (btn) btn.disabled = true;
+  if (btn) { btn.disabled = true; btn.className = 'ui-btn is-primary'; }
   showScreen('class-screen');
 }
 
@@ -51,7 +51,10 @@ function selectClass(id) {
   _pendingClass = id;
   document.querySelectorAll('.class-card').forEach(c => c.classList.remove('selected'));
   document.querySelector('.class-card.' + id).classList.add('selected');
-  document.getElementById('start-btn').disabled = false;
+  const btn = document.getElementById('start-btn');
+  btn.disabled = false;
+  // EVOLVE takes the chosen strain's colour.
+  btn.className = 'ui-btn is-primary strain-' + id;
 }
 function recalcPlayerStats(){ if (state.player) applyDerivedStats(state.player); }
 
