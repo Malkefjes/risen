@@ -317,10 +317,6 @@ body {
    (its width and its responsive type) and inherits the rest from here. Two
    copies of a look is how the two drift apart.
 
-   `OWNER:` THE EDGE IS WHITE (--base-rgb), the wash and the glow stay green.
-   Exceptions are per-screen and explicit — MUTATE's green 2px, EVOLVE's strain
-   tint — never a change to this default.
-
    Glass rather than a fill: dark enough to seat a label anywhere in the room,
    translucent and blurred enough that the light behind it still comes through.
    The variants change BORDER AND GLOW, never size or shape — a row of buttons
