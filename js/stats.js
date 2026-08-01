@@ -149,9 +149,14 @@ function skillStatusOpts(skill) {
 // cutter cannot see.
 function tickStatuses(unit, which) {
   if (!unit || !unit.statuses || !unit.statuses.length) return false;
+  // BOTH CLOCKS is a third option, and BLEED is the only thing that wants it:
+  // it fires on EVERY turn, yours and theirs, which is what makes a wound burn
+  // down twice as fast as a rot does. It is exempt from the duration sweep
+  // below because it has no duration — its stack count IS its clock.
+  const both = st => !!(STATUSES[st.type] && STATUSES[st.type].bothClocks);
   const mine = which === 'inflicted'
-    ? st => !!(STATUSES[st.type] && STATUSES[st.type].inflicted)
-    : st => !(STATUSES[st.type] && STATUSES[st.type].inflicted);
+    ? st => both(st) || !!(STATUSES[st.type] && STATUSES[st.type].inflicted)
+    : st => both(st) || !(STATUSES[st.type] && STATUSES[st.type].inflicted);
   // Snapshot: a hook may add or remove statuses mid-loop.
   for (const st of unit.statuses.slice()) {
     if (!mine(st)) continue;
@@ -161,7 +166,7 @@ function tickStatuses(unit, which) {
   const expired = [];
   unit.statuses = unit.statuses.filter(st => {
     const def = STATUSES[st.type];
-    if (!mine(st)) return true;
+    if (!mine(st) || both(st)) return true;
     if (def && (def.permanent || def.manual)) return true;
     st.duration--;
     if (st.duration > 0) return true;
@@ -522,6 +527,17 @@ function applyDerivedStats(p) {
 // Non-base strains still get a number here rather than a zero: it is what a
 // stack WOULD tick for if some future source ever applied one, which is the
 // same way crit damage reads while crit chance is 0.
+// HOW MANY STACKS ONE CUT OPENS — the number the whole mechanic runs on now
+// that the timer is gone. See bleedBase / bleedPerStr in BALANCE for why it can
+// never go near 1: the pile loses two a turn-cycle, so anything under that is a
+// wound that drains faster than it is cut.
+function bleedStacks(p) {
+  if (!p) return 1;
+  const B = P();
+  const per = B.bleedPerStr || 5;
+  return Math.max(1, (B.bleedBase || 2) + Math.floor((p.str || 0) / per));
+}
+
 function bleedDepth(p) {
   if (!p) return 1;
   const B = P(), t = p.talents || {};

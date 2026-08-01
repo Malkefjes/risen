@@ -167,7 +167,7 @@
 // KEEP THIS SEPARATE FROM BALANCE.saveKey. That one answers "are saved runs
 // still valid" and is bumped only when a change makes an old sheet wrong.
 // Deriving it from this would wipe every save on a typo fix.
-const BUILD = '2026-08-01b';
+const BUILD = '2026-08-01c';
 
 const BALANCE = {
   player: {
@@ -403,10 +403,18 @@ const BALANCE = {
     // colour" is precisely the failure the sym pass just finished undoing. Two
     // rules keep them apart, and both have to hold:
     //
-    //   POISON IS PERMANENT; BLEED IS ON A TIMER that each new stack refreshes.
-    //   Bio infects and waits — the rot is a clock that never stops. Base has
-    //   to keep cutting, and four turns of not attacking closes the wound
-    //   entirely. One class ramps and coasts; the other cannot stop working.
+    //   POISON IS A RATE; BLEED IS A PILE THAT BURNS DOWN. The rot ticks once a
+    //   turn, forever, and never loses a stack — bio infects and waits. A wound
+    //   ticks on EVERY turn, yours and theirs, and eats a stack doing it, so it
+    //   pays out roughly twice as fast and is gone unless you keep cutting. One
+    //   class ramps and coasts; the other cannot stop working.
+    //
+    //   AND A PILE IS WORTH MORE THAN THE SUM OF ITS PARTS. A tick hits for
+    //   what the pile HAS, so 8 stacks pay 8+7+6+... rather than 8 flat: double
+    //   the stacks is four times the damage. Poison rewards time, bleed rewards
+    //   SIZE. That is the difference, and it is deliberately sayable in a
+    //   breath — the owner asked for a mechanic that is easy to hold in the
+    //   head, and this is what that asked for in the numbers.
     //
     //   POISON IS FREE; BLEED IS BOUGHT WITH PUNISHMENT. The rot ticks whether
     //   or not bio is ever touched. A cut is only as deep as the RESOLVE behind
@@ -417,7 +425,32 @@ const BALANCE = {
     // perStackRule on the bleed status): spend your Resolve on Last Stand and
     // the wounds you open afterwards are shallower. That is the cost that makes
     // hold-vs-spend a real question rather than a formality.
-    bleedDuration: 4,                        // TURNS — refreshed by each new stack
+    // HOW MANY STACKS ONE CUT OPENS. There is no timer any more: the pile IS
+    // the clock, and it burns down one stack per turn from each side. That
+    // means application has to clear TWO a turn-cycle or the wound drains
+    // faster than it can be fed — measured, at 1 stack a cut bleed collapsed
+    // from 29% of base's damage to 9%, which is not a weaker mechanic, it is
+    // no mechanic. Every number here is chosen against that floor.
+    //
+    // 2 + one per 5 Strength: 3 stacks on the starting sheet, 9 fully invested.
+    // Strength is in here because a cut that hits harder should also open
+    // wider, and because it is the one place in the game where the stat gets a
+    // verb of its own rather than a share of the damage number.
+    //
+    // Measured, base, 40 runs a cell — bleed's share of all damage dealt, and
+    // the wave it reached:
+    //   today (timer)  31% spread / 25% STR      15w / 10w
+    //   flat 3         45% / 41%                 15w / 12w
+    //   2 + STR/5      46% / 52%                 15w / 14w   <- shipped
+    //   flat 5         64% / 62%                 22w / 15w
+    //   3 + STR/3      67% / 70%                 25w / 15w
+    // The last two are here because they are the dial, not because they were
+    // rejected: both make bleed most of the class and both move base well past
+    // the other three strains. Shipping the one that makes BLEED base's biggest
+    // damage source without moving how far it gets, so the change can be judged
+    // on how it PLAYS before it is judged on power.
+    bleedBase: 2,
+    bleedPerStr: 5,                          // one extra stack per this much Strength
     bleedPerResolve: 0.10,                   // each held RESOLVE deepens a NEW cut by this share of the ailment base
     // ---- THORNS (sym) -----------------------------------------------------
     // SYM'S MECHANIC IS ONE NUMBER THAT GROWS, and thorns is that number —
@@ -1145,7 +1178,7 @@ const CLASSES = {
       // bleedDepth computes it from the sheet every time a cut lands. A desc
       // field may be a function now (see fmtDesc), so the card prints what the
       // next Strike will actually open, and it moves as Resolve stacks up.
-      { id:'jab', name:'Strike', desc:'Deal {power!} damage. +{buildsResolve} RESOLVE, and open a wound: +{bleedTick} BLEED a turn for {bleedTurns#turn}', type:'attack', power:1.0, buildsResolve:1, bleed:1, bleedTick:p => bleedDepth(p), bleedTurns:BALANCE.player.bleedDuration, target:'enemy', basic:true },
+      { id:'jab', name:'Strike', desc:'Deal {power!} damage. +{buildsResolve} RESOLVE, and open a wound: +{bleedStacks} BLEED. Every turn, BLEED deals {bleedTick} a stack and loses one.', type:'attack', power:1.0, buildsResolve:1, bleed:1, bleedStacks:p => bleedStacks(p), bleedTick:p => bleedDepth(p), target:'enemy', basic:true },
       { id:'bandage', name:'Bandage', desc:'Heal {healFrac+} and +{resolveHealBonus%} per held RESOLVE', type:'heal', healFrac:0.14, resolveHealBonus:0.02, target:'self', cdTurns:4 },
       // BRACE LASTS TWO TURNS, NOT ONE, and the reason is measured. This is
       // base's answer to the telegraph, and it was the only answer in the game
@@ -1162,7 +1195,7 @@ const CLASSES = {
       // to see the telegraph and act on it) while forgiving a turn of
       // misjudgement, which is the difference between strict and broken.
       // `holdFor` tells the bot the same thing the card tells the player.
-      { id:'counter', name:'Counterpunch', desc:'Brace for {duration#turn}: −{power%} damage taken, stacking with RESOLVE. A hit taken while braced counters {counterPower!} damage and opens a wound: +{bleedTick} BLEED a turn', type:'buff', buff:'brace', duration:2, power:0.60, counterPower:1.20, counterBleed:1, bleedTick:p => bleedDepth(p), holdFor:'windup', target:'self', cdTurns:4 },
+      { id:'counter', name:'Counterpunch', desc:'Brace for {duration#turn}: −{power%} damage taken, stacking with RESOLVE. A hit taken while braced counters {counterPower!} damage and opens a wound: +{bleedStacks} BLEED', type:'buff', buff:'brace', duration:2, power:0.60, counterPower:1.20, counterBleed:1, bleedStacks:p => bleedStacks(p), holdFor:'windup', target:'self', cdTurns:4 },
       { id:'laststand', name:'Last Stand', desc:'Deal {power!} damage, +{perResolvePower!} per RESOLVE consumed. Spends all RESOLVE', type:'attack', power:1.20, perResolvePower:0.40, consumesResolve:true, target:'enemy', cdTurns:5 }
     ]
   }
@@ -1467,16 +1500,24 @@ const STATUSES = {
   bleed: {
     id:'bleed', name:'BLEED', tone:'bleed', kind:'debuff',
     // No maxStacks, exactly like poison: the twin shares the shape.
-    stacking:'stack', defaults:{ duration:4, stacks:1, perStack:1 },
-    // Ticks on the cutter's turn, like the rot — and here the timer makes it
-    // matter twice, because the duration counts down on the same clock. Four
-    // turns of BLEED is four of YOUR turns now, however fast either of you is.
+    stacking:'stack', defaults:{ stacks:1, perStack:1 },
+    // TICKS ON EVERY TURN, AND EATS ITSELF DOING IT. One tick a turn from each
+    // side, and a stack gone each time — so a wound bleeds twice as fast as the
+    // rot and is gone twice as fast too, unless you keep cutting.
+    //
+    // The whole mechanic is three sentences: apply a lot, it hits for what it
+    // has, it counts down. More BLEED is more damage, and that is the entire
+    // rule — no timer to track, nothing to read off a second number.
+    bothClocks: true,
     inflicted: true,
     // The wound is as deep as the LAST cut, not the deepest one ever made —
     // which is what gives spending Resolve a price. See applyStatus.
     perStackRule:'newest',
-    label: st => 'BLEED ×' + (st.stacks||1) + '  ' + Math.ceil(st.duration) + 't',
+    label: st => 'BLEED ×' + (st.stacks||1),
     onTurnStart(unit, st) {
+      // Hits for what it HAS, then loses one. A pile of 8 pays 8, then 7, then
+      // 6 — so a big pile is worth much more than twice a small one, and
+      // stacking hard is the play rather than topping up.
       const dmg = Math.max(1, Math.floor((st.perStack||1) * (st.stacks||1)));
       unit.hp = Math.max(0, unit.hp - dmg);
       if (!unit.isPlayer) state.damageDealt += dmg;   // see the note on poison's tick
@@ -1485,6 +1526,11 @@ const STATUSES = {
         '×' + (st.stacks||1) + ' @ ' + logNum(st.perStack||1) + '/stack',
         logNum(unit.hp) + '/' + logNum(unit.maxHp) + ' left'
       ]);
+      st.stacks = (st.stacks||1) - 1;
+      if (st.stacks <= 0) {
+        unit.statuses = unit.statuses.filter(x => x !== st);
+        logStatus(unit, st, true);
+      }
       updateUnitCard(unit);
       return unit.hp <= 0;
     }
@@ -1552,7 +1598,7 @@ const STATUSES = {
       // is the whole reason a class built on absorbing hits can afford to spend
       // a turn not attacking.
       if (st.counterBleed && unit.class === 'base' && e.hp > 0)
-        applyStatus(e, 'bleed', { stacks: st.counterBleed, perStack: bleedDepth(unit), duration: P().bleedDuration });
+        applyStatus(e, 'bleed', { stacks: bleedStacks(unit), perStack: bleedDepth(unit) });
       logDamage('COUNTER', e, cdmg, [
         'BRACE ×' + (st.counter||1.2).toFixed(2) + ' Attack Damage',
         logNum(e.hp) + '/' + logNum(e.maxHp) + ' left'

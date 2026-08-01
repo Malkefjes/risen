@@ -749,7 +749,10 @@ function applyPlayerDamage(p, e, skill) {
   // swing, off the Resolve standing behind it. gainResolve fires earlier in
   // this same function, so a Strike is cut with the Resolve it just earned.
   if (skill.bleed && p.class === 'base' && e.hp > 0)
-    applyStatus(e, 'bleed', { stacks: skill.bleed, perStack: bleedDepth(p), duration: P().bleedDuration });
+    // skill.bleed is a FLAG (this attack opens a wound), not a count — the
+    // count comes off the sheet so Strength reaches it. No duration: stacks are
+    // the clock.
+    applyStatus(e, 'bleed', { stacks: bleedStacks(p), perStack: bleedDepth(p) });
   // Terrify's burst of fear, the planted counterpart of Slash's poison. On-hit
   // rather than on-use, so the enemy dodging costs the fear along with the
   // damage. Lands after creditCrit: a critting Terrify plants its crit stack
