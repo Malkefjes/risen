@@ -268,7 +268,10 @@ function spawnEnemy() {
     if (e.hp <= 0) state._lastOverkill = Math.max(0, carry - before);
   }
 
-  if (state.kills > 0) {
+  // "not the opening fight of the run". Reads the wave rather than the kill
+  // count — a kill is what advances a wave, so the two say the same thing, and
+  // the wave is a number the save actually keeps.
+  if (state.wave > 1) {
     const before = p.hp;
     p.hp = Math.min(p.maxHp, p.hp + Math.floor(healAnchorFor(p) * P().recoverHpFrac));
     if (p.hp > before) logHeal('RECOVER', p, p.hp - before,

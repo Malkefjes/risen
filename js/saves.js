@@ -186,9 +186,9 @@ document.addEventListener('keydown', ev => {
 // ---- Save / load ----------------------------------------------
 function serializeRun() {
   const p = state.player; if (!p) return null;
-  return { v:2, build:BUILD, classId:state.classId, wave:state.wave, kills:state.kills,
+  return { v:2, build:BUILD, classId:state.classId, wave:state.wave,
     overkillCarry:state.overkillCarry, talentQueue:state.talentQueue,
-    bestCombo:state.bestCombo, damageDealt:state.damageDealt, runStart:state.runStart,
+    damageDealt:state.damageDealt, runStart:state.runStart,
     // The result card's run-lifetime counters. Additive fields: a save written
     // before they existed loads them as 0, counted from the reload on.
     runTurns:state.runTurns||0, damageTaken:state.damageTaken||0,
@@ -371,8 +371,10 @@ function continueRun(slot){
   // it is not serialized, and a chain is a property of an unbroken streak of
   // kills rather than of a run.
   state.overkillCarry=d.overkillCarry||0;
-  state.talentQueue=d.talentQueue||[]; state.wave=d.wave||1; state.kills=d.kills||0;
-  state.bestCombo=d.bestCombo||0; state.damageDealt=d.damageDealt||0;
+  state.talentQueue=d.talentQueue||[]; state.wave=d.wave||1;
+  // kills and bestCombo are not saved. They stay at resetRunState's 0 and count
+  // from the reload on; the end-of-run report is the only thing that reads them.
+  state.damageDealt=d.damageDealt||0;
   state.runTurns=d.runTurns||0; state.damageTaken=d.damageTaken||0;
   state.critsLanded=d.critsLanded||0; state.dodges=d.dodges||0;
   state.dmgBySource=d.dmgBySource||{}; state.skillUses=d.skillUses||{};
