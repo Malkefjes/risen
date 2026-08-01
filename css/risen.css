@@ -204,16 +204,9 @@ body {
   font-family: 'Orbitron', sans-serif;
   text-align: center;
   font-size: 1.7rem;
-  margin-bottom: 10px;
+  margin-bottom: clamp(20px, 3.6vh, 38px);
   letter-spacing: 3px;
   text-shadow: 0 2px 16px rgba(0,0,0,0.85);
-}
-.save-lede {
-  text-align: center;
-  color: var(--muted);
-  font-size: 0.8rem;
-  letter-spacing: 0.6px;
-  margin-bottom: clamp(18px, 3vh, 32px);
 }
 .save-actions { margin-top: clamp(20px, 3.4vh, 34px); }
 .save-list { display: flex; flex-direction: column; gap: 10px; width: min(560px, 92vw); }
