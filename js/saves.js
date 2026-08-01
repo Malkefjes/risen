@@ -85,6 +85,8 @@ function devEnterCombat(handoverLine) {
   if (zn) zn.textContent = getZoneName(state.wave);
   const an = document.getElementById('act-name');
   if (an) an.textContent = getActLabel(state.wave);
+  const ac = document.getElementById('arena-card');
+  if (ac) ac.dataset.zone = zoneForWave(state.wave).num;
   updateHud(); renderCombat(true); renderSkills(); updateTurnInfo();
   showScreen('combat-screen');
   document.getElementById('combat-screen').classList.remove('staged', 'reveal');
@@ -93,41 +95,41 @@ function devEnterCombat(handoverLine) {
   saveRun();
 }
 
-function devSkipToZone(classId) {
+function devSkipToZone(classId, zoneNum) {
   if (!CLASSES[classId]) return;
-  const gate = ZONES[0].endWave;
-  // First choice: the bot EARNS the sheet — zone 1 played by the real rules.
-  // 20 tries separates bad dice from "the bot cannot do it".
+  const z = ZONES.find(x => x.num === (zoneNum || 2));
+  if (!z || z.num < 2) return;
+  const gate = z.startWave - 1;
+  // First choice: the bot EARNS the sheet — everything before the gate played
+  // by the real rules. 20 tries separates bad dice from "the bot cannot do it".
   for (let attempt = 1; attempt <= 20; attempt++) {
     simulateRun(classId, Object.assign({}, BOTS.smart, { stopWhen: s => s.wave > gate }));
     if (state.runOver || state.wave <= gate) continue;
-    devEnterCombat('DEV · the bot played zone 1 (cleared on try ' + attempt
+    devEnterCombat('DEV · the bot played waves 1-' + gate + ' (cleared on try ' + attempt
       + ') · handed over at wave ' + state.wave + ' · level ' + state.player.level);
     return;
   }
-  // Fallback: a STANDARD zone-1 graduate, synthesized — level 7, the zone's
-  // ~18 points spent along the class's skilled plan, full bar. Less organic
-  // than an earned sheet, but a dev tool that sometimes refuses to open the
-  // door is worse than one that hands you a template. The bot failing 20
-  // straight is itself a reading: zone 1 is currently harder than the
-  // competence floor, and the log line below says so out loud.
+  // Fallback: a synthesized graduate at the level a run of that length reaches.
+  // Less organic than an earned sheet, but a dev tool that sometimes refuses to
+  // open the door is worse than one that hands you a template. The bot failing
+  // 20 straight is itself a reading, and the handover line says so out loud.
+  const level = z.num === 2 ? 7 : 11;
   resetRunState(classId);
   state.saveSlot = 0;
   const p = freshPlayer(classId);
   state.player = p;
-  p.level = 7;
-  p.xp = 0; p.xpNext = xpForLevel(7);
+  p.level = level;
+  p.xp = 0; p.xpNext = xpForLevel(level);
   const plan = (typeof SKILLED_PLANS !== 'undefined' && SKILLED_PLANS[classId]) || ROTATE_STATS;
-  for (let i = 0; i < 6 * P().pointsPerLevel; i++) p[plan[i % plan.length]] += 1;
+  for (let i = 0; i < (level - 1) * P().pointsPerLevel; i++) p[plan[i % plan.length]] += 1;
   recalcPlayerStats();
   p.hp = p.maxHp;
-  state.wave = ZONES[1].startWave;
-  state.kills = ZONES[0].endWave;
+  state.wave = z.startWave;
   state.runStart = Date.now();
   state.combatActive = true;
   spawnEnemy();
-  devEnterCombat('DEV · synthetic zone-1 graduate (the bot went 0 for 20 on zone 1 — '
-    + 'worth knowing) · wave ' + state.wave + ' · level ' + p.level);
+  devEnterCombat('DEV · synthetic wave-' + z.startWave + ' graduate (the bot went 0 for 20 '
+    + 'on waves 1-' + gate + ' — worth knowing) · wave ' + state.wave + ' · level ' + p.level);
 }
 
 // RESIST MUTATION: a quiet transition beat, then drop into the run as base Sonny.
