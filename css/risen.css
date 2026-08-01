@@ -520,10 +520,10 @@ body {
    painting for no gain. What the card was really buying was contrast, and a
    text-shadow buys that without drawing a border.
 
-   The body copy is LEFT-ALIGNED inside a centred column. Five centred
-   paragraphs is five ragged left edges, which is what made this screen read as
-   unfinished — the eye has to find the start of every line. The lead and the
-   closing line stay centred because each is one line and carries the beat. */
+   CENTRED, all of it. It was left-aligned for a pass on the argument that five
+   centred paragraphs is five ragged left edges — true of a UI, and the owner's
+   call is that it is the wrong instinct here: this is a story beat on a
+   symmetrical painting, not a column of copy, and centred is what matches it. */
 .intro-card {
   max-width: 660px;
   margin: clamp(20px, 6vh, 64px) auto clamp(24px, 4.5vh, 44px);
@@ -546,7 +546,7 @@ body {
   color: rgba(226, 236, 244, 0.88);
   font-size: 0.95rem;
   line-height: 1.75;
-  text-align: left;
+  text-align: center;
   text-shadow: 0 1px 3px rgba(0,0,0,0.95), 0 2px 16px rgba(0,0,0,0.85);
 }
 .intro-body p { margin: 0 0 14px; }
