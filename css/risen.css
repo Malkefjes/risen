@@ -212,7 +212,7 @@ body {
   align-items: center;
   gap: clamp(8px, 1.4vh, 13px);
 }
-.dev-stack .ui-btn { width: min(330px, 80vw); }
+.dev-stack .ui-btn { width: min(420px, 90vw); letter-spacing: 2px; }
 .dev-actions { margin-top: clamp(20px, 3.4vh, 34px); }
 .dev-actions .ui-btn { min-width: 190px; }
 
