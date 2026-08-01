@@ -2,306 +2,108 @@
 // ============================================================
 // RISEN — balance & systems
 //
-// Design notes for future-you:
+// Facts about the game and pointers into the code. Not a rulebook: see
+// "The comments are not law" in CLAUDE.md before treating anything here as a
+// constraint. Measurements are dated because they go stale.
 //
-//  * A LENS, NOT A LAW, and first because it is the loosest thing here: stat
-//    allocation is only a choice while you can reason about it but not solve it.
-//    Too little to go on and it is a shrug; a known equation over a known run
-//    and it is a preplanned button you click to get past. The dial that keeps
-//    it alive is UNKNOWABILITY — a future you cannot see (which boss, which
-//    draft, which drop) and picks whose worth depends on what you already took.
-//    That is what mutations and items are for; the base sheet stays legible on
-//    purpose so their breaks read clearly against it. But hold this loosely:
-//    sometimes a flat, boring-on-paper number is exactly right because it is
-//    the anchor everything else is judged against, and feel outranks the lens
-//    every time the two disagree. Reach for it when a choice feels flat, not as
-//    a gate every number has to pass.
+//  * THE STARTING SHEET IS THE ANCHOR: every strain begins 5/5/5/5 with 25
+//    Attack Damage, 100 HP, 1.00 turn rate, 10% evade/crit/block. One point is
+//    5 damage or 20 HP. Enemies are fitted to this rather than designed
+//    alongside it, so a fight that feels wrong has one place to look.
 //
-//  * A BREAK MUST BE POSSIBLE, AND MUST NOT BE NORMAL. The runs worth
-//    remembering are the ones where something got away from the game: a number
-//    that scaled past anything it was fitted against, an assembled combo doing
-//    what no single pick promised. That outcome is WANTED, and the ceiling
-//    stays open for it — a ramp is not capped merely because it could get big,
-//    and "this could get out of hand" is not by itself an argument against a
-//    mechanic. What keeps a break rare is that it must be ASSEMBLED: several
-//    picks agreeing, drafted across a run that could have gone otherwise. Never
-//    the default line of play, and never an accident of two things stacking
-//    quietly. Mutations are the main engine of this, so expect the ceiling to
-//    rise as their pool fills.
+//  * ONE TURN EACH AT WAVE 1. A baseline enemy acts at exactly the player's
+//    starting rate, so 1.00x is even and anything above it was bought.
 //
-//    A COST THAT RIDES A RUNAWAY NUMBER HAS A TRAP IN IT, worth naming because
-//    it was nearly walked into while designing sym's sustain. A PERCENTAGE cost
-//    against an uncapped ramp grows without bound while its payout does not —
-//    healing is bounded by max HP, so past a certain size you pay a fortune for
-//    a heal you cannot hold, and the trade stops being expensive and becomes
-//    absurd. The fix is to take only what the payout was actually worth, which
-//    leaves scaling making a cost EFFICIENT rather than unpayable. Costs should
-//    scale; they must not outrun their own exchange rate.
+//    NON-OBVIOUS, AND EASY TO GET WRONG: cooldowns tick on YOUR turns, not on a
+//    clock, so turn advantage never speeds up your rotation. It only decides how
+//    much the enemy does inside it — which makes turn rate a mitigation stat in
+//    an offensive costume. It also means more of your turns is more healing per
+//    enemy swing, since heal cooldowns tick on the same clock.
 //
-//  * THE PLAYER IS HAND-TUNED FIRST; ENEMIES ARE FITTED TO IT. Enemy numbers
-//    are a free variable — nothing constrains them but how the fight feels —
-//    so they are derived from the player rather than designed alongside. It
-//    also means a fight that feels wrong has one place to look instead of two.
+//  * DERIVED VALUES HANG OFF THE ANCHORS instead of carrying their own curves:
+//    ailment damage is a fifth of Attack Damage, innate thorns a twentieth of
+//    max HP. Retuning an anchor carries them along.
 //
-//  * THE STARTING SHEET IS THE ANCHOR, and it is deliberately round: every
-//    strain begins 5/5/5/5 with 25 Attack Damage, 100 HP, 1.00 turn rate and
-//    10% evade / crit / block. One point is 5 damage or 20 HP. The whole point
-//    is that "that hit me for 25" is legible as a Vitality point and a bit,
-//    which is what makes it possible to judge an enemy by feel later.
+//  * PLAYER AND ENEMY STATS ARE COMPUTED BY SEPARATE FUNCTIONS, and must stay
+//    that way. Enemies once ran through the player's derived-stat formulas and
+//    by wave 30 sat at capped evade/block/crit, eating two thirds of your damage.
 //
-//  * ONE TURN EACH IS THE DEFAULT. A baseline enemy acts at exactly the
-//    player's starting rate, so wave 1 is 1:1 and the turn-rate readout means
-//    something: 1.00x is even, and anything above it was BOUGHT. Every extra
-//    turn now comes from a place you can point at — Speed (1.00 -> 1.79 vs a
-//    baseline enemy, fully invested), or the boss/elite in front of you being
-//    slow by its own stated numbers. Neither is free.
+//  * HEALING IS A SHARE OF THE HEAL ANCHOR, NOT OF MAX HP. One read:
+//    healAnchorFor() in stats.js. Damage-proportional healing (lifesteal,
+//    thorns-feed) is a separate mechanic and is not routed through it.
 //
-//    This matters more than it looks, because a kill costs a fixed number of
-//    YOUR turns: skill cooldowns tick on your own turns rather than a clock,
-//    so turn advantage never speeds up your rotation. All it does is decide
-//    how much the enemy gets to do inside it. Turn rate is therefore a
-//    mitigation stat wearing an offensive costume, and handing out +43% of it
-//    on a fresh sheet was handing out free damage reduction on top of block.
-//    (psy leans on this harder than anyone — its DREAD slows the enemy's side
-//    of the ratio, so the class literally plays the mitigation-in-costume
-//    game as its kit — but the rule itself holds for all four.)
+//  * WHAT SCALES HOW, measured on build 2026-08-01c:
+//      basic attack damage   linear in Strength, every strain
+//      turn rate             Speed, saturating (see apsGain)
+//      Instinct              quadratic — crit chance and crit damage off the
+//                            same points; bounded by the chance cap and the
+//                            point budget, which land together
+//      base's BLEED          quadratic in Strength — depth rides Attack Damage,
+//                            stack count rides Strength. Owner-decided.
 //
-//  * ANYTHING DERIVED HANGS OFF THOSE ANCHORS rather than carrying its own
-//    curve. Ailment damage is a fifth of Attack Damage, thorns a twentieth of
-//    max HP — chosen as the smallest fractions that move by exactly 1 per
-//    point. Retuning an anchor carries them along instead of leaving them
-//    behind, which is exactly how they drifted before.
+//  * Strains differ only by their skills. Damage, HP, turn rate and every
+//    percentage are identical across all four. A strain that should be fast
+//    wants a MULTIPLIER on the rate, never an additive base — a base hands out
+//    speed nobody paid for.
 //
-//  * Player and enemy stats are computed by SEPARATE functions. Enemies used
-//    to run through the player's derived-stat formulas, which meant that by
-//    wave 30 every enemy sat at capped evade/block/crit and roughly two thirds
-//    of your damage vanished before it landed.
+//  * Mutations prefer p.dmgMult / p.hpMult / p.apsMult over raw stats, so one
+//    pick cannot quietly buy two things.
 //
-//  * WHAT SCALES HOW, as of build 2026-08-01c. This is a description of the
-//    game, not a permission list — it used to end with "nothing else may do
-//    this without the same argument", which was one session's opinion, got
-//    quoted at the owner as if it were his rule, and nearly killed a change he
-//    wanted. See "The comments are not law" in CLAUDE.md.
-//
-//    BASIC ATTACK DAMAGE is linear in Strength for every strain, which is what
-//    keeps the sheet legible: one point is 5 damage, everywhere, and "that hit
-//    me for 25" stays readable as a Vitality point and a bit.
-//
-//    INSTINCT IS QUADRATIC on purpose: it buys crit chance and crit damage with
-//    the same points, so expected damage goes as the square. That is the only
-//    way a crit stat reaches a linear damage stat at all — crit chance against
-//    a fixed multiplier is bounded by that multiplier, so it can never chase
-//    Strength no matter the rate. Bounded in practice by the crit-chance cap
-//    and the point budget, which land together at full investment. Numbers and
-//    crossover in the INSTINCT block below.
-//
-//    BASE'S BLEED IS ALSO QUADRATIC IN STRENGTH, and deliberately so: depth
-//    rides Attack Damage while stack count rides Strength directly, so cutting
-//    scales as roughly the square. Owner-decided, after measuring — he wanted
-//    bleed to be a big part of base and Strength to have a verb of its own.
-//    Measured at 46-52% of base's damage with no change to how far the class
-//    reaches. It is a CLASS mechanic rather than a shared stat, which is why
-//    the sheet above stays legible while this one runs hot.
-//
-//    Speed raises attack rate and saturates; see the apsGain note.
-//
-//    If a future mechanic wants to scale faster than its stat, the question is
-//    not whether it is allowed. It is what it costs to judge the game by feel
-//    afterwards — and that is the owner's call to make, on a number he can see.
-//
-//  * Strains currently differ ONLY by their skills and banks. Damage, HP,
-//    turn rate and every percentage are identical across all four — the
-//    per-strain damage and attack-rate scalars were retired when the sheet was
-//    anchored, and the per-strain apsBase went with them when turn rate became
-//    a pure stat. A strain that should be fast again wants a MULTIPLIER on the
-//    rate, never an additive base: a base hands out speed nobody paid for,
-//    which is exactly what the 1:1 anchor exists to prevent.
-//
-//  * Mutations prefer to scale p.dmgMult / p.hpMult / p.apsMult over touching
-//    a raw stat, so one pick cannot quietly buy two things. Bumping a raw stat
-//    is allowed where that stat is a single axis — Strength is, since Attack
-//    Damage was unified — but it is the exception and wants saying out loud.
-//
-//  * EVERY STAT OWNS A VERB, and they are deliberately different ones:
-//    Strength hits harder and steadily, Vitality survives, Speed acts more
-//    often than the thing in front of you, Instinct hits harder but spikily.
-//    Instinct's is the weakest of the four as a VERB, because it shares an axis
-//    with Strength rather than owning one, and that is knowingly temporary — the
-//    two notes below are where it goes. What it must never go back to is what
-//    killed it: feeding crit chance alone against a fixed multiplier, which made
-//    it a strictly worse Strength that no rate could rescue.
-//
-//  * TWO THINGS ARE PARKED FOR INSTINCT, both waiting on the same thing: the
-//    strains being finished. Neither is a to-do, and neither should be picked up
-//    because it is written down here — they land when the classes feel right.
-//
-//      1. A CRIT FEEDS YOUR STRAIN — built, wired, and switched off at
-//         critStrainGain: 0 for every strain. Psy used to be the living proof
-//         of it, planting DREAD on a crit as the kit itself rather than through
-//         the parked scaffold — that came out when Hunt started planting on
-//         hit, so there is nothing standing on the idea now. Switch it on
-//         deliberately for a strain that wants it; do not inherit it.
-//      2. INSTINCT SCALING WHAT A CHARGE IS WORTH — not built. The DREAD slow
-//         per stack, reduction per Resolve, the thorns multiplier, poison per
-//         stack: the magnitudes that are flat constants today (dreadSlowPerStack,
-//         resolveDR, thornsFrac, ailmentDamageFrac).
-//
-//    They stack rather than compete — the first is how fast a bank FILLS, the
-//    second is what a charge PAYS — and both are off for the same reason: a stat
-//    that accelerates or inflates a mechanic makes that mechanic impossible to
-//    judge. Two cautions for whenever the second one lands: it must not make
-//    Instinct mandatory for every strain (a stat you must take is as dead as one
-//    you never take), and thorns and poison are shares of the HP and damage
-//    anchors, so scaling them by a stat means those anchors stop carrying them
-//    for free.
-//
-//  * HEALING IS A SHARE OF THE HEAL ANCHOR, NEVER OF YOUR MAX HP, and this is
-//    the newest default here — it is what finally let Strength and Instinct be
-//    looked at honestly. Every heal used to scale with the bar, so Vitality
-//    bought the bar AND the multiplier on the refill, and the refill turned out
-//    to be 68-91% of all the punishment any build absorbed. One stat owned most
-//    of the game's effective health, and no damage number could chase it,
-//    because damage pays inside one fight while a bigger bar compounds across
-//    thirty. The anchor is the bar you would have at 5 Vitality, grown by LEVEL
-//    instead of by allocation. Full argument under healAnchorPerLevel; the one
-//    read is healAnchorFor() in stats.js. Damage-proportional healing
-//    (lifesteal, thorns-feed) is a different mechanic and was never coupled.
-//
-//  * Known soft spots, in case they read as bugs rather than gaps: cooldown
-//    reduction is a live seam with no source yet (no talent sets cdrBonus, so
-//    its readout row stays hidden); and healing outside class kits is down to
-//    two 8% trickles — between fights and on level-up — since regen and the
-//    door's RECOVER both went.
+//  * SWITCHED OFF, NOT MISSING, so it does not read as a bug: critStrainGain is
+//    0 for every strain (a crit feeding your strain is built and wired but
+//    inert), and cdrBonus has no source, so the cooldown-reduction readout row
+//    stays hidden.
 // ============================================================
 
 // ---- Build ----------------------------------------------------
-// A date, because the only question it has to answer is "which of these files
-// is the newer one". No changelog and no semantic versioning: this is a
-// personal project under heavy change, nothing is settled, and a list of every
-// tweak would be a chore to write and a thing nobody reads. Git already holds
-// the detail. For a second build on the same day, suffix a letter.
+// A date: the only question it answers is which of two files is newer. Suffix
+// a letter for a second build the same day. Shown under the logo, first line of
+// every combat log, and stored in the save.
 //
-// Shown under the logo, written as the first line of every run's combat log,
-// and stored in the save — so a file, a pasted transcript and a save can each
-// say what produced them.
-//
-// KEEP THIS SEPARATE FROM BALANCE.saveKey. That one answers "are saved runs
-// still valid" and is bumped only when a change makes an old sheet wrong.
-// Deriving it from this would wipe every save on a typo fix.
+// KEEP SEPARATE FROM BALANCE.saveKey — that answers "are saved runs still
+// valid". Deriving one from the other would wipe every save on a typo fix.
 const BUILD = '2026-08-01c';
 
 const BALANCE = {
   player: {
-    // TURN RATE IS PURELY A STAT, exactly like damage and HP. 5 Speed is 1.00,
-    // one point is +0.20, and there is NO FLAT BASE — the strain's old 0.85
-    // apsBase is gone.
-    //
-    // That base was the whole problem. It meant a starting 1.00 rate was
-    // 0.85 given + 0.15 earned, so a Speed point moved your rate by 3% of its
-    // starting value where a Strength point moves damage by 20% and a Vitality
-    // point moves HP by 20%. Speed points were worth a seventh of everyone
-    // else's, and a full run's 36 points could only take the rate to x1.55
-    // against x8.2 for either of the others. Speed was a garnish, not a build.
-    //
-    // With the base gone every stat obeys ONE rule: a stat is (5 + points) / 5
-    // times its starting value. 20% per point, across the sheet.
+    // Every stat is (5 + points) / 5 times its starting value: 20% a point,
+    // no flat bases anywhere. A base hands out value nobody paid for.
     apsPerSpeed: 0.20,
-    // SPEED DIMINISHES INSTEAD OF CAPPING, and the wall it replaces was the
-    // single biggest balance fault measured in this game.
+    // Turn rate is the one stat on a curve rather than a line. The anchor is
+    // exactly x1.00 at 5 Speed; points above it buy a shrinking share of
+    // apsGain, which is the asymptote and THE DIAL. apsHalfPoints is where you
+    // have bought half of what the curve will ever give, and holds the opening
+    // slope when apsGain moves. Full investment lands near x2.5.
     //
-    // It used to be flat 0.20 a point into a hard ceiling of x4.00 — reached at
-    // 20 Speed, which is 15 points of a run's 33. A ceiling you hit at the
-    // halfway mark is not a ceiling, it is a TARGET: you max the stat by wave
-    // 15 and every point after it is free to pour into Vitality, which is
-    // exactly the Speed+Vitality build that wins 20 runs out of 20 while an
-    // even spread wins none. And turn rate is the one stat that buys offence
-    // and defence at once (it multiplies both halves of "your turns before
-    // their hits add up"), so it was roughly three times the per-point value of
-    // Strength or Vitality right up until it stopped being worth anything.
-    //
-    // The new shape: the anchor is still exactly x1.00 at 5 Speed — nothing
-    // about that moves — and every point above it buys a share of apsGain that
-    // shrinks as you go. apsHalfPoints is where you have bought HALF of what
-    // the curve will ever give. Picked so the first point still feels like the
-    // old one (+0.18 against +0.20) while a full run's investment lands near
-    // x2.5 instead of slamming into x4 at the midpoint.
-    //
-    // NOTHING IS EVER WASTED AND NOTHING IS EVER SOLVED, which is the property
-    // a stat needs to stay a decision: the curve has no number where Speed
-    // stops mattering, and no number where you are done buying it. Instinct
-    // already lives this rule from the other side — its crit chance caps but
-    // crit damage keeps climbing, so overinvestment still pays.
-    //
-    // apsGain is THE DIAL. It is the asymptote above the anchor: raise it and
-    // full investment gets faster without the early points changing much, since
-    // apsHalfPoints holds the opening slope.
-    // The sheet everything is anchored to starts every stat at 5, so that is
-    // where "points above the anchor" counts from. Named rather than a literal
-    // 5 in the formula: the anchor is a design fact, not a magic number.
-    //
-    // It was speedAnchor until the heal anchor needed the same 5 — one number
-    // meaning "the starting sheet" is the point of naming it, and two copies
-    // of it under different names would be the thing this line exists to stop.
-    sheetAnchor: 5,
+    // It replaced a hard x4.00 cap reached at 20 Speed — 15 points of a run's
+    // 33. A ceiling you hit at the halfway mark is a target, not a ceiling:
+    // Speed+Vitality won 20 runs of 20 while an even spread won none.
+    sheetAnchor: 5,          // the starting sheet, in every stat
     apsGain: 2.00, apsHalfPoints: 10,
-    //   apsCap  absolute ceiling AFTER apsMult, and now the only cap left. It
-    //           does not bind the stat (the curve tops out near x3 on its own);
-    //           it is the backstop for whatever earned multiplier arrives.
-    apsCap: 6.00,
-    // The two anchors the rest of the player is tuned against, both chosen to be
-    // legible rather than derived: 5 Strength is 25 Attack Damage, 5 Vitality is
-    // 100 HP. Everything reads off one point being worth 5 damage or 20 HP, so
-    // "that hit me for 25" is a Vitality point and a bit, not an abstract number.
-    //
-    // No flat base and no per-level HP on purpose. Both would make max HP stop
-    // being Vitality x 20 the moment you levelled, which is the whole property
-    // worth having here. Turn rate now follows the same rule above.
+    apsCap: 6.00,            // backstop AFTER apsMult; the curve tops near x3 alone
+    // 5 Strength is 25 Attack Damage, 5 Vitality is 100 HP. No flat base and no
+    // per-level HP: max HP must stay exactly Vitality x 20.
     damagePerStr: 5,
     hpPerVit: 20,
-    // Three, and this time the TOTAL shrank on purpose: ~6 levels x 3 is
-    // ~18 points across act 1 against the ~48 the old one-act game gave
-    // (a full two-act run reaches ~L10 — 27 points — the last three levels
-    // arriving one per act-2 rank). The
-    // shower was the imbalance — at 48 points the sanctioned Instinct
-    // quadratic was landing 600-damage crits at level 9 against a captain
-    // swinging 62, power no half-hour of play had earned — so the sheet
-    // comes down to meet the enemies, and the enemies are deliberately NOT
-    // softened to chase it back up. Three is the smallest grant where
-    // allocation still has shape (commit all three, or lean 2-1; one point
-    // would collapse the choice to "whose turn is it"), and a level still
-    // buys a legible jump: +15 damage, or +60 HP.
+    // Three is the smallest grant where allocation still has shape — commit all
+    // three or lean 2-1; one point would collapse it to "whose turn is it".
     pointsPerLevel: 3,
-    // The percentage stats are set so a starting sheet reads 10 / 10 / 10 / 0
-    // at 5 in every stat — the same round-number treatment as 25 damage and
-    // 100 HP. Evade and block still look odd on their own (0.075, 0.065)
-    // because each is "10% minus whatever the starting 5 points already
-    // contribute"; their per-point rates are untouched, since Speed's second
-    // axis wants defining before it wants retuning. Crit no longer needs the
-    // trick — see below.
+    // Set so a starting sheet reads 10 / 10 / 10 at 5 in every stat. Evade and
+    // block look odd alone (0.075, 0.065) because each is "10% minus what the
+    // starting 5 points already contribute".
     evadeBase: 0.075, evadePerSpeed: 0.005, evadeCap: 0.40,
     blockBase: 0.065, blockPerVit: 0.007, blockCap: 0.35, blockReduction: 0.5,
     // ---- INSTINCT ---------------------------------------------------------
-    // INSTINCT IS THE COMMIT STAT: it buys crit CHANCE and crit DAMAGE at the
-    // same time, which makes it the one stat that is quadratic in its own
-    // points. That is a DELIBERATE, SANCTIONED exception to the header rule
-    // against quadratic stats — see the note up there — and it exists because
-    // nothing else could make Instinct worth taking.
-    //
-    // The arithmetic that forced it. Crit chance against a FIXED multiplier is
-    // bounded: at any cap below 1.0 the whole stat can only ever add its
-    // multiplier's worth of damage, so at x2 and a 70% cap Instinct's entire
-    // lifetime contribution was x1.70 — roughly three and a half Strength
-    // points. Strength is unbounded and linear, so a bounded stat cannot chase
-    // it at any rate. To match Strength, crit has to be a real multiplier on
-    // both terms, and two linear terms multiplied is a square.
+    // Buys crit CHANCE and crit DAMAGE from the same points, so it is quadratic
+    // in its own points. It has to be: crit chance against a FIXED multiplier is
+    // bounded — at x2 and a 70% cap the whole stat could only ever add x1.70,
+    // about three and a half Strength points — and a bounded stat cannot chase
+    // an unbounded linear one at any rate.
     //
     // Both rates are picked so the two stats LAND TOGETHER at full investment.
-    // The table below is what a point actually buys, and the one trap to avoid
-    // when re-deriving it: A STRENGTH BUILD CRITS TOO. It keeps the starting 5
-    // Instinct, so it swings at x1.125 expected before it spends anything, and
-    // comparing raw expected damage against Strength's x9.0 double-counts that.
-    // Both columns are therefore GAIN OVER THE SAME STARTING SHEET, which is
-    // the only comparison a player could feel.
+    // The trap when re-deriving this: A STRENGTH BUILD CRITS TOO — it keeps the
+    // starting 5 Instinct and swings at x1.125 expected before spending
+    // anything. Both columns are therefore GAIN OVER THE SAME STARTING SHEET.
     //
     //     Instinct   crit%   crit dmg   its gain    all-Strength, same points
     //        5        10%      x2.25      x1.00           x1.00
@@ -311,87 +113,36 @@ const BALANCE = {
     //       40        80%     x11.00      x8.00           x8.00   <- dead level
     //       45        90%     x12.25      x9.89           x9.00
     //
-    // So Strength is the better buy for the first 35 points, the two are exactly
-    // level at 40, and Instinct ends a full run about 10% ahead. That shape is
-    // the point: a square and a line cross ONCE, so wherever the crossing is
-    // put, one stat is behind on one side of it. Putting it near the end makes
-    // Instinct a commitment that pays rather than a garnish or a trap —
-    // half-investing really is worse than not, and that is allowed to be true
-    // as long as the sheet shows both numbers climbing while you do it.
-    //
-    // WHAT IT COSTS: variance. By the end of an Instinct run one hit in ten
-    // lands for a twelfth of the others, which can lose a boss. That is the
-    // trade being sold, and it is why Strength stays the safe pick.
+    // A square and a line cross ONCE, so one stat is behind on one side of it.
+    // The crossing sits near the end deliberately: half-investing really is
+    // worse than not. What it costs is variance — one hit in ten landing for a
+    // twelfth of the others can lose a boss, and that is the trade being sold.
     critBase: 0.00, critPerInstinct: 0.02, critCap: 0.90,
-    // THE CAP IS 0.90 AND NOT 1.00 ON PURPOSE. A crit that always happens is
-    // not a crit: the gold CRIT floater is the loudest thing on screen, and if
-    // every hit wore it the colour would stop naming an event (see the floater
-    // vocabulary above .float-dmg in the CSS). One plain hit in ten is what
-    // keeps the gold meaning something.
-    //
-    // The cap arrives at 45 Instinct, which is about what a full run can reach,
-    // so it is a ceiling you touch rather than one you sit against. Points past
-    // it still buy crit damage below, so nothing is ever wasted.
+    // Capped at 0.90, not 1.00: the gold CRIT floater is the loudest thing on
+    // screen, and if every hit wore it the colour would stop naming an event.
+    // One plain hit in ten keeps the gold meaning something. Points past the cap
+    // still buy crit damage, so nothing is wasted.
     critMultBase: 1.0, critMultPerInstinct: 0.25,   // crit damage = x(1 + 0.25 x Instinct)
-    // ---- CRIT HEALS -------------------------------------------------------
-    // A HEAL YOU PRESS CAN CRIT, on the same chance as a blow. This is JUICE
-    // AND IS PRICED AS JUICE, which is worth stating because it was measured
-    // first as an Instinct fix and does not work as one.
+    // A heal you PRESS can crit, on the same chance as a blow. Juice, and priced
+    // as juice: its own flat multiplier, never critMult. Measured before
+    // building — heals through the full damage crit formula (an 8x average
+    // multiplier on sustain) bought an all-Instinct build +0 to +3 waves and
+    // left it last in every strain, so this is not an Instinct fix.
     //
-    // Measured before it was built, 30-40 runs a cell: running heals through
-    // the full DAMAGE crit formula — ~76% chance of x10.5 at a run's end, an
-    // 8x average multiplier on all sustain — bought an all-Instinct build
-    // +0 to +3 waves and left it last in every strain. At x1.5 or x2 the gain
-    // was zero to one. Healing throughput is simply not what is killing a
-    // build that is thin everywhere else, which is the same lesson the heal
-    // anchor taught from the other side. Instinct's real answer is the parked
-    // note in the header: scaling what a CHARGE is worth.
-    //
-    // So it gets its OWN flat multiplier and never touches critMult. A crit
-    // that scaled with Instinct would quietly rebuild the coupling the anchor
-    // just removed, in a stat that has an even steeper curve than Vitality
-    // did. Flat means the gold number is a moment, not an economy.
-    //
-    // TICKS DO NOT CRIT, ACTIONS DO — already true of damage (poison and bleed
-    // tick flat) and now true of healing, so REGEN, SIPHON and HARVEST stay
-    // steady while Bandage, Shed and DEVOUR can spike. It keeps the CRIT tag
-    // an event: a drip that crits every third turn teaches you to stop reading
-    // it.
+    // Ticks do not crit, actions do — the same rule poison and bleed already
+    // follow. REGEN, SIPHON and HARVEST stay steady; Bandage, Shed and DEVOUR
+    // spike.
     critHealMult: 2.0,
-    // A CRIT FEEDS YOUR STRAIN — PARKED AT 0 FOR ALL FOUR STRAINS. Psy was the
-    // exception and is not any more: its fear rode crits, which meant the
-    // strain's number was fed by a roll on top of an attack rather than by the
-    // attack, and its basic's card had to describe the class instead of the
-    // button. Hunt plants on hit now (see its note in CLASSES).
-    //
-    // The rule, whenever it is switched on: a crit banks a charge of whatever
-    // the strain runs on — a poison stack, Resolve, thorns. It is still the
-    // better long-term answer for this stat, because "my mechanic is online" is
-    // a verb Strength cannot buy at any price.
-    //
-    // Off everywhere because the designs are still being judged. A stat that
-    // accelerates a mechanic makes that mechanic harder to read, so Instinct
-    // pays in crit alone until each strain stands up on its own.
-    //
-    // Set this back to 1 to switch it on for them. Nothing else needs touching —
-    // creditCrit and its call site in applyPlayerDamage are still wired, and
-    // the readouts are unaffected.
+    // SWITCHED OFF, NOT MISSING: a crit banking a charge of whatever the strain
+    // runs on. creditCrit and its call site in applyPlayerDamage are still
+    // wired — set this to 1 to switch it on for a strain that wants it.
     critStrainGain: 0,
-    // COOLDOWN REDUCTION IS NO LONGER A STAT. Speed does not feed it and
-    // nothing else does yet, so cdrPerSpeed is gone rather than sitting at 0.
+    // Cooldown reduction is a live seam with NO SOURCE: nothing sets t.cdrBonus,
+    // so the readout row stays hidden until a mutation grants some.
     //
-    // Speed was the obvious home for it and is the wrong one, because Speed
-    // already covers the feeling by another route. Cooldowns tick on the
-    // PLAYER'S OWN turns (see tickTurnStart), so rate never changes your
-    // rotation — a 4-turn cooldown is 4 of your turns at x1 and at x4. What
-    // rate changes is how much the enemy does while you wait: 4 enemy actions
-    // at x1, one at x4. Stacking real CDR on top would be paying twice.
-    //
-    // The mechanic itself stays as a live seam: cdrCap and t.cdrBonus still
-    // feed p.cdr, and fireSkill still divides cooldowns by it. The readout row
-    // renders only when cdr > 0 (same conditional treatment as the strain and
-    // guard rows), so it shows nothing today and appears by itself the moment
-    // a mutation grants some.
+    // Speed deliberately does not feed it. Cooldowns tick on the player's own
+    // turns, so rate never changes your rotation — a 4-turn cooldown is 4 of
+    // your turns at x1 and at x4. Stacking CDR on Speed would pay twice.
     cdrCap: 0.55,
     // Ailment damage is a SHARE OF ATTACK DAMAGE rather than its own curve off
     // Strength, and thorns a share of max HP. Both were fractions-per-stat
@@ -405,449 +156,213 @@ const BALANCE = {
     // retune damage or HP and the ailments follow instead of drifting.
     ailmentDamageFrac: 0.20,
     thornsFrac: 0.05,
-    // POISON is permanent and UNCAPPED — the stack count is bio's ramp, and
-    // the ramp is the class: no burst, the enemy's remaining life is a clock.
-    // (It was capped at 6 with an overflow-to-TOXIN amplifier; the cap
-    // flatlined the ramp by turn 3 and TOXIN was an invisible 8%-of-a-
-    // modifier. Both retired in favor of the visible number going up.
-    // Chitin's numbers live on the skill card, like Miasma's.)
-    // Bleed: the same damage-over-time shape as poison, its own knobs so the
-    // two can be tuned apart. Nothing applies bleed yet.
+    // POISON (bio) is permanent and UNCAPPED — the stack count is bio's ramp,
+    // and the ramp is the class: no burst, the enemy's remaining life is a clock.
     // ---- BLEED (Unmutated) ------------------------------------------------
-    // Poison's twin, and UNCAPPED for the same reason it is. It is Unmutated's
-    // second number, and the ONLY strain given two: he is the one who refused
-    // the infection, so his mechanic is just the ordinary consequence of a long
-    // fight — you get harder to move, they get cut. Two halves of one exchange.
+    // Base's second number, and he is the only strain with two: he refused the
+    // infection, so his mechanic is the ordinary consequence of a long fight —
+    // you get harder to move, they get cut.
     //
-    // IT MUST NOT BECOME BIO IN RED. A stacking tick on the enemy is bio's
-    // whole identity, and "a worse version of another class in a different
-    // colour" is precisely the failure the sym pass just finished undoing. Two
-    // rules keep them apart, and both have to hold:
-    //
+    // IT MUST NOT BECOME BIO IN RED, which is the one thing to hold onto here.
+    // Three differences keep them apart:
     //   POISON IS A RATE; BLEED IS A PILE THAT BURNS DOWN. The rot ticks once a
-    //   turn, forever, and never loses a stack — bio infects and waits. A wound
-    //   ticks on EVERY turn, yours and theirs, and eats a stack doing it, so it
-    //   pays out roughly twice as fast and is gone unless you keep cutting. One
-    //   class ramps and coasts; the other cannot stop working.
+    //   turn forever and never loses a stack. A wound ticks on EVERY turn, both
+    //   sides, and eats a stack doing it — gone unless you keep cutting.
+    //   A PILE IS WORTH MORE THAN ITS PARTS. A tick hits for what the pile HAS,
+    //   so 8 stacks pay 8+7+6+... — double the stacks is four times the damage.
+    //   Poison rewards time; bleed rewards SIZE.
+    //   POISON IS FREE; BLEED IS BOUGHT WITH PUNISHMENT. Depth rides the RESOLVE
+    //   behind the cut, snapshotted newest-wins, so spending Resolve on Last
+    //   Stand makes the wounds you open afterwards shallower.
     //
-    //   AND A PILE IS WORTH MORE THAN THE SUM OF ITS PARTS. A tick hits for
-    //   what the pile HAS, so 8 stacks pay 8+7+6+... rather than 8 flat: double
-    //   the stacks is four times the damage. Poison rewards time, bleed rewards
-    //   SIZE. That is the difference, and it is deliberately sayable in a
-    //   breath — the owner asked for a mechanic that is easy to hold in the
-    //   head, and this is what that asked for in the numbers.
+    // APPLICATION HAS TO CLEAR TWO A TURN-CYCLE or the pile drains faster than
+    // it is fed — measured, at 1 stack a cut bleed fell from 29% of base's
+    // damage to 9%. Every number here is chosen against that floor.
     //
-    //   POISON IS FREE; BLEED IS BOUGHT WITH PUNISHMENT. The rot ticks whether
-    //   or not bio is ever touched. A cut is only as deep as the RESOLVE behind
-    //   it, and Resolve comes from landing hits and taking them — so base's
-    //   damage-over-time is paid for in damage absorbed.
-    //
-    // The depth is snapshotted when the cut is made, NEWEST-wins (see
-    // perStackRule on the bleed status): spend your Resolve on Last Stand and
-    // the wounds you open afterwards are shallower. That is the cost that makes
-    // hold-vs-spend a real question rather than a formality.
-    // HOW MANY STACKS ONE CUT OPENS. There is no timer any more: the pile IS
-    // the clock, and it burns down one stack per turn from each side. That
-    // means application has to clear TWO a turn-cycle or the wound drains
-    // faster than it can be fed — measured, at 1 stack a cut bleed collapsed
-    // from 29% of base's damage to 9%, which is not a weaker mechanic, it is
-    // no mechanic. Every number here is chosen against that floor.
-    //
-    // 2 + one per 5 Strength: 3 stacks on the starting sheet, 9 fully invested.
-    // Strength is in here because a cut that hits harder should also open
-    // wider, and because it is the one place in the game where the stat gets a
-    // verb of its own rather than a share of the damage number.
-    //
-    // Measured, base, 40 runs a cell — bleed's share of all damage dealt, and
-    // the wave it reached:
-    //   today (timer)  31% spread / 25% STR      15w / 10w
-    //   flat 3         45% / 41%                 15w / 12w
-    //   2 + STR/5      46% / 52%                 15w / 14w   <- shipped
-    //   flat 5         64% / 62%                 22w / 15w
-    //   3 + STR/3      67% / 70%                 25w / 15w
-    // The last two are here because they are the dial, not because they were
-    // rejected: both make bleed most of the class and both move base well past
-    // the other three strains. Shipping the one that makes BLEED base's biggest
-    // damage source without moving how far it gets, so the change can be judged
-    // on how it PLAYS before it is judged on power.
+    // Measured, base, 40 runs a cell (bleed's share of damage / wave reached):
+    //   flat 3      45% / 41%     15w / 12w
+    //   2 + STR/5   46% / 52%     15w / 14w   <- shipped
+    //   flat 5      64% / 62%     22w / 15w
+    //   3 + STR/3   67% / 70%     25w / 15w
+    // The last two are the dial, not rejects: both make bleed most of the class
+    // and push base past the other three strains.
     bleedBase: 2,
     bleedPerStr: 5,                          // one extra stack per this much Strength
     bleedPerResolve: 0.10,                   // each held RESOLVE deepens a NEW cut by this share of the ailment base
     // ---- THORNS (sym) -----------------------------------------------------
-    // SYM'S MECHANIC IS ONE NUMBER THAT GROWS, and thorns is that number —
-    // not a bank beside it. The old kit had both: thorns as a passive share of
-    // max HP, and Spores as a wallet filled by being hit and spent on a heal or
-    // a burst. The wallet was Unmutated's identity wearing a coat (gain, hold,
-    // spend), and the part that was actually sym — the enemy hurting itself on
-    // you — merely happened. Collapsing the two is the whole rework: a growth
-    // stat that raises thorns IS thorns with an extra step, and two numbers
-    // doing one job means reading both to know how big you are.
-    //
-    // Growth is RUN-PERMANENT, and that is forced by measurement rather than
-    // taste. A trash fight gives the player about 5 enemy swings and a boss
-    // about 10-13 (~52 across a whole run), so a per-fight ramp could only ever
-    // reach 5 before being wiped — DREAD-sized, and DREAD is a mark that gets
-    // to reset because it lives on a corpse. Carried across the run the number
-    // is genuinely big, which is the point: "everything you do to me makes me
-    // stronger" is a RUN sentence, not a fight sentence.
-    //
-    // It also fixes the direction of travel. Swings-per-player-turn FALLS as a
-    // run goes (0.44 early, 0.17 late) because Speed and slow bosses both cut
-    // it, so a per-fight ramp would have gotten weaker exactly as the game got
+    // ONE NUMBER THAT GROWS, and it is RUN-PERMANENT — the only mechanic in the
+    // game that is. Forced by measurement: a trash fight gives ~5 enemy swings
+    // and a boss ~10-13 (~52 a run), so a per-fight ramp could only ever reach 5
+    // before being wiped. Swings-per-player-turn also FALLS as a run goes (0.44
+    // early, 0.17 late), so a per-fight ramp would weaken exactly as the game got
     // harder. Banked across the run, early fights pay for late ones.
     //
-    // THORNS IS PAID OUT THREE WAYS, which is what makes one number enough:
-    // the enemy takes it when they swing (here), Latch reads a share of it back
-    // on your own turns, and Shed converts it to healing. Grow one thing and
-    // everything gets better.
+    // PAID OUT THREE WAYS, which is what makes one number enough: the enemy takes
+    // it when they swing, Latch reads a share of it back on your turns, and Shed
+    // converts it to healing.
     thornsFrac: 0.05,          // INNATE thorns: a twentieth of max HP, and the floor Shed can never eat into
     thornsPerHit: 1,           // every hit taken grows thorns by this, no window and no condition
     thornsBigHitFrac: 0.15,    // ...plus one more per this share of max HP taken in a single blow
     thornsGrowMax: 4,          // ceiling on what ONE hit can grow, so a x5 telegraph is a feast, not a jackpot
-    thornsSpinesGrow: 2,       // extra growth per hit while Spines is up — the window is an INVITATION now
-    // SHED: THE CEILING IS NOT THE PRICE. A percentage cost against a number
-    // allowed to run away grows without bound while its payout does not —
-    // healing is bounded by max HP — so past a certain size you would pay a
-    // fortune for a heal you cannot hold, and the button stops being worth
-    // pressing at exactly the moment you have played best. So the shed takes
-    // only as many thorns as the heal actually NEEDED, and the fraction below
-    // is a ceiling on top of that. Growing huge therefore makes Shed cheap in
-    // proportion rather than unpayable. See "a cost that rides a runaway
-    // number" in the header.
-    // Both numbers were first set a third of this and MEASURED too thin: Shed
-    // healed 24 of a 100 HP bar, which is not a sustain button, it is a
-    // rounding error with a cooldown. Cutting the old passive thorns lifesteal
-    // (see the note at its call site) took ~875 HP a run out of the class, and
-    // that has to come back through the button you press on purpose rather
-    // than through a drip that asks nothing.
+    thornsSpinesGrow: 2,       // extra growth per hit while Spines is up
+    // SHED: THE CEILING IS NOT THE PRICE. A percentage cost against a runaway
+    // number grows without bound while its payout does not (healing is bounded
+    // by max HP), so the button would stop being worth pressing exactly when you
+    // had played best. Shed takes only as many thorns as the heal NEEDED, and
+    // the fraction below caps that — growing huge makes it cheap in proportion.
     shedCapFrac: 0.35,         // Shed never takes more than this share of GROWN thorns in one press
-    shedHpPerThorn: 0.04,      // one thorn shed is worth this share of max HP
+    shedHpPerThorn: 0.04,      // one thorn shed is worth this share of the heal anchor
     reflectFrac: 0.20, reflectSpinesMult: 2,   // sym: share of damage taken reflected back; doubled while Spines is up
-    // The level-up heal is load-bearing sustain and has tracked the level
-    // curve through both compressions: 16 levels x 8% was ~128% of max HP a
-    // run, and 8 x 15% kept that economy whole (~120%). At ~6 levels the
-    // fraction deliberately STAYS 15% (~90% a run): the point-scarcity pass
-    // wants the whole run poorer, and free healing is part of the shower.
     levelUpHealFrac: 0.15, recoverHpFrac: 0.08,
     // ---- THE HEAL ANCHOR --------------------------------------------------
-    // EVERY FRACTION ABOVE, AND EVERY ONE IN THE KITS, IS A SHARE OF THE HEAL
-    // ANCHOR RATHER THAN OF YOUR MAX HP. That coupling was the single largest
-    // distortion ever measured in this game, so it is worth writing down what
-    // it did rather than only what replaced it.
+    // EVERY HEAL FRACTION IN THE GAME IS A SHARE OF THE ANCHOR, NOT OF MAX HP.
     //
-    // Measured, all-in on one stat, 40 runs each: healing was 68-91% of ALL
-    // the punishment every build absorbed. Your bar was the rounding error and
-    // your refill was the real health pool — and since every heal in the game
-    // was a share of max HP, Vitality bought the bar AND the multiplier on the
-    // refill. One stat, two jobs, and the second one compounded across thirty
-    // waves. Strength shortens the fight you are in; nothing carried it to the
-    // next one, because your HP persists between waves and the enemy's does
-    // not. All-in Strength reached wave 7-8 with 55 Attack Damage against 25,
-    // killing 40% faster and buying nothing. All-in Vitality reached 12-25.
-    // Per wave reached, VITALITY OUT-DAMAGED STRENGTH IN ALL FOUR STRAINS.
+    // Measured all-in per stat, 40 runs each: healing was 68-91% of ALL the
+    // punishment every build absorbed. The bar was the rounding error and the
+    // refill was the real health pool — and since every heal was a share of max
+    // HP, Vitality bought the bar AND the multiplier on the refill. Per wave
+    // reached, Vitality out-damaged Strength in all four strains.
     //
-    // So the stats were never the bug. No damage number can chase a stat that
-    // compounds; making Strength competitive by its own scalar would have
-    // meant fights ending in a turn or two, which is the cheap way to a game
-    // that is beaten once and never again.
+    // The anchor is the bar you would have at 5 Vitality, grown by LEVEL — a
+    // schedule nobody buys. At the starting sheet anchor and bar are both 100,
+    // so a 14% Bandage is still 14 on wave 1.
     //
-    // THE ANCHOR IS THE BAR YOU WOULD HAVE AT 5 VITALITY, grown by LEVEL. A
-    // level arrives on a fixed schedule nobody buys, so sustain keeps pace
-    // with the enemy curve while allocation no longer touches it. At the
-    // starting sheet the anchor and the bar are the same 100, which is the
-    // property that keeps the sheet legible: a 14% Bandage is still 14 on
-    // wave 1, exactly as it always was.
-    //
-    // healAnchorPerLevel IS THE DIAL, and it is the only one here. It sets how
-    // fast sustain tracks a run: 0 freezes healing at 100 HP forever (every
-    // heal button dies by act 2), high values hand the old economy back to
-    // everyone at once. At 0.30 a level is +30 HP of anchor, so L11 is ~400 —
-    // between an even spread's ~250 bar and an all-Vitality ~700. That is the
-    // redistribution on purpose: non-Vitality builds get MORE sustain than
-    // they had, Vitality stacking gets much less.
-    //
-    // hpMult still rides the anchor. A mutation that widens the whole body
-    // should widen what closes a wound on it — a visible pick doing a visible
-    // thing is the sanctioned way to break a default, and the only way.
+    // healAnchorPerLevel IS THE DIAL: 0 freezes healing at 100 forever (every
+    // heal button dies by act 2); high values hand the old economy back to
+    // everyone. At 0.30, L11 is ~400 — between an even spread's ~250 bar and an
+    // all-Vitality ~700. hpMult still rides it, so an HP mutation widens what
+    // closes a wound on the body it widened.
     healAnchorPerLevel: 0.30,
     // ---- DREAD (psy) ------------------------------------------------------
-    // Psy's mechanic LIVES ON THE ENEMY, not on the player — the one bank in
-    // the game that is a mark, not a wallet. Momentum (a player-side bank of
-    // +1 per hit landed, −2 per hit taken) died of an identity contradiction:
-    // the kit punished being hit in a game whose 1:1 anchor guarantees being
-    // hit, so the bank mathematically drained no matter how well you played.
-    // Flipping the number onto the enemy resolves every piece of it at once:
-    //   - the theme reads true (you are not "in flow", THEY are coming apart);
-    //   - taking a hit still hurts psy — the enemy that lands a blow regains
-    //     its nerve — but as the enemy's recovery, not your tax;
-    //   - fear dies with the enemy, so psy ramps fresh and fast every fight
-    //     where bio ramps slow and permanent. Two infections, two speeds:
-    //     bio's mark eats the enemy's HEALTH, psy's mark eats their TURNS.
-    // Each stack slows the enemy's rate, which the turn-rate readout shows as
-    // the ratio climbing — dominance you can watch.
-    // Each stack does TWO things, named on one badge: the enemy hesitates
-    // (−rate) and its guard opens (+damage taken). The pair is what makes
-    // DREAD offense and defense at once — slow alone was mitigation wearing
-    // an offensive costume (see the turn-rate note above), and a terror class
-    // with no teeth measured exactly like it sounds: first pass shipped slow
-    // only, and psy's own best-stat builds died on wave 3 doing 25s into a
-    // 900 HP boss. Fear has to make the kill faster, not just later.
+    // Psy's mechanic LIVES ON THE ENEMY — the one bank that is a mark, not a
+    // wallet. Fear dies with the enemy, so psy ramps fresh and fast every fight
+    // where bio ramps slow and permanent: bio's mark eats the enemy's HEALTH,
+    // psy's eats their TURNS.
     //
-    // THE STACK COUNT IS UNCAPPED; THE TWO HALVES ARE BOUNDED DIFFERENTLY, and
-    // that split is the whole reason the ceiling could come off. The cap used
-    // to exist for ONE reason — an unbounded slow walks an enemy toward never
-    // acting, which is a stun nobody paid for — so the floor below bounds the
-    // slow directly and the count is free. Vulnerability keeps climbing with
-    // no ceiling at all: it is psy's damage, it costs stacks that a single
-    // landed hit sheds, and fear dies with the enemy, so it cannot follow you
-    // into the next fight the way sym's thorns do.
+    // EACH STACK DOES TWO THINGS, and it needs both: the enemy hesitates (−rate)
+    // and its guard opens (+damage taken). Slow alone is mitigation in an
+    // offensive costume — the first pass shipped slow only and psy's best builds
+    // died on wave 3 doing 25s into a 900 HP boss. Fear has to make the kill
+    // faster, not just later.
+    //
+    // THE COUNT IS UNCAPPED; THE TWO HALVES ARE BOUNDED DIFFERENTLY. An unbounded
+    // slow walks an enemy toward never acting, which is a stun nobody paid for —
+    // so the floor below bounds the slow and leaves the count free. Vulnerability
+    // has no ceiling: it is psy's damage, it costs stacks a landed hit sheds, and
+    // it cannot follow you into the next fight.
     dreadSlowPerStack: 0.05, // each stack: −5% enemy turn rate
     dreadSlowFloor: 0.55,    // ...but never below this share of its rate: the slow saturates, the count does not
     dreadVulnPerStack: 0.04, // each stack: +4% damage the enemy takes — terror opens the guard, uncapped
     dreadLossPerHit: 1,      // an enemy that lands a hit on psy steadies: sheds this many stacks
-    // PSY'S SUSTAIN: CONSUMED FEAR FEEDS YOU. HP carries across fights in this
-    // game, so a class without a faucet doesn't lose fights, it loses RUNS to
-    // arithmetic — every kit needs one (owner's rule, learned by psy bleeding
-    // out across waves with only the two 8% trickles). Psy's faucet is DEVOUR:
-    // whenever DREAD is consumed — by Kill, or left on an enemy at the moment
-    // it dies — each stack heals this share of max HP. One rule, two exits for
-    // the same meal, chosen per fight: Kill eats the fear early as burst AND
-    // food, or you let it ride and drink it whole off the corpse.
+    // PSY'S FAUCET IS DEVOUR. HP carries across fights in this game, so a class
+    // without one doesn't lose fights, it loses RUNS to arithmetic — every kit
+    // needs a faucet (owner's rule, learned by psy bleeding out across waves on
+    // the two 8% trickles alone). Whenever DREAD is consumed — by Kill, or left
+    // on an enemy as it dies — each stack heals this share of the anchor. One
+    // rule, two exits: eat the fear early as burst AND food, or let it ride and
+    // drink it whole off the corpse.
     //
-    // Stacks SHED when the enemy steadies itself feed nothing: fear lost is
-    // not fear eaten. Getting hit costs psy the meal along with the control,
-    // which is the class's "don't get hit" pole enforced a third way.
-    //
-    // Sustain through the mechanic means sustain through TEMPO. Fear is planted
-    // by landing Hunt and by casting Terrify, so more of your turns is more
-    // fear, which is more food — Speed feeds the faucet directly. It used to be
-    // Instinct and Speed both, when crits and dodges planted; Instinct is a
-    // pure damage stat for psy now, and whether that is right is a play call.
-    dreadFeedFrac: 0.03,     // heal per DREAD consumed, as a share of max HP (18% for a full 6)
-    // THE SIPHON: fear feeds you passively while it sits on them — each stack
-    // heals this share of max HP at the start of each of YOUR turns. On the
-    // player's turns, not the enemy's, deliberately: the slow means a marked
-    // enemy gives you MORE turns, so the siphon scales with the turn advantage
-    // the stacks already bought instead of being starved by it. The mirror of
-    // poison completes: bio's mark ticks damage out of the enemy on a clock,
-    // psy's mark ticks health into you on one. DEVOUR stays the burst half —
-    // the siphon is the drip that keeps a marked fight from being pure
-    // attrition against a class with no bandage.
+    // Stacks SHED when the enemy steadies feed nothing: fear lost is not fear
+    // eaten. Getting hit costs psy the meal along with the control.
+    dreadFeedFrac: 0.03,     // heal per DREAD consumed, as a share of the heal anchor
+    // THE SIPHON is the drip half — it ticks on YOUR turns, not the enemy's, so
+    // it scales with the turn advantage the stacks already bought instead of
+    // being starved by it. Completes the mirror with poison: bio's mark ticks
+    // damage out of the enemy, psy's ticks health into you.
     dreadSiphonFrac: 0.005,  // heal per DREAD on the enemy, per player turn
     // ---- RESOLVE (Unmutated) ----------------------------------------------
-    // UNCAPPED, AND A STATUS RATHER THAN A WALLET. It was a 6-pip bank, which
-    // made it the one mechanic in the game you finished thinking about: six
-    // turns in you were full, and "hold or spend" collapsed into "spend,
-    // because the next point is being thrown away". Off the leash it is a
-    // genuine ramp — the longer the fight runs the harder you are to move and
-    // the bigger Last Stand gets, which is the class's sentence (endure, then
-    // everything at once) finally being a curve instead of a plateau.
+    // UNCAPPED, AND A STATUS RATHER THAN A WALLET. As a 6-pip bank it was the
+    // one mechanic you finished thinking about — six turns in you were full and
+    // "hold or spend" collapsed into "spend". Off the leash it is a ramp: the
+    // longer the fight runs the harder you are to move and the bigger Last Stand
+    // gets.
     //
-    // PER FIGHT, NOT PER RUN, and that is forced arithmetic rather than taste.
-    // Resolve comes +1 a landed hit and resolvePerHit a hit TAKEN, so it
-    // accrues every single turn; carried across a run it would pass the
-    // reduction cap somewhere in act 1 and sit there for the rest of the game,
-    // which is not a break, it is an off switch. Per fight it starts at nothing
-    // and has to be rebuilt every time — the same shape as DREAD, and the
-    // reason sym's THORNS stays the only mechanic in the game that is
-    // run-permanent.
+    // PER FIGHT, NOT PER RUN. It accrues every single turn, so carried across a
+    // run it would pass the reduction cap in act 1 and sit there — an off switch,
+    // not a break. The reduction is linear per stack and its SUM with Brace is
+    // capped hard in applyEnemyDamage: uncapped number, bounded effect.
     //
-    // The reduction is linear per stack and the SUM with Brace is capped hard
-    // in applyEnemyDamage — uncapped number, bounded effect. Overinvestment is
-    // never wasted, because everything past the cap still cashes out through
-    // Last Stand.
+    // THE BUILD RATE IS THE LEVER, NOT THE PAYOUT — swept, base only, 40 runs a
+    // cell. What a stack PAYS barely matters (resolveDR x0 to x5 moved the spread
+    // build 10w -> 15w). How fast the pile BUILDS is where the class lives
+    // (resolvePerHit 1 -> 8 moved it 12w -> 23w, still climbing off the end).
+    // The curve, if this wants moving: +2 13w, +3 14w, +4 15w, +6 20w, +8 23w.
     //
-    // ---- THE BUILD RATE IS THE LEVER, NOT THE PAYOUT ----------------------
-    // Both halves were swept before this moved, base only, 40 runs a cell.
-    // What a stack PAYS barely matters: resolveDR from x0 to x5 took the spread
-    // build 10w -> 15w, and most of that arrives past x3. How fast the pile
-    // BUILDS is where the class lives: resolvePerHit 1 -> 8 took it 12w -> 23w,
-    // still climbing at the end of the sweep.
+    // A landed hit still gives exactly +1 through Strike's buildsResolve, so at
+    // +3 taking the blow is worth three times dealing one — the class's sentence
+    // stated in a number.
     //
-    // That asymmetry is the class stating what it is. Enduring is the verb, so
-    // the number that answers to being hit is the one with the class in it —
-    // and raising it sharpens base's sentence rather than blurring it, because
-    // a landed hit still gives exactly +1 through Strike's buildsResolve. At +3
-    // taking the blow is worth three times dealing one.
+    // THE CAP IS NOT THE CONSTRAINT, checked before the rate moved: sampled at
+    // every enemy hit, RESOLVE sits at a median of 4 stacks (12% reduction) at
+    // +3, with 0% of hits landing against a capped guard. Even +8 pins only 10%.
     //
-    // 1 -> 3 because base was the outlier and nothing else was close: at +1 the
-    // spread build reached 12w against 13/17/15 for bio/psy/sym, and at +3 it
-    // reaches 14w — INSIDE the pack, not past it. The rest of the measured
-    // curve, if this wants moving: +2 13w, +4 15w, +6 20w, +8 23w.
-    //
-    // THE CAP IS NOT THE CONSTRAINT, which was worth checking before touching
-    // the rate: RESOLVE measured at the moment of every enemy hit sits at a
-    // median of 4 stacks (12% reduction) at +3, and 0% of hits land against a
-    // capped guard. Even +8 only pins 10% of them. The ramp stays a ramp at
-    // every value here — the plateau this mechanic was rebuilt to escape is
-    // nowhere near.
-    //
-    // ONE INTERACTION WORTH KNOWING, and it is a happy one: Speed does not
-    // benefit. More of your turns means fewer of the enemy's, and the enemy's
-    // turns are what feed this — so an all-Speed base sat at 12-15w across the
-    // WHOLE sweep while spread and Vitality climbed. Enduring and evading pull
-    // against each other, which is thematically right and means this lever
-    // cannot feed the build that is already strongest.
+    // Speed does not benefit, and that falls out of the mechanic: more of your
+    // turns is fewer of theirs, and theirs are the food. All-Speed base sat at
+    // 12-15w across the whole sweep. Enduring and evading pull against each
+    // other, so this lever cannot feed the build that is already strongest.
     resolveDR: 0.03,       // Unmutated: each held Resolve = 3% flat damage reduction
     resolvePerHit: 3,      // Unmutated: Resolve gained whenever you take a hit
     reloadHpFloor: 0.15    // deliberate mercy: continuing a run never puts you below this
   },
   enemy: {
-    // ---- WHY THIS TABLE IS NOT THE LEVER (a read, not a plan) -------------
-    // KEPT BECAUSE IT WAS RIGHT ABOUT THE MECHANISM, and the fix it pointed at
-    // eventually landed somewhere else entirely. The numbers below describe a
-    // build nobody plays any more — the dumb bot won ~98% then and medians
-    // wave 5-10 now — so read them as a worked example, not as today's game.
+    // THIS TABLE IS A LATE LEVER, NOT A FIRST ONE, and the reason outlived every
+    // number that taught it: PROPORTIONAL SUSTAIN CANCELS PROPORTIONAL DAMAGE AT
+    // ANY MULTIPLIER. Raising these only reorders who drowns first. Two obvious
+    // raises were tried and reverted (double elite chance; trashDmgMult 1.45 ->
+    // 1.75) and neither moved a win rate. The heal anchor, which took sustain off
+    // max HP entirely, moved more than any enemy number ever has.
     //
-    // The bracket used to call bio, psy and sym TOO EASY, and no knob in this
-    // table could change that, because the margin it would have to eat was
-    // sustain, and strain sustain was a share of max HP that did not care when
-    // it was cast. Measured then (dumb bot, per run): bio took ~740 damage and
-    // healed ~550 back, sym took ~1320 and healed ~875, psy took ~500 and
-    // siphoned ~375. Both obvious raises were tried and reverted:
-    //   - elites at 2x chance, windup on the 2nd action: win rates unmoved.
-    //     Heavies land on full bars the loop refills — and elite XP at 1.7x
-    //     is itself a buff, so more elites made base EASIER, not harder.
-    //   - trashDmgMult 1.45 -> 1.75 on top: the three strains' dumb bots
-    //     still won 83-96% while base skilled sank to 38% — the one class
-    //     whose sustain is flat and rare drowns first, every time.
+    // A TIER BOUNDARY HAS TO BE A STEP. Keep withinStep x 4 well BELOW
+    // tierGrowth - 1, or the drift across a tier's five waves cancels the jump
+    // and rank II walks in carrying exactly what rank I walked out with. Today
+    // the drift is +6% a wave and wave 4 to wave 6 is +57%.
     //
-    // THE STANDING LESSON, which outlived every number in it: PROPORTIONAL
-    // SUSTAIN CANCELS PROPORTIONAL DAMAGE AT ANY MULTIPLIER. Raising this
-    // table only reorders who drowns first. That is why the heal anchor —
-    // which took sustain off max HP entirely — moved more than any enemy
-    // number ever did, and why reaching for this table should stay a late
-    // move rather than a first one.
-    //
-    // ---- THE TIER STEP ----------------------------------------------------
-    // A TIER BOUNDARY MUST BE A STEP, AND IT USED TO BE FLAT — arithmetically,
-    // not just in feel. With withinStep 0.13 the drift across a tier's five
-    // waves came to 4 x 0.13 = 0.52, which is EXACTLY tierGrowth 1.52 minus
-    // one, so wave 5 and wave 6 had identical growth factors (g = 1.520), as
-    // did 10 and 11 (2.310). Rank II walked in carrying precisely the numbers
-    // Rank I walked out with. The boss was the only thing between them.
-    //
-    // Now the drift is gentle (+6% a wave) and the boundary is a real jump:
-    // wave 4 to wave 6 is +57%. Within a tier you are grinding down a known
-    // quantity; the wave after a boss is a heavier CLASS of thing, which is
-    // what the rank in its name has been promising. Set withinStep x 4 well
-    // BELOW tierGrowth - 1 or the step flattens again.
-    //
-    // hpBase carries the general buff (132 -> 160). One measurement worth
-    // keeping beside it: +60% enemy HP, on its own, left bio, psy and sym
-    // winning 30/30. HP alone did not decide those fights — damage and rate
-    // did.
-    //
-    // That is a fact about the game AS IT WAS WHEN MEASURED, not a rule about
-    // HP. A big pool only reads as padding while there is nothing to do inside
-    // the extra turns it buys; once a run has real scaling to spend them on, a
-    // long fight is a stage rather than a wall, and a wide health bar is the
-    // room those systems need to happen in. Reach for HP when you want a fight
-    // to have ROOM, and for damage and rate when you want it to have TEETH —
-    // they are different jobs, not a better and a worse lever.
+    // HP AND DAMAGE ARE DIFFERENT JOBS: reach for HP when a fight should have
+    // ROOM, and for damage and rate when it should have TEETH. +60% enemy HP on
+    // its own once left three strains winning 30/30.
     hpBase: 160, tierGrowth: 1.85, withinStep: 0.06,
-    // dmgExp WAS 0.88 — enemy damage grew SUBLINEARLY in the growth factor
-    // while player HP grows linearly in allocated points, so every wave the
-    // enemy fell further behind the pool it was hitting. At 1.00 damage tracks
-    // growth exactly and a late trash mob stays a real cost. trashDmgMult
-    // 1.33 -> 1.45 on top, because the level compression handed players a
-    // bigger pool per wave to spend.
+    // dmgExp 1.00: damage tracks the growth factor exactly. It was 0.88, which
+    // grew SUBLINEARLY while player HP grows linearly in allocated points, so
+    // every wave the enemy fell further behind the pool it was hitting.
     dmgBase: 8, dmgExp: 1.00,
-    // ---- TURN-RATE ANCHOR -------------------------------------------------
-    // apsBase MATCHES THE PLAYER'S STARTING RATE ON PURPOSE. A fresh sheet is
-    // 0.85 + 0.15 from its 5 Speed = 1.00, and a baseline enemy is 1.00, so
-    // wave 1 is one turn each. It used to be 0.70, which handed every new
-    // character a free +43% action economy before they had spent anything —
-    // and since a kill costs a fixed number of YOUR turns (cooldowns tick on
-    // your own turns, not a clock), that advantage was really 30% free damage
-    // mitigation stapled to the starting sheet.
-    //
-    // Anchoring here rather than by lowering the player's apsBase keeps the
-    // player sheet round (25 damage, 100 HP, 1.00 rate), and rate multipliers
-    // read directly as turns-per-player-turn.
-    //
-    // PREVIOUS VALUES, if this wants reverting as one block:
-    //   apsBase 0.70, apsPerTier 0.018, apsCap 1.5,
-    //   bossDmg 2.0, trashDmgMult 1.9
+    // apsBase MATCHES THE PLAYER'S STARTING RATE, so wave 1 is one turn each and
+    // rate multipliers read directly as turns-per-player-turn. It was 0.70, which
+    // handed every new character a free +43% action economy — and since cooldowns
+    // tick on your own turns, that was really free damage mitigation.
     apsBase: 1.00,
-    // WAS 0.026, which was a rounding error dressed as a mechanic: a baseline
-    // enemy drifted 1.00 -> 1.05 across an entire run, so "standing still on
-    // Speed loses you the tempo" was technically true and completely
-    // unfeelable. At 0.070 it climbs 1.00 -> 1.35 across a full run — still
-    // small beside what Speed can buy (up to 4x), which is the point: Speed
-    // remains the answer, but now there is a question. It also gives the tier
-    // step a second dimension, so a new rank is faster AND heavier.
-    //
-    // RATE COUNTS FROM THE RUN'S START, NOT THE ACT'S, and that is the one
-    // place the act-local rule is deliberately broken. Everything else about an
-    // enemy restarts per act — that is what lets act 2 field its own roster at
-    // its own floor — but rate restarting meant the Encampment's opening
-    // enforcers acted at 1.00 while the Laboratory's closing experiments acted
-    // at 1.14. The enemy got SLOWER at the boundary the game sells as stepping
-    // up a weight class, while the player's rate climbed straight through it.
-    // Tempo is the one axis where the player never resets, so it is the one
-    // axis the enemy cannot afford to.
-    apsPerTier: 0.070,
-    apsCap: 2.15,                      // same base-to-cap headroom as the old 0.70 / 1.5
+    // RATE COUNTS FROM THE RUN'S START, NOT THE ACT'S — the one place the
+    // act-local rule is deliberately broken. Everything else about an enemy
+    // restarts per act so act 2 can field its own roster at its own floor, but
+    // rate restarting meant the Encampment's opening enforcers acted SLOWER than
+    // the Laboratory's closing experiments, at the boundary the game sells as a
+    // step up. Tempo is the one axis the player never resets, so it is the one
+    // the enemy cannot afford to either.
+    apsPerTier: 0.070,                 // 1.00 -> 1.35 across a run
+    apsCap: 2.15,
     crit: 0.10, critMult: 1.5,
-    // bossDmg and trashDmgMult were both fitted against a player taking ~1.5
-    // turns per enemy turn. With the anchor at 1:1 the enemy now acts far more
-    // often per fight, so both come down to keep a wave costing what it cost.
-    // These are the compensation for the anchor, not a difficulty change: total
-    // unmitigated HP spent clearing all 15 waves lands within 2% of before.
-    // bossHp/bossDmg/bossAps once carried the boss's old brute chassis (x1.55
-    // hp, x1.30 dmg, x0.72 rate), folded in when archetypes were removed. HP has
-    // since come DOWN from that 5.27 to soften the FIRST boss specifically — see
-    // the windup note below for why wave 5 was the wall — which shortens every
-    // boss fight a little; bossDmg and bossAps are still the old chassis.
+    // bossHp came DOWN from 5.27 to soften the FIRST boss; bossDmg and bossAps
+    // are still the old brute chassis, folded in when archetypes were removed.
     bossHp: 4.5, bossDmg: 1.82, bossAps: 0.72, bossXp: 3.0,
     trashDmgMult: 1.45,                // trash hits harder so fights cost real HP (bosses use bossDmg)
-    // WINDUP WAS 6.5 AND IT MADE WAVE 5 A WALL. The multiplier is flat across
-    // all three bosses, but the player's HP pool is SMALLEST at the first one,
-    // so the same multiple bites hardest exactly where you have the least to
-    // spend it against: at 6.5 the wave-5 telegraph hit for 137 against a
-    // starting pool of 100, i.e. a near-certain one-shot on a hit you could see
-    // coming but rarely fully answer that early. A telegraph should cost you
-    // half your bar and a turn spent reacting, not the run. At 4.5 it landed
-    // for ~95 and base's wave-5 clear rate went 18% -> 80% (greedy bot).
-    //
-    // NOW 5.0, and the reasoning above is exactly why it can move: that note
-    // said the honest way to make the telegraph bite harder is a bigger pool to
-    // spend it against, and the level compression delivered one — six points a
-    // level means a player arrives at wave 5 holding more Vitality than the
-    // 4.5 tuning assumed. This is that promised adjustment, not a reversal of
-    // it. The ceiling still stands: if it ever needs to be scarier again, add
-    // pool, not multiplier.
-    //
-    // THE POINT-SCARCITY PASS THEN SHRANK THE WAVE-5 POOL AGAIN (a player
-    // reaches the first boss at L3 with ~6 points now, not L5 with ~24), so
-    // 5.0 stood on a thinner premise than when it was set.
-    //
-    // NOW 4.0, AND THE FIRST BOSS WAS NEVER THE PROBLEM — THE LAST ONE WAS.
-    // Every note above reasons about wave 5, where the pool is smallest, and
-    // concluded the multiplier was safe because the pool grows. It does, but
-    // ENEMY DAMAGE GROWS FASTER, so the telegraph's share of the bar it lands
-    // on climbs all run. Measured at 5.0, median bar the skilled bot actually
-    // arrives with, both allocation plans:
+    // THE TELEGRAPH MULTIPLIER IS FLAT ACROSS ALL THREE BOSSES, so the SHARE of
+    // your bar it takes is what actually moves — and enemy damage grows faster
+    // than the pool does, so that share climbs all run. Measured at 5.0, against
+    // the median bar the smart bot arrives with:
     //
     //                     telegraph    spread build      all-Vitality
     //     wave  5 boss         90       160   56%         160   56%
     //     wave 10 boss        165       160  103%         280   59%
-    //     wave 13 elite       235       160  147%         340   69%
     //     wave 15 boss        310       220  141%         400   78%
     //
-    // Read the SPREAD column: from wave 10 on, the telegraph was a clean
-    // one-shot on any sheet that had not poured everything into Vitality — and
-    // 78% on one that had, which is a hit you survive only from full. So the
-    // rule this table has always stated ("a telegraph costs you half your bar
-    // and a turn spent reacting, not the run") was true at wave 5 and false
-    // everywhere after it.
+    // From wave 10 on it was a clean one-shot on anything but an all-Vitality
+    // sheet. At 4.0 the invested bar pays 45% / 47% / 62%. The spread build still
+    // loses its last-boss bar to one blow, and that stays — buying no Vitality is
+    // a decision, and a decision has to be allowed to be wrong. What is fixed is
+    // the case no decision answers: investing in survival and dying anyway.
     //
-    // At 4.0 the invested bar pays 45% / 47% / 62% across the three bosses.
-    // The spread build still loses its last-boss bar to one blow (113%), and
-    // that stays: a player who bought no Vitality has made a decision, and the
-    // decision has to be allowed to be wrong. What is fixed is the other case,
-    // the one no decision answers — investing in survival and dying anyway.
+    // IF IT SHOULD BITE HARDER, ADD POOL RATHER THAN MULTIPLIER — raising this
+    // hits wave 5 hardest, where the pool is smallest, which is the wall it was
+    // lowered off in the first place.
     windupEvery: 3, windupMult: 4.0,   // boss telegraph: every Nth action winds up; next strike hits xN
     finalWindupEvery: 2,               // the final boss keeps you under constant telegraph pressure
     eliteWindupEvery: 3,               // elites telegraph too: the mid-run skill check
@@ -874,48 +389,31 @@ const BALANCE = {
     windupSpoilFrac: 0.5,
     eliteBaseChance: 0.16, eliteChancePerWave: 0.006, eliteChanceCap: 0.40
   },
-  // FEWER STILL, AND POORER — the second compression. The first (16 levels
-  // -> 8) fixed the BEAT: a level became rarer than a kill. But it kept the
-  // ~48-point budget, and the budget was the remaining lie — see the note on
-  // pointsPerLevel. This one fixes the BUDGET: ~6 levels x 3 points. Income
-  // knobs are untouched, as before — pacing lives in the cost curve only, so
-  // the XP readout on a kill still means what it meant.
+  // TWO XP REGIMES, because the first level is a HOOK and the rest are EARNED.
+  // firstCost sits just under the wave-1 kill's 61 XP so the first kill still
+  // levels you, then the curve restarts fat and quadratic from level 2. One
+  // formula could not price both: the gap between "one kill" and "the first
+  // boss" is a 10x cliff no smooth curve crosses without wrecking one end.
+  // Pacing lives in the cost curve only — income knobs are untouched, so the XP
+  // readout on a kill still means what it meant.
   //
-  // TWO REGIMES, because the first level is a HOOK and the rest are EARNED.
-  // firstCost sits just under the wave-1 kill's 61 XP so the first kill
-  // still levels you — that beat is cheap to keep and teaches the loop —
-  // and then the curve restarts fat and quadratic from level 2. One formula
-  // could not price both: the gap between "one kill" and "the first boss"
-  // is a 10x cliff no smooth curve crosses without wrecking one end.
-  //
-  // Sighted against the income timeline (cumulative trash+boss XP by wave,
-  // no chain): L2 on the first kill, L3 lands ON the first boss, L4 ~w8,
-  // L5 ON the second boss, L6 ~w13, L7 paid by the act-1 finale. Act 2
-  // breathes slower on the same curve — L8 ~w19, L9 ~w23, L10 ~w26,
-  // roughly one level per rank — and L11 sits beyond the run's income, by
-  // curve rather than by cap. Chains and elites drag every beat earlier,
-  // which stays the right reward.
-  //
-  // "~6 LEVELS x 3 POINTS" DESCRIBES A RUN THAT DIES, and that is worth saying
-  // out loud now that runs finish. It was written when reaching wave 15 was a
-  // good run, so the budget it names is the budget of a LOSS. Measured across
-  // all four strains, median level at the moment each boss wave begins:
+  // MEASURED, median level at the moment each boss wave begins, all four
+  // strains. The balance notes that say "~18-20 points" describe a run that
+  // ENDS around wave 15 — they were written when that was a good run:
   //
   //     wave  5    L2    3 points on top of 5/5/5/5
   //     wave 10    L4    9
-  //     wave 15    L6   15      <- the ~18-20 the balance notes assume
+  //     wave 15    L6   15
   //     wave 20    L8   21
   //     wave 25   L10   27
   //     wave 30   L11   30
   //     finished  L12   33
   //
   // So the enemy table is fitted against a sheet holding ~15 points and meets
-  // one holding 21-33 for the whole second half of the run. Chains drag it
-  // earlier still — an owner's winning psy finished L12 with 23 Strength, which
-  // is more Strength alone than the budget the curve was drawn against.
-  // Reported, not acted on: whether act 2 should be met with double the sheet
-  // is a design question, and the levers (this cost curve, the kill income
-  // beside it, or act 2's growth) are all still where they were.
+  // one holding 21-33 for the whole second half. Chains drag every beat earlier.
+  // Reported, not acted on: whether act 2 should be met with double the sheet is
+  // a design question, and the levers (this curve, kill income, act 2's growth)
+  // are all still where they were.
   xp: { firstCost: 58, base: 485, pow: 2, powScale: 35,
         killBase: 46, killWave: 15, killTier: 36 },
   combo: { maxEnemyActionsPerKill: 3, xpPerStack: 0.05, maxStack: 20 },   // chain continues if the kill let the enemy act <= N times (speed-fair)
@@ -925,64 +423,21 @@ const BALANCE = {
   spawnDelay: 0.16,
   // saveKey is a PREFIX, not a key: each slot stores under `<saveKey>_s<n>`.
   //
-  // BUMP THE VERSION WHENEVER A CHANGE INVALIDATES A SAVED SHEET. A save stores
-  // raw stats and recomputes everything derived on load, so a rules change does
-  // not corrupt an old run — it silently RE-READS it under economics it was
-  // never allocated for. v3 -> v4 covers the 1:1 turn anchor, turn rate
-  // becoming a pure stat, and the mutation pool being cleared: a sheet with 7
-  // Speed saved under v3 loaded back at 1.40x where it was built at ~1.06x.
+  // BUMP IT WHENEVER A CHANGE INVALIDATES A SAVED SHEET, and add the outgoing
+  // prefix to oldSaveKeys so it gets purged. A save stores raw stats and
+  // recomputes everything derived on load, so a rules change does not corrupt an
+  // old run — it silently RE-READS it under economics it was never allocated
+  // for. The v10 -> v11 case is the clearest example: every heal became a share
+  // of the anchor rather than max HP, so a wide v10 sheet would load back
+  // healing at a fraction of what its wave count was earned on.
   //
-  // v4 -> v5 is Instinct: crit chance became a flat 2%/point off no base with
-  // the cap raised to 90%, and crit damage started climbing with the same
-  // points instead of sitting at a flat x2. A v4 sheet with 20 Instinct was
-  // allocated for 26% crit at x2 and would load back at 40% crit at x6 — the
-  // same shape of silent re-read the Speed bump was, and a much bigger one.
+  // ONCE PER SHIPPED CHANGE, NOT ONCE PER EDIT. What it answers is "can a sheet
+  // saved by a build people PLAYED still be read" — bumping for a version nobody
+  // played purges nothing and costs every player another set of empty slots.
   //
-  // Only ONE bump for the whole of the Instinct work, deliberately. The crit
-  // numbers moved twice while it was being tuned, but v5 was never a build
-  // anybody played, so a second bump would have purged nothing and cost every
-  // player another set of empty slots. What a save key answers is "can a sheet
-  // saved by a build people PLAYED still be read", so it moves once per shipped
-  // change in economics, not once per edit.
-  //
-  // v5 -> v6 is the level compression: the cost curve went quadratic, a level
-  // now grants 6 points instead of 3, and a full run lands ~8 levels instead
-  // of ~16. A v5 sheet leveled and allocated on the old cadence — its level
-  // number, banked points and xpNext all describe a progression that no
-  // longer exists.
-  //
-  // v6 -> v7 is the point-scarcity pass: 3 points a level instead of 6 and
-  // the cost curve stretched to ~6 levels a run, so a v6 sheet carries
-  // roughly twice the allocated points the new economy can ever grant — the
-  // same silent re-read as every bump before it, in the richer direction.
-  //
-  // v7 -> v8 is the two-act world: the run doubled to 30 waves and the act
-  // structure moved under every wave a save stores, so a v7 run describes a
-  // game that ended where act 1 now hands over to the Encampment.
-  //
-  // v8 -> v9 is the sym rework. A saved sym holds a Spore count for a bank
-  // that no longer exists and, worse, holds NO grown thorns — so a mid-run
-  // sheet would load with the whole ramp its wave count was earned on reset to
-  // zero, which is a harder re-read than any stat drift: the class would be
-  // unplayably weak rather than merely mistuned. Two of its four skills are
-  // also gone by id. Every other strain rides along, as always.
-  //
-  // v9 -> v10 is the end of banks. Resolve moved off the player as a raw
-  // capped field and became an uncapped status, so a v9 Unmutated save carries
-  // `resolve: 4` in a field nothing reads any more — it would load holding
-  // nothing, which is a live mechanic silently reset to zero rather than a
-  // number merely mistuned.
-  //
-  // v10 -> v11 is the heal anchor. Every heal in the game was a share of max
-  // HP and is now a share of a baseline body that grows with LEVEL, so a v10
-  // sheet was allocated under an economy where a Vitality point bought the bar
-  // and the refill both. A wide v10 sym or bio would load back healing at a
-  // fraction of what its wave count was earned on — the same silent re-read as
-  // every bump before it, and the largest one yet, because healing was 68-91%
-  // of all the punishment a build absorbed.
-  //
-  // Bumping also gives every player empty slots on the next load, which is the
-  // honest outcome — those runs are not playable as the game now works.
+  // Old saves are DROPPED, never migrated. Every player gets empty slots on the
+  // next load, which is the honest outcome: those runs are not playable as the
+  // game now works. (Full bump history is in git.)
   saveKey: 'risen_run_v11',
   // Storage keys from older versions, cleared once on load so they cannot
   // accumulate invisibly. Oldest first; add the outgoing prefix here on a bump.
@@ -1026,30 +481,21 @@ const CLASSES = {
     ]
   },
   // THE TERROR MUTANT. Psy's mechanic is DREAD, a mark stacked ON THE ENEMY —
-  // see the DREAD block in BALANCE for why the number moved off the player and
-  // what killed Momentum. The kit is four verbs in order: Hunt (land a hit,
-  // plant fear), Terrify (seize control — a burst of stacks, each one
-  // slowing the enemy's turn rate), Traumatize (at 3+ DREAD the mind breaks:
-  // stun), Kill (cash every stack in as damage — and with the fear spent, the
-  // enemy speeds back up, so the finisher is a real decision, not a rotation
-  // button). Its sentence: "you were beaten before I ever touched you."
+  // see the DREAD block in BALANCE. Four verbs in order: Hunt (land a hit,
+  // plant fear), Terrify (a burst of stacks), Traumatize (at 3+ the mind breaks:
+  // stun), Kill (cash stacks in as damage — and with the fear spent the enemy
+  // speeds back up, so the finisher is a decision, not a rotation button).
+  // Its sentence: "you were beaten before I ever touched you."
   //
-  // THE CLASS'S STAT IS SPEED, and it used to be Speed and Instinct. Fear came
-  // from crits and from dodges, so Instinct was the engine and Speed was both
-  // halves of the ratio. Hunt plants on hit now, so tempo is the engine on its
-  // own — more turns is more fear is more slow is more turns. Instinct is a
-  // pure damage stat for psy, which is a real loss of identity for the stat and
-  // is left standing to be judged by play rather than patched over here.
+  // THE CLASS'S STAT IS SPEED: more turns is more fear is more slow is more
+  // turns. Instinct is a pure damage stat for psy since Hunt started planting on
+  // hit — a real loss of identity for the stat, left standing to be judged by
+  // play rather than patched over here. Squishy by choice: every point of Vit is
+  // a point the engine didn't get.
   //
-  // Still squishy by choice: every point of Vit is a point the engine didn't
-  // get, not because the sheet says so.
-  //
-  // Sustain is DEVOUR, never a bandage: consumed fear feeds you (see
-  // dreadFeedFrac). The first pass shipped no heal at all on the theory that
-  // control was enough — wrong for this game, because HP carries across
-  // fights, so kit-less sustain means losing runs to arithmetic rather than
-  // to fights. The failure state still bites: an enemy that steadies itself
-  // sheds fear without feeding you, so getting hit costs control AND dinner.
+  // Sustain is DEVOUR, never a bandage. The failure state bites: an enemy that
+  // steadies itself sheds fear without feeding you, so getting hit costs control
+  // AND dinner.
   psy: {
     name: 'Psychological', color: 'psy',
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
@@ -1072,40 +518,22 @@ const CLASSES = {
       // skill that didn't work.
       { id:'terrify', name:'Terrify', desc:'Deal {power!} damage and plant +{dread} DREAD. Every stack slows the enemy and opens its guard.', type:'attack', power:0.50, dread:4, target:'enemy', cdTurns:3 },
       { id:'traumatize', name:'Traumatize', desc:'Deal {power!} damage. Against {dreadNeed}+ DREAD the mind breaks: stunned for {stun#turn}.', type:'attack', power:0.95, stun:1, dreadNeed:3, target:'enemy', cdTurns:4 },
-      // KILL TAKES HALF THE FEAR, NOT ALL OF IT, and the old version was a
-      // button that was correct to never press. Every stack is doing three
-      // things while it sits there — slowing their turn, opening their guard
-      // (+4% damage taken, uncapped), and dripping the siphon into you — so
-      // "spend the whole pile for one hit" was a trade against a fight's worth
-      // of compounding value. In a boss fight, which is where DREAD actually
-      // piles up, the arithmetic said hold, every single time. A decision that
-      // resolves the same way at every count is not a decision; it is a dead
-      // card taking up a slot.
+      // KILL TAKES HALF THE FEAR, NOT ALL OF IT. Every stack is doing three
+      // things while it sits there — slowing their turn, opening their guard,
+      // dripping the siphon into you — so spending the whole pile for one hit
+      // lost against a fight's worth of compounding value at every count. A
+      // decision that resolves the same way every time is a dead card. Half
+      // (rounded up, so a lone stack is still edible) makes it "how deep do I
+      // cut into my own advantage".
       //
-      // Half (rounded up, so a lone stack is still edible) keeps the shape the
-      // card promised — cashing out costs you control, and the enemy speeds
-      // back up as you do it — while leaving an engine to keep running. The
-      // finisher is now "how deep do I cut into my own advantage", asked every
-      // five turns, instead of "do I delete my class".
-      // THE CARD SHOWS THE WHOLE BLOW, not its parts. Every other card can
-      // state one number because one number is all it deals; Kill's depends on
-      // what is standing in front of you, and "1.2x Attack Damage plus 0.6x per
-      // stack, of half the pile rounded up" is arithmetic no one should be
-      // doing mid-fight. killTotal computes exactly what the next press will
-      // hit for — including that only HALF the stacks are torn away, which is
-      // the part that would otherwise be silently double-counted by eye.
-      //
-      // It reads the same fields the damage pipeline reads, off its own card,
-      // so the number cannot drift from the hit when one of them is retuned.
-      //
-      // Deliberately NOT modelling DREAD's vulnerability, crits, or WEAK: every
-      // other card states what the skill produces and lets the fight modify it,
-      // and a card that folded in some multipliers but not others would be
-      // lying more precisely. The blow lands HARDER than this against a marked
-      // enemy, which is the right direction to be wrong in.
-      //
-      // Base power 1.20 -> 2.00: exactly twice Attack Damage, so the floor of
-      // the finisher is legible without a pile behind it.
+      // THE CARD SHOWS THE WHOLE BLOW via killTotal, because this is the one
+      // skill whose damage depends on what is standing in front of you, and
+      // "1.2x plus 0.6x per stack, of half the pile rounded up" is not
+      // arithmetic to do mid-fight. It reads the same fields the damage pipeline
+      // reads, off its own card, so the number cannot drift from the hit.
+      // Deliberately NOT modelling vulnerability, crits or WEAK — the blow lands
+      // HARDER than stated against a marked enemy, which is the right direction
+      // to be wrong in.
       { id:'kill', name:'Kill', desc:'Deal {killTotal} damage. Tears away HALF the enemy’s DREAD — +{perDreadPower!} damage and {feedPerDread+} healed for each.', type:'attack', power:2.00, perDreadPower:0.60, consumesDread:true, consumeFrac:0.5, feedPerDread:BALANCE.player.dreadFeedFrac, target:'enemy', cdTurns:5,
         killTotal: (p, s) => {
           const e = state.enemy;
@@ -1116,38 +544,29 @@ const CLASSES = {
     ]
   },
   // THE ORGANISM. Sym's mechanic is THORNS — one number, worn on the player,
-  // that GROWS every time it is hit and keeps growing for the whole run. See
-  // the THORNS block in BALANCE for why the wallet died and why the ramp is
-  // run-permanent. Its sentence: "everything you do to me makes me stronger."
+  // that grows every time it is hit and keeps growing for the whole run. See the
+  // THORNS block in BALANCE. Its sentence: "everything you do to me makes me
+  // stronger."
   //
-  // THE OTHER THREE ANSWER A HIT; SYM WANTS ONE. Base accepts the hit and
-  // trades, bio outlasts it, psy refuses it outright — sym is the only strain
-  // in the game that is PAID for being struck, and the kit now says so with a
-  // verb instead of a passive. Provoke is that verb, and it is the only button
-  // here that spends your turn to buy the ENEMY a turn: suicide for anyone
-  // else, correct for you. It doubles as sym's answer to the telegraph, and
-  // deliberately a different answer from psy's: a stun DELETES the heavy swing,
-  // Provoke goads it out early so it lands as an ordinary one. You do not dodge
-  // the hit — you take it small, and you eat for it.
+  // THE OTHER THREE ANSWER A HIT; SYM WANTS ONE. It is the only strain PAID for
+  // being struck, and Provoke is that verb — the only button that spends your
+  // turn to buy the ENEMY a turn. It doubles as sym's telegraph answer, and
+  // deliberately a different one from psy's: a stun DELETES the heavy swing,
+  // Provoke goads it out early so it lands as an ordinary one.
   //
-  // RAISE SPINES + PROVOKE IS THE COMBO, and it stays two cards on purpose:
-  // raise the spikes, then make them swing into you. It asks a question no
-  // other combo in the game asks, because you have to be healthy enough to eat
-  // what you invited — and it degrades honestly, since Provoke bare (Spines
-  // still cooling) is the wrong way to use it and still works.
+  // RAISE SPINES + PROVOKE IS THE COMBO, two cards on purpose: raise the spikes,
+  // then make them swing into you. It asks a question no other combo asks —
+  // you have to be healthy enough to eat what you invited.
   //
-  // Sustain is SHED, and it is the one place a run-permanent ramp can be spent:
-  // healing costs you growth you cannot get back this fight. There is no burst
-  // finisher and that is the point — Bloom Eruption was the most base-shaped
-  // card in the kit (spend the bank, hit once, start over) and it was carrying
-  // 42% of sym's damage while thorns carried 22%. Cutting it is what forces the
-  // thorns half to actually be the class.
+  // Sustain is SHED, the one place a run-permanent ramp can be spent: healing
+  // costs you growth you cannot get back this fight. No burst finisher, on
+  // purpose — Bloom Eruption carried 42% of sym's damage while thorns carried
+  // 22%, and cutting it is what forces the thorns half to be the class.
   //
-  // The class's stats are Vitality and Strength, but SPEED IS THE INTERESTING
-  // ONE: more of your turns means proportionally FEWER enemy swings, and swings
-  // are food. Speed makes you faster and smaller. It is the only stat in the
-  // game with a real cost attached, and it lands here on purpose — sym is the
-  // strain whose allocation had nothing to say.
+  // SPEED IS THE INTERESTING STAT: more of your turns means proportionally FEWER
+  // enemy swings, and swings are food. Speed makes you faster and smaller — the
+  // only stat in the game with a real cost attached, landed on the strain whose
+  // allocation had nothing to say.
   sym: {
     name: 'Symbiotic', color: 'sym',
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
@@ -1168,27 +587,18 @@ const CLASSES = {
     ]
   },
   // Base Sonny, reached via "RESIST MUTATION". Refused the infection, so he has
-  // no strain mechanic and never drafts mutations. His damage comes off
-  // Strength like everyone else's; the "scales off your highest stat" rule went
-  // when Attack Damage was unified.
+  // no strain mechanic and never drafts mutations.
   //
-  // THE ONLY STRAIN WITH TWO NUMBERS, and it is the refusal that earns them.
+  // THE ONLY STRAIN WITH TWO NUMBERS, and the refusal is what earns them.
   // RESOLVE on himself, BLEED on them — not two mechanics but two halves of one
   // exchange, because a man with no venom and no fear has nothing to fight with
   // except what an ordinary long fight does to both bodies. Resolve is bought by
   // landing hits and taking them; the cut is only as deep as the Resolve behind
-  // it. One number feeds the other, which is what keeps it from reading as a
-  // second currency to manage.
+  // it. One number feeds the other, which keeps it from reading as a second
+  // currency to manage.
   //
-  // BLEED IS WHY THE KIT NEEDED ANYTHING AT ALL. Measured before the pass, base
-  // died at the first boss with 57% of its bar untouched — it needed roughly
-  // twice the damage — and 48% of everything it dealt was locked in Last Stand,
-  // a 5-turn cooldown. Between spikes it swung for 25 and nothing else happened.
-  // A wound that keeps working across those turns is exactly the shape of the
-  // hole, which is why the fix is a rider on the basic rather than a rebalance.
-  //
-  // The sentence is unchanged and now actually true: endure, then everything at
-  // once — except the enduring is doing damage the whole time.
+  // Its sentence: endure, then everything at once — except the enduring is
+  // doing damage the whole time.
   base: {
     name: 'Unmutated', color: 'base',
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
@@ -1201,20 +611,13 @@ const CLASSES = {
       // next Strike will actually open, and it moves as Resolve stacks up.
       { id:'jab', name:'Strike', desc:'Deal {power!} damage. +{buildsResolve} RESOLVE, and open a wound: +{bleedStacks} BLEED. Every turn, BLEED deals {bleedTick} a stack and loses one.', type:'attack', power:1.0, buildsResolve:1, bleed:1, bleedStacks:p => bleedStacks(p), bleedTick:p => bleedDepth(p), target:'enemy', basic:true },
       { id:'bandage', name:'Bandage', desc:'Heal {healFrac+} and +{resolveHealBonus%} per held RESOLVE', type:'heal', healFrac:0.14, resolveHealBonus:0.02, target:'self', cdTurns:4 },
-      // BRACE LASTS TWO TURNS, NOT ONE, and the reason is measured. This is
-      // base's answer to the telegraph, and it was the only answer in the game
-      // that had to be timed to the exact turn — one turn of cover on a 4-turn
-      // cooldown, against a windup every ~4 player turns, so it was a coin flip
-      // whether it was even available, and using it as filler (the obvious
-      // thing to do with an off-cooldown button) guaranteed it was not. 60% of
-      // base's deaths were a heavy landing.
-      //
-      // Perfect timing was measured first, before the number moved: holding it
-      // and casting it on the exact pre-heavy turn took base's first-boss clear
-      // from 20% to 100% with nothing rebalanced. So the ANSWER was never
-      // insufficient — the window was. Two turns keeps the read (you still have
-      // to see the telegraph and act on it) while forgiving a turn of
-      // misjudgement, which is the difference between strict and broken.
+      // BRACE LASTS TWO TURNS, NOT ONE. Measured: holding it and casting it on
+      // the exact pre-heavy turn took base's first-boss clear from 20% to 100%
+      // with nothing rebalanced, so the ANSWER was never insufficient — the
+      // WINDOW was. At one turn on a 4-turn cooldown against a windup every ~4
+      // player turns it was a coin flip whether it was even available, and 60%
+      // of base's deaths were a heavy landing. Two turns keeps the read while
+      // forgiving a turn of misjudgement: strict, not broken.
       // `holdFor` tells the bot the same thing the card tells the player.
       { id:'counter', name:'Counterpunch', desc:'Brace for {duration#turn}: −{power%} damage taken, stacking with RESOLVE. A hit taken while braced counters {counterPower!} damage and opens a wound: +{bleedStacks} BLEED', type:'buff', buff:'brace', duration:2, power:0.60, counterPower:1.20, counterBleed:1, bleedStacks:p => bleedStacks(p), holdFor:'windup', target:'self', cdTurns:4 },
       { id:'laststand', name:'Last Stand', desc:'Deal {power!} damage, +{perResolvePower!} per RESOLVE consumed. Spends all RESOLVE', type:'attack', power:1.20, perResolvePower:0.40, consumesResolve:true, target:'enemy', cdTurns:5 }
@@ -1222,29 +625,17 @@ const CLASSES = {
   }
 };
 
-// Enemies get their own bodies now, not a mirror of a maxed player.
+// Enemies get their own bodies, not a mirror of a maxed player. Because
+// enemy.apsBase matches the player's starting rate, `aps` READS DIRECTLY AS
+// TURNS PER PLAYER TURN: a grunt acts once for each of your turns, a brute 0.72
+// times, a skirmisher 1.18.
 //
-// Now that enemy.apsBase matches the player's starting rate, `aps` READS
-// DIRECTLY AS TURNS PER PLAYER TURN at level 1: a grunt acts once for each of
-// your turns, a brute 0.72 times, a skirmisher 1.18. That is the whole point of
-// the anchor — before it, these multipliers were relative to a base the player
-// never matched, so 0.72 described nothing you could feel.
-//
-// skirmisher was 1.55 (see the revert list in BALANCE.enemy). Against a 1:1
-// baseline that meant it took more than three turns to your two, which turned
-// wave 2 into a wall rather than a change of pace. 1.18 still reads as SWIFT —
-// it out-paces you until you buy Speed — without being the hardest fight in
-// the act.
-// ARCHETYPES are gone. The game HAS four enemies — two per act: the
-// Laboratory's Escaped Experiment and Prime Symbiote, the Encampment's MCP
-// Enforcer and MCP Captain — and the code agrees: no hidden chassis cycling
-// stats under one name and one sprite. The owner's rule for enemy variety:
-// a thing that fights differently must LOOK different and be NAMED
-// differently, so new enemy types arrive as name + sprite + behavior
-// together, or not at all. (The act-1 roster is currently name + sprite on
-// the shared chassis — its own behavior is the open half of that promise.)
-// The boss's old brute chassis (x1.55 hp, x1.30 dmg, x0.72 rate) is folded
-// into bossHp / bossDmg / bossAps so bosses fight exactly as before.
+// ARCHETYPES ARE GONE. The game HAS four enemies — two per act — and the code
+// agrees: no hidden chassis cycling stats under one name and one sprite. The
+// owner's rule for variety: a thing that fights differently must LOOK different
+// and be NAMED differently, so new types arrive as name + sprite + behavior
+// together, or not at all. (The act-1 roster is currently name + sprite on the
+// shared chassis — its own behavior is the open half of that promise.)
 
 // Opt-in risk: elites hit harder but pay far more XP.
 const ELITES = {
@@ -1263,25 +654,21 @@ const ELITES = {
   volatile: { id:'volatile', tag:'VOLATILE', xp:1.8, deathNova:0.14 }
 };
 
-// Act structure — the content framework for a run. Two acts of 15 waves,
-// three bosses each. Each act owns its zone label, its enemy roster (names
-// here, art in sprites.js keyed by act), and its DIFFICULTY FLOOR:
+// Act structure. Two acts of 15 waves, three bosses each. Each act owns its zone
+// label, its enemy roster (names here, art in sprites.js keyed by act), and:
 //
-//   growthMult   the act's floor — enemy hp/dmg growth restarts from here,
-//                so within an act the familiar tier curve retraces at a
-//                higher altitude instead of compounding forever. Without
-//                this, extending the old 1.85^tier ride to wave 30 put the
-//                last boss at ~390 damage against a ~300 HP pool: not hard,
-//                unwinnable. Rank and rate are act-local for the same
-//                reason — the roster debuts at Rank I, not Rank IV.
-//   tierGrowth / withinStep   optional per-act steepness overrides. Act 2
-//                climbs much more gently than act 1 because the player's
-//                own growth flattens with the stretched level curve (~9
-//                points across the whole act against act 1's ~18).
+//   growthMult   the act's DIFFICULTY FLOOR — enemy hp/dmg growth restarts from
+//                here, so within an act the tier curve retraces at a higher
+//                altitude instead of compounding forever. Without it, extending
+//                act 1's 1.85^tier ride to wave 30 put the last boss at ~390
+//                damage against a ~300 HP pool: not hard, unwinnable. Rank and
+//                rate are act-local for the same reason — the roster debuts at
+//                Rank I, not Rank IV.
+//   tierGrowth / withinStep   optional per-act steepness overrides. Act 2 climbs
+//                more gently because the player's own growth flattens (~9 points
+//                across the act against act 1's ~18).
 //
-// Act 2's numbers are a FIRST GUESS at extrapolation, not a tuning: act 1
-// wave-for-wave carries exactly the numbers the game has been played on,
-// and the encampment gets fitted the way everything here does — by play.
+// Act 2's numbers are a FIRST GUESS at extrapolation, not a tuning.
 const ACTS = [
   { num: 1, name: 'The Laboratory', startWave: 1, endWave: 15,
     zones: ['THE LABORATORY'],
@@ -1345,34 +732,29 @@ function actForWave(wave) {
 //           momentum, evadeFlat, thornsMult, thornsHeal, poisonStackBonus,
 //           poisonMult, critFlat
 //
-// BASIC-ATTACK RIDERS
-// The first family of mutations hangs a status off the basic attack — the swing
-// you always have, on no cooldown, that otherwise stops mattering once the
-// specials come online. Each rider is one line of data: name a status from
-// STATUSES and the values to apply it with. Whether it lands on you or on the
-// enemy is not stored, because the registry already knows — a 'buff' goes to
-// the caster and a 'debuff' goes to the target, so the two can never disagree.
-//
-// Adding another is one entry here and nothing else; applyPlayerDamage already
-// walks whatever this leaves on p.talents.basicRiders.
+// BASIC-ATTACK RIDERS hang a status off the basic attack — the swing you always
+// have, on no cooldown, that otherwise stops mattering once the specials come
+// online. Each rider is one line of data: name a status from STATUSES and the
+// values to apply it with. Whether it lands on you or the enemy is not stored —
+// the registry knows, since a 'buff' goes to the caster and a 'debuff' to the
+// target. Adding another is one entry and nothing else; applyPlayerDamage
+// already walks whatever this leaves on p.talents.basicRiders.
 function addBasicRider(p, id, opts) {
   p.talents.basicRiders = (p.talents.basicRiders || []).concat([Object.assign({ id }, opts)]);
 }
 
 const TALENTS = {
   // DELIBERATELY EMPTY. The mutation SYSTEM is intact — drafting, picking,
-  // stacking, the MUTATIONS tab, persistence through a save, and every
-  // p.talents hook listed above are all still wired. There is simply no
-  // content in the pool, so levels pass without offering a draft
-  // (rollTalentOffers returns nothing and queueTalentOffer declines).
+  // stacking, the MUTATIONS tab, save persistence and every p.talents hook are
+  // all wired. There is simply no content in the pool, so levels pass without
+  // offering a draft (rollTalentOffers returns nothing).
   //
-  // The seven basic-attack riders that lived here were cleared while the
-  // strains and the starting sheet are being tuned: a draft that hands out
-  // WEAK, HASTE or REGEN changes what a class feels like, which makes it
-  // impossible to judge whether the class itself is fun. They come back once
-  // the four strains stand up on their own.
+  // The seven basic-attack riders that lived here were cleared while the strains
+  // and the starting sheet are being tuned: a draft that hands out WEAK, HASTE or
+  // REGEN changes what a class feels like, which makes it impossible to judge
+  // whether the class itself is fun. They come back once the four stand up alone.
   //
-  // Adding one is a single entry, nothing else. The rider family read:
+  // The rider family read like this — one entry, nothing else:
   //
   //   atrophy: {
   //     id:'atrophy', name:'Atrophic Strike', tag:'Basic Attack',
@@ -1381,29 +763,16 @@ const TALENTS = {
   //          '{duration#turn}, -{power%} to its damage.',
   //     apply(p){ addBasicRider(p, 'weak', { power:this.power, duration:this.duration }); }
   //   }
-  //
-  // — one line of data naming a status from STATUSES and the values to apply
-  // it with. addBasicRider below is still here for exactly that.
 };
 
 // ---- Statuses ------------------------------------------------
 // One registry for every timed effect that can sit on a unit, player or enemy.
-//
-// Before this, a status was an ad-hoc object pushed into unit.statuses whose
-// field names only the function that created it knew, and the rules for what
-// happened when it was re-applied, ticked, expired, rendered or read by the
-// damage pipeline each lived somewhere else: stacking in applyPoison, refresh
-// in applyThornsBoost, application in a three-branch if inside fireSkill,
-// ticking in tickTurnStart, mitigation in applyEnemyDamage, the badge in a
-// chain of type checks. "Enemies can be weakened" meant touching six places and
-// inventing a seventh convention.
-//
-// Now a status is a DEFINITION here plus a small instance object
-// { type, duration, stacks, power, ... } on the unit. Stacking, ticking,
-// expiry, the badge and the damage hooks are all driven off the definition, so
-// a new buff or debuff is one entry in this object and nothing else — and it
-// works on either side of the fight, because nothing here knows or cares
-// whether the unit carrying it is the player.
+// A status is a DEFINITION here plus a small instance object
+// { type, duration, stacks, power, ... } on the unit. Stacking, ticking, expiry,
+// the badge and the damage hooks are all driven off the definition, so a new
+// buff or debuff is one entry in this object and nothing else — and it works on
+// either side of the fight, because nothing here knows or cares whether the unit
+// carrying it is the player.
 //
 // DEFINITION FIELDS (only id/name/tone are required)
 //   id, name       id matches the key; name is the default badge text
@@ -1427,10 +796,6 @@ const TALENTS = {
 //                  that owns it spends it instead (stun, spent by the turn
 //                  engine when it eats a turn)
 //   persists       survives into the next fight and is written to the save
-//   (applyMsg was a prose log line for fireSkill's buff branch. It is gone:
-//    applyStatus logs every status through logStatus using label() below, so a
-//    buff is reported by the same text as its badge instead of a second,
-//    hand-written sentence that could drift from it.)
 //   label(st,unit) badge text; defaults to NAME ×stacks  Nt
 //
 // HOOKS — all optional, all reached through the helpers below, so no caller

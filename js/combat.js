@@ -558,25 +558,12 @@ function applyEnemyDamage(e, p, mult, opts) {
   return dmg;
 }
 
-// A CRIT FEEDS YOUR STRAIN — PARKED FOR EVERY STRAIN, and psy was the last one
-// standing in it.
+// A crit banks a charge of whatever the strain runs on — DREAD, THORNS, Resolve,
+// or the rot. Scaffolding: critStrainGain sits at 0, see its note in BALANCE.
 //
-// One sentence, four meanings, because every strain runs on something that
-// wants filling: DREAD for psy, THORNS for sym, Resolve for Unmutated, and for
-// bio the rot itself. Instinct buys the same sentence for everyone ("my
-// mechanic is online when I need it") and cashes out as whatever the strain in
-// front of you is made of.
-//
-// Psy's branch was live and is gone: its fear rode crits, so the strain's
-// number was fed by a roll rather than by a press, and the card had to explain
-// a class mechanic instead of a button. Hunt plants on hit now. What is left
-// here is scaffolding — critStrainGain sits at 0 — kept because the idea is
-// still the best long-term answer for Instinct, and switching it on is one
-// number when a strain wants it.
-//
-// Every enemy-side branch guards on the enemy still standing: a killing crit
-// has nothing left to frighten or rot, and a permanent status stacked onto a
-// corpse would log a number that never comes due.
+// Every enemy-side branch guards on the enemy still standing — a killing crit
+// has nothing left to frighten or rot, and a status stacked onto a corpse would
+// log a number that never comes due.
 function creditCrit(p, e) {
   const gain = P().critStrainGain || 0;
   if (!gain) return;
