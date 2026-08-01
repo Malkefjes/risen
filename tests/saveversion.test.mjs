@@ -8,7 +8,7 @@ export default async function ({ page, ctx, ok }) {
     localStorage.clear();
     const mk = (c,w,l) => JSON.stringify({ v:2, classId:c, wave:w, kills:3, bestCombo:2,
       player:{ level:l, str:9, instinct:5, speed:7, vit:8, hp:90, maxHp:160, dmgMult:1,
-               hpMult:1, apsMult:1, talents:{}, talentIds:[], statuses:[], skillCds:[0,0,0,0] } });
+               hpMult:1, apsMult:1, statuses:[], skillCds:[0,0,0,0] } });
     // Every retired key the game knows about, whatever they are today — the
     // suite asks "does a bump drop what came before", not "does it drop v3".
     // Written from BALANCE.oldSaveKeys so a bump needs no edit here.

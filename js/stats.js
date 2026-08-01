@@ -244,7 +244,7 @@ function survivingStatuses(unit) {
 
 let state = {
   classId:null, player:null, enemy:null, wave:1,
-  overkillCarry:0, kills:0,
+  kills:0,
   combatActive:false, turnTimer:null,
   // Which save slot the live run writes to. Set when a run starts (claimSaveSlot)
   // or is loaded (continueRun); every saveRun/clearSavedRun targets it.
@@ -282,7 +282,7 @@ function formatNum(n) {
   return sign + Math.floor(n).toString();
 }
 
-// Skill and mutation blurbs are templates, not prose. Every number in a
+// Skill blurbs are templates, not prose. Every number in a
 // description is pulled straight off the definition that owns it, so a card can
 // never drift from the value it describes — retune a skill and its text follows.
 // Tokens:
@@ -426,7 +426,7 @@ function applyDerivedStats(p) {
   const newMax = Math.max(1, Math.floor(p.vit * B.hpPerVit * p.hpMult));
   if (p.maxHp > 0 && p.hp != null) {
     // Raising max HP raises current HP with it: what you are MISSING stays
-    // constant, so a Vitality point (or an HP mutation) is felt the moment it
+    // constant, so a Vitality point is felt the moment it
     // is taken instead of arriving as empty headroom. It used to preserve the
     // RATIO, which quietly taxed the grant by your missing fraction. A shrink
     // subtracts the same way and clamps at 1. Reloads pass through unchanged:

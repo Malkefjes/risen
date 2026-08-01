@@ -29,7 +29,7 @@ export default async function ({ page, ok }) {
     localStorage.clear();
     localStorage.setItem(slotKey(1), JSON.stringify({ v: 2, classId: 'bio', wave: 9, kills: 5,
       player: { level: 5, str: 9, instinct: 5, speed: 7, vit: 8, hp: 90, maxHp: 160, dmgMult: 1,
-                hpMult: 1, apsMult: 1, talents: {}, talentIds: [], statuses: [], skillCds: [0,0,0,0] } }));
+                hpMult: 1, apsMult: 1, statuses: [], skillCds: [0,0,0,0] } }));
     goToMenu();
     const before = document.querySelector('.screen.active')?.id;
     for (let i = 0; i < 5; i++) simulateRun('psy');
@@ -86,7 +86,6 @@ export default async function ({ page, ok }) {
         const p = state.player;
         if (p.points > 0) adjustStat('vit', 1);
         else if (pendingTotal(p) > 0) commitStats();
-        else if (state.talentOffers?.picks?.length) pickTalent(state.talentOffers.picks[0].id);
         else playerAct(BOTS.smart.policy(p));   // same hand on the controls
       }
       await new Promise(r => setTimeout(r, 0));

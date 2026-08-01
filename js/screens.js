@@ -97,7 +97,6 @@ function resetRunState(classId) {
   state.enemy = null;
   state.wave = 1;
   state.kills = 0;
-  state.overkillCarry = 0;
   state.awaitingSpawn = false;
   state.awaitingInput = false;
   state.pendingEnemyAct = false;
@@ -156,7 +155,7 @@ function startGame(skipReveal, classId) {
   recalcPlayerStats();
   state.player.hp = state.player.maxHp;
   clearSavedRun();
-  updateHud(); refreshVowUI();
+  updateHud();
   showScreen('combat-screen');
   spawnEnemy();
   saveRun();
@@ -252,14 +251,6 @@ function spawnEnemy() {
   // Everything that lands on the fight before the first turn is logged under
   // that header, in the order it applies, so an enemy that arrives already
   // wounded is explained rather than just odd.
-  if (state.overkillCarry > 0) {
-    const carry = state.overkillCarry; state.overkillCarry = 0;
-    const before = e.hp;
-    e.hp = Math.max(0, e.hp - carry);
-    logDamage('OVERFLOW', e, carry, ['carried from last kill']);
-    if (e.hp <= 0) state._lastOverkill = Math.max(0, carry - before);
-  }
-
   // "not the opening fight of the run". Reads the wave rather than the kill
   // count — a kill is what advances a wave, so the two say the same thing, and
   // the wave is a number the save actually keeps.
@@ -319,10 +310,6 @@ function updateHud() {
     strainEl.className = 'strain-word' + (p.class ? ' ' + p.class : '');
   }
   document.getElementById('xp-fill').style.width = Math.min(100,(p.xp/p.xpNext)*100) + '%';
-  // Only UNMUTATED has anything to say here. For the other three the tab held
-  // nothing but a line about mutations that cannot happen, so it is not shown.
-  const tabBtn = document.getElementById('tab-btn-vow');
-  if (tabBtn) tabBtn.style.display = p.class === 'base' ? '' : 'none';
   // Soft alert on STATS tab while anything is outstanding — points still to
   // place, or points placed and waiting on a confirm.
   const statsTab = document.querySelector('.sidebar-tab[data-tab="stats"]');
@@ -386,7 +373,6 @@ function gainXP(amount, bonus) {
     }
   }
   updateHud();
-  refreshVowUI();
 }
 
 // Low-level swap: which tab looks active and which panel is visible. No side
@@ -409,7 +395,6 @@ function switchTab(tabId) {
   const from = activeTabId();
   if (tabId === 'menu' && from !== 'menu') _tabBeforeMenu = from || 'stats';
   showSidebarTab(tabId);
-  if (tabId === 'vow') refreshVowUI();
   if (tabId === 'log') { const el = document.getElementById('combat-log'); if (el) el.scrollTop = el.scrollHeight; }
 }
 
@@ -420,21 +405,6 @@ function leaveMenuTab() {
   showSidebarTab('stats');
   offerSkip(null);
 }
-// The MUTATIONS tab is gone with the mutation system; UNMUTATED keeps its panel
-// because THE VOW is the one thing in there a player ever actually read.
-function refreshVowUI() {
-  if (HEADLESS.on) return;
-  const list = document.getElementById('vow-list');
-  if (!list || !state.player) return;
-  list.innerHTML =
-    '<div class="willpower-vow">'
-      + '<div class="vow-title">THE VOW</div>'
-      + '<p>You felt the infection reach for your mind — and you refused it. Where the others surrendered their humanity for power, you kept yours. No mutation will ever move your hand.</p>'
-      + '<p>All you carry is <span class="vow-emph">Resolve</span>: it hardens with every blow you land and every blow you endure, blunting the pain while it holds — until you spend it all in one defiant answer.</p>'
-      + '<p class="vow-emph">You will not let it control you.</p>'
-    + '</div>';
-}
-
 // ---- Sidebar -------------------------------------------------
 const STAT_KEYS = ['str','instinct','speed','vit'];
 

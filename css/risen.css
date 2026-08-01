@@ -2012,10 +2012,9 @@ body {
 }
 
 .sidebar-tab {
-  /* Sized by its own label, not an equal quarter: MUTATIONS needs three times
-     the room LOG does, and splitting the row evenly pushed MENU off the edge
-     once the sidebar got narrow. Padding and tracking are in rem so they shrink
-     with the text instead of holding four fixed gutters at any width. */
+  /* Sized by its own label, not an equal share: splitting the row evenly
+     pushed MENU off the edge once the sidebar got narrow. Padding and tracking
+     are in rem so they shrink with the text. */
   flex: 1 1 auto;
   min-width: 0;
   white-space: nowrap;
@@ -2298,29 +2297,6 @@ body.stat-colors-on .side-stat-row {
 .log-entry.level { color: #fbbf24; font-weight: 600; }
 /* border accents are defined earlier with the combat-log block */
 
-/* ===== WILLPOWER (UNMUTATED only) ===== */
-.willpower-vow {
-  border: 1px solid rgba(201,169,120,0.35);
-  background: rgba(201,169,120,0.06);
-  border-radius: 3px;
-  padding: 14px;
-}
-.willpower-vow .vow-title {
-  font-family: 'Orbitron', sans-serif;
-  font-weight: 700;
-  font-size: 0.72rem;
-  letter-spacing: 2px;
-  color: var(--base);
-  margin-bottom: 10px;
-}
-.willpower-vow p {
-  font-size: 0.8rem;
-  line-height: 1.6;
-  color: var(--muted);
-  margin-bottom: 8px;
-}
-.willpower-vow p:last-child { margin-bottom: 0; }
-.willpower-vow .vow-emph { color: var(--base); }
 
 /* ===== STATS MODAL ===== */
 /* ---- Main menu ---- */

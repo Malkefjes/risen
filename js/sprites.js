@@ -176,27 +176,11 @@ const PLAYER_SPRITES = {
 // single PLAYER_SPRITES image regardless of pose.
 const POSE_SPRITES = { bio: BIO_SPRITES, psy: PSY_SPRITES, sym: SYM_SPRITES, base: BASE_SPRITES };
 
-// Some strains change appearance once they mutate. Keyed by how many mutations
-// unlock the look; a mutated set can be partial (e.g. combat + attack only) and
-// falls back to the base pose set for anything it doesn't define.
-const MUTATED_SPRITES = {};
-
 // Units that pose-swap (idle/ready/strike): players with a strain set, and bosses.
 function hasPoseSet(unit) {
   if (!unit) return false;
   if (unit.isPlayer) return !!POSE_SPRITES[unit.class];
   return !!enemyArtSet(unit);
-}
-
-// The mutation tier whose art a player is currently wearing, if any.
-function mutatedSetFor(unit) {
-  const tiers = MUTATED_SPRITES[unit.class];
-  if (!tiers) return null;
-  // Tiers were keyed to how many mutations you had taken. With no mutations in
-  // the game the lowest tier is the only one that can ever apply.
-  let chosen = null;
-  for (const t of tiers) if (t.minMutations === 0) chosen = t.set;
-  return chosen;
 }
 
 // Art for one specific skill, if the strain defines any. A sprite set may carry
@@ -206,16 +190,13 @@ function mutatedSetFor(unit) {
 function skillArtFor(unit, skill) {
   if (!unit || !unit.isPlayer || !skill) return null;
   const id = skill.id || skill;                       // accepts a skill or its id
-  const mutated = mutatedSetFor(unit);
   const base = POSE_SPRITES[unit.class] || null;
-  return (mutated && mutated.skills && mutated.skills[id])
-      || (base && base.skills && base.skills[id])
-      || null;
+  return (base && base.skills && base.skills[id]) || null;
 }
 function hasSkillArt(unit, skill) { return !!skillArtFor(unit, skill); }
 
-// Resolve the sprite src for a unit's current pose, honoring mutation tier.
-// A skill takes precedence over the generic pose when the strain has art for it.
+// Resolve the sprite src for a unit's current pose. A skill takes precedence
+// over the generic pose when the strain has art for it.
 function spriteSrcFor(unit, pose, skill) {
   if (!unit.isPlayer) {
     // Trash and bosses both pose-swap; the act and the roster id decide which
@@ -227,8 +208,6 @@ function spriteSrcFor(unit, pose, skill) {
   const art = skillArtFor(unit, skill);
   if (art) return art;
   const base = POSE_SPRITES[unit.class] || null;
-  const chosen = mutatedSetFor(unit);
-  if (chosen && chosen[pose]) return chosen[pose];
   if (base && base[pose]) return base[pose];
   return PLAYER_SPRITES[unit.class] || PLAYER_SPRITES.bio;
 }
@@ -260,8 +239,6 @@ function setCharPose(unit, pose, skill) {
   if (!img) return;
   const src = spriteSrcFor(unit, pose, skill);
   const key = pose + (skill ? ':' + (skill.id || skill) : '');
-  // Re-check src too: after a mutation the ready sprite changes while the pose
-  // name stays 'ready', so a name-only guard would never swap in the new look.
   if (img.dataset.pose === key && img.getAttribute('src') === src) return;
   img.src = src;
   img.dataset.pose = key;
@@ -299,6 +276,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof v === 'string') { if (!seen.has(v)) { seen.add(v); new Image().src = v; } }
     else if (v && typeof v === 'object') Object.values(v).forEach(walk);
   };
-  [ZONE_SPRITES, POSE_SPRITES, MUTATED_SPRITES].forEach(walk);
+  [ZONE_SPRITES, POSE_SPRITES].forEach(walk);
 })();
 

@@ -88,7 +88,7 @@ function devEnterCombat(handoverLine) {
   if (an) an.textContent = getActLabel(state.wave);
   const ac = document.getElementById('arena-card');
   if (ac) ac.dataset.zone = zoneForWave(state.wave).num;
-  updateHud(); refreshVowUI(); renderCombat(true); renderSkills(); updateTurnInfo();
+  updateHud(); renderCombat(true); renderSkills(); updateTurnInfo();
   showScreen('combat-screen');
   document.getElementById('combat-screen').classList.remove('staged', 'reveal');
   log(handoverLine, 'important');
@@ -187,7 +187,6 @@ document.addEventListener('keydown', ev => {
 function serializeRun() {
   const p = state.player; if (!p) return null;
   return { v:2, build:BUILD, classId:state.classId, wave:state.wave,
-    overkillCarry:state.overkillCarry,
     damageDealt:state.damageDealt, runStart:state.runStart,
     // The result card's run-lifetime counters. Additive fields: a save written
     // before they existed loads them as 0, counted from the reload on.
@@ -369,7 +368,6 @@ function continueRun(slot){
   // value from resetRunState above. The chain is deliberately not restored —
   // it is not serialized, and a chain is a property of an unbroken streak of
   // kills rather than of a run.
-  state.overkillCarry=d.overkillCarry||0;
   state.wave=d.wave||1;
   // kills and bestCombo are not saved. They stay at resetRunState's 0 and count
   // from the reload on; the end-of-run report is the only thing that reads them.
@@ -381,7 +379,7 @@ function continueRun(slot){
   state.runStart=d.runStart||Date.now();
   recalcPlayerStats();
   p.hp = (sp.hp && sp.maxHp) ? Math.max(1, Math.floor(p.maxHp * Math.min(1, Math.max(P().reloadHpFloor, sp.hp/sp.maxHp)))) : p.maxHp;
-  updateHud(); refreshVowUI();
+  updateHud();
   showScreen('combat-screen');
   document.getElementById('combat-screen').classList.remove('staged', 'reveal');
   state.combatActive = true;

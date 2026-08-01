@@ -59,7 +59,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey — that answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-01ap';
+const BUILD = '2026-08-01aq';
 
 const BALANCE = {
   player: {
@@ -224,7 +224,7 @@ const BALANCE = {
     // healAnchorPerLevel IS THE DIAL: 0 freezes healing at 100 forever (every
     // heal button dies by zone 2); high values hand the old economy back to
     // everyone. At 0.30, L11 is ~400 — between an even spread's ~250 bar and an
-    // all-Vitality ~700. hpMult still rides it, so an HP mutation widens what
+    // all-Vitality ~700. hpMult still rides it, so anything that scales HP widens what
     // closes a wound on the body it widened.
     healAnchorPerLevel: 0.30,
     // ---- DREAD (psy) ------------------------------------------------------
@@ -598,7 +598,7 @@ const CLASSES = {
     ]
   },
   // Base Sonny, reached via "RESIST MUTATION". Refused the infection, so he has
-  // no strain mechanic and never drafts mutations.
+  // no strain mechanic.
   //
   // THE ONLY STRAIN WITH TWO NUMBERS, and the refusal is what earns them.
   // RESOLVE on himself, BLEED on them — not two mechanics but two halves of one

@@ -804,7 +804,7 @@ function applyPlayerDamage(p, e, skill) {
 }
 
 // Statuses a skill hangs on the fight when it resolves, taken straight from the
-// STATUSES registry. Same rule as the mutation riders: a 'buff' lands on the
+// STATUSES registry. A 'buff' lands on the
 // caster and anything else on the enemy, so a skill lists WHAT it applies and
 // never has to say which way round. Called from the damage path for attacks
 // (on-hit, so an evade costs them) and from fireSkill for heals and buffs,
