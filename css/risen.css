@@ -636,17 +636,29 @@ body {
 }
 
 /* ---- MUTATE ---------------------------------------------------------------
-   `OWNER:` PLAIN GREEN, and it is is-primary with nothing added. It spent this
-   session as the one button in the game that was not a flat colour — a conic
-   gradient of bio green and psy purple rotating forever around a masked ring,
-   with a registered @property to make the angle interpolate and, briefly, a
-   turbulence filter to make the edge wander. He looked at each version and
-   asked for plain green, so all of that is deleted rather than switched off.
-   The button is now exactly what NEW GAME is: the thing this screen is for.
+   `OWNER:` PLAIN GREEN, ON A THICKER EDGE. It is is-primary with one override.
+   This button spent the session as the only one in the game that was not a
+   flat colour — a conic gradient of bio green and psy purple rotating forever
+   around a masked ring, with a registered @property to make the angle
+   interpolate and, briefly, a turbulence filter to make the edge wander. He
+   looked at each version and asked for plain green, so all of that was
+   deleted rather than switched off; the commit history has a working flowing
+   edge if one is ever wanted again.
 
-   Nothing bespoke is left here on purpose. If a flowing edge is ever wanted
-   again the commit history has a working one; a disabled copy sitting in the
-   stylesheet would only be a thing to maintain and misread. */
+   THE 2px IS THE ONE THING THAT MAKES IT NOT JUST NEW GAME. Every other button
+   in the game edges at 1px, and that is the family rule — so this is the
+   deliberate exception, not a drift, and it is here rather than in .ui-btn so
+   nothing else can pick it up by accident.
+
+   BORDER WIDTH, NOT A SECOND SHADOW. A border participates in layout: raising
+   it to 2px would grow the button by a pixel on every side and knock it out of
+   step with RESIST MUTATION beside it, which is the one thing the grid above
+   exists to prevent. The padding drops by the same pixel it gains, so the box
+   is identical and only the line is heavier. */
+.intro-choice.is-primary {
+  border-width: 2px;
+  padding: 14px 19px;
+}
 
 @media (max-width: 560px) {
   .intro-fork { grid-template-columns: 1fr; max-width: 320px; }
