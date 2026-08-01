@@ -693,6 +693,15 @@ body {
   justify-content: center;
   /* #app's own 20px/28px padding, so this is the room actually left over. */
   min-height: calc(var(--vh) * 100 - 48px);
+  /* SITS ABOVE CENTRE, and the padding is how. Dead-centred, the block read as
+     low — the wallpaper's floor takes up the bottom third and the eye lands
+     above it, so true centre is not where centre looks. Padding shrinks the
+     box the flex centring happens in, which lifts the whole screen (heading,
+     cards and buttons together) by half of whatever this is. Owner-set by
+     eye; scales with the window so it holds on a laptop. When the content is
+     taller than the box there is nothing to centre and this just trails off
+     the bottom, which is the right thing to happen. */
+  padding-bottom: clamp(56px, 14vh, 170px);
 }
 
 #class-screen h2 {
