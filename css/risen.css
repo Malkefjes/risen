@@ -173,7 +173,9 @@ body {
 #intro-screen { text-align: center; padding-top: 70px; }
 #load-screen { text-align: center; padding-top: 70px; }
 #slot-screen { text-align: center; padding-top: 70px; }
-#resist-screen.active { display: flex; align-items: center; justify-content: center; min-height: calc(var(--vh) * 100); text-align: center; }
+/* -48px is #app's own vertical padding. A bare 100vh here makes #app 100vh+48
+   and the page scrolls for as long as this screen is up. */
+#resist-screen.active { display: flex; align-items: center; justify-content: center; min-height: calc(var(--vh) * 100 - 48px); text-align: center; }
 .resist-line {
   max-width: 640px;
   color: var(--text);
