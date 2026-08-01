@@ -35,8 +35,11 @@ export default async function ({ page, ctx, ok }) {
   await page.click('#intro-screen button:has-text("MUTATE")');
   await page.click('.class-card.bio');
   await page.click('#start-btn');
-  await page.click('#skip-btn');
-  await page.waitForFunction(()=>state.player&&state.combatActive);
+  // EVOLVE runs the intro cinematic first. SKIP it when it is offered — on a
+  // browser that cannot decode the file it is already gone, and the run has
+  // started on its own.
+  await page.locator('#skip-btn').click({ timeout: 2000 }).catch(() => {});
+  await page.waitForFunction(()=>state.player&&state.combatActive, null, { timeout: 20000 });
   await page.evaluate(()=>{ state.wave = 5; saveRun(); });
   const keys = await page.evaluate(()=>Object.keys(localStorage).sort());
   const live = await page.evaluate(()=>slotKey(1));

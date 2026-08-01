@@ -146,11 +146,13 @@
   <!-- COMBAT -->
   <div id="combat-screen" class="screen">
     <div class="combat-layout">
-      <div class="combat-main">
-        <div class="combat-header">
-          <div class="zone-name" id="zone-name">THE ABYSS</div>
-        </div>
+      <!-- The header is a grid row of its own, over the main column only, so the
+           sidebar can start level with the arena instead of reaching above it. -->
+      <div class="combat-header">
+        <div class="zone-name" id="zone-name">THE ABYSS</div>
+      </div>
 
+      <div class="combat-main">
         <div class="battlefield">
           <div class="arena-card" id="arena-card">
             <!-- Zone scenery, on its own layers so the clean arena is one

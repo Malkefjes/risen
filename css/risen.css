@@ -1888,9 +1888,19 @@ body {
      The rem floor is what actually guards the sidebar's readability, and it
      is untouched. */
   grid-template-columns: 1fr minmax(20.5rem, 25.5%);
-  gap: 20px;
+  grid-template-rows: auto 1fr;
+  gap: 0 20px;
   align-items: stretch;
   flex: 1;
+}
+.combat-header { grid-column: 1; grid-row: 1; }
+.combat-main   { grid-column: 1; grid-row: 2; }
+/* Level with the arena's top edge; its bottom already meets the action panel's.
+   Below a tall window it spans both rows again — the extra 60px is breathing
+   room the stat rows actually use once the column gets short. */
+.sidebar       { grid-column: 2; grid-row: 2; }
+@media (max-height: 850px) {
+  .sidebar { grid-row: 1 / -1; }
 }
 
 .combat-main {
