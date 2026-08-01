@@ -317,12 +317,9 @@ body {
    (its width and its responsive type) and inherits the rest from here. Two
    copies of a look is how the two drift apart.
 
-   GREEN, and it stays green. This was briefly teal because the .ui-btn refactor
-   lifted its values from the chamber-wallpaper version of the title screen
-   rather than the green one that was actually live after the owner reverted.
-   The screenshot check caught it — 3% of bytes differed — and it was written
-   off as the wordmark's glow animation instead of investigated. Compare
-   computed colours, not screenshots, when checking a recolour.
+   `OWNER:` THE EDGE IS WHITE (--base-rgb), the wash and the glow stay green.
+   Exceptions are per-screen and explicit — MUTATE's green 2px, EVOLVE's strain
+   tint — never a change to this default.
 
    Glass rather than a fill: dark enough to seat a label anywhere in the room,
    translucent and blurred enough that the light behind it still comes through.
@@ -349,7 +346,7 @@ body {
   letter-spacing: 3px;
   color: #dcf3e4;
   background: rgba(6, 11, 10, 0.52);
-  border: 1px solid rgba(125, 255, 160, 0.28);
+  border: 1px solid rgba(var(--base-rgb), 0.28);
   border-radius: 6px;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -359,7 +356,7 @@ body {
 }
 .ui-btn:hover {
   background: rgba(125, 255, 160, 0.13);
-  border-color: rgba(125, 255, 160, 0.75);
+  border-color: rgba(var(--base-rgb), 0.75);
   color: #ffffff;
   box-shadow: 0 0 26px rgba(125, 255, 160, 0.24);
 }
@@ -369,7 +366,7 @@ body {
   outline-offset: 3px;
 }
 .ui-btn.is-primary {
-  border-color: rgba(125, 255, 160, 0.62);
+  border-color: rgba(var(--base-rgb), 0.62);
   color: #f2fff7;
   box-shadow: inset 0 0 26px rgba(125, 255, 160, 0.10), 0 0 20px rgba(125, 255, 160, 0.12);
 }
@@ -551,12 +548,6 @@ body {
   font-size: clamp(0.68rem, 1.5vw, 0.8rem);
 }
 
-/* Main-menu edges only: base Sonny's white, at .ui-btn's own alphas. Face,
-   label, hover wash and glow stay green. */
-.title-btn { border-color: rgba(var(--base-rgb), 0.28); }
-.title-btn.is-primary { border-color: rgba(var(--base-rgb), 0.62); }
-.title-btn:hover { border-color: rgba(var(--base-rgb), 0.75); }
-
 .title-foot { text-align: center; }
 .build-tag {
   font-family: 'JetBrains Mono', monospace;
@@ -655,7 +646,9 @@ body {
 .intro-choice.is-primary {
   border-width: 2px;
   padding: 14px 19px;
+  border-color: rgba(125, 255, 160, 0.70);
 }
+.intro-choice.is-primary:hover { border-color: rgba(125, 255, 160, 0.95); }
 
 @media (max-width: 560px) {
   .intro-fork { grid-template-columns: 1fr; max-width: 320px; }
