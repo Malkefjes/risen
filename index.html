@@ -19,15 +19,30 @@
 <div id="app">
 
   <!-- TITLE -->
+  <!-- TITLE SCREEN. The wallpaper is a full-bleed LAYER rather than a body
+       background: it belongs to this screen alone, and it has to escape #app's
+       padding and max-width to reach the edges. Everything sits on top of it in
+       .title-body, which is why the markup has a wrapper the other screens do
+       not need. #build-tag and #continue-btn keep their ids — showBuildVersion()
+       and refreshContinueButton() still find them. -->
   <div id="title-screen" class="screen active">
-    <div class="logo">RISEN</div>
-    <!-- Filled by showBuildVersion() so the string lives in one place. -->
-    <div class="build-tag" id="build-tag"></div>
-    <div class="menu-stack">
-      <button class="btn" onclick="newGame()">NEW GAME</button>
-      <button class="btn is-disabled" id="continue-btn" onclick="openLoadScreen()">LOAD GAME</button>
-      <button class="btn" onclick="openSettings()">SETTINGS</button>
-      <button class="btn btn-ghost" onclick="openDevTools()">DEV TOOLS</button>
+    <div class="title-art" aria-hidden="true"></div>
+
+    <div class="title-body">
+      <header class="title-mark">
+        <h1 class="title-logo">RISEN</h1>
+        <p class="title-sub">Forty-five waves of containment</p>
+      </header>
+
+      <nav class="title-menu">
+        <button class="title-btn is-primary" onclick="newGame()">NEW GAME</button>
+        <button class="title-btn is-disabled" id="continue-btn" onclick="openLoadScreen()">LOAD GAME</button>
+        <button class="title-btn" onclick="openSettings()">SETTINGS</button>
+        <button class="title-btn is-quiet" onclick="openDevTools()">DEV TOOLS</button>
+      </nav>
+
+      <!-- Filled by showBuildVersion() so the string lives in one place. -->
+      <footer class="title-foot"><span class="build-tag" id="build-tag"></span></footer>
     </div>
   </div>
 

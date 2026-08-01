@@ -9,7 +9,12 @@ export default async function ({ page, ctx, ok }) {
      await page.evaluate(()=>!BALANCE.saveKey.includes(BUILD)));
 
   await page.evaluate(()=>localStorage.clear());
-  await page.click('#title-screen .menu-stack .btn:nth-child(1)');
+  // BY LABEL, NOT BY POSITION. This used to be `.menu-stack .btn:nth-child(1)`
+  // and broke the moment the title screen was restyled — the suite could no
+  // longer start a run, which reads as a save-format failure rather than as a
+  // renamed class. What the test means is "press NEW GAME", so that is what it
+  // asks for.
+  await page.click('#title-screen button:has-text("NEW GAME")');
   await page.click('#intro-screen .btn-evolve');
   await page.click('.class-card.sym');
   await page.click('#start-btn');

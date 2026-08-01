@@ -235,29 +235,203 @@ body {
 /* Sits under the logo, quiet enough to ignore and present enough to quote in
    a bug report. The logo's 54px bottom margin is moved here so the tag tucks
    under it rather than pushing the menu down. */
-.build-tag {
-  font-size: 0.72rem;
-  letter-spacing: 3px;
-  color: var(--muted);
-  opacity: 0.55;
-  margin-top: -42px;
-  margin-bottom: 46px;
+/* ---- Title screen --------------------------------------------------------
+   FULL-BLEED, AND THAT IS WHY IT IS FIXED. Every other screen lives inside
+   #app, which is centred with a max-width and padding — fine for a UI, fatal
+   for a wallpaper that has to touch all four edges. Taking the title screen out
+   of flow is the whole trick; nothing else on the page changes.
+
+   The art is a separate layer rather than a background on the screen itself, so
+   the scrim that buys text its contrast can sit between the painting and the
+   words instead of being baked into either. */
+#title-screen.active {
+  display: flex;
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  overflow: auto;                 /* a short window scrolls rather than clips */
 }
-.logo {
+
+.title-art {
+  position: absolute;
+  inset: 0;
+  background: #05070a url('../assets/ui/menu-wallpaper.jpg') center / cover no-repeat;
+}
+/* THE SCRIM IS SHAPED, NOT FLAT. The painting is brightest dead centre — a
+   green column that would swallow white text — and quietest on the floor at the
+   bottom. So the top is darkened enough to seat the wordmark, the middle is
+   left almost alone because that is the art doing its job, and the bottom is
+   darkened again to bed the menu. A flat overlay would have cost the picture
+   all of its depth to solve a problem it only has in two places. */
+.title-art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom,
+      rgba(3,6,9,0.78) 0%,
+      rgba(3,6,9,0.42) 26%,
+      rgba(3,6,9,0.12) 46%,
+      rgba(3,6,9,0.55) 74%,
+      rgba(3,6,9,0.88) 100%),
+    radial-gradient(ellipse 120% 80% at 50% 45%, transparent 35%, rgba(3,6,9,0.62) 100%);
+}
+
+.title-body {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: min-content;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: clamp(26px, 7vh, 74px) 20px clamp(16px, 3vh, 30px);
+}
+
+.title-mark { text-align: center; }
+
+/* letter-spacing puts its gap AFTER the last letter too, which drags a centred
+   word half a space left. The matching padding-left puts it back. */
+.title-logo {
+  --ls: clamp(10px, 2.6vw, 34px);
+  margin: 0;
   font-family: 'Orbitron', sans-serif;
   font-weight: 900;
-  font-size: 4.8rem;
-  letter-spacing: 14px;
-  background: linear-gradient(135deg, #00f0d0 0%, #67e8f9 40%, #ff2d6a 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 28px rgba(0,240,208,0.35));
-  margin-bottom: 54px;
-  animation: logoGlow 4.5s ease-in-out infinite;
+  font-size: clamp(2.9rem, 11vw, 7.6rem);
+  line-height: 1;
+  letter-spacing: var(--ls);
+  padding-left: var(--ls);
+  color: #f4fff8;
+  /* Two dark shadows for legibility against the column, then two green glows
+     so the wordmark reads as lit BY the painting rather than pasted onto it. */
+  text-shadow:
+    0 2px 3px rgba(0,0,0,0.95),
+    0 6px 30px rgba(0,0,0,0.8),
+    0 0 40px rgba(125,255,160,0.55),
+    0 0 92px rgba(125,255,160,0.32);
+  animation: titleGlow 5s ease-in-out infinite;
 }
-@keyframes logoGlow {
-  0%, 100% { filter: drop-shadow(0 0 22px rgba(0,240,208,0.28)); }
-  50% { filter: drop-shadow(0 0 36px rgba(0,240,208,0.48)); }
+@keyframes titleGlow {
+  0%, 100% { text-shadow: 0 2px 3px rgba(0,0,0,0.95), 0 6px 30px rgba(0,0,0,0.8),
+                          0 0 34px rgba(125,255,160,0.45), 0 0 78px rgba(125,255,160,0.24); }
+  50%      { text-shadow: 0 2px 3px rgba(0,0,0,0.95), 0 6px 30px rgba(0,0,0,0.8),
+                          0 0 48px rgba(125,255,160,0.62), 0 0 108px rgba(125,255,160,0.38); }
+}
+
+/* This line lands on the brightest pixels in the painting — the top of the
+   column — so it needs more than a colour. The stacked dark shadows are a halo
+   that lets thin letterspaced type survive on a light background; at 0.72 alpha
+   with one shadow it was unreadable at every viewport tested. */
+.title-sub {
+  margin: clamp(10px, 1.8vh, 20px) 0 0;
+  font-size: clamp(0.64rem, 1.5vw, 0.8rem);
+  letter-spacing: clamp(3px, 0.85vw, 7px);
+  text-transform: uppercase;
+  font-weight: 500;
+  color: rgba(232,250,238,0.94);
+  text-shadow:
+    0 0 4px rgba(3,8,5,0.98),
+    0 0 12px rgba(3,8,5,0.92),
+    0 2px 20px rgba(3,8,5,0.85),
+    0 0 34px rgba(125,255,160,0.22);
+}
+
+/* Pushed to the lower third on purpose: that is the reflective floor, the
+   quietest part of the painting, and the only place a stack of buttons can sit
+   without covering something worth looking at. */
+.title-menu {
+  margin-top: auto;
+  margin-bottom: clamp(14px, 5vh, 52px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(8px, 1.4vh, 13px);
+}
+
+.title-btn {
+  width: min(330px, 80vw);
+  padding: clamp(10px, 1.5vh, 14px) 18px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(0.68rem, 1.5vw, 0.8rem);
+  font-weight: 600;
+  letter-spacing: 3px;
+  color: #dcf3e4;
+  background: rgba(6,11,10,0.52);
+  border: 1px solid rgba(125,255,160,0.28);
+  border-radius: 6px;
+  /* The blur is what lets a button sit on a busy painting and still be read
+     without a solid slab hiding the art behind it. */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease,
+              color 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease;
+}
+.title-btn:hover {
+  background: rgba(125,255,160,0.13);
+  border-color: rgba(125,255,160,0.75);
+  color: #ffffff;
+  box-shadow: 0 0 26px rgba(125,255,160,0.24);
+}
+.title-btn:active { transform: translateY(1px); }
+.title-btn:focus-visible {
+  outline: 2px solid rgba(125,255,160,0.9);
+  outline-offset: 3px;
+}
+/* NEW GAME is the one thing most visits are here to press, so it carries a
+   brighter edge and an inner lift. One emphasised button, not four. */
+.title-btn.is-primary {
+  border-color: rgba(125,255,160,0.62);
+  color: #f2fff7;
+  box-shadow: inset 0 0 26px rgba(125,255,160,0.10), 0 0 20px rgba(125,255,160,0.12);
+}
+/* DEV TOOLS is a workbench door, not a play option — same shape, less voice. */
+.title-btn.is-quiet {
+  border-color: rgba(255,255,255,0.14);
+  color: rgba(226,236,230,0.55);
+  letter-spacing: 2.4px;
+}
+.title-btn.is-quiet:hover {
+  border-color: rgba(255,255,255,0.4);
+  color: rgba(240,246,242,0.9);
+  background: rgba(255,255,255,0.07);
+  box-shadow: none;
+}
+.title-btn:disabled,
+.title-btn.is-disabled {
+  opacity: 0.34;
+  cursor: not-allowed;
+  border-color: rgba(255,255,255,0.14);
+  color: var(--muted);
+  background: rgba(6,11,10,0.4);
+  box-shadow: none;
+}
+.title-btn:disabled:hover,
+.title-btn.is-disabled:hover {
+  background: rgba(6,11,10,0.4);
+  border-color: rgba(255,255,255,0.14);
+  color: var(--muted);
+  box-shadow: none;
+}
+
+.title-foot { text-align: center; }
+.build-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.64rem;
+  letter-spacing: 3px;
+  color: rgba(214,240,222,0.45);
+  text-shadow: 0 1px 6px rgba(0,0,0,0.9);
+}
+
+/* A short landscape window (a laptop, a phone on its side) has no room for a
+   7rem wordmark AND four buttons, so the type comes down and the gaps close
+   before anything is allowed to scroll. */
+@media (max-height: 560px) {
+  .title-logo { font-size: clamp(2.2rem, 8vh, 3.4rem); }
+  .title-body { padding-top: clamp(16px, 4vh, 28px); }
+  .title-menu { margin-bottom: clamp(8px, 2vh, 18px); gap: 7px; }
+  .title-btn { padding: 8px 16px; }
+  .title-sub { margin-top: 6px; }
 }
 
 .intro-story {
@@ -2528,7 +2702,6 @@ body.stat-colors-on .side-stat-row {
   .classes { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 700px) {
-  .logo { font-size: 2.8rem; letter-spacing: 6px; }
   .classes { grid-template-columns: 1fr; }
   .arena-card { grid-template-columns: 1fr; gap: 16px; }
   .arena-vs { padding-top: 0; }
