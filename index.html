@@ -106,7 +106,9 @@
     <p class="resist-line">You have chosen to resist your new powers…</p>
   </div>
 
-  <!-- CLASS SELECT -->
+  <!-- CLASS SELECT. Built on the same glass the title-screen buttons use: the
+       card IS a .ui-btn variant in everything but name — one shape, one size,
+       and only the border and the glow change per strain. -->
   <div id="class-screen" class="screen">
     <h2>SELECT STRAIN</h2>
     <div class="classes">
@@ -129,9 +131,9 @@
         <div class="class-info">Your body hosts a living symbiote that pulses with shared vitality. Every wound you suffer feeds it, regenerating you while its thorns lash back at attackers — making you a resilient, retaliatory predator who thrives on the very damage meant to kill you.</div>
       </div>
     </div>
-    <div style="text-align:center;margin-top:36px;display:flex;gap:14px;justify-content:center;align-items:center;flex-wrap:wrap">
-      <button class="btn btn-ghost" onclick="goToMenu()">BACK</button>
-      <button class="btn" id="start-btn" onclick="startGame()" disabled>EVOLVE</button>
+    <div class="class-actions">
+      <button class="ui-btn is-quiet" onclick="goToMenu()">BACK</button>
+      <button class="ui-btn is-primary" id="start-btn" onclick="startGame()" disabled>EVOLVE</button>
     </div>
   </div>
 

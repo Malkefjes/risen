@@ -664,75 +664,131 @@ body {
   transform: none;
 }
 
-/* CLASS SELECT */
+/* ---- CLASS SELECT --------------------------------------------------------
+   REBUILT ON .ui-btn's LOOK, because the owner picked those buttons out as the
+   target for the rest of the game. A strain card is that button at card scale:
+   same glass face, same 1px edge, same 6px radius, same blur. What changes per
+   strain is BORDER AND GLOW ONLY — the three cards are one shape at one size,
+   so the row reads as a family with a choice in it rather than three different
+   objects.
+
+   The old card was the opposite of that: an opaque --panel fill, a 2px grey
+   border, and a radial-gradient ::before that lit the whole top edge. Solid
+   panels sit ON the room; glass sits IN it, which is the whole reason the
+   title screen works over the wallpaper.
+
+   NARROW AND TALL IS THE LAYOUT, and the width is the only dial. Three cards
+   used to split the full 1680px app — ~517px each, which made the description
+   four short lines and the card a wide letterbox. At 300px the same copy wraps
+   to roughly eleven, and the card grows tall on its own. Nothing sets a
+   height.
+
+   Centred on the viewport, not hung off the top: #class-screen.active is a
+   centring flex column with a min-height, so a short screen just grows past it
+   and scrolls instead of clipping the heading. */
+#class-screen.active {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* #app's own 20px/28px padding, so this is the room actually left over. */
+  min-height: calc(var(--vh) * 100 - 48px);
+}
+
 #class-screen h2 {
   font-family: 'Orbitron', sans-serif;
   text-align: center;
   font-size: 1.7rem;
-  margin-bottom: 44px;
+  margin-bottom: clamp(20px, 3.6vh, 38px);
   letter-spacing: 3px;
+  /* The heading sits straight on the wallpaper with no panel under it. */
+  text-shadow: 0 2px 16px rgba(0,0,0,0.85);
 }
 
 .class-desc { text-align: center; color: var(--muted); margin-bottom: 36px; font-size: 0.9rem; }
 
-.classes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+/* Flex, not a 3-column grid: the cards carry their own width, so wrapping to
+   two-up and then one-up on a narrow window needs no breakpoint. */
+.classes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  gap: 18px;
+  width: 100%;
+}
 
 .class-card {
-  background: var(--panel);
-  border: 2px solid var(--border);
-  padding: 24px 18px 22px;
+  width: min(300px, 88vw);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 26px 22px 24px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.25s;
   position: relative;
   overflow: hidden;
+  border-radius: 6px;
+  background: rgba(6, 11, 10, 0.52);
+  border: 1px solid rgba(var(--class-rgb), 0.26);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: background 0.18s ease, border-color 0.18s ease,
+              box-shadow 0.18s ease, transform 0.18s ease;
 }
 
-.class-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 50% 0%, var(--glow, transparent) 0%, transparent 70%);
-  opacity: 0;
-  transition: opacity 0.3s;
+/* --class-rgb is the same hue as --class-color, as bare channels, because a
+   card needs it at five different alphas and rgba() cannot take a hex var. */
+.class-card.bio { --class-color: var(--bio); --class-rgb: 125, 255, 160; }
+.class-card.psy { --class-color: var(--psy); --class-rgb: 192, 132, 252; }
+.class-card.sym { --class-color: var(--sym); --class-rgb: 251, 146, 60; }
+
+.class-card:hover {
+  background: rgba(var(--class-rgb), 0.10);
+  border-color: rgba(var(--class-rgb), 0.72);
+  box-shadow: 0 0 30px rgba(var(--class-rgb), 0.20);
+  transform: translateY(-3px);
 }
 
-.class-card:hover::before, .class-card.selected::before { opacity: 1; }
+/* Lit from inside, the way .ui-btn.is-primary is. The inset glow is what the
+   ::before radial used to do, minus a pseudo-element and a second transition.
 
-.class-card:hover, .class-card.selected {
-  border-color: var(--class-color);
-  transform: translateY(-5px);
-  box-shadow: 0 12px 36px rgba(0,0,0,0.5), 0 0 24px var(--glow);
-}
+   THE FACE WASH IS DELIBERATELY WEAKER THAN THE BUTTON'S (0.07 against 0.13).
+   A button is a word on a slab; a card is a paragraph, and at the button's
+   alpha the strain hue sat under 200-odd characters of --muted grey and took
+   the description down with it — the selected card was the hardest of the
+   three to read, which is backwards. The border and the glow carry "chosen"
+   instead, and the copy brightens rather than dims. */
 .class-card.selected {
-  border-width: 2px;
-  box-shadow: 0 12px 36px rgba(0,0,0,0.55), 0 0 32px var(--glow), inset 0 0 0 1px var(--class-color);
+  background: rgba(var(--class-rgb), 0.07);
+  border-color: rgba(var(--class-rgb), 0.85);
+  box-shadow: inset 0 0 34px rgba(var(--class-rgb), 0.09),
+              0 0 30px rgba(var(--class-rgb), 0.24);
+  transform: translateY(-3px);
 }
+.class-card.selected .class-info { color: rgba(226, 236, 230, 0.74); }
+
 .class-card.selected::after {
   content: 'SELECTED';
   position: absolute;
   top: 10px;
   right: 10px;
   font-family: 'Orbitron', sans-serif;
-  font-size: 0.58rem;
-  font-weight: 700;
-  letter-spacing: 1.2px;
+  font-size: 0.56rem;
+  font-weight: 600;
+  letter-spacing: 1.4px;
   color: var(--class-color);
-  background: rgba(0,0,0,0.45);
-  border: 1px solid var(--class-color);
-  padding: 3px 7px;
-  border-radius: 2px;
+  background: rgba(6, 11, 10, 0.62);
+  border: 1px solid rgba(var(--class-rgb), 0.7);
+  padding: 3px 8px;
+  border-radius: 4px;
   z-index: 2;
 }
 
-.class-card.bio { --class-color: var(--bio); --glow: rgba(125,255,160,0.18); }
-.class-card.psy { --class-color: var(--psy); --glow: rgba(192,132,252,0.18); }
-.class-card.sym { --class-color: var(--sym); --glow: rgba(251,146,60,0.18); }
-
 .class-preview {
-  width: 140px;
-  height: 170px;
-  margin: 0 auto 16px;
+  width: 100%;
+  height: clamp(120px, 15vh, 150px);
+  margin: 0 auto 18px;
   position: relative;
   display: flex;
   align-items: flex-end;
@@ -745,46 +801,51 @@ body {
   transform: translateY(-4px) scale(1.04);
 }
 
-.class-preview .char-figure {
-  /* Matches the 155px preview sprite below, so the ground shadow (which is
-     derived from --sprite-h) doesn't inherit the arena's much larger scale. */
-  --sprite-h: 155px;
-  width: 160px;
-  height: 160px;
-}
-
-.class-preview .char-svg {
-  width: auto;
-  height: 155px;
-  /* 155 x 1.9, matching the arena's clamp — the strain art is ~1.83:1 and the
-     old 215px cap letterboxed it down to ~117px inside a 155px box. */
-  max-width: 295px;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
-  object-fit: contain;
-}
+/* ONE NUMBER, and .char-figure derives the rest — its own rules already set
+   width to --sprite-h x 1.9 and size the ground shadow off it. The old block
+   restated all three by hand and they had to be kept in step; the cap here is
+   what keeps the ~1.83:1 art inside a 300px card. */
+.class-preview .char-figure { --sprite-h: clamp(104px, 12.5vh, 130px); }
 
 .class-name {
   font-family: 'Orbitron', sans-serif;
   font-weight: 700;
-  font-size: 1.15rem;
-  margin-bottom: 4px;
-  position: relative;
+  font-size: 1.02rem;
+  letter-spacing: 2px;
+  margin-bottom: 6px;
 }
 
 .class-role {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--class-color);
-  letter-spacing: 1.5px;
-  margin-bottom: 12px;
-  position: relative;
+  letter-spacing: 1.8px;
+  margin-bottom: 14px;
 }
 
 .class-info {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--muted);
-  line-height: 1.5;
-  position: relative;
+  line-height: 1.6;
+}
+
+/* One row, sized like the title menu's stack so BACK and EVOLVE read as a
+   matched pair — the variants carry the weight difference, never the size. */
+.class-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  justify-content: center;
+  align-items: center;
+  margin-top: clamp(22px, 3.6vh, 38px);
+}
+.class-actions .ui-btn { min-width: 190px; }
+
+/* Three 300px cards plus their gaps plus #app's padding need ~984px. Below
+   that, go straight to ONE column rather than letting flex wrap to 2 + 1 — a
+   pair with an orphan under it reads as a layout that broke, and the choice is
+   a row of three or it is a list. */
+@media (max-width: 1000px) {
+  .classes { flex-direction: column; align-items: center; }
 }
 
 /* ===== TOP HUD ===== */
@@ -1149,8 +1210,8 @@ body {
 }
 
 .char-figure {
-  /* Set by .arena-card; the fallback covers the class-select preview, which
-     lives outside the arena. */
+  /* Set by .arena-card. The class-select preview lives outside the arena and
+     sets --sprite-h itself; the fallback is the last resort for neither. */
   --sprite-h: var(--fig, 200px);
   /* Tracks .char-svg's max-width so the box always bounds the art — a wide
      strike pose used to overflow the old fixed 200px. */
