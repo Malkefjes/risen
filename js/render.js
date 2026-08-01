@@ -182,17 +182,6 @@ function createFighterPanel(unit) {
 }
 
 // ---- Juice ----------------------------------------------------
-let _shakeTimer = null;
-function shake(intensity) {
-  if (HEADLESS.on) return;
-  const arena = document.getElementById('arena-card');
-  if (!SETTINGS.shake) return;
-  if (!arena || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  arena.style.setProperty('--shake', Math.min(14, intensity).toFixed(1) + 'px');
-  arena.classList.add('shaking');
-  clearTimeout(_shakeTimer);
-  _shakeTimer = setTimeout(()=>arena.classList.remove('shaking'), 180);
-}
 function killFlash(unit) {
   if (HEADLESS.on) return;
   const panel = getFighterPanel(unit);

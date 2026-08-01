@@ -2855,13 +2855,6 @@ body.stat-colors-on .side-stat-row {
 @keyframes comboPop { from { transform: translateX(-50%) scale(1.35); } to { transform: translateX(-50%) scale(1); } }
 
 .arena-card { position: relative; }
-.arena-card.shaking { animation: arenaShake 0.18s ease; }
-@keyframes arenaShake {
-  0%,100% { transform: translate(0,0); }
-  25%     { transform: translate(calc(var(--shake, 4px) * -1), 1px); }
-  50%     { transform: translate(var(--shake, 4px), -1px); }
-  75%     { transform: translate(calc(var(--shake, 4px) * -0.5), 0); }
-}
 .arena-card.hitstop { filter: brightness(1.5) saturate(0.6); }
 
 .kill-burst {

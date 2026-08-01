@@ -18,7 +18,7 @@ const Store = (function () {
 
 // ---- Settings -------------------------------------------------
 const SETTINGS_KEY = 'risen_settings_v1';
-const DEFAULT_SETTINGS = { shake: true, backdrop: true, statColors: true };
+const DEFAULT_SETTINGS = { backdrop: true, statColors: true };
 let SETTINGS = Object.assign({}, DEFAULT_SETTINGS);
 
 function showBuildVersion() {

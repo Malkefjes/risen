@@ -251,7 +251,6 @@ function enemyAct() {
                ['action ' + e.actionCount + ' of every ' + e.windupEvery]);
       const fig = getFigureForUnit(e);
       if (fig) fig.style.filter = 'brightness(1.35)';
-      shake(6);
       updateUnitCard(e); updateTurnInfo(); renderSkills();
       scheduleTurn(nextTurn, turnDelay(480));
       return;
@@ -536,7 +535,6 @@ function applyEnemyDamage(e, p, mult, opts) {
   statusEach(p, 'onHitTaken', { attacker: e, damage: dmg });
   floatText(p, dmg, 'damage');
   if (blocked) floatText(p, 'BLOCK', 'note');
-  shake(Math.min(10, 2 + dmg/Math.max(1,p.maxHp)*40));
 
   let thorns = getThornsDamage(p);
   const tNotes = [];
@@ -697,7 +695,6 @@ function applyPlayerDamage(p, e, skill) {
   logDamage(skill.name, e, dmg, notes.concat([logNum(e.hp) + '/' + logNum(e.maxHp) + ' left']));
 
   floatText(e, dmg, 'damage', isCrit);
-  if (isCrit) shake(7);
 
   if (skill.consumesResolve && resolveSpent > 0)
     removeStatus(p, 'resolve', 'spent by ' + skill.name);
@@ -965,7 +962,6 @@ function onEnemyDefeated() {
       'VOLATILE ' + Math.round(e.elite.deathNova * 100) + '% max HP',
       logNum(p.hp) + '/' + logNum(p.maxHp) + ' left'
     ]);
-    shake(12);
   }
 
   const tier = Math.floor((state.wave-1)/5);
