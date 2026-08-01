@@ -316,6 +316,8 @@ function updateHud() {
     strainEl.className = 'strain-word' + (p.class ? ' ' + p.class : '');
   }
   document.getElementById('xp-fill').style.width = Math.min(100,(p.xp/p.xpNext)*100) + '%';
+  const cs = document.getElementById('combat-screen');
+  if (cs) cs.dataset.strain = p.class || '';
   // Soft alert on STATS tab while anything is outstanding — points still to
   // place, or points placed and waiting on a confirm.
   const statsTab = document.querySelector('.sidebar-tab[data-tab="stats"]');

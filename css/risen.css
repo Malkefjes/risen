@@ -1005,7 +1005,7 @@ body {
     linear-gradient(180deg, rgba(14,18,27,0.2) 0%, transparent 40%),
     radial-gradient(ellipse 90% 50% at 50% 100%, rgba(0,0,0,0.55) 0%, transparent 70%),
     var(--panel);
-  border: 1px solid rgba(var(--base-rgb), 0.28);
+  border: 1px solid rgba(var(--panel-edge, var(--base-rgb)), 0.32);
   border-radius: 6px;
   padding: 16px 28px 22px;
   position: relative;
@@ -1610,9 +1610,14 @@ body {
   background: rgba(6, 11, 10, 0.68);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(var(--base-rgb), 0.28);
+  border: 1px solid rgba(var(--panel-edge, var(--base-rgb)), 0.32);
   border-radius: 6px;
 }
+
+/* The run's strain tints the three panel edges. base keeps the default white. */
+#combat-screen[data-strain="bio"] { --panel-edge: 125, 255, 160; }
+#combat-screen[data-strain="psy"] { --panel-edge: 192, 132, 252; }
+#combat-screen[data-strain="sym"] { --panel-edge: 251, 146, 60; }
 
 .action-panel {
   padding: 16px 18px;
