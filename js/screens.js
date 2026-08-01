@@ -135,7 +135,7 @@ function resetRunState(classId) {
   clearFloaters();
   // First line of every transcript. A log pasted into a bug report then carries
   // the build that produced it without anyone having to remember to add it.
-  log('RISEN · build ' + BUILD, 'important');
+  log('RISEN · build ' + BUILD);
 }
 
 // `classId` is optional: the EVOLVE button omits it and the menu's pending
@@ -240,13 +240,12 @@ function spawnEnemy() {
   // the only place those numbers are ever visible.
   const e = state.enemy;
   const tags = enemyTags(e);
-  log('WAVE ' + state.wave + ' · ' + e.name + (tags.length ? ' · ' + tags.join(' ') : ''),
-      'wave' + (e.isBoss ? ' boss' : ''));
+  log('WAVE ' + state.wave + ' · ' + e.name + (tags.length ? ' · ' + tags.join(' ') : ''));
   log('HP ' + logNum(e.maxHp) + ' · DMG ' + logNum(e.damage)
     + ' · RATE ' + e.attackSpeed.toFixed(2) + '×'
     + (e.evadeChance ? ' · EVADE ' + Math.round(e.evadeChance*100) + '%' : '')
     + (e.windupEvery ? ' · WINDUP every ' + e.windupEvery + ' (×' + windupMultFor(e) + ')' : '')
-    + (e.xpMult !== 1 ? ' · XP ×' + e.xpMult.toFixed(1) : ''), 'spec');
+    + (e.xpMult !== 1 ? ' · XP ×' + e.xpMult.toFixed(1) : ''));
 
   // Everything that lands on the fight before the first turn is logged under
   // that header, in the order it applies, so an enemy that arrives already
@@ -263,7 +262,7 @@ function spawnEnemy() {
     // silently missing from the next fight looks like it stopped working.
     const lost = p.statuses.filter(s => { const dd = STATUSES[s.type]; return !(dd && dd.persists); });
     p.statuses = survivingStatuses(p);
-    lost.forEach(s => { const dd = STATUSES[s.type]; if (dd) logEvent('− ' + dd.name + ' ended', p, 'fight over', null, ''); });
+    lost.forEach(s => { const dd = STATUSES[s.type]; if (dd) logEvent('− ' + dd.name + ' ended', p, 'fight over'); });
   }
 
   // THE PLAYER ALWAYS OPENS. Both gauges used to start empty with ties going to
@@ -362,7 +361,7 @@ function gainXP(amount, bonus) {
     // family's loudest member — see the floater vocabulary in the CSS.
     floatText(p, 'LEVEL ' + p.level, 'xp-bonus');
     logEvent('LEVEL ' + p.level, null, '+' + grant + ' points',
-             ['next at ' + logNum(p.xpNext) + ' XP'], 'level');
+             ['next at ' + logNum(p.xpNext) + ' XP']);
     gained.push(p.level);
   }
   if (gained.length) {
@@ -451,7 +450,7 @@ function commitStats() {
     .map(k => k.toUpperCase() + ' +' + pendingOf(p, k)).join(' ');
   STAT_KEYS.forEach(k => { p[k] += pendingOf(p, k); p.pending[k] = 0; });
   recalcPlayerStats();
-  logEvent('STATS committed', null, placed, ['ATK ' + logNum(attackDamage(p)) + ' · HP ' + logNum(p.maxHp)], 'level');
+  logEvent('STATS committed', null, placed, ['ATK ' + logNum(attackDamage(p)) + ' · HP ' + logNum(p.maxHp)]);
   updateHud(); renderSkills(); saveRun();
 }
 

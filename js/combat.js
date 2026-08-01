@@ -132,7 +132,7 @@ function nextTurn() {
     // The event before the removal it causes, so the transcript reads in the
     // order things happened rather than reporting the consequence first.
     logEvent('STUNNED', actor, 'turn lost',
-             [stun.duration > 0 ? Math.ceil(stun.duration) + 't left' : 'last turn'], 'damage');
+             [stun.duration > 0 ? Math.ceil(stun.duration) + 't left' : 'last turn']);
     if (stun.duration <= 0) removeStatus(actor, 'stun', 'duration spent');
     updateUnitCard(actor); updateTurnInfo(); renderSkills();
     scheduleTurn(nextTurn, turnDelay(480));
@@ -248,7 +248,7 @@ function enemyAct() {
       e.windup = true;
       e.windupSpoiled = false;               // a fresh charge is a whole one
       logEvent('WINDUP', e, 'next strike ×' + windupMultFor(e),
-               ['action ' + e.actionCount + ' of every ' + e.windupEvery], 'damage');
+               ['action ' + e.actionCount + ' of every ' + e.windupEvery]);
       const fig = getFigureForUnit(e);
       if (fig) fig.style.filter = 'brightness(1.35)';
       shake(6);
@@ -342,7 +342,7 @@ function growThorns(p, amount, why) {
   p.thornsGrown = (p.thornsGrown || 0) + amount;
   applyDerivedStats(p);
   floatText(p, '+' + amount + ' THORNS', 'tally');
-  logEvent('THORNS +' + amount, null, '(' + formatNum(p.thorns) + ')', [why], 'heal');
+  logEvent('THORNS +' + amount, null, '(' + formatNum(p.thorns) + ')', [why]);
   updateUnitCard(p);
   return amount;
 }
@@ -428,7 +428,7 @@ function provokeSwing(p, e, skill) {
     if (fig) fig.style.filter = '';
     e.stunImmune = true;
     floatText(e, 'BAITED', 'note');
-    logEvent('BAITED', e, 'windup spent early', ['stagger resist now armed'], 'heal');
+    logEvent('BAITED', e, 'windup spent early', ['stagger resist now armed']);
   } else if (e.windup) {
     // THE SHRUG USED TO PUNISH TWICE. The charge held AND the swing you bought
     // came anyway, so a resisted Provoke fed the enemy a free ordinary hit and
@@ -443,7 +443,7 @@ function provokeSwing(p, e, skill) {
     ordinary = false;
     floatText(e, 'SPOILED', 'note');
     logEvent('CHARGE SPOILED', e, 'dragged out early, and smaller',
-             ['resist consumed', '×' + BALANCE.enemy.windupSpoilFrac + ' of the telegraph'], 'heal');
+             ['resist consumed', '×' + BALANCE.enemy.windupSpoilFrac + ' of the telegraph']);
   }
   // Grow BEFORE the swing: you raise yourself to meet it, so the thorns that
   // answer this hit are already the bigger ones.
@@ -760,7 +760,7 @@ function applyPlayerDamage(p, e, skill) {
       if (held < skill.dreadNeed) {
         floatText(e, 'MIND HOLDS ' + held + '/' + skill.dreadNeed, 'note');
         logEvent('STUN', null, 'mind holds',
-                 ['needs ' + skill.dreadNeed + ' DREAD, it holds ' + held], '');
+                 ['needs ' + skill.dreadNeed + ' DREAD, it holds ' + held]);
         return dmg;
       }
     }
@@ -775,7 +775,7 @@ function applyPlayerDamage(p, e, skill) {
       if (fig) fig.style.filter = '';
       e.stunImmune = true;
       floatText(e, 'INTERRUPTED', 'note');
-      logEvent('INTERRUPT', e, 'windup broken', ['stagger resist now armed'], 'heal');
+      logEvent('INTERRUPT', e, 'windup broken', ['stagger resist now armed']);
     } else if (e.windup && e.stunImmune) {
       // The shrug clears the resist and the strike still comes — but it comes
       // SPOILED. This branch used to be psy's only defensive button doing
@@ -786,14 +786,14 @@ function applyPlayerDamage(p, e, skill) {
       e.windupSpoiled = true;
       floatText(e, 'SPOILED', 'note');
       logEvent('CHARGE SPOILED', e, 'the charge holds, and it is smaller',
-               ['resist consumed', '×' + BALANCE.enemy.windupSpoilFrac + ' of the telegraph'], 'heal');
+               ['resist consumed', '×' + BALANCE.enemy.windupSpoilFrac + ' of the telegraph']);
     } else {
       if (e.stunImmune) {
         // Without this, a 1-turn stun on a ~3-turn cooldown locks an enemy that acts
         // once per 3-4 of your turns out of the fight entirely.
         e.stunImmune = false;
         floatText(e, 'RESISTED', 'note');
-        logEvent('STAGGER RESISTED', e, 'no stun', ['resist consumed'], 'damage');
+        logEvent('STAGGER RESISTED', e, 'no stun', ['resist consumed']);
       } else {
         applyStatus(e, 'stun', { duration: stunTurns });
         e.stunImmune = true;
@@ -873,7 +873,7 @@ function fireSkill(caster, skill, target) {
     // The invitation. No damage of its own on purpose — every point on the
     // board comes from the enemy's own swing landing on your spikes, which is
     // the whole claim the class makes.
-    logEvent(skill.name, null, 'guard bared', null, '');
+    logEvent(skill.name, null, 'guard bared');
     playCastAnim(caster, skill);
     provokeSwing(caster, target, skill);
   } else if (skill.type === 'buff') {
@@ -882,7 +882,7 @@ function fireSkill(caster, skill, target) {
     // definition, so a new buff skill needs no code here — and applyStatus
     // logs it, so there is no line to write either. The old applyMsg prose
     // ("raises living spines") said less than the status badge it produced.
-    logEvent(skill.name, null, 'cast', null, '');
+    logEvent(skill.name, null, 'cast');
     applyStatus(caster, skill.buff, skillStatusOpts(skill));
     applySkillStatuses(caster, skill);
     playCastAnim(caster, skill);
@@ -906,7 +906,7 @@ function fireSkill(caster, skill, target) {
     } else if (fullCd) {
       // A miss already cost the turn; don't also charge the full cooldown.
       skill.cd = 1;
-      logEvent(skill.name, null, 'cooldown reduced to 1t', ['attack missed'], '');
+      logEvent(skill.name, null, 'cooldown reduced to 1t', ['attack missed']);
     }
   }
 
@@ -947,7 +947,7 @@ function onEnemyDefeated() {
     chained ? 'CHAIN ' + state.combo + '×'
             : 'CHAIN reset (over ' + BALANCE.combo.maxEnemyActionsPerKill + ')',
     overkill > 0 ? 'overkill ' + logNum(overkill) : null
-  ], 'xp');
+  ]);
 
   // The death-devour: fear still riding the enemy when it dies is drunk whole.
   // This is psy's between-fight sustain — it fires exactly where wave-to-wave
@@ -975,7 +975,7 @@ function onEnemyDefeated() {
   logEvent('XP', null, '+' + logNum(xp), [
     e.xpMult !== 1 ? 'enemy ×' + e.xpMult.toFixed(1) : null,
     comboBonus > 1 ? 'chain ×' + comboBonus.toFixed(2) : null
-  ], 'xp');
+  ]);
 
   killFlash(e);
   const killedWave = state.wave;

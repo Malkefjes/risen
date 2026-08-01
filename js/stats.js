@@ -23,7 +23,7 @@ function shedStacks(unit, id, n, why) {
     // The delta and what remains, in that order — logging only the label
     // printed the new total ("− DREAD ×3") and read as losing three.
     const def = STATUSES[id];
-    logEvent((def ? def.name : id) + ' −' + shed, unit, '(×' + st.stacks + ' left)', [why], '');
+    logEvent((def ? def.name : id) + ' −' + shed, unit, '(×' + st.stacks + ' left)', [why]);
     updateUnitCard(unit);
   }
   return shed;
@@ -37,7 +37,7 @@ function removeStatus(unit, id, why) {
   if (!st) return false;
   unit.statuses = unit.statuses.filter(s => s !== st);
   const def = STATUSES[id];
-  if (def) logEvent('− ' + statusLabel(def, st, unit) + ' removed', unit, null, [why], '');
+  if (def) logEvent('− ' + statusLabel(def, st, unit) + ' removed', unit, null, [why]);
   if (def && def.onExpire) def.onExpire(unit, st);
   return true;
 }

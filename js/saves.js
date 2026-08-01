@@ -91,7 +91,7 @@ function devEnterCombat(handoverLine) {
   updateHud(); renderCombat(true); renderSkills(); updateTurnInfo();
   showScreen('combat-screen');
   document.getElementById('combat-screen').classList.remove('staged', 'reveal');
-  log(handoverLine, 'important');
+  log(handoverLine);
   startCombatLoop();
   saveRun();
 }
@@ -385,6 +385,6 @@ function continueRun(slot){
   state.combatActive = true;
   spawnEnemy();
   startCombatLoop();
-  log('RUN RESUMED · slot ' + n + ' · wave ' + state.wave + ' · level ' + p.level, 'important');
+  log('RUN RESUMED · slot ' + n + ' · wave ' + state.wave + ' · level ' + p.level);
 }
 

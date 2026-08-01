@@ -357,12 +357,11 @@ function clearFloaters() {
 //  5. NO PROSE. "The rot festers" told the player nothing they could act on;
 //     "POISON ×4 → TOXIN +32%" tells them the trade they just made. Flavour
 //     belongs on the skill cards, which have room for it.
-// THE LOG IS AN INSTRUMENT NOW, NOT A PANEL. The on-screen LOG tab is gone;
-// what these calls still feed is the headless transcript, which is what
-// tools/autopsy.mjs parses for "killed by" and "which skills fire" and what
-// tools/transcript.mjs dumps. On screen this is a no-op, so the `type` argument
-// every caller passes is kept and ignored rather than stripped from 40 sites.
-function log(msg, type) {
+// THE LOG IS AN INSTRUMENT, NOT A PANEL. There is no on-screen log; what these
+// calls feed is the headless transcript, which tools/autopsy.mjs parses for
+// "killed by" and "which skills fire" and tools/transcript.mjs dumps. On screen
+// this is a no-op.
+function log(msg) {
   if (!HEADLESS.on) return;
   HEADLESS.log.push(msg);
   if (HEADLESS.log.length > HEADLESS.logCap) HEADLESS.log.shift();
@@ -377,26 +376,26 @@ function logNum(n) { return formatNum(Math.max(0, Math.floor(n))); }
 // The one event-line builder. `notes` is the qualifier list; anything falsy in
 // it is dropped, so a caller can pass conditions inline without assembling the
 // array first.
-function logEvent(what, target, amount, notes, type) {
+function logEvent(what, target, amount, notes) {
   const parts = [what];
   if (target) parts.push('→ ' + logName(target));
   if (amount != null && amount !== '') parts.push(' ' + amount);
   const q = (notes || []).filter(Boolean);
   if (q.length) parts.push(' ' + q.join(', '));
-  log(parts.join(' '), 'ev ' + (type || ''));
+  log(parts.join(' '));
 }
 
 // Damage and healing are the two events with a fixed shape, so they get their
 // own front doors rather than every call site remembering the sign convention.
 function logDamage(what, target, amount, notes) {
-  logEvent(what, target, logNum(amount), notes, 'damage');
+  logEvent(what, target, logNum(amount), notes);
 }
 function logHeal(what, target, amount, notes) {
-  logEvent(what, target, '+' + logNum(amount) + ' HP', notes, 'heal');
+  logEvent(what, target, '+' + logNum(amount) + ' HP', notes);
 }
 // An action that resolved without dealing damage still costs a turn, so it is
 // still an event worth a line.
-function logMiss(what, target, why) { logEvent(what, target, why, null, ''); }
+function logMiss(what, target, why) { logEvent(what, target, why); }
 
 // A status arriving or leaving. The text comes from the registry's own
 // label() — the same string the badge on the unit shows — so the log and the
@@ -404,14 +403,13 @@ function logMiss(what, target, why) { logEvent(what, target, why, null, ''); }
 function logStatus(unit, st, gone) {
   const def = STATUSES[st.type]; if (!def) return;
   logEvent(gone ? '− ' + def.name + ' ended' : '+ ' + statusLabel(def, st, unit),
-           unit, null, null, gone ? '' : (def.kind === 'buff' ? 'heal' : 'damage'));
+           unit);
 }
 
 // Turn header. Everything logged after it belongs to that unit's turn, which
 // is what lets the event lines drop the actor entirely.
 function logTurn(unit) {
-  log('T' + state.turnNo + ' · ' + logName(unit).toUpperCase(),
-      'turn ' + (unit && unit.isPlayer ? 'you' : 'foe'));
+  log('T' + state.turnNo + ' · ' + logName(unit).toUpperCase());
 }
 function clearLog(){ if (HEADLESS.on) HEADLESS.log.length = 0; }
 
