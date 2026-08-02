@@ -369,7 +369,7 @@ function applyDerivedStats(p) {
   p.hpMult  = p.hpMult  || 1;
   p.apsMult = p.apsMult || 1;
 
-  // ATTACK DAMAGE. One rule for every strain, Unmutated included: Strength and
+  // ATTACK DAMAGE. One rule for every strain, Unaugmented included: Strength and
   // nothing else. Damage used to come off each strain's own primary, which meant
   // Strength was worth literally nothing to two of the four. 5 damage per point,
   // so the 5 everyone starts with is 25 Attack Damage. There is no per-strain

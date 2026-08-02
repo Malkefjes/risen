@@ -148,10 +148,10 @@ function devSkipToZone(classId, zoneNum) {
     + 'on waves 1-' + gate + ' — worth knowing) · wave ' + state.wave + ' · level ' + p.level);
 }
 
-// RESIST MUTATION: a quiet transition beat, then drop into the run as base
+// RUN CLEAN: a quiet transition beat, then drop into the run as base
 // Sonny. 'base' is named outright rather than leaning on a stored choice.
 function resistMutation() {
-  playStrainIntro('base', 'You have chosen to resist your new powers…');
+  playStrainIntro('base', 'You have chosen to go out in the suit as issued…');
 }
 
 function goToMenu() {

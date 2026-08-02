@@ -28,7 +28,7 @@ const SYM_SPRITES = {
 };
 
 // No idle and no skill art, and neither is missing by accident: base is reached
-// through RESIST MUTATION rather than a strain card, so nothing ever draws his
+// through RUN CLEAN rather than a strain card, so nothing ever draws his
 // idle, and no skill sprite was made for him. His buttons keep the ready stance.
 const BASE_SPRITES = {
   ready:  'assets/sprites/sonny ready new.png',

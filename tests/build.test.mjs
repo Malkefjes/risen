@@ -18,7 +18,7 @@ export default async function ({ page, ctx, ok }) {
   // renamed class. What the test means is "press NEW GAME", so that is what it
   // asks for.
   await page.click('#title-screen button:has-text("NEW GAME")');
-  await page.click('#intro-screen button:has-text("MUTATE")');
+  await page.click('#intro-screen button:has-text("AUGMENT")');
   await page.click('.class-card.sym');
   await page.click('#start-btn');
   // EVOLVE plays a transition beat before the run. SKIP jumps to a playable

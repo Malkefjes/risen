@@ -37,7 +37,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-02al';
+const BUILD = '2026-08-02am';
 
 const BALANCE = {
   player: {
@@ -90,7 +90,7 @@ const BALANCE = {
     thornsFrac: 0.05,
     // POISON (bio) is permanent and UNCAPPED — the stack count is bio's ramp,
     // and the ramp is the class: no burst, the enemy's remaining life is a clock.
-    // ---- BLEED (Unmutated) ------------------------------------------------
+    // ---- BLEED (Unaugmented) ------------------------------------------------
     // Base's second number. IT MUST NOT BECOME BIO IN RED, and three differences
     // keep them apart: a wound ticks on EVERY turn, both sides, and eats a stack
     // doing it, where the rot ticks once a turn forever; a tick hits for what the
@@ -154,7 +154,7 @@ const BALANCE = {
     // enemy's, so it scales with the turn advantage the stacks already bought.
     // Bio's mark ticks damage out of the enemy; psy's ticks health into you.
     dreadSiphonFrac: 0.005,  // heal per DREAD on the enemy, per player turn
-    // ---- RESOLVE (Unmutated) ----------------------------------------------
+    // ---- RESOLVE (Unaugmented) ----------------------------------------------
     // UNCAPPED, AND A STATUS RATHER THAN A WALLET, so it is a ramp: the longer
     // the fight runs the harder you are to move and the bigger Last Stand gets.
     // PER FIGHT, NOT PER RUN — carried across a run it would pass the reduction
@@ -169,8 +169,8 @@ const BALANCE = {
     // boss. Not a full bar: being saved has to cost something, and the boss's
     // XP is already gone with it.
     rescueHpFrac: 0.5,
-    resolveDR: 0.03,       // Unmutated: each held Resolve = 3% flat damage reduction
-    resolvePerHit: 3,      // Unmutated: Resolve gained whenever you take a hit
+    resolveDR: 0.03,       // Unaugmented: each held Resolve = 3% flat damage reduction
+    resolvePerHit: 3,      // Unaugmented: Resolve gained whenever you take a hit
     reloadHpFloor: 0.15    // deliberate mercy: continuing a run never puts you below this
   },
   enemy: {
@@ -378,14 +378,14 @@ const CLASSES = {
       { id:'provoke', name:'Provoke', desc:'Bare your guard: the enemy strikes at once and cannot miss. +{growBonus} THORNS, and a charged telegraph comes out now — ordinary, or half-strength if it shrugs you off.', type:'provoke', growBonus:3, target:'enemy', cdTurns:4 }
     ]
   },
-  // Base Sonny, reached via "RESIST MUTATION". Refused the infection, so he has
-  // no strain mechanic — and is THE ONLY STRAIN WITH TWO NUMBERS instead.
+  // Base Sonny, reached via RUN CLEAN. The suit as issued, no extraction in the
+  // lining, so he has no strain mechanic — and is THE ONLY STRAIN WITH TWO NUMBERS instead.
   // RESOLVE on himself, BLEED on them: not two mechanics but two halves of one
   // exchange, since Resolve is bought by landing hits AND taking them, and the
   // cut is only as deep as the Resolve behind it. Endure, then everything at
   // once — except the enduring is doing damage the whole time.
   base: {
-    name: 'Unmutated', color: 'base',
+    name: 'Unaugmented', color: 'base',
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
       // The card prints what the next Strike will actually open, and it moves as
@@ -596,7 +596,7 @@ const STATUSES = {
     incomingMult: (u, st) => 1 - (st.power || 0)
   },
 
-  // UNMUTATED'S WOUND. Poison's twin in shape and its opposite in source: the
+  // UNAUGMENTED'S WOUND. Poison's twin in shape and its opposite in source: the
   // rot is alien and free, a cut is ordinary and paid for. Deliberately plainer
   // than poison — no double-tick interaction, and it does not persist between
   // fights.
@@ -655,7 +655,7 @@ const STATUSES = {
     }
   },
 
-  // Unmutated's mechanic, and a STATUS rather than a wallet since the banks came
+  // Unaugmented's mechanic, and a STATUS rather than a wallet since the banks came
   // out. See the RESOLVE block in BALANCE.
   //
   // PERMANENT inside a fight — nothing times it out, only Last Stand spends it —
@@ -674,7 +674,7 @@ const STATUSES = {
     id:'brace', name:'BRACE', tone:'brace', kind:'buff',
     stacking:'replace', defaults:{ duration:1, power:0.60, counter:1.20 },
     label: st => 'BRACE ' + Math.ceil(st.duration) + 't',
-    // Deliberately NOT an incomingMult: Unmutated adds Brace to held Resolve
+    // Deliberately NOT an incomingMult: Unaugmented adds Brace to held Resolve
     // and caps the sum (applyEnemyDamage), so the two are one reduction rather
     // than two multiplied ones. Splitting it into a generic hook would quietly
     // halve the skill.

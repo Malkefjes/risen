@@ -31,7 +31,7 @@
     <div class="title-body">
       <header class="title-mark">
         <h1 class="title-logo">RISEN</h1>
-        <p class="title-sub">Containment breakout</p>
+        <p class="title-sub">Nothing is wasted</p>
       </header>
 
       <nav class="title-menu">
@@ -54,11 +54,11 @@
       <button class="ui-btn" onclick="devSkipToZone('bio', 2)">SKIP TO ZONE 2 &middot; BIOLOGICAL</button>
       <button class="ui-btn" onclick="devSkipToZone('psy', 2)">SKIP TO ZONE 2 &middot; PSYCHOLOGICAL</button>
       <button class="ui-btn" onclick="devSkipToZone('sym', 2)">SKIP TO ZONE 2 &middot; SYMBIOTIC</button>
-      <button class="ui-btn" onclick="devSkipToZone('base', 2)">SKIP TO ZONE 2 &middot; UNMUTATED</button>
+      <button class="ui-btn" onclick="devSkipToZone('base', 2)">SKIP TO ZONE 2 &middot; UNAUGMENTED</button>
       <button class="ui-btn" onclick="devSkipToZone('bio', 3)">SKIP TO ZONE 3 &middot; BIOLOGICAL</button>
       <button class="ui-btn" onclick="devSkipToZone('psy', 3)">SKIP TO ZONE 3 &middot; PSYCHOLOGICAL</button>
       <button class="ui-btn" onclick="devSkipToZone('sym', 3)">SKIP TO ZONE 3 &middot; SYMBIOTIC</button>
-      <button class="ui-btn" onclick="devSkipToZone('base', 3)">SKIP TO ZONE 3 &middot; UNMUTATED</button>
+      <button class="ui-btn" onclick="devSkipToZone('base', 3)">SKIP TO ZONE 3 &middot; UNAUGMENTED</button>
       <button class="ui-btn" onclick="devSkipToFirstBoss()">SKIP TO FIRST BOSS &middot; PSYCHOLOGICAL</button>
     </div>
     <div class="dev-actions">
@@ -83,16 +83,16 @@
     <div class="intro-card">
       <p class="intro-lead">You are Sonny.</p>
       <div class="intro-body">
-        <p>You survived a lethal laboratory infection that should have killed you — or turned you into one of the mindless, aggressive mutants now roaming the containment zones. Instead, your mind stayed intact. As far as you know, you are the only one.</p>
-        <p>Mutant Pest Control has orders to eradicate every infected individual. They do not care that you can still think. To them, a lucid mutant is simply a more dangerous pest.</p>
-        <p>The infection is still rewriting you. Your body is changing. The hunters are closing in.</p>
+        <p>The suit was issued, not chosen. Mutant Pest Control needed something that could walk into the wings their people don't come back from, and they put a man inside it because a man still makes decisions.</p>
+        <p>It gets stronger the way everything in this building gets stronger. The Laboratory takes what it needs from its subjects — the ones that mutated, and the ones that were people first — and refines it into something the suit can hold. On the paperwork it is called extraction.</p>
+        <p>You have been very good at your job. That turned out to be the problem. Pest Control does not decommission an asset that has started asking what it is made of.</p>
       </div>
       <p class="intro-final">Evolve… or die.</p>
     </div>
 
     <div class="intro-fork">
-      <button class="ui-btn is-primary intro-choice" onclick="openClassSelect()">MUTATE</button>
-      <button class="ui-btn is-quiet intro-choice" onclick="resistMutation()">RESIST MUTATION</button>
+      <button class="ui-btn is-primary intro-choice" onclick="openClassSelect()">AUGMENT</button>
+      <button class="ui-btn is-quiet intro-choice" onclick="resistMutation()">RUN CLEAN</button>
     </div>
     <div class="intro-back">
       <button class="ui-btn is-quiet" onclick="goToMenu()">BACK</button>
@@ -100,7 +100,7 @@
   </div>
 
   <!-- The beat between choosing and playing: one line on black that fades in
-       and out, then the run assembles. EVOLVE and RESIST MUTATION both come
+       and out, then the run assembles. INSTALL and RUN CLEAN both come
        through here and differ only in the sentence — playStrainIntro sets it. -->
   <div id="resist-screen" class="screen">
     <p class="resist-line"></p>
@@ -110,30 +110,30 @@
        card IS a .ui-btn variant in everything but name — one shape, one size,
        and only the border and the glow change per strain. -->
   <div id="class-screen" class="screen">
-    <h2>SELECT STRAIN</h2>
+    <h2>SELECT EXTRACTION</h2>
     <div class="classes">
       <div class="class-card bio" onclick="selectClass('bio')">
         <div class="class-preview" id="preview-bio"></div>
         <div class="class-name">BIOLOGICAL</div>
         <div class="class-role">STRENGTH · POISON</div>
-        <div class="class-info">Your enhanced musculature and dense bone structure grant crushing physical strength to overwhelm enemies in close combat. Your body continuously generates potent toxins, letting you dominate as a relentless predator who leaves foes both poisoned and broken.</div>
+        <div class="class-info">Refined from specimens that kept killing handlers hours after they should have been dead. The suit carries their density in its frame and routes their toxin through the gauntlets. You hit past what the chassis is rated for, and what you open does not close.</div>
       </div>
       <div class="class-card psy" onclick="selectClass('psy')">
         <div class="class-preview" id="preview-psy"></div>
         <div class="class-name">PSYCHOLOGICAL</div>
         <div class="class-role">SPEED · DREAD</div>
-        <div class="class-info">Your mutated mind and physical prowess allow you to slip through the battlefield at unnatural speeds while sowing fear. As a fast psychological predator, your approach feels inevitable and inescapable, leaving enemies broken both from within and without.</div>
+        <div class="class-info">Drawn from subjects that emptied a room before anyone saw them move. The suit reads the signal they gave off and broadcasts it louder than they ever could. Nothing you hunt gets to be calm about it.</div>
       </div>
       <div class="class-card sym" onclick="selectClass('sym')">
         <div class="class-preview" id="preview-sym"></div>
         <div class="class-name">SYMBIOTIC</div>
         <div class="class-role">VITALITY · THORNS</div>
-        <div class="class-info">Your body hosts a living symbiote that pulses with shared vitality. Every wound you suffer feeds it, regenerating you while its thorns lash back at attackers — making you a resilient, retaliatory predator who thrives on the very damage meant to kill you.</div>
+        <div class="class-info">A live culture, kept breathing in the lining because it dies if it is stored. It feeds on what gets through your plating and pays you back in spines. The only extraction that is still technically a subject.</div>
       </div>
     </div>
     <div class="class-actions">
       <button class="ui-btn is-quiet" onclick="goToMenu()">BACK</button>
-      <button class="ui-btn is-primary" id="start-btn" onclick="startGameFromSelect()" disabled>EVOLVE</button>
+      <button class="ui-btn is-primary" id="start-btn" onclick="startGameFromSelect()" disabled>INSTALL</button>
     </div>
   </div>
 

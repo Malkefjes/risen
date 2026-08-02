@@ -372,7 +372,7 @@ function cleansePoison(unit, n, why) {
   return took;
 }
 
-// UNMUTATED'S RAMP, and growThorns' sibling — the strain's number going up.
+// UNAUGMENTED'S RAMP, and growThorns' sibling — the strain's number going up.
 // Resolve is a status now rather than a pipped wallet (see the RESOLVE block in
 // BALANCE), so applyStatus does all the accounting, the stacking and the log
 // line, exactly as it does for DREAD and POISON. What this adds is the FLOATER:
@@ -517,7 +517,7 @@ function applyEnemyDamage(e, p, mult, opts) {
     dmg = Math.floor(dmg * (1 - p.blockReduction));
     notes.push('BLOCK −' + Math.round(p.blockReduction * 100) + '%');
   }
-  // Unmutated: held Resolve is flat mitigation and Counterpunch braces on top
+  // Unaugmented: held Resolve is flat mitigation and Counterpunch braces on top
   // of it. The two are summed under one cap on purpose — see the note on the
   // brace status for why it is not a generic incomingMult.
   if (p.class === 'base') {
@@ -550,7 +550,7 @@ function applyEnemyDamage(e, p, mult, opts) {
   // both truer to the theme and visible on the card it happens to.
   if (p.class === 'psy' && e && e.hp > 0)
     shedStacks(e, 'dread', P().dreadLossPerHit, 'nerve steadied — its blow landed');
-  // Unmutated: every hit taken steadies you.
+  // Unaugmented: every hit taken steadies you.
   if (p.class === 'base')
     gainResolve(p, (P().resolvePerHit||1) + statusSum(p, 'resolveOnHitTaken'), 'hit taken');
   // Sym: EVERY hit feeds the organism, with no window and no condition. This
@@ -733,7 +733,7 @@ function applyPlayerDamage(p, e, skill) {
 
   if (skill.poison && p.class === 'bio')
     applyStatus(e, 'poison', { stacks: skill.poison, perStack: p.poisonPerStack });
-  // Unmutated opens a wound. On-hit like the rot, so an evade costs the cut as
+  // Unaugmented opens a wound. On-hit like the rot, so an evade costs the cut as
   // well as the damage — and the depth is read HERE, at the moment of the
   // swing, off the Resolve standing behind it. gainResolve fires earlier in
   // this same function, so a Strike is cut with the Resolve it just earned.
@@ -839,7 +839,7 @@ function fireSkill(caster, skill, target) {
   if (skill.type === 'heal') {
     let frac = skill.healFrac || 0.1;
     const notes = [];
-    // Unmutated: Bandage patches better the deeper you're dug in.
+    // Unaugmented: Bandage patches better the deeper you're dug in.
     if (skill.resolveHealBonus) {
       const bonus = skill.resolveHealBonus * statusStacks(caster, 'resolve');
       frac += bonus;

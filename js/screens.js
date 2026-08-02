@@ -8,8 +8,8 @@ function showScreen(id) {
 // THE STRAIN A NEW RUN WILL USE, kept separate from state.classId.
 //
 // These were one field, and that was a bug you could hit in ordinary play: pick
-// BIO, later load an Unmutated save, then NEW GAME -> MUTATE and press EVOLVE,
-// and the run started as Unmutated while the screen showed BIO.
+// BIO, later load an Unaugmented save, then NEW GAME -> AUGMENT and press
+// INSTALL, and the run started as Unaugmented while the screen showed BIO.
 //
 // _pendingClass is the MENU's answer and nothing else writes it; state.classId
 // is the LOADED RUN's answer and the menu never reads it. openClassSelect clears
@@ -23,7 +23,7 @@ function claimPendingClass() {
 }
 
 // Entering strain select always starts from nothing chosen. Re-disabling
-// EVOLVE is the load-bearing half: while it stayed enabled between visits it
+// INSTALL is the load-bearing half: while it stayed enabled between visits it
 // was possible to start a run without making a choice at all.
 function openClassSelect() {
   _pendingClass = null;
@@ -40,7 +40,7 @@ function selectClass(id) {
   document.querySelector('.class-card.' + id).classList.add('selected');
   const btn = document.getElementById('start-btn');
   btn.disabled = false;
-  // EVOLVE takes the chosen strain's colour.
+  // INSTALL takes the chosen strain's colour.
   btn.className = 'ui-btn is-primary strain-' + id;
 }
 function recalcPlayerStats(){ if (state.player) applyDerivedStats(state.player); }
@@ -122,7 +122,7 @@ function resetRunState(classId) {
   log('RISEN · build ' + BUILD);
 }
 
-// THE ONE WAY INTO A RUN. Both doors — EVOLVE and RESIST MUTATION — come
+// THE ONE WAY INTO A RUN. Both doors — INSTALL and RUN CLEAN — come
 // through here, so the beat before a run is the same beat whichever strain you
 // picked; only the sentence differs.
 //
@@ -147,7 +147,7 @@ function playStrainIntro(classId, line) {
 }
 
 function startGameFromSelect() {
-  playStrainIntro(claimPendingClass(), 'You have chosen to embrace your new powers…');
+  playStrainIntro(claimPendingClass(), 'The extraction takes hold…');
 }
 
 function startGame(skipReveal, classId) {
@@ -164,14 +164,14 @@ function startGame(skipReveal, classId) {
   spawnEnemy();
   saveRun();
   // Staged reveal: arena fades in, hold, then the rest of the UI; combat waits.
-  // skipReveal comes from skipping the RESIST transition, so one press drops
+  // skipReveal comes from skipping the RUN CLEAN transition, so one press drops
   // you all the way into a playable fight rather than into a second fade.
   if (skipReveal) { revealCombatNow(); offerSkip(null); startCombatLoop(); }
   else stageCombatReveal(startCombatLoop);
 }
 
 // ---- Skippable intros ----------------------------------------------------
-// The RESIST MUTATION transition and the combat fade-in are atmospheric but
+// The RUN CLEAN transition and the combat fade-in are atmospheric but
 // cost ~10s before you can act, which is tedious when testing. While either is
 // running, a SKIP button is offered that jumps straight to the end state.
 let _skipIntro = null;
@@ -628,14 +628,14 @@ const SCENES = {
     // than a mechanism.
     steps: [
       { text: '…You are not following the behavioral template...' },
-      { text: 'Most either converge on the nearest uninfected mass or collapse into pure stimulus loops.' },
-      { text: 'You have been systematically eliminating specimens since the containment breach.' },
-      { text: 'I am authorized to complete specimen termination.',
+      { text: 'Assets in your series either complete the sweep or stand down for collection. They do not detour.' },
+      { text: 'You have been destroying specimens that were logged for extraction. That is inventory.' },
+      { text: 'I am authorized to recover this asset by any condition.',
         choices: [{ label: 'wait…' }, { label: 'attack', go: 6 }] },
       { text: '…Language. Coherent.' },
       // PLACEHOLDER END. The conversation stops here until there is more of it;
       // MOVE ON is standing in for whatever it becomes.
-      { text: 'The cascade was designed to erase residual cognition. Speak now or be terminated',
+      { text: 'The frame was not specified to support cognition at this level. Tell me what you have been reading, or be recovered in pieces.',
         choices: [{ label: 'MOVE ON', act: 'leave' }] },
       // 6 — where `attack` goes. A TERMINAL STEP: no continue and no choices,
       // it says its line and then does the thing itself.
