@@ -7,12 +7,28 @@ const BIO_SPRITES = {
   strike: 'assets/sprites/bio-strike.png'
 };
 
-const PSY_STANCE = 'assets/sprites/psy-stance.png';
-const PSY_SPRITES = {
-  idle: PSY_STANCE,
-  ready: PSY_STANCE,
-  strike: 'assets/sprites/psy-strike.png'
-};
+// PSY EVOLVES. Three bodies, and which one is worn is READ OFF THE LEVEL rather
+// than stored on the player — so a loaded save shows the right one with nothing
+// to migrate, and a dev handover or a bot's sheet is never out of step with its
+// own art.
+//
+// `from` is the level the stage begins at, lowest first. Adding a fourth is an
+// entry here; giving another strain stages is a `stages` array on its set.
+const PSY_STAGES = [
+  { from: 1,  idle: 'assets/sprites/psy ready.png',
+              ready: 'assets/sprites/psy ready.png',
+              strike: 'assets/sprites/psy attack.png' },
+  { from: 5,  idle: 'assets/sprites/psy 2 ready.png',
+              ready: 'assets/sprites/psy 2 ready.png',
+              strike: 'assets/sprites/psy 2 attack.png' },
+  { from: 10, idle: 'assets/sprites/psy 3 ready.png',
+              ready: 'assets/sprites/psy 3 ready.png',
+              strike: 'assets/sprites/psy 3 attack.png' }
+];
+// The set itself is stage one, so anything that asks for psy's art without a
+// unit to read a level from — the strain-select preview, the preload sweep —
+// gets the body you start in.
+const PSY_SPRITES = Object.assign({}, PSY_STAGES[0], { stages: PSY_STAGES });
 
 const BASE_SPRITES = {
   ready: 'assets/sprites/base-ready.png',
@@ -188,6 +204,17 @@ const PLAYER_SPRITES = {
 // single PLAYER_SPRITES image regardless of pose.
 const POSE_SPRITES = { bio: BIO_SPRITES, psy: PSY_SPRITES, sym: SYM_SPRITES, base: BASE_SPRITES };
 
+// The art set a unit is wearing right now. Only psy has stages today; every
+// other strain returns the one set it has ever had.
+function poseSetFor(unit) {
+  const base = POSE_SPRITES[unit && unit.class] || null;
+  if (!base || !base.stages) return base;
+  const level = (unit && unit.level) || 1;
+  let out = base.stages[0];
+  base.stages.forEach(st => { if (level >= st.from) out = st; });
+  return out;
+}
+
 // Units that pose-swap (idle/ready/strike): players with a strain set, and bosses.
 function hasPoseSet(unit) {
   if (!unit) return false;
@@ -202,6 +229,8 @@ function hasPoseSet(unit) {
 function skillArtFor(unit, skill) {
   if (!unit || !unit.isPlayer || !skill) return null;
   const id = skill.id || skill;                       // accepts a skill or its id
+  // Per-skill art lives on the strain, not on a stage: a skill looks like
+  // itself whatever body is casting it.
   const base = POSE_SPRITES[unit.class] || null;
   return (base && base.skills && base.skills[id]) || null;
 }
@@ -219,7 +248,7 @@ function spriteSrcFor(unit, pose, skill) {
   }
   const art = skillArtFor(unit, skill);
   if (art) return art;
-  const base = POSE_SPRITES[unit.class] || null;
+  const base = poseSetFor(unit);
   if (base && base[pose]) return base[pose];
   return PLAYER_SPRITES[unit.class] || PLAYER_SPRITES.bio;
 }

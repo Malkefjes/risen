@@ -385,6 +385,9 @@ function gainXP(amount, bonus) {
     // the arena, not just on the badge: amber, because a level-up is the XP
     // family's loudest member — see the floater vocabulary in the CSS.
     floatText(p, 'LEVEL ' + p.level, 'xp-bonus');
+    // A strain whose body changes with the level changes it HERE, rather than
+    // waiting for the next pose swap to notice the src had moved.
+    setCharPose(p, 'ready');
     logEvent('LEVEL ' + p.level, null, '+' + grant + ' points',
              ['next at ' + logNum(p.xpNext) + ' XP']);
     gained.push(p.level);
