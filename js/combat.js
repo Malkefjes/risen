@@ -17,6 +17,14 @@ function stopCombatLoop() {
   state.combatActive = false;
   _pendingStep = null;
   clearRevealTimers();
+  // A SCENE BELONGS TO A FIGHT, so it does not outlive one. Nothing tore it
+  // down except its own two exits, and the ways OUT of a run — new game, quit
+  // to menu, the run ending — all come through here instead: quitting from a
+  // scene and starting a fresh run left the scientist's portrait and dialogue
+  // box on screen over the new fight, `scene-on` still hiding both fighters and
+  // the skill row, and `_scene` still holding the spacebar. Measured on
+  // 2026-08-02ae by quitting mid-scene: the new run came up inside the old one.
+  teardownScene();
   if (state.turnTimer) { clearTimeout(state.turnTimer); state.turnTimer = null; }
 }
 // FAST TURNS setting just compresses the pacing between actions.

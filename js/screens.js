@@ -670,8 +670,19 @@ function rescueAvailable(won) {
   return !won && !state.rescued && state.wave === BALANCE.bossEvery;
 }
 
+// WHICH BOSS HAS SOMETHING WAITING AFTER IT. Still the per-boss hook the
+// scaffolding was built as — a second scene is another wave answered here, not
+// a flag — but there is exactly one conversation written, so it plays at the
+// one boss it was written for.
+//
+// It used to answer every boss, and that was wrong twice over. The scientist is
+// working out that you can talk ("…Language. Coherent."), so you met him for
+// the first time at waves 5, 10, 15, 20, 25, 30, 35 and 40. And makeScientistFoe
+// builds him at bossEvery whatever wave you are on, so taking `attack` at wave
+// 40 was a doubled wave-5 boss paying wave-40 XP — the XP a kill grants reads
+// off state.wave, never off the enemy.
 function sceneAfterWave(wave) {
-  if (wave % BALANCE.bossEvery !== 0 || wave >= BALANCE.finalWave) return null;
+  if (wave !== BALANCE.bossEvery) return null;
   return 'scientist';
 }
 
@@ -835,6 +846,10 @@ function openScene(id, onDone, onBlack) {
 // Everything a scene leaves behind, whichever way it is left — out to the next
 // wave, or sideways into a fight with the man who was talking.
 function teardownScene() {
+  // Headless never opens one, and stopCombatLoop — which a sim calls constantly
+  // — comes through here now. Same guard every other drawing function in the
+  // chapter carries, for the same reason: a sim must not move the screen.
+  if (HEADLESS.on) return;
   finishTyping();
   _scene = null;
   const layer = document.getElementById('scene-layer');

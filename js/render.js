@@ -377,7 +377,15 @@ function logTurn(unit) {
 function clearLog(){ if (HEADLESS.on) HEADLESS.log.length = 0; }
 
 // Pause when the tab is hidden so nothing accumulates in the background.
+//
+// A SCENE IS EXEMPT BOTH WAYS. Nothing accumulates during one — it is waiting
+// on a click, not on a clock — and pausing it was destructive rather than
+// idle: stopCombatLoop clears the timers a scene is built out of, so tabbing
+// away mid-conversation froze the scientist half-arrived, and coming back
+// restarted the fight underneath him. Leaving it alone is the whole fix; the
+// click it is waiting for is just as valid two minutes later.
 document.addEventListener('visibilitychange', () => {
+  if (state.inScene) return;
   if (document.hidden) { if (state.combatActive) stopCombatLoop(); }
   else if (state.player && state.player.hp > 0 && document.getElementById('combat-screen').classList.contains('active')) {
     startCombatLoop();
