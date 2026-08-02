@@ -704,7 +704,7 @@ body {
 }
 
 .class-card {
-  width: min(340px, 88vw);
+  width: min(360px, 88vw);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -764,7 +764,7 @@ body {
 
 .class-preview {
   width: 100%;
-  height: clamp(134px, 16.5vh, 166px);
+  height: clamp(190px, 23vh, 238px);
   margin: 0 auto 18px;
   position: relative;
   display: flex;
@@ -778,8 +778,14 @@ body {
   transform: translateY(-4px) scale(1.04);
 }
 
-/* .char-figure derives width and shadow from this. */
-.class-preview .char-figure { --sprite-h: clamp(116px, 14vh, 146px); }
+/* .char-figure derives width and shadow from this — THE ONE NUMBER for how big
+   the strain art reads on the select screen; .class-preview's height above is
+   its box and wants to move with it. */
+.class-preview .char-figure { --sprite-h: clamp(168px, 20vh, 210px); }
+/* The figure box is 1.9x its height, which is wider than a card once the art
+   gets this big. The art itself is portrait so it never reaches that, but the
+   cap keeps a wide pose inside the card instead of behind its clipped edge. */
+.class-preview .char-svg { max-width: 100%; }
 
 .class-name {
   font-family: 'Orbitron', sans-serif;
