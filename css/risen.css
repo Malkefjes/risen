@@ -64,7 +64,7 @@
      Retune the four hues here and the whole feature follows — nothing below
      hardcodes a colour. To remove it entirely, see the block near
      .side-stat-row further down. */
-  --stat-str: #ff6b6b;      --stat-str-glow: rgba(255,107,107,0.40);
+  --stat-str: #ffa93d;      --stat-str-glow: rgba(255,169,61,0.40);
   --stat-instinct: #ffd15c; --stat-instinct-glow: rgba(255,209,92,0.40);
   --stat-speed: #b98cff;    --stat-speed-glow: rgba(185,140,255,0.40);
   --stat-vit: #5fe08a;      --stat-vit-glow: rgba(95,224,138,0.40);
@@ -1823,11 +1823,113 @@ body {
   color: var(--muted);
 }
 
+/* ---- THE THREE THAT DECIDE A FIGHT --------------------------------------
+   Read as figures, not looked up in a list. Each takes the hue of the stat
+   that buys it (see the stat colours in :root), so the tile and the row under
+   it are visibly the same thing. The left rule carries the colour and the
+   number wears it; the label stays muted, because the label is read once and
+   the number is read every turn.
+
+   Health is the only one that moves inside a fight, so it is the only one with
+   a bar and the only one given a full row to itself. */
+.vitals {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0.9rem 0 0.3rem;
+}
+.vital-pair { display: flex; gap: 0.45rem; }
+.vital {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0.5rem 0.6rem;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.035);
+  border-left: 2px solid var(--vital, var(--muted));
+}
+.vital-name {
+  display: block;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.56rem;
+  font-weight: 600;
+  letter-spacing: 0.08rem;
+  color: var(--muted);
+  opacity: 0.8;
+  white-space: nowrap;
+}
+.vital-num {
+  display: block;
+  margin-top: 0.15rem;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--vital, var(--text));
+  text-shadow: 0 0 14px var(--vital-glow, transparent);
+}
+/* Health puts its label and figure on one line so the bar can have the next. */
+.vital-hp .vital-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.vital-hp .vital-num { margin-top: 0; font-size: 1rem; }
+.vital-track {
+  margin-top: 0.42rem;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.07);
+  overflow: hidden;
+}
+.vital-fill {
+  height: 100%;
+  background: var(--vital);
+  box-shadow: 0 0 10px var(--vital-glow);
+  transition: width 0.25s ease;
+}
+/* Same hover preview the derived rows carry, at the size these numbers run. */
+.vital .delta {
+  font-style: normal;
+  font-size: 0.7rem;
+  color: var(--accent);
+  margin-left: 0.35rem;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.vital .delta.on { opacity: 1; }
+
+.vital-hp  { --vital: var(--stat-vit);   --vital-glow: var(--stat-vit-glow); }
+.vital-atk { --vital: var(--stat-str);   --vital-glow: var(--stat-str-glow); }
+.vital-spd { --vital: var(--stat-speed); --vital-glow: var(--stat-speed-glow); }
+
 .side-stat-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 0;
+  padding: 10px 0;
+}
+
+/* Each stat's share of the biggest of the four. Four bars together read as a
+   BUILD — where this run is leaning — which four numbers in a column do not.
+   Relative rather than absolute because a stat has no ceiling to fill. */
+.side-stat-bar {
+  flex: 0 0 100%;
+  height: 3px;
+  margin-top: 0.5rem;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.06);
+  overflow: hidden;
+}
+.side-stat-bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--stat-color, var(--muted));
+  box-shadow: 0 0 8px var(--stat-glow, transparent);
+  transition: width 0.25s ease;
 }
 
 .side-stat-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -1900,7 +2002,6 @@ body {
 .derived-block {
   margin-top: 10px;
 }
-.derived-block[hidden] { display: none; }
 
 .derived-grid {
   display: grid;

@@ -186,6 +186,36 @@
                 <div class="xp-track"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div>
               </div>
             </div>
+            <!-- THE THREE THAT DECIDE A FIGHT: what you hit for, how often you
+                 act, and how much you can take. Every other row on this panel
+                 exists to explain one of them, so these are read as figures
+                 rather than looked up in a list. Each wears the hue of the stat
+                 that buys it — green Vitality buys green Health — which teaches
+                 the link without spending a sentence on it. Health carries a
+                 bar because it is the only one that moves mid-fight.
+
+                 The ids are the ones the readout list already used, so
+                 refreshReadoutValues and renderDeltas fill these without
+                 knowing they moved. -->
+            <div class="vitals">
+              <div class="vital vital-hp">
+                <div class="vital-head">
+                  <span class="vital-name">HEALTH</span>
+                  <span class="vital-num"><b id="d-hp">—</b><i class="delta" id="p-hp"></i></span>
+                </div>
+                <div class="vital-track"><div class="vital-fill" id="hp-fill" style="width:100%"></div></div>
+              </div>
+              <div class="vital-pair">
+                <div class="vital vital-atk">
+                  <span class="vital-name">ATTACK</span>
+                  <span class="vital-num"><b id="d-hit">—</b><i class="delta" id="p-hit"></i></span>
+                </div>
+                <div class="vital vital-spd">
+                  <span class="vital-name">TURN RATE</span>
+                  <span class="vital-num"><b id="d-turns">—</b><i class="delta" id="p-turns"></i></span>
+                </div>
+              </div>
+            </div>
             <div class="side-stat-row" data-stat="str">
               <div class="side-stat-info" title="Attack damage · poison (Biological)">
                 <div class="side-stat-name">STRENGTH</div>
@@ -196,6 +226,7 @@
                 <div class="side-stat-value" id="stat-str" data-stat="str">10</div>
                 <button class="stat-btn plus" data-stat="str" onclick="adjustStat('str', 1)" onmouseenter="previewStat('str', true)" onmouseleave="previewStat('str', false)">+</button>
               </div>
+              <div class="side-stat-bar"><i id="bar-str"></i></div>
             </div>
             <div class="side-stat-row" data-stat="instinct">
               <div class="side-stat-info" title="Crit chance · crit damage">
@@ -207,6 +238,7 @@
                 <div class="side-stat-value" id="stat-instinct" data-stat="instinct">10</div>
                 <button class="stat-btn plus" data-stat="instinct" onclick="adjustStat('instinct', 1)" onmouseenter="previewStat('instinct', true)" onmouseleave="previewStat('instinct', false)">+</button>
               </div>
+              <div class="side-stat-bar"><i id="bar-instinct"></i></div>
             </div>
             <div class="side-stat-row" data-stat="speed">
               <div class="side-stat-info" title="Turn rate · evade · cooldowns">
@@ -218,6 +250,7 @@
                 <div class="side-stat-value" id="stat-speed" data-stat="speed">10</div>
                 <button class="stat-btn plus" data-stat="speed" onclick="adjustStat('speed', 1)" onmouseenter="previewStat('speed', true)" onmouseleave="previewStat('speed', false)">+</button>
               </div>
+              <div class="side-stat-bar"><i id="bar-speed"></i></div>
             </div>
             <div class="side-stat-row" data-stat="vit">
               <div class="side-stat-info" title="Health · block · thorns (Symbiotic)">
@@ -229,6 +262,7 @@
                 <div class="side-stat-value" id="stat-vit" data-stat="vit">10</div>
                 <button class="stat-btn plus" data-stat="vit" onclick="adjustStat('vit', 1)" onmouseenter="previewStat('vit', true)" onmouseleave="previewStat('vit', false)">+</button>
               </div>
+              <div class="side-stat-bar"><i id="bar-vit"></i></div>
             </div>
             <!-- Exact values only. Every row is a number the fight actually
                  uses, and carries a .delta the hover preview fills in with the
@@ -238,15 +272,12 @@
             <div class="derived-block">
               <div class="derived-subhead">OFFENCE</div>
               <div class="derived-grid">
-                <div class="derived-item"><span>Attack Damage</span><span><b id="d-hit">—</b><i class="delta" id="p-hit"></i></span></div>
                 <div class="derived-item"><span>Crit chance</span><span><b id="d-crit">—</b><i class="delta" id="p-crit"></i></span></div>
                 <div class="derived-item"><span>Crit damage</span><span><b id="d-critmult">—</b><i class="delta" id="p-critmult"></i></span></div>
-                <div class="derived-item"><span>Turn rate</span><span><b id="d-turns">—</b><i class="delta" id="p-turns"></i></span></div>
                 <div class="derived-item" id="row-strain"><span id="label-strain">—</span><span><b id="d-strain">—</b><i class="delta" id="p-strain"></i></span></div>
               </div>
               <div class="derived-subhead">DEFENCE</div>
               <div class="derived-grid">
-                <div class="derived-item"><span>Health</span><span><b id="d-hp">—</b><i class="delta" id="p-hp"></i></span></div>
                 <div class="derived-item"><span>Evade</span><span><b id="d-evade">—</b><i class="delta" id="p-evade"></i></span></div>
                 <div class="derived-item"><span>Block</span><span><b id="d-block">—</b><i class="delta" id="p-block"></i></span></div>
                 <div class="derived-item" id="row-guard"><span id="label-guard">—</span><span><b id="d-guard">—</b><i class="delta" id="p-guard"></i></span></div>

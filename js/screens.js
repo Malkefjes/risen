@@ -472,6 +472,11 @@ function refreshReadoutValues() {
     const el = document.getElementById('d-' + r.id);
     if (el) el.textContent = r.text;
   });
+  // The health tile's bar. Filled from here rather than from the damage sites,
+  // for the same reason the rows are: one hook, so the bar and the figure
+  // beside it can never disagree.
+  const fill = document.getElementById('hp-fill');
+  if (fill) fill.style.width = Math.max(0, Math.min(100, p.hp / Math.max(1, p.maxHp) * 100)) + '%';
 }
 
 function refreshSidebarStats() {
@@ -486,6 +491,16 @@ function refreshSidebarStats() {
     if (!el) return;
     el.textContent = p[k] + pendingOf(p, k);
     el.classList.toggle('pending', pendingOf(p, k) > 0);
+  });
+
+  // The build profile: each stat as a share of the biggest of the four, so a
+  // lopsided sheet is visible before any number is read. Pending points are in
+  // it, so a staged allocation shows what the build is about to become.
+  const spread = STAT_KEYS.map(k => p[k] + pendingOf(p, k));
+  const top = Math.max(1, ...spread);
+  STAT_KEYS.forEach((k, i) => {
+    const bar = document.getElementById('bar-' + k);
+    if (bar) bar.style.width = Math.round(spread[i] / top * 100) + '%';
   });
 
   // The plus adds a point while there are points, becomes the confirm when the
