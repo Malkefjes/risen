@@ -37,7 +37,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-02as';
+const BUILD = '2026-08-02at';
 
 const BALANCE = {
   player: {
@@ -460,6 +460,12 @@ const ZONES = [
     // makeEnemy still works — it just always lands on the same entry.
     enemies: [{ id: 'enforcer', name: 'MCP Enforcer' }],
     bossName: 'MCP Captain',
+    // THE ZONE'S CHAMPION — a guaranteed, named elite so the stretch between
+    // bosses has a landmark of its own. `at` is an absolute wave inside the
+    // zone: it is the one number to move if the zone's shape ever changes.
+    // The affix is still ROLLED, so the Lieutenant is a fight you learn the
+    // shape of without learning the answer.
+    champion: { at: 23, id: 'lieutenant', name: 'MCP Lieutenant' },
     growthMult: 4.5, tierGrowth: 1.45, withinStep: 0.04,
     // A FLAT TELEGRAPH MULTIPLIER CROSSES THE BAR EVENTUALLY, and that is
     // arithmetic rather than tuning: enemy damage grows far faster across a run

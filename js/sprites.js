@@ -70,6 +70,15 @@ const ENFORCER_SPRITES = {
   strike: 'assets/sprites/mcp enforcer attack new.png',
   mirror: true
 };
+// THE ZONE'S NAMED ELITE. Same silhouette family as the Enforcer, gold where the
+// rank and file are red — the colour does the "this one is different" work
+// before any number does. Filename is the owner's spelling.
+const LIEUTENANT_SPRITES = {
+  ready: 'assets/sprites/mcp liutenant ready.png',
+  strike: 'assets/sprites/mcp liutenant attack.png',
+  mirror: true
+};
+
 // Mirrored like the rank and file. He reads as near enough front-on to look
 // symmetrical in isolation, but he is not — and on the enemy side of the arena
 // the unflipped art faces away from the player.
@@ -105,7 +114,7 @@ const BRUTE_SPRITES = {
 const ZONE_SPRITES = {
   1: { trash: { experiment: EXPERIMENT_SPRITES }, boss: SYMBIOTE_SPRITES,
        trashScale: 1.25 },
-  2: { trash: { enforcer: ENFORCER_SPRITES },
+  2: { trash: { enforcer: ENFORCER_SPRITES, lieutenant: LIEUTENANT_SPRITES },
        boss: CAPTAIN_SPRITES, trashScale: 1.15 },
   3: { trash: { mercenary: MERCENARY_SPRITES }, boss: BRUTE_SPRITES,
        trashScale: 1.15 }

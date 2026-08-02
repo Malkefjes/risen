@@ -642,15 +642,17 @@ function makeEnemy(wave) {
   const bossBump = (isBoss && wave === BALANCE.bossEvery) ? (BALANCE.enemy.firstBossMult || 1) : 1;
   const isFinal = wave === BALANCE.finalWave;
 
-  // Elites are purely a roll now. The door used to be able to force one for
-  // its HUNT branch, which is what the removed forceElite argument was for.
+  // A ZONE'S CHAMPION IS A GUARANTEED ELITE, so the stretch between bosses has a
+  // landmark instead of only a dice roll. Its AFFIX is still rolled: the fight
+  // is one you learn the shape of without learning the answer.
   // The wave-4 gate is deliberately GLOBAL: only the run's opening ramp is
   // elite-free, not the start of every act.
+  const champ = (!isBoss && zone.champion && zone.champion.at === wave) ? zone.champion : null;
   let elite = null;
-  if (!isBoss && wave > 4) {
+  if (!isBoss && (champ || wave > 4)) {
     const keys = Object.keys(ELITES);
     const chance = Math.min(E.eliteChanceCap, E.eliteBaseChance + wave*E.eliteChancePerWave);
-    if (Math.random() < chance) {
+    if (champ || Math.random() < chance) {
       elite = ELITES[keys[Math.floor(Math.random()*keys.length)]];
     }
   }
@@ -673,8 +675,11 @@ function makeEnemy(wave) {
   // Boss waves consume a slot in the rotation, which is why the cycle is not
   // perfectly even; that is cosmetic and not worth code to avoid.
   const pool = zone.enemies || [{ id: 'trash', name: zone.enemyName }];
-  const face = pool[((w % pool.length) + pool.length) % pool.length];
-  const name = (isBoss ? zone.bossName : face.name) + rankTag;
+  const face = champ || pool[((w % pool.length) + pool.length) % pool.length];
+  // NO RANK NUMERAL ON A CHAMPION. Rank says which weight class a face is in on
+  // its second and third outing; a champion only ever appears once, so a numeral
+  // would be claiming a history it does not have.
+  const name = champ ? champ.name : (isBoss ? zone.bossName : face.name) + rankTag;
 
   const e = {
     id: 'enemy-' + wave + '-' + Math.floor(Math.random()*99999),
