@@ -55,8 +55,8 @@ const SYMBIOTE_SPRITES = {
   ready: 'assets/sprites/symbiote-ready.png',
   strike: 'assets/sprites/symbiote-strike.png'
 };
-// The encampment: three soldiers and the Grenadier. Each has a ready stance and
-// a strike; `idle` falls back to `ready` in spriteSrcFor, so it is not repeated.
+// Asset Recovery fields ONE face and its Captain. Each has a ready stance and a
+// strike; `idle` falls back to `ready` in spriteSrcFor, so it is not repeated.
 //
 // mirror: THE ART IS DRAWN FACING RIGHT and the enemy stands on the right, so
 // without this every soldier aims off the edge of the screen away from the
@@ -66,24 +66,16 @@ const SYMBIOTE_SPRITES = {
 // not the string 'left'/'right': preloadSprites walks these tables treating
 // every string as an image URL, and a word here would be requested as a file.
 const ENFORCER_SPRITES = {
-  ready: 'assets/sprites/enforcer-ready.png',
-  strike: 'assets/sprites/enforcer-strike.png',
+  ready: 'assets/sprites/mcp enforcer ready new.png',
+  strike: 'assets/sprites/mcp enforcer attack new.png',
   mirror: true
 };
-const COMBATANT_SPRITES = {
-  ready: 'assets/sprites/combatant-ready.png',
-  strike: 'assets/sprites/combatant-strike.png',
-  mirror: true
-};
-const RIFLEMAN_SPRITES = {
-  ready: 'assets/sprites/rifleman-ready.png',
-  strike: 'assets/sprites/rifleman-strike.png',
-  mirror: true
-};
-const GRENADIER_SPRITES = {
-  ready: 'assets/sprites/grenadier-ready.png',
-  strike: 'assets/sprites/grenadier-strike.png',
-  mirror: true
+// NO MIRROR, unlike the rank and file: the Captain is drawn facing the viewer
+// rather than side-on, so flipping him buys nothing and puts his cape and his
+// off-hand on the wrong sides.
+const CAPTAIN_SPRITES = {
+  ready: 'assets/sprites/mcp captain ready new.png',
+  strike: 'assets/sprites/mcp captain attack new.png'
 };
 // City Streets: the Mercenary on the street and the Brute who runs it.
 const MERCENARY_SPRITES = {
@@ -112,9 +104,8 @@ const BRUTE_SPRITES = {
 const ZONE_SPRITES = {
   1: { trash: { experiment: EXPERIMENT_SPRITES }, boss: SYMBIOTE_SPRITES,
        trashScale: 1.25 },
-  2: { trash: { enforcer: ENFORCER_SPRITES, combatant: COMBATANT_SPRITES,
-                rifleman: RIFLEMAN_SPRITES },
-       boss: GRENADIER_SPRITES, trashScale: 1.15 },
+  2: { trash: { enforcer: ENFORCER_SPRITES },
+       boss: CAPTAIN_SPRITES, trashScale: 1.15 },
   3: { trash: { mercenary: MERCENARY_SPRITES }, boss: BRUTE_SPRITES,
        trashScale: 1.15 }
 };
@@ -139,7 +130,7 @@ function enemyArtSet(unit) {
   if (unit && unit.artSet) return unit.artSet;
   const zone = ZONE_SPRITES[unit && unit.zone];
   if (!zone) return ENFORCER_SPRITES;
-  if (unit.isBoss) return zone.boss || GRENADIER_SPRITES;
+  if (unit.isBoss) return zone.boss || CAPTAIN_SPRITES;
   const pool = zone.trash || {};
   return pool[unit.rosterId] || Object.values(pool)[0] || ENFORCER_SPRITES;
 }

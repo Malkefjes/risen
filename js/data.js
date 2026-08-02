@@ -37,7 +37,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-02ao';
+const BUILD = '2026-08-02ap';
 
 const BALANCE = {
   player: {
@@ -456,13 +456,10 @@ const ZONES = [
 
   { num: 2, name: 'The Laboratory: Asset Recovery', label: 'THE LABORATORY: ASSET RECOVERY',
     startWave: 16, endWave: 30,
-    // THREE FACES, ONE STAT LINE. They rotate by wave (see makeEnemy) and are
-    // deliberately identical in numbers: a wave-N enemy is a wave-N enemy. If a
-    // rifleman should fight differently, the enemy table says so out loud.
-    enemies: [{ id: 'enforcer',  name: 'MCP Enforcer'  },
-              { id: 'combatant', name: 'MCP Combatant' },
-              { id: 'rifleman',  name: 'MCP Rifleman'  }],
-    bossName: 'MCP Grenadier',
+    // ONE FACE between the bosses, and the Captain on them. The rotation in
+    // makeEnemy still works — it just always lands on the same entry.
+    enemies: [{ id: 'enforcer', name: 'MCP Enforcer' }],
+    bossName: 'MCP Captain',
     growthMult: 4.5, tierGrowth: 1.45, withinStep: 0.04,
     // A FLAT TELEGRAPH MULTIPLIER CROSSES THE BAR EVENTUALLY, and that is
     // arithmetic rather than tuning: enemy damage grows far faster across a run
