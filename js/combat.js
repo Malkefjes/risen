@@ -1269,17 +1269,11 @@ function renderSkills(forceRebuild) {
       // Order matters: the status line renders last so `margin-top: auto` can
       // pin it to the bottom of the card.
       btn.innerHTML =
-        '<div class="skill-top">'
-        +   '<span class="skill-slot">' + (idx + 1) + '</span>'
-        +   '<span class="skill-name">' + skill.name + '</span>'
-        +   '<span class="skill-hit"></span>'
-        + '</div>'
-        + '<div class="skill-meta">'
-        +   '<span class="skill-type">' + (skill.basic ? 'BASIC' : String(skill.type || '').toUpperCase()) + '</span>'
-        +   '<span class="skill-state"></span>'
-        + '</div>'
+        '<div class="skill-name">' + skill.name + '</div>'
         + '<div class="skill-desc">' + fmtDesc(skill) + '</div>'
-        + '<div class="cd-sweep"></div>';
+        + '<div class="skill-cost"></div>'
+        + '<div class="cd-sweep"></div>'
+        + '<div class="cd-overlay" style="display:none"></div>';
       btn.addEventListener('click', ev => { ev.preventDefault(); playerAct(skill); });
       container.appendChild(btn);
     });
@@ -1300,60 +1294,42 @@ function renderSkills(forceRebuild) {
       const html = fmtDesc(skill);
       if (descEl.innerHTML !== html) descEl.innerHTML = html;
     }
-    const stateEl = btn.querySelector('.skill-state');
-    const hitEl = btn.querySelector('.skill-hit');
+    const costEl = btn.querySelector('.skill-cost');
+    const overlay = btn.querySelector('.cd-overlay');
     const sweep = btn.querySelector('.cd-sweep');
     const yourTurn = !!state.awaitingInput && state.combatActive;
-
-    // The headline moves with the sheet exactly as the description does, so it
-    // is rewritten every refresh rather than once at build.
-    if (hitEl) {
-      const head = skillHeadline(skill);
-      const html = head ? head.text : '';
-      if (hitEl.innerHTML !== html) hitEl.innerHTML = html;
-      btn.classList.toggle('heals', !!head && head.kind === 'heal');
-    }
-
     if (skill.basic) {
       btn.classList.toggle('auto-on', yourTurn);
       btn.classList.toggle('auto-off', !yourTurn);
       btn.disabled = !yourTurn;
-      // The basic has no cooldown, so its state line only ever says the one
-      // thing the others say when they are up.
-      stateEl.textContent = yourTurn ? 'READY' : '';
-      btn.classList.toggle('ready', yourTurn);
+      // No status word. Whether a card is live is already said by its own
+      // state — lit or dimmed, clickable or not — so ATTACK and WAIT were
+      // labelling something the card was showing anyway, in a colour that now
+      // competes with the keywords in the description above.
+      costEl.textContent = '';
       return;
     }
+    const maxCd = skill.cdTurns;
     if (skill.cd > 0) {
       btn.classList.add('on-cd'); btn.classList.remove('ready');
       btn.disabled = true;
-      // The count sits in the card's own meta line instead of a slab over the
-      // whole card: a recharging skill is still one you are planning around,
-      // and blacking it out hid the numbers you were planning with.
-      stateEl.textContent = skill.cd + (skill.cd === 1 ? ' TURN' : ' TURNS');
-      if (sweep) sweep.style.height = Math.min(100, (skill.cd / skill.cdTurns) * 100) + '%';
+      // The turn count is already the big number centred on the card.
+      costEl.textContent = '';
+      overlay.style.display = 'flex';
+      overlay.textContent = skill.cd;
+      if (sweep) sweep.style.height = Math.min(100, (skill.cd/maxCd)*100) + '%';
     } else {
       btn.classList.remove('on-cd'); btn.classList.add('ready');
       btn.disabled = !yourTurn;
-      stateEl.textContent = 'READY';
+      // Nothing gates a ready card any more (Traumatize's DREAD threshold
+      // gates its STUN, not the cast). The cost line stays as the seam for the
+      // next card that is usable-but-not, so the reason can be said where the
+      // player is looking.
+      costEl.textContent = '';
+      overlay.style.display = 'none';
       if (sweep) sweep.style.height = '0%';
     }
   });
-}
-
-// WHAT A CARD LEADS WITH: the one number you compare against the other three,
-// so choosing a skill does not mean reading four sentences.
-//
-// Routed through fmtDesc on a one-token template rather than recomputed here.
-// That is the whole point — the headline, the description and the damage
-// pipeline then read the same fields through the same code, and a card cannot
-// say one number while the hit lands another.
-function skillHeadline(skill) {
-  const via = tok => ({ text: fmtDesc(Object.assign({}, skill, { desc: tok })) });
-  if (skill.killTotal) return Object.assign(via('{killTotal}'), { kind: 'dmg' });
-  if (skill.healFrac != null) return Object.assign(via('{healFrac+}'), { kind: 'heal' });
-  if (skill.type === 'attack' && skill.power != null) return Object.assign(via('{power!}'), { kind: 'dmg' });
-  return null;
 }
 
 // Keyboard: 1-4 fire the skill in that slot.
