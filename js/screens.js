@@ -626,9 +626,10 @@ const SCENE_FADE_MS = 600;
 function openScene(id, onDone) {
   const sc = SCENES[id];
   const layer = document.getElementById('scene-layer');
+  const panel = document.getElementById('scene-panel');
   const card = document.getElementById('arena-card');
   const screen = document.getElementById('combat-screen');
-  if (HEADLESS.on || !sc || !layer || !card) { if (onDone) onDone(); return; }
+  if (HEADLESS.on || !sc || !layer || !panel || !card) { if (onDone) onDone(); return; }
 
   state.inScene = true;
   const bossesCleared = Math.floor(state.wave / BALANCE.bossEvery);
@@ -663,6 +664,7 @@ function openScene(id, onDone) {
   // Everything that would be seen changing happens while the veil is opaque.
   _revealTimers.push(setTimeout(() => {
     card.classList.add('scene');
+    panel.hidden = false;
     layer.hidden = false;
     void layer.offsetWidth;
     layer.classList.add('in');
@@ -683,6 +685,8 @@ function closeScene(onDone) {
   if (veil) veil.classList.add('on');
   _revealTimers.push(setTimeout(() => {
     if (layer) { layer.classList.remove('in'); layer.hidden = true; }
+    const panel = document.getElementById('scene-panel');
+    if (panel) panel.hidden = true;
     if (card) card.classList.remove('scene');
     if (screen) screen.classList.remove('scene-on');
     state.inScene = false;

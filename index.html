@@ -163,17 +163,11 @@
                  through it, so the room is never seen changing — it goes dark,
                  becomes somewhere else, and comes back. -->
             <div class="arena-veil" id="arena-veil"></div>
-            <!-- A SCENE INSIDE THE ARENA, not a screen of its own. Sonny keeps
-                 his side of the card; whoever he is meeting takes the enemy's,
-                 and the room around them changes. Hidden until openScene fills
-                 it. -->
+            <!-- The guest, standing in the room. Words and choices are not
+                 here — they belong in the action panel, which is where this
+                 game already puts everything you read and press. -->
             <div class="scene-layer" id="scene-layer" hidden>
               <div class="scene-figure"><img id="scene-portrait" alt="" draggable="false"></div>
-              <div class="scene-box">
-                <div class="scene-speaker" id="scene-speaker"></div>
-                <div class="scene-line" id="scene-line"></div>
-                <div class="scene-choices" id="scene-choices"></div>
-              </div>
             </div>
           </div>
         </div>
@@ -181,6 +175,13 @@
         <div class="action-panel">
           <div class="turn-info" id="turn-info">IN COMBAT</div>
           <div class="skills" id="skills"></div>
+          <!-- Laid over the skills rather than replacing them in the flow, so
+               the panel keeps its exact height and nothing below it moves. -->
+          <div class="scene-panel" id="scene-panel" hidden>
+            <div class="scene-speaker" id="scene-speaker"></div>
+            <div class="scene-line" id="scene-line"></div>
+            <div class="scene-choices" id="scene-choices"></div>
+          </div>
         </div>
 
       </div>
