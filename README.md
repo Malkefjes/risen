@@ -19,7 +19,7 @@ Everything else in this repo exists only to test and measure the game.
     npm test          # all suites
     npm test hud      # only suites whose name matches
 
-Four suites, and the list is short on purpose. A test here earns its place by
+Five suites, and the list is short on purpose. A test here earns its place by
 guarding a SEAM — somewhere the game can break without the rules being wrong —
 and nothing else. It never has an opinion about a balance number: what a class
 should clear, how deep a wound should run and how much of your bar a boss may
@@ -33,6 +33,7 @@ that judgement into an argument with a machine. Numbers get measured in
 | `build` | the build stamp reaches the title, the log and the save |
 | `hud` | the screen never disagrees with the sheet |
 | `headless` | a headless run and an on-screen run play the identical game |
+| `restart` | a new run inherits nothing from the last, and every sprite loads |
 
 The last one is the load-bearing one: every balance number in this repo is
 measured through `simulateRun`, so if it ever stopped matching the real game,

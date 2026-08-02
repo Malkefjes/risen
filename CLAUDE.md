@@ -17,7 +17,7 @@ fight are all fun once and then never again.
 
 The test, and it must produce NOs or it is steering nothing: **would a player
 ever feel this?** If nobody could, it is overhead — unless it protects something
-they would feel later, which is the entire job of the four suites. Nobody feels
+they would feel later, which is the entire job of the five suites. Nobody feels
 a save-format bump; everybody feels a corrupted run.
 
 Fun is felt, not argued, so it is judged by PLAYING. Everything below about
@@ -121,19 +121,21 @@ did not say.
 - **`OWNER:` Do not run the suites for simple changes — sometimes speed is the
   priority.** In his words: *"we can run it later if we need to."* CI runs
   everything on every push, so a cosmetic tweak or a keybind
-  ships on a syntax check and CI catches the rest. The whole run is four
-  suites now and takes under a minute, so "run it locally" is cheap when a
+  ships on a syntax check and CI catches the rest. The whole run is five
+  suites and takes about a minute, so "run it locally" is cheap when a
   change touches saves, the HUD or the sim.
   **What the suites no longer cover is the rules themselves.** Statuses,
   skills, damage math and balance have no automated guard at all — that is
   deliberate (see below), and it means a rules change is verified by
   MEASURING it with `tools/` and reporting the numbers, then by the owner
   playing it. Don't reach for a new test instead.
-- **FOUR SUITES, AND THAT IS THE POINT. Do not add a fifth without being
-  asked.** What survives guards a SEAM — a place the game can break while the
-  rules are perfectly correct: a save format, a build stamp, two HP readouts
-  drawn on different schedules, and headless matching on-screen. Ten other
-  suites were deleted outright, and they were not deleted for being wrong.
+- **FIVE SUITES, AND THAT IS THE POINT. Do not add a sixth without being
+  asked.** (`restart` was the fifth, added on request 2026-08-02.) What
+  survives guards a SEAM — a place the game can break while the rules are
+  perfectly correct: a save format, a build stamp, two HP readouts drawn on
+  different schedules, headless matching on-screen, and a new run inheriting
+  the last one's screen. Ten other suites were deleted outright, and they were
+  not deleted for being wrong.
 - **NO TEST MAY HAVE AN OPINION ABOUT A BALANCE NUMBER**, which is why those
   ten went. A test that demands "base clears the first boss 50% of the time" is
   a design decision wearing a test's clothes, and it does real damage: the

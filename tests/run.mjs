@@ -11,7 +11,8 @@ const SUITES = [
   ['saveversion',  'a save-format bump drops older saves rather than migrating them'],
   ['build',        'the build stamp reaches the title, log and save'],
   ['hud',          'the screen never disagrees with the sheet'],
-  ['headless',     'headless mode runs the same game, with no side effects']
+  ['headless',     'headless mode runs the same game, with no side effects'],
+  ['restart',      'a new run starts clean, and every sprite loads']
 ];
 
 const filter = process.argv[2];
