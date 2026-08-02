@@ -1,50 +1,38 @@
 // Character art — sprite tables pointing into assets/
 // ---- Character art ----
-// ONE BODY, NO SWING YET. Bio declares no `strike`, so spriteSrcFor's fallback
-// hands back the stance for a pose the set does not define — the figure simply
-// does not change when it attacks. That is the honest shape for art that does
-// not exist: adding it later is one line here and nothing else.
-const BIO_STANCE = 'assets/sprites/bio ready.png';
+// Four poses per strain: `idle` is the strain-select card, `ready` is standing
+// in a fight, `strike` is the basic swing, and `skill` is every non-basic press
+// (see skillArtFor — the basic deliberately never takes it).
 const BIO_SPRITES = {
-  idle: BIO_STANCE,
-  ready: BIO_STANCE
+  idle:   'assets/sprites/bio idle new.png',
+  ready:  'assets/sprites/bio ready new.png',
+  strike: 'assets/sprites/bio attack new.png',
+  skill:  'assets/sprites/bio skill new.png'
 };
 
-// PSY WEARS ITS THIRD BODY, and only that one for now. The first two forms and
-// their attacks are still in assets/ — this is a `for now`, not a deletion —
-// but nothing points at them, so the strain has one stance and one swing like
-// everybody else.
-//
-// Bringing the evolution back is a `stages` array on this set: an entry per
-// form, each with the level it begins at, lowest first. poseSetFor already
-// reads it.
+// OWNER: psy has no attack sprite of its own — the skill art carries both the
+// basic swing and every skill.
+const PSY_SKILL = 'assets/sprites/psy skill new.png';
 const PSY_SPRITES = {
-  idle: 'assets/sprites/psy 3 ready.png',
-  ready: 'assets/sprites/psy 3 ready.png',
-  strike: 'assets/sprites/psy 3 attack.png'
+  idle:   'assets/sprites/psy idle new.png',
+  ready:  'assets/sprites/psy ready new.png',
+  strike: PSY_SKILL,
+  skill:  PSY_SKILL
 };
 
-// ONE BODY, like bio and sym. No `strike`, so spriteSrcFor falls back to the
-// stance and the figure does not change when it attacks.
-//
-// The per-skill art went with the old sprites: base used to carry a `skills`
-// map so Bandage, Counterpunch and Last Stand each wore their own pose. The
-// mechanism is still there (see skillArtFor) and any strain can use it — a
-// `skills` map keyed by skill id is all it takes — but nothing declares one
-// today.
-const BASE_STANCE = 'assets/sprites/base sonny ready.png';
-const BASE_SPRITES = {
-  idle: BASE_STANCE,
-  ready: BASE_STANCE
-};
-
-// ONE BODY, NO SWING YET — the same shape as bio: no `strike` declared, so
-// spriteSrcFor falls back to the stance and the figure does not change when it
-// attacks. Adding one later is a line here and nothing else.
-const SYM_STANCE = 'assets/sprites/sym ready.png';
 const SYM_SPRITES = {
-  idle: SYM_STANCE,
-  ready: SYM_STANCE
+  idle:   'assets/sprites/sym idle new.png',
+  ready:  'assets/sprites/sym ready new.png',
+  strike: 'assets/sprites/sym attack new.png',
+  skill:  'assets/sprites/sym skill new.png'
+};
+
+// No idle and no skill art, and neither is missing by accident: base is reached
+// through RESIST MUTATION rather than a strain card, so nothing ever draws his
+// idle, and no skill sprite was made for him. His buttons keep the ready stance.
+const BASE_SPRITES = {
+  ready:  'assets/sprites/sonny ready new.png',
+  strike: 'assets/sprites/sonny attack new.png'
 };
 
 // ---- Zone rosters ---------------------------------------------------------
@@ -176,7 +164,7 @@ const PLAYER_SPRITES = {
   bio: BIO_SPRITES.idle,
   psy: PSY_SPRITES.idle,
   sym: SYM_SPRITES.idle,
-  base: BASE_SPRITES.idle,
+  base: BASE_SPRITES.ready,
 };
 
 // Strains with a full pose set (idle/ready/strike). Others fall back to their
@@ -202,17 +190,21 @@ function hasPoseSet(unit) {
   return !!enemyArtSet(unit);
 }
 
-// Art for one specific skill, if the strain defines any. A sprite set may carry
-// a `skills` map keyed by skill id (see BASE_SPRITES.skills); anything absent
-// simply falls back to the generic pose, so a strain with no per-skill art
-// behaves exactly as it always did.
+// Art for a skill press. A set may name one `skill` image for the whole strain,
+// and may also carry a `skills` map keyed by skill id for anything that wants
+// its own; absent both, the caller falls back to the generic pose.
+//
+// THE BASIC IS EXCLUDED ON PURPOSE. It is passed down the same path as every
+// other press, so without this it would wear the skill art and the attack
+// sprites would never be seen.
 function skillArtFor(unit, skill) {
-  if (!unit || !unit.isPlayer || !skill) return null;
+  if (!unit || !unit.isPlayer || !skill || skill.basic) return null;
   const id = skill.id || skill;                       // accepts a skill or its id
   // Per-skill art lives on the strain, not on a stage: a skill looks like
   // itself whatever body is casting it.
   const base = POSE_SPRITES[unit.class] || null;
-  return (base && base.skills && base.skills[id]) || null;
+  if (!base) return null;
+  return (base.skills && base.skills[id]) || base.skill || null;
 }
 function hasSkillArt(unit, skill) { return !!skillArtFor(unit, skill); }
 
