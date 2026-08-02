@@ -16,11 +16,11 @@
      skill descriptions, class blurbs, the transition line, every number on the
      result screen — inherits this.
 
-     TRYING ALL-ORBITRON. To go back to the two-face split, put this line back:
-         --font-body: 'JetBrains Mono', monospace;
-     and nothing else needs touching. Mono is what makes a column of damage
-     figures line up, so the result screen is where the difference shows most. */
-  --font-body: 'Orbitron', sans-serif;
+     All-Orbitron was tried on build 2026-08-02e and the owner threw it out on
+     sight. Orbitron is a display face — wide, geometric, weak lowercase — so
+     the class blurb and the skill cards read as a wall, and proportional digits
+     make the result screen's columns wobble as the numbers change. */
+  --font-body: 'JetBrains Mono', monospace;
 
   /* One unit of viewport height, indirected so it can be overridden. Everything
      that sizes itself against the screen goes through this instead of using
