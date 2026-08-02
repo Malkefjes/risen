@@ -472,11 +472,6 @@ function refreshReadoutValues() {
     const el = document.getElementById('d-' + r.id);
     if (el) el.textContent = r.text;
   });
-  // The health tile's bar. Filled from here rather than from the damage sites,
-  // for the same reason the rows are: one hook, so the bar and the figure
-  // beside it can never disagree.
-  const fill = document.getElementById('hp-fill');
-  if (fill) fill.style.width = Math.max(0, Math.min(100, p.hp / Math.max(1, p.maxHp) * 100)) + '%';
 }
 
 function refreshSidebarStats() {

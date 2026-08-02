@@ -191,29 +191,25 @@
                  exists to explain one of them, so these are read as figures
                  rather than looked up in a list. Each wears the hue of the stat
                  that buys it — green Vitality buys green Health — which teaches
-                 the link without spending a sentence on it. Health carries a
-                 bar because it is the only one that moves mid-fight.
+                 the link without spending a sentence on it.
 
                  The ids are the ones the readout list already used, so
                  refreshReadoutValues and renderDeltas fill these without
                  knowing they moved. -->
             <div class="vitals">
               <div class="vital vital-hp">
-                <div class="vital-head">
-                  <span class="vital-name">HEALTH</span>
-                  <span class="vital-num"><b id="d-hp">—</b><i class="delta" id="p-hp"></i></span>
-                </div>
-                <div class="vital-track"><div class="vital-fill" id="hp-fill" style="width:100%"></div></div>
+                <span class="vital-name">HEALTH</span>
+                <span class="vital-num"><b id="d-hp">—</b><i class="delta" id="p-hp"></i></span>
               </div>
-              <div class="vital-pair">
-                <div class="vital vital-atk">
-                  <span class="vital-name">ATTACK</span>
-                  <span class="vital-num"><b id="d-hit">—</b><i class="delta" id="p-hit"></i></span>
-                </div>
-                <div class="vital vital-spd">
-                  <span class="vital-name">TURN RATE</span>
-                  <span class="vital-num"><b id="d-turns">—</b><i class="delta" id="p-turns"></i></span>
-                </div>
+              <div class="vital vital-atk">
+                <span class="vital-name">ATTACK</span>
+                <span class="vital-num"><b id="d-hit">—</b><i class="delta" id="p-hit"></i></span>
+              </div>
+              <div class="vital vital-spd">
+                <span class="vital-name">TURN RATE</span>
+                <span class="vital-num"><b id="d-turns">—</b><i class="delta" id="p-turns"></i></span>
+              </div>
+            </div>
               </div>
             </div>
             <div class="side-stat-row" data-stat="str">
