@@ -865,6 +865,8 @@ function teardownScene() {
 // keeps `scene` until a wave that is not him spawns — so the rematch happens
 // where the conversation did rather than cutting back to the corridor.
 function sceneToFight() {
+  if (!_scene) return;
+  _scene = null;
   const veil = document.getElementById('arena-veil');
   if (veil) veil.classList.add('on');
   _revealTimers.push(setTimeout(() => {
@@ -881,7 +883,20 @@ function sceneToFight() {
   }, SCENE_FADE_MS));
 }
 
+// THE GATE SHUTS ON THE WAY OUT, NOT AFTER THE FADE. Leaving takes
+// SCENE_FADE_MS, and for that whole window `_scene` was still set and the choice
+// buttons were still in the DOM — so a second press queued a SECOND exit, and
+// every exit fires onDone. After the first boss that onDone is doSpawn, so
+// mashing MOVE ON spawned wave 6 once per press, each spawn re-rolling makeEnemy
+// and consuming the rules RNG. It desynced the seeded replay outright: measured
+// 2026-08-02ag, the on-screen run logged "WAVE 6" a dozen times over while
+// headless logged it once, and every number after that point disagreed.
+//
+// openScene already guards the way IN for the same reason — see the note on
+// _scene there. This is the other half of it.
 function closeScene(onDone) {
+  if (!_scene) return;
+  _scene = null;
   const layer = document.getElementById('scene-layer');
   const card = document.getElementById('arena-card');
   const screen = document.getElementById('combat-screen');

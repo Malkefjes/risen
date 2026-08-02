@@ -88,8 +88,15 @@ export default async function ({ page, ok }) {
   const live = await page.evaluate(async (s) => {
     eval('(' + s + ')()');
     localStorage.clear(); goToMenu(); startGame(true, 'bio'); SETTINGS.fastTurns = true;
-    for (let i = 0; i < 40000; i++) {
-      if (state.runOver) break;
+    // A RUNAWAY GUARD, NOT A RUN LENGTH. This loop spends one iteration per
+    // scheduled step, so the ceiling has to sit far above the longest run the
+    // game can produce — when balance changes made runs twice as long, a 40000
+    // cap stopped the on-screen side mid-run and the assertion below reported it
+    // as a divergence, which is the most misleading way this suite can fail.
+    // `capped` is returned so that failure names itself instead.
+    let capped = true;
+    for (let i = 0; i < 400000; i++) {
+      if (state.runOver) { capped = false; break; }
       if (state.inScene) {
         // Exactly what a player does: a press finishes the line, the next one
         // walks on, and a step that asks something is answered by its buttons.
@@ -104,12 +111,15 @@ export default async function ({ page, ok }) {
       await new Promise(r => setTimeout(r, 0));
     }
     const p = state.player;
-    return { wave: state.wave, level: p.level, kills: state.kills,
+    return { capped, wave: state.wave, level: p.level, kills: state.kills,
              dmg: Math.floor(state.damageDealt), won: !!state.won, turns: state.runTurns,
              stats: { str: p.str, instinct: p.instinct, speed: p.speed, vit: p.vit },
              derived: { atk: attackDamage(p), maxHp: p.maxHp, rate: +p.attackSpeed.toFixed(2) } };
   }, SEED);
+  ok('the on-screen run reached its own end', !live.capped,
+     'hit the iteration ceiling at wave ' + live.wave + ' — raise it, the comparison below is meaningless');
+  const { capped, ...liveRun } = live;
   ok('>>> headless and on-screen play the identical game <<<',
-     JSON.stringify(head) === JSON.stringify(live),
-     'H ' + JSON.stringify(head) + '  L ' + JSON.stringify(live));
+     JSON.stringify(head) === JSON.stringify(liveRun),
+     'H ' + JSON.stringify(head) + '  L ' + JSON.stringify(liveRun));
 }
