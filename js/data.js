@@ -28,9 +28,16 @@
 // ---- Build ----------------------------------------------------
 // A date: the only question it answers is which of two files is newer. Suffix a
 // letter for a second build the same day. Shown under the logo, first line of
-// every combat log, and stored in the save. KEEP SEPARATE FROM BALANCE.saveKey,
-// which answers "are saved runs still valid".
-const BUILD = '2026-08-01bx';
+// every combat log, and stored in the save.
+//
+// OWNER: BUMP THIS ON EVERY PUSH TO MAIN, with no exception for a change that
+// touches no rules. It is the one version the owner can see from inside the
+// game, and it is how he knows the tab in front of him is the build he was just
+// told about. A stamp that only sometimes moves cannot answer that.
+//
+// KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
+// valid". Deriving one from the other would wipe every save on a typo fix.
+const BUILD = '2026-08-02a';
 
 const BALANCE = {
   player: {

@@ -85,10 +85,12 @@ did not say.
   branch, then fast-forward main and say so. Don't ask each time. Anything you
   would not want him to play yet is the only reason to hold it on a branch, and
   say that out loud when you do.
-- **`OWNER:` Always say what build is live on main.** He asked for this
-  outright. Every time you push, and any time you report where things stand,
-  name the `BUILD` stamp on main — that is the only thing telling him whether
-  the tab he is playing is the work you just described.
+- **`OWNER:` Bump `BUILD` on every push to main, and always say what is live.**
+  Both asked for outright. Bump the stamp even when the change touches no rules
+  — *"that line is how i know for sure im playing the updated version"* — and
+  name the live stamp every time you push or report where things stand. A stamp
+  that only sometimes moves cannot answer the one question it exists for.
+  `BALANCE.saveKey` is unaffected; bumping the build never costs a save.
 - **`OWNER:` Hard is the point, and the frame is REACH plus WIN RATE.** In his
   words: *"i want my game to be hard... how far can each class get into the
   game + what percent of runs can they win is more interesting to me."* A
