@@ -85,6 +85,10 @@ did not say.
   branch, then fast-forward main and say so. Don't ask each time. Anything you
   would not want him to play yet is the only reason to hold it on a branch, and
   say that out loud when you do.
+- **`OWNER:` Always say what build is live on main.** He asked for this
+  outright. Every time you push, and any time you report where things stand,
+  name the `BUILD` stamp on main — that is the only thing telling him whether
+  the tab he is playing is the work you just described.
 - **`OWNER:` Hard is the point, and the frame is REACH plus WIN RATE.** In his
   words: *"i want my game to be hard... how far can each class get into the
   game + what percent of runs can they win is more interesting to me."* A
