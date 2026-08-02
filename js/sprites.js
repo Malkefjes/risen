@@ -1,10 +1,13 @@
 // Character art — sprite tables pointing into assets/
 // ---- Character art ----
-const BIO_STANCE = 'assets/sprites/bio-stance.png';
+// ONE BODY, NO SWING YET. Bio declares no `strike`, so spriteSrcFor's fallback
+// hands back the stance for a pose the set does not define — the figure simply
+// does not change when it attacks. That is the honest shape for art that does
+// not exist: adding it later is one line here and nothing else.
+const BIO_STANCE = 'assets/sprites/bio ready.png';
 const BIO_SPRITES = {
   idle: BIO_STANCE,
-  ready: BIO_STANCE,
-  strike: 'assets/sprites/bio-strike.png'
+  ready: BIO_STANCE
 };
 
 // PSY EVOLVES. Three bodies, and which one is worn is READ OFF THE LEVEL rather
