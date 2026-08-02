@@ -1191,6 +1191,13 @@ body {
    (see ZONE_SPRITES.trashScale) and defaulting to 1. It MULTIPLIES the tier
    rather than replacing it, so the ladder within an act survives: an elite
    Experiment still stands taller than a plain one. */
+/* SONNY STANDS AT THE ROSTER'S HEIGHT, not under it. He was the only figure on
+   the plain --fig, so every zone that scaled its rank and file up read as the
+   player being the small one. At 1.15 he is eye to eye with the Enforcer and
+   the Mercenary and a shade under zone 1's Experiment, and the ladder above him
+   is untouched: an elite is his height times the zone's own scale again, and a
+   boss still looms at 1.56. */
+.char-figure.hero      { --sprite-h: calc(var(--fig, 200px) * 1.15); }
 .char-figure.foe       { --sprite-h: calc(var(--fig, 200px) * var(--foe-art, 1)); }
 .char-figure.foe-elite { --sprite-h: calc(var(--fig, 200px) * 1.15 * var(--foe-art, 1)); }
 .char-figure.foe-boss  { --sprite-h: calc(var(--fig, 200px) * 1.56); }   /* the MCP Captain looms */

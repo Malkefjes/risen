@@ -148,7 +148,7 @@ function createFighterPanel(unit) {
   const pct = Math.max(0, (unit.hp/Math.max(1,unit.maxHp))*100);
   const tags = unit.isPlayer ? [] : enemyTags(unit);
   const tagHtml = tags.map(t => '<span class="unit-tag ' + t.toLowerCase() + '">' + t + '</span>').join('');
-  const foeSize = unit.isPlayer ? '' : (unit.isBoss ? ' foe-boss' : (unit.elite ? ' foe-elite' : ' foe'));
+  const foeSize = unit.isPlayer ? ' hero' : (unit.isBoss ? ' foe-boss' : (unit.elite ? ' foe-elite' : ' foe'));
   // The act's art scale rides on top of the size tier rather than replacing it,
   // so an elite Experiment is still visibly bigger than a plain one. Written
   // only when it isn't 1, so the common case leaves no style attribute behind.
