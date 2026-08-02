@@ -1,24 +1,19 @@
 // Headless mode — simulateRun, no DOM, no timers
 // ---- Headless mode -------------------------------------------
-// Runs the real rules with no DOM and no timers, so a whole 15-wave run
-// finishes in milliseconds instead of the minutes it takes to watch one.
+// Runs the real rules with no DOM and no timers, so a whole run finishes in
+// milliseconds instead of the minutes it takes to watch one.
 //
 // This is NOT a second implementation of combat. Every rule — initiative,
-// damage, statuses, cooldowns, XP — runs exactly as it does on screen.
-// The only things suppressed are the ones that draw or wait. A balance number
-// measured here is therefore a number about the game, not about a model of it.
+// damage, statuses, cooldowns, XP — runs exactly as it does on screen, and only
+// the things that draw or wait are suppressed. A balance number measured here is
+// a number about the game, not about a model of it.
 //
-// Two costs are being removed, and the second one dominates:
-//
-//   DRAWING   floatText alone creates a DOM node and a 1.3s timer per number;
-//             renderCombat rebuilds fighter panels whose <img> src is a
-//             megabyte of base64. Thousands of those per run.
-//   WAITING   the turn engine paces itself through setTimeout. Browsers clamp
-//             nested timeouts to ~4ms, so a run with several hundred turns
-//             cannot finish faster than seconds no matter how fast the rules
-//             are. Headless replaces scheduling with a PUMP: a scheduled step
-//             is stored, and simulateRun drains it in a loop. Iterative, not
-//             recursive, so a long run cannot overflow the stack.
+// The cost that dominates is WAITING: the turn engine paces itself through
+// setTimeout, and browsers clamp nested timeouts to ~4ms, so a run of several
+// hundred turns cannot finish faster than seconds however fast the rules are.
+// Headless replaces scheduling with a PUMP — a scheduled step is stored and
+// simulateRun drains it in a loop, iteratively, so a long run cannot overflow
+// the stack.
 //
 // Guarded functions return early rather than being swapped out, so reading any
 // one of them shows why it is skipped without knowing this block exists.
@@ -44,14 +39,9 @@ function pumpSteps(limit) {
 }
 
 // ---- The two bots --------------------------------------------
-// A FLOOR AND A CEILING, and nothing in between. There were three; the middle
-// one ("greedy") was a frozen baseline kept so old commit messages stayed
-// comparable, which meant carrying a third set of numbers forever to protect
-// the readability of numbers nobody re-reads. Gone, along with the per-strain
-// allocation plans that turned out to be deciding more than the piloting did.
-//
-// What is left is one question asked two ways: how far does this game go when
-// nobody is thinking, and how far when somebody is? The gap is the reading.
+// A FLOOR AND A CEILING, and nothing in between — one question asked two ways:
+// how far does this game go when nobody is thinking, and how far when somebody
+// is? The gap is the reading.
 //
 //   DUMB     mashes. Presses a button at random with no idea what any of them
 //            do, and throws its stat points wherever.
@@ -59,10 +49,7 @@ function pumpSteps(limit) {
 //            evenly, and does exactly ONE clever thing: it holds whatever
 //            answers a telegraph, and spends it on the telegraph.
 //
-// That one clever thing is the whole experiment. If holding an answer for the
-// windup is worth a lot, this pair says so; if it is worth nothing, this pair
-// says that too, and neither of them can say anything about whether the answer
-// is GOOD, which is not a machine's call.
+// Neither can say whether the answer is GOOD, which is not a machine's call.
 //
 // A bot's choices come off Math.random (the rules stream), never
 // cosmeticRandom: what the player does decides the outcome, so it belongs to
@@ -75,14 +62,11 @@ const ROTATE_STATS = ['str', 'instinct', 'speed', 'vit'];
 // ---- DUMB ----------------------------------------------------------------
 // PRESSES A BUTTON AT RANDOM, cooldowns included. It does not look at the
 // cards, so a dark button is as likely a target as a lit one — the press just
-// does nothing when it lands on one, exactly as it does for a person jabbing
-// at a disabled button, and the turn is still there to spend. Re-rolling the
-// dead press is what the real UI does to you, so that is what this does.
+// does nothing when it lands on one, and the turn is still there to spend.
 //
-// (Rejection-sampling a uniform pick until it lands on something usable is
-// uniform over the usable buttons — written the long way anyway, because the
-// short way reads as "picks a ready skill", which is a bot that knows what a
-// cooldown is.)
+// (Rejection-sampling until the pick lands on something usable is uniform over
+// the usable buttons — written the long way anyway, because the short way reads
+// as a bot that knows what a cooldown is.)
 function dumbPolicy(p) {
   const pressable = s => s.basic || s.cd <= 0;
   for (let jab = 0; jab < 40; jab++) {
@@ -100,33 +84,27 @@ function dumbAllocate() { return ROTATE_STATS[Math.floor(Math.random() * ROTATE_
 //
 // Round-robin PER POINT, so a level's three points land on three different
 // stats and the sheet stays even the whole way up. The old per-strain plan
-// tables allocated per LEVEL against a 4-stat order, which meant a class whose
-// plan named Vitality last had none of it until its fifth level — psy played
-// all of zone 1 on a 100 HP bar and the bracket read that as psy being weak.
-// A plan that decides the run more than the piloting does is not a bot, it is
-// a build, and it belongs to whoever is playing.
+// tables allocated per LEVEL against a 4-stat order, so a class whose plan named
+// Vitality last had none of it until its fifth level. A plan that decides the
+// run more than the piloting does is not a bot, it is a build.
 function rotateAllocate(p) {
   p._alloc = ((p._alloc || 0) + 1) % ROTATE_STATS.length;
   return ROTATE_STATS[p._alloc];
 }
 
 // WHAT ANSWERS A TELEGRAPH. Read off the card, never by class name — four
-// shapes, and the fourth was missed on the first pass with a measurable cost:
+// shapes:
 //
-//   a stun          deletes the charge outright
-//   a provoke       drags it out early, ordinary or spoiled
+//   a stun            deletes the charge outright
+//   a provoke         drags it out early, ordinary or spoiled
 //   holdFor:'windup'  the card says so itself (base's brace)
-//   a buff that SOFTENS INCOMING DAMAGE — bio's Chitin. Not declared as an
-//     answer anywhere and easy to miss because it is also bio's poison
-//     doubler, so the first version of this bot held nothing for bio and
-//     answered 0% of 42 telegraphs while every other class answered 83-97%.
-//     Found by measuring the answer rate rather than by reading the code,
-//     which is the only way that gap shows up at all.
+//   a buff that SOFTENS INCOMING DAMAGE — bio's Chitin. Detected by asking the
+//     STATUS what it does (incomingMult below 1), so a defensive buff added
+//     later is held without touching this. Missing this shape cost bio 0% of 42
+//     telegraphs answered while every other class answered 83-97%.
 //
-// Detected by asking the STATUS what it does (incomingMult below 1 means it
-// takes the edge off a hit), so a defensive buff added later is held without
-// touching this. These are the ONLY skills smart withholds, and it withholds
-// them completely — never filler, at any health, against any enemy.
+// These are the ONLY skills smart withholds, and it withholds them completely —
+// never filler, at any health, against any enemy.
 function softensIncoming(s) {
   const def = s.buff && STATUSES[s.buff];
   if (!def || typeof def.incomingMult !== 'function') return false;
@@ -139,29 +117,21 @@ function isAnswer(s) {
   return !!(s.stun || s.type === 'provoke' || s.holdFor === 'windup' || softensIncoming(s));
 }
 
-// AND WHETHER IT WOULD ACTUALLY CONNECT. The point of holding an answer is
-// spending it on the blow; an answer that whiffs is worse than one never held,
-// because the hold cost every turn it sat unused AND the blow still lands.
-// Three ways each answer can whiff, all of them checkable before the press:
+// AND WHETHER IT WOULD ACTUALLY CONNECT. An answer that whiffs is worse than one
+// never held: the hold cost every turn it sat unused AND the blow still lands.
+// Three ways each can whiff, all checkable before the press:
 //
-//   a gated stun under its threshold  Traumatize below its DREAD count does not
-//                                     stun, does not interrupt, and does not
-//                                     even consume the stagger resist — the
-//                                     gate returns before any of that. It is a
+//   a gated stun under its threshold  Traumatize below its DREAD count is a
 //                                     plain attack wearing an answer's name.
-//   a brace cast too early            The brace covers the turns it is up for,
-//                                     and the initiative gauges often hand you
-//                                     two turns inside one telegraph. Thrown on
-//                                     the first, it has expired by the swing.
-//   a Provoke you cannot afford       Provoke buys the enemy its swing on the
-//                                     spot. Into an armed resist that swing is
-//                                     the telegraph itself, spoiled — worth
-//                                     taking, but not on a bar that cannot
-//                                     hold it.
+//   a brace cast too early            initiative often hands you two turns
+//                                     inside one telegraph, and a brace thrown
+//                                     on the first has expired by the swing.
+//   a Provoke you cannot afford       it buys the enemy its swing on the spot,
+//                                     which is worth taking, but not on a bar
+//                                     that cannot hold it.
 //
 // A stun into an armed resist is NOT a whiff: it spoils the charge, which is
-// half the blow removed. It is the correct press when the clean one is
-// unavailable, and it is the reason this bot never simply stands there.
+// half the blow removed, and it is why this bot never simply stands there.
 function answerConnects(s, p, e) {
   if (s.stun) {
     if (s.dreadNeed && statusStacks(e, 'dread') < s.dreadNeed) return false;

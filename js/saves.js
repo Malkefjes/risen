@@ -69,13 +69,11 @@ function newGame() {
 
 // ---- DEV TOOLS -----------------------------------------------
 // The owner's test rig, reachable from the title screen. SKIP TO ZONE 2: the
-// skilled bot plays zone 1 headlessly — the real rules, in milliseconds — and
-// the run is handed over on-screen exactly where the sim stopped: wave 16
-// already spawned, the player's turn, whatever sheet the bot earned. No
-// respawn on handover, so the between-fight heal is not paid twice. Dev runs
-// save to slot 0, outside the 1..saveSlots window, so the LOAD screen never
-// lists them and no real run is ever eaten. (On a saveKey bump, list _s0
-// beside _s1/_s2 in oldSaveKeys.)
+// smart bot plays zone 1 headlessly and the run is handed over on-screen exactly
+// where the sim stopped, with no respawn on handover so the between-fight heal
+// is not paid twice. Dev runs save to slot 0, outside the 1..saveSlots window,
+// so the LOAD screen never lists them. (On a saveKey bump, list _s0 beside the
+// others in oldSaveKeys.)
 function openDevTools() { showScreen('dev-screen'); }
 
 // Shared handover: the run in `state` goes on-screen, mid-run style.
@@ -218,19 +216,14 @@ function serializeRun() {
 const slotKey = n => BALANCE.saveKey + '_s' + n;
 const slotNumbers = () => Array.from({ length: BALANCE.saveSlots }, (_, i) => i + 1);
 
-// Saves from a previous version are DROPPED, not migrated.
+// Saves from a previous version are DROPPED, not migrated. A save holds raw
+// stats and recomputes the derived sheet on load, so carrying one across a rules
+// change hands the player a character allocated under economics that no longer
+// exist. An empty slot is honest; a silently rebalanced run is not.
 //
-// Migrating them was the obvious thing and is the wrong thing: a save holds raw
-// stats and recomputes the derived sheet on load, so carrying one across a
-// rules change hands the player a character allocated under economics that no
-// longer exist — a build that was correct and now is not, with nothing on
-// screen to say so. An empty slot is honest; a silently rebalanced run is not.
-//
-// This also answers a confusing symptom: localStorage is keyed by ORIGIN, not
-// by file, and every file:// page shares one bucket in Chrome and Firefox. So
-// downloading a fresh copy of the game does NOT give a fresh start — the new
-// file reads the same two slots the old one wrote. Clearing on a version bump
-// is what makes a new build actually feel new.
+// It also answers a confusing symptom: localStorage is keyed by ORIGIN, so every
+// file:// page shares one bucket — downloading a fresh copy of the game does NOT
+// give a fresh start.
 function purgeOldSaves() {
   (BALANCE.oldSaveKeys || []).forEach(k => Store.remove(k));
 }

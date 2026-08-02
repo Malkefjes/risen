@@ -409,12 +409,9 @@ function shedForHeal(p, skill, already, notes, critMult) {
 // roll — you do not dodge a hit you invited), the spikes take it, and you grow.
 //
 // Against a charged telegraph it is sym's answer to the windup, and a different
-// answer from psy's on purpose. A stun DELETES the heavy swing; Provoke goads
-// it out early so it comes as an ordinary one — you still get hit, you just get
-// hit small, and you eat for it. It shares stun's stagger-resist rule so it
-// cannot lock a boss out of its telegraph forever, and the shrug is honest:
-// the resist is consumed, the swing still comes, but the charge HOLDS and the
-// heavy blow is still on its way.
+// one from psy's on purpose: a stun DELETES the heavy swing, Provoke goads it
+// out early so it comes as an ordinary one. It shares stun's stagger-resist rule
+// so it cannot lock a boss out of its telegraph forever.
 function provokeSwing(p, e, skill) {
   if (!e || e.hp <= 0 || e._defeated) return;
   // ordinary: a BAITED charge comes out as a plain swing. A SPOILED one does
@@ -679,17 +676,12 @@ function applyPlayerDamage(p, e, skill) {
   if (skill.consumesResolve && resolveSpent > 0)
     removeStatus(p, 'resolve', 'spent by ' + skill.name);
   if (skill.consumesSpines) removeStatus(p, 'spines', 'consumed by ' + skill.name);
-  // DREAD spent is DREAD gone: the enemy's fear breaks with the blow, and its
-  // turn rate recovers with it. Deliberately after logDamage, so the hit line
-  // reports the fear that paid for it before the removal line reports the cost.
-  // And spent fear is eaten — Kill's half of DEVOUR (the death-devour in
-  // onEnemyDefeated is the other; a Kill that kills consumed the stacks here,
-  // so the corpse holds none and no meal is counted twice).
-  // Partial by default now, so shedStacks rather than removeStatus: it takes
-  // exactly what was paid for and removes the status only when the last stack
-  // goes. Fear TAKEN is fear eaten — this is the one path where stacks coming
-  // off feed DEVOUR, as against the enemy steadying itself, which feeds
-  // nothing (see shedStacks' other callers).
+  // DREAD spent is DREAD gone: the enemy's fear breaks with the blow and its
+  // turn rate recovers with it. After logDamage, so the hit line reports the
+  // fear that paid for it before the removal line reports the cost. Partial by
+  // default, so shedStacks rather than removeStatus. Fear TAKEN is fear eaten —
+  // this is the one path where stacks coming off feed DEVOUR, as against the
+  // enemy steadying itself, which feeds nothing.
   if (skill.consumesDread && dreadSpent > 0) {
     shedStacks(e, 'dread', dreadSpent, 'torn away by ' + skill.name);
     devour(p, dreadSpent, 'torn away by ' + skill.name);
@@ -719,14 +711,10 @@ function applyPlayerDamage(p, e, skill) {
     const stunTurns = skill.stun;
     // Gated CC, threshold not spend: Traumatize breaks a mind that is already
     // frightened enough, and BREAKING IT DOES NOT SPEND THE FEAR — the stacks
-    // stay, still slowing. A threshold keeps hold-vs-spend as base's tension,
-    // not psy's: psy's only cash-out is Kill. The attack still lands either
-    // way; only the break is gated, and the log names what was missing.
-    // Every way the break can fail gets a FLOATER, not just a log line: the
-    // owner plays without reading the transcript, and three silent outcomes
-    // (threshold missed, stagger resist, windup interrupt) stacked up into
-    // "Traumatize doesn't work". A muted note names which rule ate the stun
-    // at the moment it happens.
+    // stay, still slowing. The attack lands either way; only the break is gated.
+    // Every way the break can fail gets a FLOATER, not just a log line, because
+    // three silent outcomes (threshold missed, stagger resist, windup interrupt)
+    // stacked up into "Traumatize doesn't work".
     if (skill.dreadNeed) {
       const held = statusStacks(e, 'dread');
       if (held < skill.dreadNeed) {
@@ -973,14 +961,11 @@ function onEnemyDefeated() {
 
 // ---- The run ledger -------------------------------------------
 // ONE FUNNEL FOR EVERY POINT OF DAMAGE THE PLAYER DEALS, so the run total and
-// the per-source breakdown cannot disagree: the total is the sum of the sources
-// by construction rather than by two call sites staying in step.
-//
-// The label is what the result screen and its COPY block group by, so it should
-// read as the thing the player pressed or grew — a skill name, 'Bleed',
-// 'Thorns'. A new damage source that forgets to come through here is invisible
-// in the breakdown AND missing from the total, which is the loud failure rather
-// than the quiet one.
+// the per-source breakdown cannot disagree — the total is the sum of the sources
+// by construction. The label is what the result screen groups by, so it should
+// read as the thing the player pressed or grew: a skill name, 'Bleed', 'Thorns'.
+// A source that forgets to come through here is invisible in the breakdown AND
+// missing from the total.
 function creditDamage(source, amount) {
   if (!(amount > 0)) return;
   state.damageDealt += amount;
@@ -1146,14 +1131,10 @@ function copyRunReport(btn) {
 }
 
 // ---- The result screen ----------------------------------------
-// SKIMMABLE FIRST, COMPLETE SECOND. The old card was one flat 8-row grid, which
-// meant the wave you died on — the only number most runs are actually about —
-// sat between "Dodges" and "Best chain" at the same weight as everything else.
-//
-// Now it reads in three passes: the verdict and one sentence of what happened,
-// then four HERO numbers big enough to take in at a glance, then the sections
-// you only read when you want them. Every value is a counter the rules
-// incremented at the moment the event happened — nothing is recomputed here.
+// SKIMMABLE FIRST, COMPLETE SECOND. It reads in three passes: the verdict and
+// one sentence of what happened, then four HERO numbers big enough to take in at
+// a glance, then the sections you only read when you want them. Every value is a
+// counter the rules incremented as the event happened — nothing is recomputed.
 function showResultScreen() {
   // A new run can start during the beat (menu shortcuts); if the ended run is
   // no longer the current fact, the verdict belongs to nobody — skip it.

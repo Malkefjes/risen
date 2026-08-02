@@ -65,17 +65,14 @@ function applyStatus(unit, id, opts) {
         const extra = Math.max(0, want - limit);
         st.stacks = Math.min(limit, want);
         st.duration = fresh.duration;
-        // WHAT ONE STACK TICKS FOR, when a new stack lands on an old pile.
-        // The default is the HIGHEST ever applied, which is right for poison:
-        // its per-stack value comes off Attack Damage and only ever climbs, so
-        // "highest" and "newest" agree, and taking the max means a WEAK debuff
-        // cannot retroactively thin rot that was already in the blood.
+        // WHAT ONE STACK TICKS FOR, when a new stack lands on an old pile. The
+        // default is the HIGHEST ever applied, which is right for poison: its
+        // per-stack value only ever climbs, and taking the max means a WEAK
+        // debuff cannot retroactively thin rot already in the blood.
         //
-        // 'newest' exists for bleed, where they deliberately disagree. A cut is
+        // 'newest' exists for bleed, where they deliberately disagree: a cut is
         // as deep as the RESOLVE behind it, so spending that Resolve has to
-        // shallow the cuts that come after — under the max rule one deep strike
-        // would set the depth for the whole fight and the decision would
-        // evaporate. The wound is as deep as the last thing you did to it.
+        // shallow the cuts that come after.
         if (fresh.perStack != null)
           st.perStack = def.perStackRule === 'newest'
             ? fresh.perStack
@@ -133,20 +130,15 @@ function skillStatusOpts(skill) {
 // a clock counts down and expires. Returns true if a tick was lethal, so the
 // caller can stop rather than resolve a turn for a corpse.
 //
-// A MARK TICKS ON THE TURN OF WHOEVER PUT IT THERE. Statuses come in two
-// clocks and this is the split: what you are CARRYING (regen, chitin, brace,
-// resolve) runs on your own turn, and what has been DONE TO YOU (poison,
-// bleed — anything flagged `inflicted`) runs on the turn of whoever did it.
-// tickTurnStart calls this twice per turn, once per clock, and `which` says
-// which pass this is.
+// A MARK TICKS ON THE TURN OF WHOEVER PUT IT THERE. Statuses come in two clocks
+// and this is the split: what you are CARRYING (regen, chitin, brace, resolve)
+// runs on your own turn, and what has been DONE TO YOU (poison, bleed — anything
+// flagged `inflicted`) runs on the turn of whoever did it. tickTurnStart calls
+// this twice per turn, once per clock, and `which` says which pass this is.
 //
-// The old single clock metered every ailment by how often its VICTIM acted,
-// which quietly made Speed a negative stat for the two classes whose damage is
-// an ailment: more of your turns meant fewer of theirs, and fewer of theirs
-// meant less rot and shallower bleeding. Buying tempo bought less damage.
-// Durations move with the ticks for the same reason — four turns of BLEED has
-// to mean four of the cutter's turns, or the wound would close on a clock the
-// cutter cannot see.
+// A single clock metered every ailment by how often its VICTIM acted, which made
+// Speed a negative stat for the two classes whose damage is an ailment.
+// Durations move with the ticks for the same reason.
 function tickStatuses(unit, which) {
   if (!unit || !unit.statuses || !unit.statuses.length) return false;
   // BOTH CLOCKS is a third option, and BLEED is the only thing that wants it:
@@ -282,30 +274,21 @@ function formatNum(n) {
   return sign + Math.floor(n).toString();
 }
 
-// Skill blurbs are templates, not prose. Every number in a
-// description is pulled straight off the definition that owns it, so a card can
-// never drift from the value it describes — retune a skill and its text follows.
-// Tokens:
+// Skill blurbs are templates, not prose: every number in a description is pulled
+// straight off the definition that owns it, so a card can never drift from the
+// value it describes. Tokens:
 //   {key}        raw value              power: 2.2   -> "2.2"
 //   {key%}       as a percentage        power: 0.85  -> "85%"
 //   {key#noun}   count + plural noun    stun: 1      -> "1 turn", 2 -> "2 turns"
-// An unknown key is left in the text on purpose, so a typo is visible instead
-// of silently rendering as a blank.
-// Mechanic names wear the colour that mechanic already wears on the fighter, so
-// RESOLVE on a card and the RESOLVE bank under the health bar read as one
-// thing rather than as a word that happens to be capitalised.
+// An unknown key is left in the text on purpose, so a typo is visible instead of
+// silently rendering as a blank.
 //
-// EVERY MECHANIC NAMED ON A CARD WEARS ITS BADGE'S COLOUR. The word in the
-// sentence and the badge under the health bar are the same thing, so they have
-// to look like it — read "+1 BLEED" on the card, then find BLEED on the enemy
-// in the same red. A mechanic that is named here but not coloured reads as
-// ordinary prose, which is exactly how DREAD and BLEED went unnoticed: both
-// were live, both were named on four cards between them, and neither was in
-// this map.
-//
-// The value is the CSS variable suffix, so an entry plus a matching `.kw-<x>`
-// rule is the whole cost of adding one. Keep the suffix matched to the status'
-// `tone` in STATUSES — if the two disagree, the card and the badge disagree.
+// EVERY MECHANIC NAMED ON A CARD WEARS ITS BADGE'S COLOUR — read "+1 BLEED" on
+// the card, then find BLEED on the enemy in the same red. A mechanic named here
+// but not coloured reads as ordinary prose, which is how DREAD and BLEED went
+// unnoticed. The value is the CSS variable suffix, so an entry plus a matching
+// `.kw-<x>` rule is the whole cost of adding one; keep it matched to the status'
+// `tone` in STATUSES.
 const DESC_KEYWORDS = { RESOLVE: 'base', POISON: 'bio', CHITIN: 'bio', WEAK: 'weak',
                         THORNS: 'sym', BLEED: 'bleed', DREAD: 'dread' };
 const KEYWORD_RE = new RegExp('\\b(' + Object.keys(DESC_KEYWORDS).join('|') + ')\\b', 'g');
@@ -386,33 +369,19 @@ function applyDerivedStats(p) {
   p.apsMult = p.apsMult || 1;
 
   // ATTACK DAMAGE. One rule for every strain, Unmutated included: Strength and
-  // nothing else. Damage used to come off each strain's own primary — Speed for
-  // psy, Vitality for sym, the highest stat for Unmutated — which meant
-  // Strength was worth literally nothing to two of the four, and "which stat
-  // makes me hit harder" had a different answer per strain.
-  //
-  // The per-strain `power` scalar stays, so a strain still hits its own weight
-  // (bio heavy, psy light and fast); what changed is only which stat feeds it.
-  // 5 damage per point of Strength, so the 5 everyone starts with is 25 Attack
-  // Damage. There is no per-strain damage weight any more — the old `power`
-  // scalar multiplied this by a different number per strain (bio 1.30, psy
-  // 0.77, Unmutated 1.9) so that hitting hard could be traded against hitting
-  // often. It went to 1.0 everywhere when Attack Damage was anchored, at which
-  // point it was multiplying by one; dmgMult already covers earned multipliers.
+  // nothing else. Damage used to come off each strain's own primary, which meant
+  // Strength was worth literally nothing to two of the four. 5 damage per point,
+  // so the 5 everyone starts with is 25 Attack Damage. There is no per-strain
+  // damage weight any more — dmgMult already covers earned multipliers.
   p.atkPower = p.str * B.damagePerStr * p.dmgMult;
 
-  // TURN RATE. Speed and nothing else, the same shape as damage off Strength
-  // and HP off Vitality: 5 Speed is 1.00, one point is +0.20. There is no
-  // per-strain base any more — every strain starts at the same rate by design,
-  // so an additive base could only reintroduce the free head start the anchor
-  // removed. If a strain should be fast again it wants a MULTIPLIER here, not
-  // a base, so that it scales the earned rate instead of replacing it.
-  //
-  // Points no longer saturate at all — the curve flattens without stopping, so
-  // there is no "maxed Speed" to worry about paying an earned multiplier on.
-  // apsCap applies after apsMult and is a backstop for that multiplier alone.
-  // The anchor is a pure stat read (5 Speed x 0.20 = 1.00); everything above it
-  // is bought on a curve that flattens but never stops. See the apsGain note.
+  // TURN RATE. Speed and nothing else, the same shape as damage off Strength and
+  // HP off Vitality: 5 Speed is 1.00, one point is +0.20. No per-strain base —
+  // every strain starts at the same rate by design, so an additive base could
+  // only reintroduce the free head start the anchor removed. A strain that
+  // should be fast wants a MULTIPLIER here. Points never saturate; the curve
+  // flattens without stopping, and apsCap applies after apsMult as a backstop
+  // for that multiplier alone.
   const anchor = BALANCE.player.sheetAnchor * B.apsPerSpeed;
   const above = Math.max(0, p.speed - BALANCE.player.sheetAnchor);
   const earned = B.apsGain * above / (above + B.apsHalfPoints);
@@ -454,15 +423,10 @@ function applyDerivedStats(p) {
   p.critChance = Math.min(B.critCap, B.critBase + p.instinct*B.critPerInstinct);
   // CRIT DAMAGE CLIMBS WITH THE SAME POINTS, from point one rather than as an
   // overflow past the chance cap. Both terms rising at once is what makes
-  // Instinct quadratic and what lets it reach Strength at all; the balance
-  // header carries the arithmetic and the crossover.
-  //
-  // Off the STAT, so crit chance and crit damage are the same purchase and
-  // prevent.
-  //
-  // No cap of its own, and it needs none: Instinct is the only source, the
-  // chance it multiplies is capped, and points past the chance cap keep landing
-  // here, so overinvestment bends instead of hitting a wall.
+  // Instinct quadratic and what lets it reach Strength at all — the balance
+  // header carries the arithmetic. No cap of its own and it needs none: Instinct
+  // is the only source, the chance it multiplies is capped, and points past that
+  // cap keep landing here, so overinvestment bends instead of hitting a wall.
   p.critMult = B.critMultBase + p.instinct * (B.critMultPerInstinct || 0);
 
   // A fifth of Attack Damage and a twentieth of max HP — both already carry
@@ -485,14 +449,8 @@ function applyDerivedStats(p) {
   // Bleed and poison are one mechanic wearing two coats: a stacking tick on
   // whatever you hit. Each reports a CHANCE (how often a landed hit applies it)
   // and a DAMAGE (what one stack ticks for), so the pair reads the same way for
-  // both and there is one shape to extend later.
-  //
-  // Chance is honest about today rather than reporting a placeholder zero: bio
-  // poisons on every landed basic, which is a 100% chance, and saying 0% while
-  // Slash visibly poisons would be a readout disagreeing with the game. Nothing
-  // applies bleed at all yet, so it sits at 0 until a source raises it — its
-  // damage is what a stack WOULD tick for if one landed, the same way crit
-  // damage reads while crit chance is 0.
+  // both. Chance is honest about today rather than a placeholder zero — bio
+  // poisons on every landed basic, and nothing applies bleed at all yet.
   const basicPoisons = p.class === 'bio' && !!(p.basicSkill && p.basicSkill.poison > 0);
   p.poisonChance = Math.min(1, basicPoisons ? 1 : 0);
   p.poisonDamage = p.poisonPerStack;
@@ -507,19 +465,13 @@ function applyDerivedStats(p) {
   return p;
 }
 
-// HOW DEEP A CUT GOES. The ailment base, deepened by the RESOLVE behind the
-// swing: a man with nothing banked scratches, a man who has been standing there
-// taking it for ten turns opens something that will not close. Snapshotted into
-// the stack at application (perStackRule 'newest'), so spending Resolve costs
-// you the depth of every wound you open afterwards.
-//
-// Non-base strains still get a number here rather than a zero: it is what a
-// stack WOULD tick for if some future source ever applied one, which is the
-// same way crit damage reads while crit chance is 0.
-// HOW MANY STACKS ONE CUT OPENS — the number the whole mechanic runs on now
-// that the timer is gone. See bleedBase / bleedPerStr in BALANCE for why it can
-// never go near 1: the pile loses two a turn-cycle, so anything under that is a
-// wound that drains faster than it is cut.
+// HOW DEEP A CUT GOES: the ailment base, deepened by the RESOLVE behind the
+// swing. Snapshotted into the stack at application (perStackRule 'newest'), so
+// spending Resolve costs you the depth of every wound you open afterwards.
+// Non-base strains still get a number rather than a zero — it is what a stack
+// WOULD tick for, the same way crit damage reads while crit chance is 0.
+// HOW MANY STACKS ONE CUT OPENS. See bleedBase / bleedPerStr in BALANCE for why
+// it can never go near 1: the pile loses two a turn-cycle.
 function bleedStacks(p) {
   if (!p) return 1;
   const B = P();
@@ -553,12 +505,8 @@ function attackDamage(p) {
 // game's effective health (see healAnchorPerLevel in BALANCE).
 //
 // Enemies fall through to their own bar on purpose: the anchor is a fact about
-// the player sheet, and REGEN is unit-generic, so a healing enemy still heals
-// the way it always did rather than reading a number that does not describe it.
-//
-// Damage-proportional healing (elite lifesteal, the skill lifesteal seam, the
-// thorns-feed hook) never comes here — those are shares of a blow, not of a
-// body, and they were never part of the coupling.
+// the player sheet. Damage-proportional healing (lifesteal, thorns-feed) never
+// comes here — those are shares of a blow, not of a body.
 function healAnchorFor(unit) {
   if (!unit) return 1;
   if (!unit.isPlayer) return unit.maxHp;
@@ -567,14 +515,9 @@ function healAnchorFor(unit) {
 
 // Rolls a heal crit and returns the MULTIPLIER, so a caller can price the whole
 // heal before spending anything on it — which is what lets a crit Shed cost
-// FEWER thorns instead of overhealing with the same handful.
-//
-// Math.random, not cosmeticRandom: this moves HP, so it belongs to the rules
-// stream like every other roll that decides an outcome.
-//
-// Enemies never crit-heal. The vampiric elite's lifesteal is a share of a blow
-// it already landed, and rolling a second time on top would be two rolls for
-// one bite.
+// FEWER thorns instead of overhealing with the same handful. Math.random, not
+// cosmeticRandom: this moves HP. Enemies never crit-heal; the vampiric elite's
+// lifesteal is already a share of a blow it landed.
 function healCritMult(unit) {
   if (!unit || !unit.isPlayer) return 1;
   const chance = Math.min(1, Math.max(0, unit.critChance || 0));

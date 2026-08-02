@@ -7,26 +7,13 @@ function showScreen(id) {
 }
 // THE STRAIN A NEW RUN WILL USE, kept separate from state.classId.
 //
-// This pair used to be one field, and that was a bug you could hit in ordinary
-// play: pick BIO once, later load an Unmutated save, then NEW GAME -> MUTATE
-// and press EVOLVE. The run started as Unmutated while the screen showed BIO.
+// These were one field, and that was a bug you could hit in ordinary play: pick
+// BIO, later load an Unmutated save, then NEW GAME -> MUTATE and press EVOLVE,
+// and the run started as Unmutated while the screen showed BIO.
 //
-// Three things had to line up, which is why it looked intermittent:
-//   1. state.classId meant two different things — "the strain picked in the
-//      menu" and "the strain of the run that is loaded". continueRun and
-//      resistMutation write the second; startGame read it as the first.
-//   2. selectClass enabled #start-btn and nothing ever disabled it again, so
-//      a later visit to strain select arrived with EVOLVE already live.
-//   3. .class-card.selected was never cleared either, so the screen still
-//      showed the strain chosen earlier in the session.
-// Together: the screen displayed BIO, EVOLVE was lit, and pressing it read a
-// state.classId that a save had quietly overwritten. Nothing about the input
-// was wrong — the screen was lying.
-//
-// The fix is to stop sharing the field. _pendingClass is the MENU's answer and
-// nothing else writes it; state.classId is the LOADED RUN's answer and the
-// menu never reads it. openClassSelect clears the selection on every visit, so
-// a choice belongs to the visit that made it rather than to the session.
+// _pendingClass is the MENU's answer and nothing else writes it; state.classId
+// is the LOADED RUN's answer and the menu never reads it. openClassSelect clears
+// the selection on every visit, so a choice belongs to the visit that made it.
 let _pendingClass = null;
 
 function claimPendingClass() {
@@ -78,18 +65,13 @@ function freshPlayer(classId) {
   return p;
 }
 
-// Every run-scoped field back to its starting value, in ONE place. startGame
-// and continueRun both go through this, so a field cannot be reset in one and
-// forgotten in the other — which is exactly how a finished run's chain counter
-// used to survive into the next run: `state.combo` was zeroed, but the meter
-// that displays it is a DOM element, and the only thing that repaints it is a
-// kill. The old "2× CHAIN" therefore sat on the combat card for the whole first
-// fight of the new run, until the first kill happened to redraw it.
+// Every run-scoped field back to its starting value, in ONE place. startGame and
+// continueRun both go through this, so a field cannot be reset in one and
+// forgotten in the other.
 //
-// The lesson generalises past the combo meter: zeroing a field is not the same
-// as clearing what it left on screen. Anything added to `state` belongs here,
-// and anything that renders from `state` outside the per-turn repaint (the log,
-// the floaters, the combo meter) has to be cleared here too.
+// Zeroing a field is not the same as clearing what it left on screen: anything
+// added to `state` belongs here, and anything that renders from `state` outside
+// the per-turn repaint has to be cleared here too.
 function resetRunState(classId) {
   stopCombatLoop();              // also cancels a turn or reveal still scheduled
   state.classId = classId;
@@ -140,15 +122,12 @@ function resetRunState(classId) {
 
 // `classId` is optional: the EVOLVE button omits it and the menu's pending
 // choice is used, while resistMutation passes 'base' outright so its delayed
-// start cannot depend on a variable something else might have cleared in the
-// seconds it was waiting.
+// start cannot depend on a variable something else might have cleared.
 //
-// If neither yields a real strain the run does NOT start. Falling back to
-// state.classId is exactly the behaviour that produced the wrong-strain bug —
-// better to do nothing visible than to silently start the wrong run.
-// EVOLVE goes through the cinematic; everything else calls startGame directly.
-// The strain is claimed BEFORE the video so the pending choice cannot be
-// cleared while it plays, and it is passed explicitly on the far side.
+// If neither yields a real strain the run does NOT start — falling back to
+// state.classId is exactly what produced the wrong-strain bug. EVOLVE goes
+// through the cinematic and claims the strain BEFORE the video, passing it
+// explicitly on the far side.
 function startGameFromSelect() {
   const cls = claimPendingClass();
   if (!CLASSES[cls]) return;
@@ -303,29 +282,18 @@ function spawnEnemy() {
     lost.forEach(s => { const dd = STATUSES[s.type]; if (dd) logEvent('− ' + dd.name + ' ended', p, 'fight over'); });
   }
 
-  // THE PLAYER ALWAYS OPENS. Both gauges used to start empty with ties going to
-  // the player, which meant you opened the exchange only when the rates were
-  // equal — any enemy quicker than you swung before you had acted at all.
-  //
-  // That is a UI problem before it is a balance one. A kill can level you, the
-  // next enemy spawns immediately, and the only moment you have to spend those
-  // points is a turn of your own. Lose the opening turn and the game takes a
-  // swing at you while the thing it is asking you to do is still undone —
-  // punished for reading your own level-up. A guaranteed first turn is the
-  // window, and it costs nothing to explain: you get the first move, then the
-  // gauges run exactly as they always have.
+  // THE PLAYER ALWAYS OPENS. Both gauges used to start empty, so any enemy
+  // quicker than you swung before you had acted at all — a UI problem before it
+  // is a balance one, because a kill can level you and the only moment to spend
+  // those points is a turn of your own.
   //
   // Implemented as a FULL gauge rather than a special case in the turn loop, so
-  // there is one initiative rule in this game and not two. A full meter reaches
-  // the threshold in zero time, so the player is next by the ordinary
-  // comparison; acting spends it back to empty and the fight proceeds normally
-  // from two empty gauges.
+  // there is one initiative rule in this game and not two: a full meter reaches
+  // the threshold in zero time, acting spends it back to empty, and the fight
+  // proceeds from two empty gauges.
   //
-  // ONLY WHEN THE GAUGES WOULD NOT ALREADY GIVE IT TO YOU. Handing out the full
-  // meter unconditionally paid a fast player twice: psy opens at or above the
-  // wave-1 enemy's rate, so it won the opening on tempo AND got the free one on
-  // top, taking two turns while the forecast — which reads the gauges honestly
-  // — kept saying the enemy was next. The guarantee is a floor, not a bonus.
+  // ONLY WHEN THE GAUGES WOULD NOT ALREADY GIVE IT TO YOU — unconditionally it
+  // paid a fast player twice. The guarantee is a floor, not a bonus.
   state.player.meter = 0;
   state.enemy.meter = 0;
   // The same comparison advanceToNextActor makes from empty gauges, ties to the
@@ -457,15 +425,12 @@ function leaveMenuTab() {
 const STAT_KEYS = ['str','instinct','speed','vit'];
 
 // ---- Pending allocation --------------------------------------
-// Spending a point used to be instant and reversible: the stat went up, and the
-// minus walked it back down to the class base, so a run could be re-specced at
-// any moment — including mid-fight, to answer whatever was in front of you.
-//
-// Points now land in p.pending first. Nothing in combat reads pending, so an
-// unconfirmed point buys you nothing; the minus can only take back what is
-// still pending, never a point you already committed. Once the pool is empty
-// the plus becomes the confirm, and confirming folds pending into the real
-// stats and locks the row until the next level.
+// Points land in p.pending first. Nothing in combat reads pending, so an
+// unconfirmed point buys you nothing, and the minus can only take back what is
+// still pending — never a point already committed. Once the pool is empty the
+// plus becomes the confirm, which folds pending into the real stats and locks
+// the row until the next level. It replaced instant, reversible spending, which
+// let a run be re-specced mid-fight to answer whatever was in front of you.
 function pendingTotal(p) {
   const pend = p && p.pending; if (!pend) return 0;
   return STAT_KEYS.reduce((n, k) => n + (pend[k] || 0), 0);
@@ -525,16 +490,13 @@ function showStatGroup(group) {
     .forEach(b => b.classList.toggle('active', b.dataset.group === group));
 }
 
-// The readout VALUES alone, split out of refreshSidebarStats so the combat
-// path can keep them honest without dragging the allocation UI — buttons,
-// deltas, hover previews — along for every hit landed.
+// The readout VALUES alone, split out of refreshSidebarStats so the combat path
+// can keep them honest without dragging the allocation UI along for every hit.
 //
-// THIS EXISTS BECAUSE THE SIDEBAR USED TO LIE. Damage and healing redraw the
-// fighter card (updateUnitCard) on every exchange, but the sidebar's rows were
-// only rewritten by updateHud, which runs at run-scale beats — a level, a
-// spawn, an allocation. So the Health row sat at whatever it read when the
-// wave began while the bar above the sprite told the truth: two HP numbers on
-// one screen disagreeing, with the authoritative-looking one wrong.
+// THIS EXISTS BECAUSE THE SIDEBAR USED TO LIE: damage and healing redraw the
+// fighter card every exchange, but the sidebar's rows were only rewritten at
+// run-scale beats, so the Health row sat at whatever it read when the wave began
+// while the bar above the sprite told the truth.
 function refreshReadoutValues() {
   if (HEADLESS.on) return;
   const p = state.player; if (!p) return;

@@ -11,21 +11,15 @@
 @font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 500; font-display: swap; src: url('../assets/fonts/jetbrainsmono-500.woff2') format('woff2'); }
 
 :root {
-  /* One unit of viewport height, indirected so it can be overridden.
-     Everything that sizes itself against the screen — the app's minimum
-     height, the arena card, the sprite scale, the sidebar and modal ceilings —
-     goes through this instead of using `vh` directly.
+  /* One unit of viewport height, indirected so it can be overridden. Everything
+     that sizes itself against the screen goes through this instead of using
+     `vh` directly.
 
-     `vh` assumes the page owns a window whose height means something. That
-     holds in a browser tab and breaks inside a frame that resizes itself to
-     fit its own content: there `vh` resolves against the frame, the frame's
-     height comes from the content, and the content is sized in `vh` — a loop
-     that settles at some arbitrary height and stops tracking the real screen,
-     pinning the arena and the sprites to the bottom of their clamps.
-
-     Set this to a fixed length (e.g. `--vh: 9px`, a 900px design height) in
-     any embed that self-sizes, and the whole layout resolves against that one
-     number instead. Left as 1vh, nothing changes. */
+     `vh` assumes the page owns a window whose height means something. Inside a
+     frame that resizes to fit its own content that is a loop: `vh` resolves
+     against the frame, the frame's height comes from the content, and the
+     content is sized in `vh`. Set this to a fixed length (e.g. `--vh: 9px`) in
+     any embed that self-sizes. */
   --vh: 1vh;
 
   --bg: #07090f;
@@ -91,26 +85,17 @@ html { font-size: 17.5px; } /* was ~16px — scales all rem text up slightly */
 }
 
 /* ---- The room the UI stands in -------------------------------------------
-   The chamber wallpaper behind every screen, as ATMOSPHERE AND NOTHING ELSE.
-   It is the columnless painting on purpose: no focal point to compete with a
-   panel, and its darkest, quietest region is the middle — exactly where the
-   densest UI sits.
+   The chamber wallpaper behind every screen, as ATMOSPHERE AND NOTHING ELSE. It
+   is the columnless painting on purpose: no focal point to compete with a panel,
+   and its quietest region is the middle, where the densest UI sits.
 
-   ON body ITSELF, not on a body::before layer, and that is not a style
-   preference. A background set on body PROPAGATES to the canvas when html has
-   none, and the canvas is painted across the whole viewport beneath everything
-   — which beat a `body::before { z-index: -1 }` outright. Verified by forcing
-   that layer to solid red on the combat screen: it never appeared once.
-   Painting straight onto body uses the propagation instead of fighting it, and
-   needs no z-index, no pseudo-element and no stacking context.
+   ON body ITSELF, not on a body::before layer, and that is not a preference: a
+   background on body PROPAGATES to the canvas when html has none, and the canvas
+   is painted across the whole viewport beneath everything. `fixed` so the room
+   does not scroll with the content.
 
-   `fixed` on the image so the room does not scroll with the content — the UI
-   moves through it rather than dragging it along.
-
-   THE SCRIM IS THE WHOLE JOB. Under a combat screen this has to read as depth
-   and never as detail, so two dark washes take the painting down to a hint. The
-   two faint corner glows the body already carried stay on top of it; they tint
-   the corners the wallpaper barely reaches. */
+   THE SCRIM IS THE WHOLE JOB — under a combat screen this has to read as depth
+   and never as detail, so two dark washes take the painting down to a hint. */
 body {
   color: var(--text);
   font-family: 'JetBrains Mono', monospace;
@@ -334,20 +319,13 @@ body {
    a bug report. The logo's 54px bottom margin is moved here so the tag tucks
    under it rather than pushing the menu down. */
 /* ---- ui-btn: the shared button ------------------------------------------
-   THE ONE BUTTON THE GAME IS BEING REBUILT ON, screen by screen. Its look is
-   lifted verbatim from the title-screen buttons — the owner picked those out as
-   the target — so .title-btn now only carries what is genuinely title-specific
-   (its width and its responsive type) and inherits the rest from here. Two
-   copies of a look is how the two drift apart.
+   THE ONE BUTTON THE GAME IS BEING REBUILT ON, screen by screen. .title-btn
+   carries only what is genuinely title-specific and inherits the rest from here,
+   because two copies of a look is how the two drift apart.
 
    Glass rather than a fill: dark enough to seat a label anywhere in the room,
-   translucent and blurred enough that the light behind it still comes through.
-   The variants change BORDER AND GLOW, never size or shape — a row of buttons
-   should read as one family with one of them emphasised, not as three different
-   kinds of control.
-
-   Variants:
-     :disabled / .is-disabled */
+   translucent enough that the light behind it still comes through. The variants
+   change BORDER AND GLOW, never size or shape. */
 .ui-btn {
   display: inline-flex;
   align-items: center;
@@ -1499,20 +1477,15 @@ body {
   100% { opacity: 0; transform: translateY(-56px) scale(1.02); }
 }
 
-/* Action panel */
 /* ---- Panels over the room ------------------------------------------------
    THE ROOM IS BRIGHT, SO THE PANELS DO THE READING. The first pass had this
    backwards — a heavily darkened wallpaper under see-through panels — which
-   produced a background too dim to identify and text sitting on a muddy wash.
-   Inverted: the chamber runs at close to full strength, and these three
-   surfaces are nearly solid so nothing behind them reaches the text.
+   produced a background too dim to identify and text on a muddy wash. Inverted:
+   the chamber runs near full strength and these three surfaces are nearly solid.
 
-   0.90 rather than 1.0, with a heavy blur, is what keeps a panel from reading
-   as a slab cut out of the room: the light and colour behind it still bleed
-   through at the edges, but as light, never as detail.
-
-   The ARENA CARD is deliberately left opaque: it carries its own zone painting,
-   and two paintings competing inside one frame is the one place this effect
+   0.90 rather than 1.0, with a heavy blur, keeps a panel from reading as a slab
+   cut out of the room. The ARENA CARD is deliberately left opaque: it carries
+   its own zone painting, and two paintings in one frame is the one place this
    would cost more than it buys. */
 .sidebar,
 .action-panel {
@@ -1628,20 +1601,15 @@ body {
 }
 
 /* ===== The neon strip along the bottom of a skill card =====
-   Removing the status word left the card unresolved: a name, some text, and
-   then dead space to the 150px floor with nothing closing the shape. This
-   closes it in the strain's own colour, and doubles as a wordless readiness
-   tell — the card's own opacity dims the strip along with everything else when
-   the skill cannot be used, so it is bright exactly when the skill is live.
+   Closes the card's shape in the strain's own colour, and doubles as a wordless
+   readiness tell: the card's opacity dims the strip with everything else, so it
+   is bright exactly when the skill is live.
 
    Two parts, because one would not read. A hard 6px line, plus a bloom rising
-   off it INTO the card: .skill-btn is `overflow: hidden` for the cooldown
-   sweep, so an outward box-shadow gets clipped flat against the card edge and
-   the glow never appears. The gradient lives inside the clip and does the work.
+   off it INTO the card — .skill-btn is `overflow: hidden` for the cooldown
+   sweep, so an outward box-shadow gets clipped flat and the glow never appears.
 
-   The strain hook is data-built-for, which renderSkills already sets to the
-   class as its rebuild key — the value is exactly the strain, so styling off
-   it needs no second attribute saying the same thing. */
+   The strain hook is data-built-for, which renderSkills already sets. */
 .skills[data-built-for="bio"]  { --strain: var(--bio); --strain-glow: rgba(125,255,160,0.55); }
 .skills[data-built-for="psy"]  { --strain: var(--psy); --strain-glow: rgba(192,132,252,0.55); }
 .skills[data-built-for="sym"]  { --strain: var(--sym); --strain-glow: rgba(251,146,60,0.55); }
@@ -1886,19 +1854,14 @@ body {
 }
 
 /* ---- STAT COLOURS ---------------------------------------------------------
-   EYE CANDY, AND BUILT TO BE THROWN AWAY. Three ways out, cheapest first:
-     1. retune the four hues in :root at the top of this file;
-     2. delete this block and the four --stat-* pairs in :root. Nothing else
-        needs touching: the two rules above fall back to their original values
-        the moment --stat-color is unset.
+   Eye candy, and built to be thrown away: retune the four hues in :root, or
+   delete this block and the four --stat-* pairs there and the rules above fall
+   back to their original values.
 
-   Set as VARIABLES on the row rather than as colours on the name and the value
-   directly, which is what keeps `.side-stat-value.pending` winning: an
-   unconfirmed point still turns the number amber, because that rule declares a
-   colour outright and this one only supplies the default it would otherwise
-   use. Colouring the two elements here instead would have silently outranked
-   it, and the pending state is load-bearing — it is the only thing telling you
-   a point is placed but not committed. */
+   Set as VARIABLES on the row rather than as colours on the name and value
+   directly, which is what keeps `.side-stat-value.pending` winning — it declares
+   a colour outright where this only supplies a default. That pending amber is
+   the only thing telling you a point is placed but not committed. */
 .side-stat-row[data-stat="str"] {
   --stat-color: var(--stat-str);      --stat-glow: var(--stat-str-glow);
 }
@@ -1911,21 +1874,14 @@ body {
 .side-stat-row[data-stat="vit"] {
   --stat-color: var(--stat-vit);      --stat-glow: var(--stat-vit-glow);
 }
-/* THE NUMBER STAYS WHITE. The hue lives on the NAME, which is the label you
-   read once; the value is a quantity you compare against the other three, and
-   four differently-coloured digits made that comparison harder rather than
-   prettier. The number keeps the row's coloured GLOW, so the association still
-   reads — a white digit in a red halo is unambiguously Strength — without the
-   digit itself changing colour.
-   Amber pending is untouched by all of this: `.side-stat-value.pending`
-   declares its colour outright and outranks the fallback above.
+/* THE NUMBER STAYS WHITE. The hue lives on the NAME, the label you read once;
+   the value is a quantity you compare against the other three, and four
+   differently-coloured digits made that harder rather than prettier. The number
+   keeps the row's coloured GLOW, so the association still reads.
 
-   THE NAME NOW GLOWS HARDER THAN THE NUMBER, which is the reverse of how this
-   shipped. Two layers rather than a bigger single one: the tight 5px puts light
-   right at the letter edge so the word reads as lit rather than blurred, and
-   the wide 20px is the bloom around it. A single large radius at this strength
-   just made the label look out of focus. The number keeps one soft layer — it
-   is white, and piling glow onto white is how a digit stops being legible. */
+   THE NAME GLOWS HARDER THAN THE NUMBER, in two layers rather than one bigger
+   one: the tight 5px puts light at the letter edge so the word reads as lit
+   rather than blurred, and the wide 20px is the bloom around it. */
 .side-stat-row {
   --stat-value-color: var(--text);
   --stat-name-glow: 0 0 5px var(--stat-glow), 0 0 20px var(--stat-glow);
@@ -2507,22 +2463,12 @@ body {
 }
 
 /* ===== DESKTOP SCALE =====
-   The mirror of the 1200px rule at the top of the file. That one shrinks the UI
-   so a narrow window still fits; this one grows it, because a desktop monitor is
-   not just a bigger laptop screen — it sits further away, so the same 17.5px
-   reads smaller on it — and the layout was leaving room on the table in both
-   axes. Measured on a 2048x1010 viewport: the app used 1680 of the width, and
-   the column ran out of content ~140px short of the fold.
-
-   Gated on HEIGHT as well as width on purpose. A laptop is fine as it is, and
-   height is what separates the two: 1536x864 never matches this, 2048x1010
-   does. Nothing here touches the sub-1200px path.
-
-   It grows through the same two knobs the rest of the file already turns — the
-   root font (every rem of text and padding) and --vh (the arena and the sprite
-   master scale) — so nothing needs its own scaling rule. The font tracks
-   whichever axis is tighter, so a wide-but-short window can't order text it has
-   no room to show. */
+   The mirror of the 1200px rule at the top of the file: that one shrinks the UI
+   so a narrow window still fits, this one grows it, because a desktop monitor
+   sits further away and the layout was leaving room on the table in both axes.
+   Gated on HEIGHT as well as width — 1536x864 never matches, 2048x1010 does — so
+   a laptop is left alone. It grows through the same two knobs the rest of the
+   file turns: the root font and --vh. */
 @media (min-width: 1700px) and (min-height: 950px) {
   html { font-size: clamp(17.5px, min(2.05vh, 1.02vw), 22px); }
 

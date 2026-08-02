@@ -14,8 +14,8 @@ function renderCombat(forceFull) {
 }
 
 // ---- Class mechanics --------------------------------------------
-// THERE ARE NO BANKS. Every strain now runs on ONE UNCAPPED NUMBER, and every
-// one of them is worn as a status badge under a health bar:
+// THERE ARE NO BANKS. Every strain runs on ONE UNCAPPED NUMBER, worn as a
+// status badge under a health bar:
 //
 //   bio   POISON   on the enemy, uncapped, dies with it
 //   psy   DREAD    on the enemy, uncapped count (the slow saturates, not the
@@ -23,17 +23,11 @@ function renderCombat(forceFull) {
 //   sym   THORNS   on the player, uncapped, the one ramp that is RUN-permanent
 //   base  RESOLVE  on the player, uncapped, rebuilt every fight
 //
-// What went was the pipped wallet — a fixed row of six dots with a clamp behind
-// it. Three things were wrong with it and all three are the same thing: a cap
-// is a place where a mechanic stops being interesting. You finished filling it
-// early, every point after that was thrown away, and "hold or spend" collapsed
-// into "spend now". Pips also cannot draw a number that has no ceiling, so the
-// UI was quietly the thing forcing the ceiling to exist.
-//
-// Nothing replaced bankAdjust: applyStatus already clamps nothing, stacks
-// correctly, logs at one choke point and repaints the badge. gainResolve and
-// growThorns (combat.js) are thin wrappers that add the floater, which is the
-// only job the pips were really doing.
+// What went was the pipped wallet: a cap is a place where a mechanic stops being
+// interesting, and pips cannot draw a number with no ceiling, so the UI was
+// quietly the thing forcing the ceiling to exist. Nothing replaced bankAdjust —
+// applyStatus clamps nothing, stacks correctly, logs at one choke point and
+// repaints the badge.
 
 // ---- Enemy intent (Slay-the-Spire style next-move telegraph) ----
 // Pure prediction that MIRRORS enemyAct/enemySwing exactly, so the badge can
@@ -313,42 +307,23 @@ function clearFloaters() {
 }
 
 // ---- Combat log -----------------------------------------------
-// The log is the fight's TRANSCRIPT, not its narration. It exists so that a
-// turn which has already scrolled past can be reconstructed exactly: what
-// acted, what it hit, for how much, and which modifiers were in play. Damage
-// numbers otherwise live for 1.3s as a floater and are gone, which makes
-// "why did that hit for 198?" unanswerable after the fact.
+// The log is the fight's TRANSCRIPT, not its narration: it exists so a turn that
+// has already scrolled past can be reconstructed exactly. THE LOG IS AN
+// INSTRUMENT, NOT A PANEL — there is no on-screen log, and what these calls feed
+// is the headless transcript that tools/autopsy.mjs parses and
+// tools/transcript.mjs dumps. On screen this is a no-op.
 //
-// THE RULES, so a new line cannot invent its own dialect:
+// The rules, so a new line cannot invent its own dialect:
 //
-//  1. STRUCTURE. Two levels only — headers (wave, turn) and the events
-//     underneath them. Every event goes through logEvent and comes out
-//     indented; a header is the only thing flush to the rail.
-//
-//  2. GRAMMAR. Every event line is
-//         <what> → <to whom>   <amount>   <qualifiers>
-//     in that order, always, so a column of them reads down like a table.
-//     The ACTOR is deliberately absent: the turn header above already says
-//     who is acting, and repeating it on every line doubles the width for
-//     nothing. Only the target moves between lines, so only the target is
-//     named.
-//
-//  3. NUMBERS ARE THE ONES THE FIGHT USED. Every amount is the exact integer
-//     applied to hp, taken from the same variable the damage pipeline wrote —
-//     never recomputed for display, because a recomputed number is a number
-//     that can disagree.
-//
-//  4. QUALIFIERS EXPLAIN THE AMOUNT. CRIT ×2.0, BLOCK −50%, WEAK −25% — the
-//     things that made the number what it is, not commentary about it. If a
+//  1. STRUCTURE. Two levels only — headers (wave, turn) and the events under
+//     them. Every event goes through logEvent and comes out indented.
+//  2. GRAMMAR. Every event line is <what> → <to whom> <amount> <qualifiers>, in
+//     that order. The ACTOR is absent: the turn header already says who acted.
+//  3. NUMBERS ARE THE ONES THE FIGHT USED — the exact integer applied to hp,
+//     never recomputed for display, because a recomputed number can disagree.
+//  4. QUALIFIERS EXPLAIN THE AMOUNT. CRIT ×2.0, BLOCK −50%, WEAK −25%. If a
 //     qualifier did not move the number, it does not belong on the line.
-//
-//  5. NO PROSE. "The rot festers" told the player nothing they could act on;
-//     "POISON ×4 → TOXIN +32%" tells them the trade they just made. Flavour
-//     belongs on the skill cards, which have room for it.
-// THE LOG IS AN INSTRUMENT, NOT A PANEL. There is no on-screen log; what these
-// calls feed is the headless transcript, which tools/autopsy.mjs parses for
-// "killed by" and "which skills fire" and tools/transcript.mjs dumps. On screen
-// this is a no-op.
+//  5. NO PROSE. Flavour belongs on the skill cards, which have room for it.
 function log(msg) {
   if (!HEADLESS.on) return;
   HEADLESS.log.push(msg);
