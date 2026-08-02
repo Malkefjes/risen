@@ -622,12 +622,15 @@ const SCENES = {
       { text: 'Most either converge on the nearest uninfected mass or collapse into pure stimulus loops.' },
       { text: 'You have been systematically eliminating specimens since the containment breach.' },
       { text: 'I am authorized to complete specimen termination.',
-        choices: [{ label: 'wait…' }, { label: 'attack', act: 'fight' }] },
+        choices: [{ label: 'wait…' }, { label: 'attack', go: 6 }] },
       { text: '…Language. Coherent.' },
       // PLACEHOLDER END. The conversation stops here until there is more of it;
       // MOVE ON is standing in for whatever it becomes.
       { text: 'The cascade was designed to erase residual cognition. Speak now or be terminated',
-        choices: [{ label: 'MOVE ON', act: 'leave' }] }
+        choices: [{ label: 'MOVE ON', act: 'leave' }] },
+      // 6 — where `attack` goes. A TERMINAL STEP: no continue and no choices,
+      // it says its line and then does the thing itself.
+      { text: 'So be it…', act: 'fight' }
     ]
   }
 };
@@ -676,6 +679,8 @@ const SCENE_FIGURE_MS = 1400;
 // The typing is the only thing here that needs state: a line arrives a
 // character at a time, and every way out of a step waits on it finishing.
 const TYPE_MS = 26;
+// How long a finished line is left standing before a step acts on its own.
+const SCENE_BEAT_MS = 900;
 let _typing = null;    // the line currently arriving
 let _scene = null;     // { def, step, onDone } while a scene is up
 
@@ -720,6 +725,12 @@ function showSceneStep(i) {
   choices.innerHTML = '';
   cont.hidden = true;
   typeLine(document.getElementById('scene-line'), step.text, () => {
+    // A terminal step answers for itself. The beat after the line is the whole
+    // point of it — the words have to land before the room changes.
+    if (step.act) {
+      _revealTimers.push(setTimeout(() => takeSceneChoice(step), SCENE_BEAT_MS));
+      return;
+    }
     if (!step.choices) { cont.hidden = false; return; }
     step.choices.forEach(c => {
       const b = document.createElement('button');
@@ -826,12 +837,20 @@ function teardownScene() {
 // keeps `scene` until a wave that is not him spawns — so the rematch happens
 // where the conversation did rather than cutting back to the corridor.
 function sceneToFight() {
-  teardownScene();
-  _nextFoe = makeScientistFoe();
-  state.awaitingSpawn = true;
-  state.awaitingInput = false;
-  state.pendingEnemyAct = false;
-  startCombatLoop();
+  const veil = document.getElementById('arena-veil');
+  if (veil) veil.classList.add('on');
+  _revealTimers.push(setTimeout(() => {
+    teardownScene();
+    _nextFoe = makeScientistFoe();
+    state.awaitingSpawn = true;
+    state.awaitingInput = false;
+    state.pendingEnemyAct = false;
+    // He is spawned behind the black and revealed with it, so the fight opens
+    // on two figures already standing rather than on the room changing under
+    // one of them.
+    startCombatLoop();
+    _revealTimers.push(setTimeout(() => { if (veil) veil.classList.remove('on'); }, 300));
+  }, SCENE_FADE_MS));
 }
 
 function closeScene(onDone) {
