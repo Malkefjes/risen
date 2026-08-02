@@ -356,6 +356,22 @@ function growThorns(p, amount, why) {
   return amount;
 }
 
+// POISON ON THE PLAYER HAD NO EXIT. It is permanent and uncapped by design —
+// bio needs that — but nothing in the game removed a stack, so a venomous elite
+// was a death sentence you could only outrun. Measured 2026-08-02af: top killer
+// for base (70% of its elite deaths), sym (56%), bio (50%), psy's second (39%).
+// Every strain's sustain button is now also the way off it.
+//
+// PLAYER ONLY. Bio's rot lives on the enemy and must never be cleansed by one
+// of these.
+function cleansePoison(unit, n, why) {
+  if (!unit || !unit.isPlayer || !(n > 0)) return 0;
+  if (statusStacks(unit, 'poison') <= 0) return 0;
+  const took = shedStacks(unit, 'poison', n, why);
+  if (took > 0) floatText(unit, '−' + took + ' POISON', 'tally');
+  return took;
+}
+
 // UNMUTATED'S RAMP, and growThorns' sibling — the strain's number going up.
 // Resolve is a status now rather than a pipped wallet (see the RESOLVE block in
 // BALANCE), so applyStatus does all the accounting, the stacking and the log
@@ -379,8 +395,14 @@ function gainResolve(p, amount, why) {
 // jackpot that makes every other exchange pointless.
 function thornsGrowthFor(p, damage) {
   const B = P();
-  const slice = Math.max(1, p.maxHp * B.thornsBigHitFrac);
-  return Math.min(B.thornsGrowMax, B.thornsPerHit + Math.floor(damage / slice));
+  // WHAT THE HIT COST YOU, not that it happened. Counting hits fed a 279-damage
+  // blow at wave 45 exactly as much as a 36-damage one at wave 5, so the ramp
+  // sat flat while enemy damage grew 4.5x across the run: measured on
+  // 2026-08-02af, a real sym banked ~80 thorns by wave 20 and needed ~300 to
+  // beat the wave-35 boss. Reading the share of the bar is what makes eating a
+  // telegraph on purpose still pay at wave 40.
+  const share = Math.max(0, damage) / Math.max(1, p.maxHp);
+  return Math.max(B.thornsPerHit, Math.round(B.thornsPerHit + share * B.thornsPerBar));
 }
 
 // SHED — sym's sustain, and the one place a run-permanent ramp can be spent.
@@ -624,10 +646,20 @@ function applyPlayerDamage(p, e, skill) {
       + (dreadSpent < dreadHeld ? ' (×' + (dreadHeld - dreadSpent) + ' left)' : ''));
   }
   // Resolve (base): Last Stand scales with everything you endured.
-  const resolveSpent = skill.consumesResolve ? statusStacks(p, 'resolve') : 0;
+  // HALF, NOT ALL — the same shape psy's Kill settled on. Spending the whole pile
+  // cost the damage reduction AND made every later wound shallower (bleedDepth
+  // rides held Resolve), so holding was correct at every count and the finisher
+  // was the least-pressed button in the game at 7 per 100 turns. THE FRACTION IS
+  // THE DIAL and it is steep — measured 2026-08-02ag, 70 runs a cell, median
+  // reach and wins: 100% -> 32 / 0%, 80% -> 37 / 3%, 70% -> 37 / 6%, 60% -> 41 /
+  // 24%, 50% -> 43 / 34%. Tearing an extra wound worth the Resolve spent was
+  // tried in the same sweep and made it WORSE, so it is not here.
+  const resolveHeld = skill.consumesResolve ? statusStacks(p, 'resolve') : 0;
+  const resolveSpent = Math.ceil(resolveHeld * (skill.consumeFrac || 1));
   if (resolveSpent > 0) {
     dmg += p.atkPower * (skill.perResolvePower || 0) * resolveSpent;
-    notes.push('RESOLVE ×' + resolveSpent + ' spent');
+    notes.push('RESOLVE ×' + resolveSpent + ' spent'
+      + (resolveSpent < resolveHeld ? ' (×' + (resolveHeld - resolveSpent) + ' left)' : ''));
   }
   // Both sides' statuses meet here: what the player is carrying that raises the
   // hit (Predator, Empower) and what the enemy is carrying that softens or
@@ -684,7 +716,7 @@ function applyPlayerDamage(p, e, skill) {
   floatText(e, dmg, 'damage', isCrit);
 
   if (skill.consumesResolve && resolveSpent > 0)
-    removeStatus(p, 'resolve', 'spent by ' + skill.name);
+    shedStacks(p, 'resolve', resolveSpent, 'spent by ' + skill.name);
   if (skill.consumesSpines) removeStatus(p, 'spines', 'consumed by ' + skill.name);
   // DREAD spent is DREAD gone: the enemy's fear breaks with the blow and its
   // turn rate recovers with it. After logDamage, so the hit line reports the
@@ -877,6 +909,10 @@ function fireSkill(caster, skill, target) {
     }
   }
 
+
+  // Declared on the card, resolved in one place: a strain's sustain button says
+  // how much rot it scrubs and needs no code of its own.
+  if (skill.cleanse) cleansePoison(caster, skill.cleanse, skill.name);
 
   updateUnitCard(caster); updateUnitCard(target); renderSkills();
   if (state.enemy && state.enemy.hp <= 0 && !state.enemy._defeated) onEnemyDefeated();

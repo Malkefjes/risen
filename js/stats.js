@@ -123,6 +123,7 @@ function skillStatusOpts(skill) {
   if (skill.counterBleed != null) opts.counterBleed = skill.counterBleed;
   if (skill.stacks != null) opts.stacks = skill.stacks;
   if (skill.perStack != null) opts.perStack = skill.perStack;
+  if (skill.tickCleanse != null) opts.cleanse = skill.tickCleanse;
   return opts;
 }
 

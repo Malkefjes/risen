@@ -37,7 +37,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-02af';
+const BUILD = '2026-08-02ag';
 
 const BALANCE = {
   player: {
@@ -111,8 +111,8 @@ const BALANCE = {
     // and Shed converts it to healing.
     thornsFrac: 0.05,          // INNATE thorns: a twentieth of max HP, and the floor Shed can never eat into
     thornsPerHit: 1,           // every hit taken grows thorns by this, no window and no condition
-    thornsBigHitFrac: 0.15,    // ...plus one more per this share of max HP taken in a single blow
-    thornsGrowMax: 4,          // ceiling on what ONE hit can grow, so a x5 telegraph is a feast, not a jackpot
+    thornsBigHitFrac: 0.15,    // what counts as a BIG hit — the log line only; growth reads the share directly
+    thornsPerBar: 12,          // ...plus this many for a hit that took your WHOLE bar, pro rata. No ceiling: the share is its own bound
     thornsSpinesGrow: 2,       // extra growth per hit while Spines is up
     // SHED TAKES ONLY AS MANY THORNS AS THE HEAL NEEDED, capped by the fraction
     // below. A percentage cost against a runaway number would grow without bound
@@ -299,7 +299,12 @@ const CLASSES = {
       // MIASMA IS BIO'S ONLY FAUCET. At 10% x 4 turns on a 5-turn cooldown it
       // handed back 40% of a bar and still lost to attrition past the first
       // boss; 13% is the same shape, paying 52% of a bar per cast.
-      { id:'miasma', name:'Miasma', desc:'For {duration#turn}: regenerate {power+} each turn. The enemy is WEAK for {weak.duration#turn}', type:'buff', buff:'regen', duration:4, power:0.13, applies:[{ id:'weak', power:0.25, duration:3 }], target:'self', cdTurns:5 }
+      // BIO'S SUSTAIN IS THE CLASS, not a bandage bolted on: rot on them, mend
+      // on you, both on a clock. Was 13% x 4 turns and it still lost to
+      // attrition — 20% x 5 pays roughly a bar per cast on a 5-turn cooldown,
+      // which is near-continuous uptime by design. The tick also scrubs 1 POISON,
+      // making bio the best answer to venom in the game.
+      { id:'miasma', name:'Miasma', desc:'For {duration#turn}: regenerate {power+} and shed {tickCleanse} POISON each turn. The enemy is WEAK for {weak.duration#turn}', type:'buff', buff:'regen', duration:5, power:0.20, tickCleanse:1, applies:[{ id:'weak', power:0.25, duration:3 }], target:'self', cdTurns:5 }
     ]
   },
   // THE TERROR MUTANT. Psy's mechanic is DREAD, a mark stacked ON THE ENEMY —
@@ -335,7 +340,7 @@ const CLASSES = {
       // damage pipeline reads so the number cannot drift from the hit. It
       // deliberately does NOT model vulnerability, crits or WEAK — the blow lands
       // HARDER than stated, which is the right direction to be wrong in.
-      { id:'kill', name:'Kill', desc:'Deal {killTotal} damage. Tears away HALF the enemy’s DREAD — +{perDreadPower!} damage and {feedPerDread+} healed for each.', type:'attack', power:2.00, perDreadPower:0.60, consumesDread:true, consumeFrac:0.5, feedPerDread:BALANCE.player.dreadFeedFrac, target:'enemy', cdTurns:5,
+      { id:'kill', name:'Kill', desc:'Deal {killTotal} damage. Tears away HALF the enemy’s DREAD — +{perDreadPower!} damage and {feedPerDread+} healed for each. Sheds {cleanse} POISON.', type:'attack', power:2.00, perDreadPower:0.60, consumesDread:true, consumeFrac:0.5, feedPerDread:BALANCE.player.dreadFeedFrac, cleanse:2, target:'enemy', cdTurns:5,
         killTotal: (p, s) => {
           const e = state.enemy;
           const held = (e && e.hp > 0 && !e._defeated) ? statusStacks(e, 'dread') : 0;
@@ -369,7 +374,7 @@ const CLASSES = {
       // gets read back on your OWN turns, carrying the share Bloom used to.
       { id:'latch', name:'Latch', desc:'Deal {power!} damage + {thornsScale%} of your THORNS.', type:'attack', power:1.0, thornsScale:0.55, target:'enemy', basic:true },
       { id:'spines', name:'Raise Spines', desc:'THORNS ×{power} and pain reflect doubled for {duration#turn}. Every hit taken grows +{growBonus} extra THORNS.', type:'buff', buff:'spines', duration:3, power:2, growBonus:BALANCE.player.thornsSpinesGrow, target:'self', cdTurns:4 },
-      { id:'shed', name:'Shed', desc:'Heal {healFrac+}, then tear off THORNS to heal {hpPerThorn+} more each. Takes only as many as the wound needed, up to {capFrac%} of what you have grown.', type:'heal', healFrac:0.08, shedFuel:true, hpPerThorn:BALANCE.player.shedHpPerThorn, capFrac:BALANCE.player.shedCapFrac, target:'self', cdTurns:3 },
+      { id:'shed', name:'Shed', desc:'Heal {healFrac+}, then tear off THORNS to heal {hpPerThorn+} more each. Takes only as many as the wound needed, up to {capFrac%} of what you have grown. Sheds {cleanse} POISON.', type:'heal', healFrac:0.08, shedFuel:true, cleanse:2, hpPerThorn:BALANCE.player.shedHpPerThorn, capFrac:BALANCE.player.shedCapFrac, target:'self', cdTurns:3 },
       { id:'provoke', name:'Provoke', desc:'Bare your guard: the enemy strikes at once and cannot miss. +{growBonus} THORNS, and a charged telegraph comes out now — ordinary, or half-strength if it shrugs you off.', type:'provoke', growBonus:3, target:'enemy', cdTurns:4 }
     ]
   },
@@ -388,7 +393,7 @@ const CLASSES = {
       // deep as the Resolve behind it" names a relationship when the player
       // wants a NUMBER.
       { id:'jab', name:'Strike', desc:'Deal {power!} damage. +{buildsResolve} RESOLVE, and open a wound: +{bleedStacks} BLEED. Every turn, BLEED deals {bleedTick} a stack and loses one.', type:'attack', power:1.0, buildsResolve:1, bleed:1, bleedStacks:p => bleedStacks(p), bleedTick:p => bleedDepth(p), target:'enemy', basic:true },
-      { id:'bandage', name:'Bandage', desc:'Heal {healFrac+} and +{resolveHealBonus%} per held RESOLVE', type:'heal', healFrac:0.14, resolveHealBonus:0.02, target:'self', cdTurns:4 },
+      { id:'bandage', name:'Bandage', desc:'Heal {healFrac+} and +{resolveHealBonus%} per held RESOLVE. Sheds {cleanse} POISON', type:'heal', healFrac:0.14, resolveHealBonus:0.02, cleanse:2, target:'self', cdTurns:4 },
       // BRACE LASTS TWO TURNS, NOT ONE. Measured: holding it and casting it on
       // the exact pre-heavy turn took base's first-boss clear from 20% to 100%
       // with nothing rebalanced, so the ANSWER was never insufficient — the
@@ -397,7 +402,7 @@ const CLASSES = {
       // forgives a turn of misjudgement: strict, not broken.
       // `holdFor` tells the bot the same thing the card tells the player.
       { id:'counter', name:'Counterpunch', desc:'Brace for {duration#turn}: −{power%} damage taken, stacking with RESOLVE. A hit taken while braced counters {counterPower!} damage and opens a wound: +{bleedStacks} BLEED', type:'buff', buff:'brace', duration:2, power:0.60, counterPower:1.20, counterBleed:1, bleedStacks:p => bleedStacks(p), holdFor:'windup', target:'self', cdTurns:4 },
-      { id:'laststand', name:'Last Stand', desc:'Deal {power!} damage, +{perResolvePower!} per RESOLVE consumed. Spends all RESOLVE', type:'attack', power:1.20, perResolvePower:0.40, consumesResolve:true, target:'enemy', cdTurns:5 }
+      { id:'laststand', name:'Last Stand', desc:'Deal {power!} damage, +{perResolvePower!} per RESOLVE spent. Spends {consumeFrac%} of your RESOLVE', type:'attack', power:1.20, perResolvePower:0.40, consumesResolve:true, consumeFrac:0.7, target:'enemy', cdTurns:5 }
     ]
   }
 };
@@ -778,10 +783,16 @@ const STATUSES = {
   },
   regen: {
     id:'regen', name:'REGEN', tone:'buff', kind:'buff',
-    stacking:'longest', defaults:{ duration:3, power:0.05 },
+    stacking:'longest', defaults:{ duration:3, power:0.05, cleanse:0 },
     label: st => 'REGEN ' + Math.ceil(st.duration) + 't',
     onTurnStart(unit, st) {
-      if (unit.hp <= 0 || unit.hp >= unit.maxHp) return false;
+      if (unit.hp <= 0) return false;
+      // THE MEND SCRUBS THE ROT, a tick at a time. Bio is the only strain whose
+      // sustain is a duration rather than a press, so it is the only one whose
+      // cleanse arrives spread out — which is what makes it the best answer to
+      // venom in the game rather than merely an answer.
+      cleansePoison(unit, st.cleanse || 0, 'REGEN');
+      if (unit.hp >= unit.maxHp) return false;
       // Anchored for the player, still off max HP for anybody else — see
       // healAnchorFor(). A regenerating enemy has no anchor to read.
       const heal = Math.max(1, Math.floor(healAnchorFor(unit) * (st.power||0)));
