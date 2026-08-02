@@ -606,7 +606,6 @@ function deltaLabel(before, after) {
 function renderDeltas(view) {
   const p = state.player; if (!p) return 0;
   const before = readouts(p), after = readouts(view);
-  const touched = {};
   let changed = 0;
   after.forEach((r, i) => {
     const el = document.getElementById('p-' + r.id);
@@ -614,11 +613,8 @@ function renderDeltas(view) {
     const label = deltaLabel(before[i], r);
     el.textContent = label;
     el.classList.toggle('on', !!label);
-    if (label) { changed++; const g = groupOfRow(r.id); if (g) touched[g] = true; }
+    if (label) changed++;
   });
-  // Mark every pane a change lands in, including ones not on screen.
-  document.querySelectorAll('.stat-subtab')
-    .forEach(el => el.classList.toggle('has-delta', !!touched[el.dataset.group]));
   return changed;
 }
 

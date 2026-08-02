@@ -1902,65 +1902,15 @@ body {
 }
 .derived-block[hidden] { display: none; }
 
-/* Quieter than the sidebar's own tabs, but only by a step: these switch a
-   readout inside a panel, they do not change what the panel is. Quieter is a
-   RATIO, not a small absolute size — at 0.56rem against the tab row's 0.85rem
-   these read as an afterthought rather than a control, and the label filled
-   under half the button it sat in. 0.78rem keeps them clearly below the tabs
-   above without making them work to read.
-
-   Everything that decides their footprint is in rem, matching .sidebar-tab, so
-   the row shrinks with the root font at narrow widths instead of holding a
-   fixed size and forcing the labels to collide. */
-.stat-subtabs {
-  display: flex;
-  gap: 0.25rem;
-  margin-top: 14px;
-  padding-top: 11px;
-  border-top: 1px solid var(--border);
-}
-.stat-subtab {
-  flex: 1 1 auto;
-  min-width: 0;
-  white-space: nowrap;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 3px;
-  padding: 0.34rem 0.28rem;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.05rem;
-  color: var(--muted);
-  /* Muted is already dim; 0.55 on top of it was what made these hard to read
-     rather than merely secondary. */
-  opacity: 0.72;
-  cursor: pointer;
-  transition: opacity 0.15s, color 0.15s, border-color 0.15s;
-}
-.stat-subtab:hover { opacity: 0.92; }
-.stat-subtab.active {
-  opacity: 1;
-  color: var(--text);
-  border-color: rgba(255,255,255,0.14);
-  background: rgba(255,255,255,0.06);
-}
-/* A point is waiting and it would move something in this group — say so, so
-   switching panes is never the only way to find out. */
-.stat-subtab.has-delta { color: var(--accent); opacity: 1; }
-.stat-subtab.has-delta::after { content: ' \2022'; }
-
 .derived-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 0.4rem;
 }
 
-/* Groups a related set inside a pane without spending a whole sub-tab on it.
-   Quieter than .stat-subtab because it labels rows rather than switching them.
-   Now that a pane opens on one, the first in each block drops its rule: the
-   sub-tab row above already draws a line, and two together read as a boxed-in
-   header rather than a divider between groups. */
+/* Names a group of rows inside the block. The first one drops its rule — a
+   divider at the very top reads as a box around the header rather than as a
+   line between groups. */
 .derived-block > .derived-subhead:first-child {
   border-top: none;
   padding-top: 0;

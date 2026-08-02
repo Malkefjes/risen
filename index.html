@@ -232,18 +232,10 @@
             </div>
             <!-- Exact values only. Every row is a number the fight actually
                  uses, and carries a .delta the hover preview fills in with the
-                 value it would become. One group is shown at a time so the
-                 panel never outgrows the sidebar; a sub-tab lights up when a
-                 pending stat point would change something inside it. -->
-            <div class="stat-subtabs">
-              <button class="stat-subtab active" data-group="combat" onclick="showStatGroup('combat')">COMBAT</button>
-              <button class="stat-subtab" data-group="other" onclick="showStatGroup('other')">OTHER</button>
-            </div>
-            <!-- COMBAT holds the numbers a fight is decided by, offence above
-                 defence. They share a pane rather than a tab each because they
-                 are read together — what you kill with against what keeps you
-                 alive — and splitting them meant switching panes to compare. -->
-            <div class="derived-block" id="group-combat">
+                 value it would become. One block, subheaded rather than tabbed:
+                 they are read together — what you kill with against what keeps
+                 you alive — and they all fit. -->
+            <div class="derived-block">
               <div class="derived-subhead">OFFENCE</div>
               <div class="derived-grid">
                 <div class="derived-item"><span>Attack Damage</span><span><b id="d-hit">—</b><i class="delta" id="p-hit"></i></span></div>
@@ -259,11 +251,6 @@
                 <div class="derived-item"><span>Block</span><span><b id="d-block">—</b><i class="delta" id="p-block"></i></span></div>
                 <div class="derived-item" id="row-guard"><span id="label-guard">—</span><span><b id="d-guard">—</b><i class="delta" id="p-guard"></i></span></div>
               </div>
-            </div>
-            <!-- OTHER is everything that is not yet load-bearing: the ailment
-                 pair, which nothing but bio applies, and cooldown reduction,
-                 which currently has no source at all. -->
-            <div class="derived-block" id="group-other">
               <div class="derived-subhead">AILMENTS</div>
               <div class="derived-grid">
                 <div class="derived-item"><span>Bleed damage</span><span><b id="d-bleeddmg">—</b><i class="delta" id="p-bleeddmg"></i></span></div>

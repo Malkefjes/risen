@@ -458,27 +458,6 @@ function commitStats() {
   updateHud(); renderSkills(); saveRun();
 }
 
-// Which pane each readout belongs to. Declared once here so the markup, the
-// group switcher and the pending-point indicator can never disagree about
-// where a row lives.
-const STAT_GROUPS = {
-  combat: ['hit','crit','critmult','turns','strain','hp','evade','block','guard'],
-  other:  ['bleeddmg','poisondmg']
-};
-const groupOfRow = id => Object.keys(STAT_GROUPS).find(g => STAT_GROUPS[g].indexOf(id) >= 0);
-
-let _statGroup = 'combat';
-function showStatGroup(group) {
-  if (!STAT_GROUPS[group]) return;
-  _statGroup = group;
-  Object.keys(STAT_GROUPS).forEach(g => {
-    const pane = document.getElementById('group-' + g);
-    if (pane) pane.hidden = (g !== group);
-  });
-  document.querySelectorAll('.stat-subtab')
-    .forEach(b => b.classList.toggle('active', b.dataset.group === group));
-}
-
 // The readout VALUES alone, split out of refreshSidebarStats so the combat path
 // can keep them honest without dragging the allocation UI along for every hit.
 //
@@ -541,7 +520,6 @@ function refreshSidebarStats() {
 
   refreshReadoutValues();
 
-  showStatGroup(_statGroup);
   // The staged allocation is the resting state of the delta column; hovering a
   // plus adds its point on top, and leaving drops back to exactly this.
   renderDeltas(pendingView(p));
