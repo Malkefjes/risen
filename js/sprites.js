@@ -74,7 +74,7 @@ const ENFORCER_SPRITES = {
 // symmetrical in isolation, but he is not — and on the enemy side of the arena
 // the unflipped art faces away from the player.
 const CAPTAIN_SPRITES = {
-  ready: 'assets/sprites/mcp captain ready new.png',
+  ready: 'assets/sprites/mcp captain ready update.png',
   strike: 'assets/sprites/mcp captain attack new.png',
   mirror: true
 };
