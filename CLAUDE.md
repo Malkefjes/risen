@@ -69,6 +69,11 @@ FORBIDDEN. If a note has to constrain something, name what it protects and what
 would show it had stopped mattering. A constraint with no failure condition is
 scripture — it can only ever accumulate.
 
+**`OWNER:` Do not add much prose to the code.** Asked for outright. Half this
+codebase is already agent-written comment, and a one-line fix does not need a
+paragraph explaining itself. A short note or none; the commit message is where
+the reasoning goes.
+
 **`OWNER:` marks a decision the owner actually made**, in his words, and is the
 only tag that outranks a measurement. It is rare on purpose; everything
 unmarked is agent reasoning and is open season. Never add it for something he
@@ -113,8 +118,9 @@ did not say.
   notes muted gray. Green is nature's alone: healing (+) and poison (−) share
   it, the sign carrying the meaning. See the comment above `.float-dmg` in
   `css/risen.css` before adding a floater type.
-- **Scale verification to the change — do not run the full suite for small
-  stuff.** CI runs everything on every push, so a cosmetic tweak or a keybind
+- **`OWNER:` Do not run the suites for simple changes — sometimes speed is the
+  priority.** In his words: *"we can run it later if we need to."* CI runs
+  everything on every push, so a cosmetic tweak or a keybind
   ships on a syntax check and CI catches the rest. The whole run is four
   suites now and takes under a minute, so "run it locally" is cheap when a
   change touches saves, the HUD or the sim.
