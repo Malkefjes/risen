@@ -147,11 +147,9 @@ body {
 
 /* Fresh-run reveal: the arena card fades in first; a beat later the rest of
    the UI eases in. Classes toggled by stageCombatReveal() on a new run. */
-#combat-screen.staged .hud,
 #combat-screen.staged .combat-header,
 #combat-screen.staged .action-panel,
 #combat-screen.staged .sidebar { opacity: 0; }
-#combat-screen.staged.reveal .hud,
 #combat-screen.staged.reveal .combat-header,
 #combat-screen.staged.reveal .action-panel,
 #combat-screen.staged.reveal .sidebar { opacity: 1; transition: opacity 1s ease; }
@@ -349,12 +347,6 @@ body {
    kinds of control.
 
    Variants:
-     .is-primary   the thing this screen is for. One per screen, at most.
-     .is-psy       the strain-purple alternative — a real second choice, not a
-                   lesser one, so it is equal in weight and different in colour.
-     .is-quiet     escape hatches and workbench doors: same shape, less voice.
-     .is-danger    destructive. Not used yet; here so the next screen that needs
-                   it does not invent its own.
      :disabled / .is-disabled */
 .ui-btn {
   display: inline-flex;
@@ -391,18 +383,6 @@ body {
   color: #f2fff7;
   box-shadow: inset 0 0 26px rgba(125, 255, 160, 0.10), 0 0 20px rgba(125, 255, 160, 0.12);
 }
-.ui-btn.is-psy {
-  border-color: rgba(192, 132, 252, 0.70);
-  color: #ecdcff;
-  box-shadow: inset 0 0 26px rgba(192, 132, 252, 0.12), 0 0 20px rgba(192, 132, 252, 0.14);
-}
-.ui-btn.is-psy:hover {
-  background: rgba(192, 132, 252, 0.15);
-  border-color: rgba(192, 132, 252, 0.88);
-  color: #ffffff;
-  box-shadow: 0 0 28px rgba(192, 132, 252, 0.30);
-}
-.ui-btn.is-psy:focus-visible { outline-color: rgba(192, 132, 252, 0.9); }
 .ui-btn.is-quiet {
   border-color: rgba(255, 255, 255, 0.14);
   color: rgba(226, 236, 230, 0.55);
@@ -413,16 +393,6 @@ body {
   color: rgba(240, 246, 242, 0.9);
   background: rgba(255, 255, 255, 0.07);
   box-shadow: none;
-}
-.ui-btn.is-danger {
-  border-color: rgba(255, 45, 106, 0.45);
-  color: #ffd6e2;
-}
-.ui-btn.is-danger:hover {
-  background: rgba(255, 45, 106, 0.15);
-  border-color: rgba(255, 45, 106, 0.85);
-  color: #ffffff;
-  box-shadow: 0 0 26px rgba(255, 45, 106, 0.28);
 }
 .ui-btn:disabled,
 .ui-btn.is-disabled {
@@ -872,26 +842,6 @@ body {
   .classes { flex-direction: column; align-items: center; }
 }
 
-/* ===== TOP HUD ===== */
-.hud {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 14px;
-  padding: 12px 16px;
-  background: var(--panel);
-  border: 2px solid var(--border);
-  flex-wrap: wrap;
-}
-
-.hud-left, .hud-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
 .level-badge {
   font-family: 'Orbitron', sans-serif;
   font-weight: 700;
@@ -1146,25 +1096,6 @@ body {
   pointer-events: none;
   z-index: 0;
 }
-
-.arena-vs {
-  font-family: 'Orbitron', sans-serif;
-  font-weight: 900;
-  font-size: 1.15rem;
-  color: var(--muted);
-  opacity: 0.22;
-  letter-spacing: 6px;
-  text-align: center;
-  user-select: none;
-  position: absolute;
-  left: 50%;
-  top: 48%;
-  transform: translate(-50%, -50%);
-  z-index: 1;
-  pointer-events: none;
-  text-shadow: 0 0 24px rgba(0,0,0,0.8);
-}
-
 .arena-side {
   display: flex;
   flex-direction: column;
@@ -1339,29 +1270,6 @@ body {
   100% { transform: translateX(0); }
 }
 
-/* Weapon swing (applied to .weapon group inside SVG) */
-.char-svg .weapon {
-  transform-box: fill-box;
-  transform-origin: center;
-  transition: transform 0.08s ease-out;
-}
-.char-figure.swing-right .char-svg .weapon {
-  animation: swingRight 0.28s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
-}
-.char-figure.swing-left .char-svg .weapon {
-  animation: swingLeft 0.28s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
-}
-
-@keyframes swingRight {
-  0%   { transform: rotate(-28deg); }
-  40%  { transform: rotate(58deg); }
-  100% { transform: rotate(0deg); }
-}
-@keyframes swingLeft {
-  0%   { transform: rotate(28deg); }
-  40%  { transform: rotate(-58deg); }
-  100% { transform: rotate(0deg); }
-}
 
 /* Impact mark — appears between fighters on contact */
 .impact-mark {
@@ -1389,50 +1297,12 @@ body {
   25%  { opacity: 1; transform: scale(1.15) rotate(2deg); }
   100% { opacity: 0; transform: scale(1.4) rotate(0deg); }
 }
-
-.aura {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 56px;
-  height: 10px;
-  border-radius: 50%;
-  filter: blur(6px);
-  opacity: 0.5;
-  animation: auraPulse 2.4s ease-in-out infinite;
-  z-index: 1;
-}
-
-@keyframes auraPulse {
-  0%, 100% { opacity: 0.4; transform: translateX(-50%) scaleX(1); }
-  50% { opacity: 0.75; transform: translateX(-50%) scaleX(1.18); }
-}
-
-.aura.bio { background: var(--bio); }
-.aura.psy { background: var(--psy); }
-.aura.sym { background: var(--sym); }
-.aura.enemy { background: var(--enemy); }
-
 .unit-name {
   font-family: 'Orbitron', sans-serif;
   font-weight: 700;
   font-size: 1.2rem;
   text-align: center;
 }
-
-.unit-class {
-  font-size: 0.72rem;
-  letter-spacing: 1.2px;
-  padding: 3px 10px;
-  border-radius: 2px;
-}
-
-.unit-class.bio { background: rgba(125,255,160,0.12); color: var(--bio); }
-.unit-class.psy { background: rgba(192,132,252,0.12); color: var(--psy); }
-.unit-class.sym { background: rgba(251,146,60,0.12); color: var(--sym); }
-.unit-class.enemy { background: rgba(251,113,133,0.12); color: var(--enemy); }
-
 .bars {
   width: 100%;
   max-width: 320px;
@@ -1668,23 +1538,6 @@ body {
 .action-panel {
   padding: 16px 18px;
 }
-
-.action-title {
-  font-size: 0.78rem;
-  letter-spacing: 2px;
-  color: var(--muted);
-  margin-bottom: 10px;
-  text-transform: uppercase;
-}
-.action-title b {
-  color: var(--accent);
-  font-weight: 700;
-  padding: 1px 5px;
-  border: 1px solid rgba(238,242,255,0.35);
-  border-radius: 3px;
-  margin: 0 1px;
-}
-
 .skills {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1864,19 +1717,6 @@ body {
   margin-top: 4px;
   line-height: 1.35;
 }
-
-.target-hint {
-  text-align: center;
-  color: var(--accent);
-  margin-top: 12px;
-  font-size: 0.82rem;
-  letter-spacing: 1px;
-  display: none;
-  animation: pulseText 1.2s ease infinite;
-}
-
-.target-hint.show { display: block; }
-
 @keyframes pulseText {
   0%, 100% { opacity: 0.7; }
   50% { opacity: 1; }
@@ -2205,38 +2045,6 @@ body {
 
 
 
-/* ===== STATS MODAL ===== */
-/* ---- Main menu ---- */
-.menu-stack {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
-}
-.menu-stack .ui-btn { width: min(330px, 80vw); }
-
-.menu-meta {
-  color: var(--muted);
-  margin-top: 18px;
-  font-size: 0.78rem;
-  letter-spacing: 0.5px;
-  min-height: 1.1em;
-}
-
-.hud-menu-btn {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 0.7rem;
-  letter-spacing: 1.5px;
-  padding: 6px 14px;
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.14);
-  border-radius: 6px;
-  color: var(--muted);
-  cursor: pointer;
-  transition: all 0.18s;
-}
-.hud-menu-btn:hover { border-color: rgba(var(--base-rgb), 0.55); color: var(--text); }
-
 /* ---- Settings ---- */
 .setting-row {
   display: flex;
@@ -2350,12 +2158,6 @@ body {
   font-weight: 600;
   font-size: 0.95rem;
 }
-
-.stat-desc {
-  font-size: 0.7rem;
-  color: var(--muted);
-}
-
 .stat-controls {
   display: flex;
   align-items: center;
@@ -2454,15 +2256,6 @@ body {
    — tinting every value gold said "something is pending" in nine places when
    two of them had moved. */
 .side-stat-value.pending { color: var(--xp); }
-
-.modal-footer {
-  margin-top: 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
-
 /* Result / Game Over — one card, sized to fit the window without scrolling. */
 #result-screen.active {
   display: flex;
@@ -2755,9 +2548,7 @@ body {
 @media (max-width: 700px) {
   .classes { grid-template-columns: 1fr; }
   .arena-card { grid-template-columns: 1fr; gap: 16px; }
-  .arena-vs { padding-top: 0; }
   .skills { grid-template-columns: 1fr 1fr; }
-  .hud { flex-direction: column; align-items: flex-start; }
 }
 
 /* ===== Phase 2 additions: readouts, enemy tags, combo, feedback ===== */
@@ -2847,7 +2638,6 @@ body {
 @keyframes comboPop { from { transform: translateX(-50%) scale(1.35); } to { transform: translateX(-50%) scale(1); } }
 
 .arena-card { position: relative; }
-.arena-card.hitstop { filter: brightness(1.5) saturate(0.6); }
 
 .kill-burst {
   position: absolute; inset: 0; pointer-events: none; z-index: 5;
@@ -2913,10 +2703,8 @@ body {
 .sidebar-tab.alert { color: var(--xp); border-color: var(--xp); }
 .sidebar-tab.points-alert { color: var(--xp); }
 
-.result-build { color: var(--muted); font-size: 0.82rem; letter-spacing: 0.5px; }
-
 @media (prefers-reduced-motion: reduce) {
-  .arena-card.shaking, .combo-meter, .fighter.killed .char-figure,
+  .combo-meter, .fighter.killed .char-figure,
   .logo, .skill-btn.ready, .level-badge.level-up { animation: none; }
   .bar-ghost { transition: none; }
   .level-badge.level-up { transform: none; }

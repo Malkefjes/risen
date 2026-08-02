@@ -197,13 +197,13 @@ function playAttackAnim(caster, target, hit, skill) {
   if (HEADLESS.on) return;
   const fig = getFigureForUnit(caster); if (!fig) return;
   const isP = !!caster.isPlayer;
-  const lunge = isP?'lunge-right':'lunge-left', swing = isP?'swing-right':'swing-left';
-  fig.classList.remove('lunge-right','lunge-left','swing-right','swing-left','lunging');
+  const lunge = isP?'lunge-right':'lunge-left';
+  fig.classList.remove('lunge-right','lunge-left','lunging');
   void fig.offsetWidth;
-  fig.classList.add('lunging', lunge, swing);
+  fig.classList.add('lunging', lunge);
   if (hasPoseSet(caster)) setCharPose(caster, 'strike', skill);
   setTimeout(() => {
-    fig.classList.remove('lunging', lunge, swing);
+    fig.classList.remove('lunging', lunge);
     if (hasPoseSet(caster)) setCharPose(caster, 'ready');
   }, 260);
   if (hit && target) {

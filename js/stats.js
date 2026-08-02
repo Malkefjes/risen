@@ -464,11 +464,6 @@ function applyDerivedStats(p) {
   // chance it multiplies is capped, and points past the chance cap keep landing
   // here, so overinvestment bends instead of hitting a wall.
   p.critMult = B.critMultBase + p.instinct * (B.critMultPerInstinct || 0);
-  // Cooldowns answer to Speed, not Instinct: acting more often and acting
-  // again sooner are the same idea, and it gives Speed somewhere to go once
-  // the attack-rate term saturates at 23 points.
-  // Earned sources only — Speed does not feed this (see the note in BALANCE).
-  p.cdr = 0;                       // no source: nothing grants cooldown reduction
 
   // A fifth of Attack Damage and a twentieth of max HP — both already carry
   // dmgMult / hpMult through those two, so neither is applied again here.
@@ -658,13 +653,6 @@ function readouts(p) {
       num: p.blockChance*100, unit:'%' }
   );
   const g = guardReadout(p); if (g) rows.push(g);
-  // Cooldown reduction only exists once something grants it. Omitted rather
-  // than reported as a permanent 0%, the same way the strain and guard rows
-  // are omitted for classes that do not own them — a readout that cannot move
-  // is not information. p.cdr is constant across a pending allocation (Speed
-  // no longer feeds it), so omitting it cannot desync the two readouts()
-  // renderDeltas zips together.
-  if (p.cdr > 0) rows.push(pct('cdr', p.cdr));
   return rows;
 }
 

@@ -564,26 +564,6 @@ function applyEnemyDamage(e, p, mult, opts) {
   return dmg;
 }
 
-// A crit banks a charge of whatever the strain runs on — DREAD, THORNS, Resolve,
-// or the rot. Scaffolding: critStrainGain sits at 0, see its note in BALANCE.
-//
-// Every enemy-side branch guards on the enemy still standing — a killing crit
-// has nothing left to frighten or rot, and a status stacked onto a corpse would
-// log a number that never comes due.
-function creditCrit(p, e) {
-  const gain = P().critStrainGain || 0;
-  if (!gain) return;
-  if (p.class === 'bio') {
-    if (e && e.hp > 0)
-      applyStatus(e, 'poison', { stacks: gain, perStack: p.poisonPerStack });
-    return;
-  }
-  // Sym has no wallet any more — its charge IS the thorns number, so the same
-  // sentence cashes out as growth rather than as a pip.
-  if (p.class === 'sym') { growThorns(p, gain, 'CRIT'); return; }
-  if (p.class === 'base') { gainResolve(p, gain, 'CRIT'); return; }
-}
-
 // CONSUMED FEAR FEEDS YOU — psy's sustain, one path for both meals: Kill
 // eating the stacks it spends, and an enemy dying with fear still on it (the
 // death-devour is what answers HP carrying across fights). Stacks SHED when
@@ -716,8 +696,6 @@ function applyPlayerDamage(p, e, skill) {
   }
   // Resolve (base): landing a hit steadies you.
   if (skill.buildsResolve) gainResolve(p, skill.buildsResolve, skill.name);
-  // A crit feeds your strain — parked for every strain now. See creditCrit.
-  if (isCrit) creditCrit(p, e);
 
   if (skill.poison && p.class === 'bio')
     applyStatus(e, 'poison', { stacks: skill.poison, perStack: p.poisonPerStack });
@@ -732,9 +710,6 @@ function applyPlayerDamage(p, e, skill) {
     applyStatus(e, 'bleed', { stacks: bleedStacks(p), perStack: bleedDepth(p) });
   // Terrify's burst of fear, the planted counterpart of Slash's poison. On-hit
   // rather than on-use, so the enemy dodging costs the fear along with the
-  // damage. Lands after creditCrit: a critting Terrify plants its crit stack
-  // first, then the burst — same total either way, but the log reads in the
-  // order the fear arrived.
   if (skill.dread && e.hp > 0)
     applyStatus(e, 'dread', { stacks: skill.dread });
 
@@ -820,10 +795,7 @@ function applySkillStatuses(caster, skill, foe) {
 function fireSkill(caster, skill, target) {
   if (!caster || !skill || !target) return;
   if (!skill.basic && skill.cd > 0) return;
-  // Turn cooldowns. ceil, not round: with round, 49% CDR turned Overclock into
-  // a 2-turn nuke. Floored at 1 so nothing ever becomes free.
-  const fullCd = (!skill.basic && skill.cdTurns)
-    ? Math.max(1, Math.ceil(skill.cdTurns * (1 - (caster.cdr||0)))) : 0;
+  const fullCd = (!skill.basic && skill.cdTurns) ? skill.cdTurns : 0;
   if (fullCd) skill.cd = fullCd;
 
   if (skill.selfDmgFrac) {
@@ -1356,7 +1328,7 @@ function renderSkills(forceRebuild) {
       costEl.textContent = '';
       return;
     }
-    const maxCd = Math.max(1, Math.ceil(skill.cdTurns * (1 - (p.cdr||0))));
+    const maxCd = skill.cdTurns;
     if (skill.cd > 0) {
       btn.classList.add('on-cd'); btn.classList.remove('ready');
       btn.disabled = true;

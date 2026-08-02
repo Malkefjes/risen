@@ -509,7 +509,7 @@ function commitStats() {
 // where a row lives.
 const STAT_GROUPS = {
   combat: ['hit','crit','critmult','turns','strain','hp','evade','block','guard'],
-  other:  ['bleedchance','bleeddmg','poisonchance','poisondmg','cdr']
+  other:  ['bleedchance','bleeddmg','poisonchance','poisondmg']
 };
 const groupOfRow = id => Object.keys(STAT_GROUPS).find(g => STAT_GROUPS[g].indexOf(id) >= 0);
 
@@ -580,7 +580,7 @@ function refreshSidebarStats() {
   const rows = readouts(p);
   const shown = {};
   rows.forEach(r => { shown[r.id] = true; });
-  ['strain','guard','cdr'].forEach(id => {
+  ['strain','guard'].forEach(id => {
     const row = document.getElementById('row-' + id);
     if (row) row.style.display = shown[id] ? '' : 'none';
   });

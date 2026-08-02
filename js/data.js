@@ -130,14 +130,6 @@ const BALANCE = {
     // follow. REGEN, SIPHON and HARVEST stay steady; Bandage, Shed and DEVOUR
     // spike.
     critHealMult: 2.0,
-    // SWITCHED OFF, NOT MISSING: a crit banking a charge of whatever the strain
-    // runs on. creditCrit and its call site in applyPlayerDamage are still
-    // wired — set this to 1 to switch it on for a strain that wants it.
-    critStrainGain: 0,
-    // Speed deliberately does not feed it. Cooldowns tick on the player's own
-    // turns, so rate never changes your rotation — a 4-turn cooldown is 4 of
-    // your turns at x1 and at x4. Stacking CDR on Speed would pay twice.
-    cdrCap: 0.55,
     // Ailment damage is a SHARE OF ATTACK DAMAGE rather than its own curve off
     // Strength, and thorns a share of max HP. Both were fractions-per-stat
     // tuned against the old base, which at 5 left them floored at 1 and needing
@@ -982,10 +974,6 @@ const STATUSES = {
     // and caps the sum (applyEnemyDamage), so the two are one reduction rather
     // than two multiplied ones. Splitting it into a generic hook would quietly
     // halve the skill.
-    // No resolveOnHitTaken: a braced hit banks exactly what any hit banks.
-    // Brace used to add a second point on top, which made a hit worth more for
-    // being absorbed — the skill pays out in mitigation and the counter, not in
-    // a quietly better exchange rate.
     onHitTaken(unit, st, ctx) {
       const e = ctx.attacker;
       if (!e || unit.hp <= 0 || e.hp <= 0) return;
