@@ -576,10 +576,11 @@ function readouts(p) {
     { id:'poisondmg',  text: formatNum(p.poisonDamage) + '/turn', num: p.poisonDamage, unit:'/turn' }
   );
   rows.push(
-    // The delta is on max HP: current HP moving with it is a consequence, not
-    // the thing a point buys.
-    { id:'hp',    text: formatNum(Math.floor(p.hp)) + ' / ' + formatNum(Math.floor(p.maxHp)),
-      num: Math.floor(p.maxHp) },
+    // MAX HP, not current. This is a sheet number sitting beside two other
+    // sheet numbers (attack damage, turn rate), and the delta was always on max
+    // anyway — showing "122 / 160" put a live value under a preview that meant
+    // the ceiling. What you have right now is on the bar over the sprite.
+    { id:'hp',    text: formatNum(Math.floor(p.maxHp)), num: Math.floor(p.maxHp) },
     pct('evade', p.evadeChance),
     { id:'block', text: Math.round(p.blockChance*100) + '% (\u2212' + Math.round(p.blockReduction*100) + '%)',
       num: p.blockChance*100, unit:'%' }

@@ -1850,22 +1850,24 @@ body {
 .vital-name {
   display: block;
   font-family: 'Orbitron', sans-serif;
-  font-size: 0.52rem;
+  font-size: 0.56rem;
   font-weight: 600;
   letter-spacing: 0.06rem;
   color: var(--muted);
   opacity: 0.8;
   white-space: nowrap;
 }
-/* Sized to the widest of the three, which is health's "120 / 160" — a third of
-   the sidebar is not much room, and three tiles that disagree about their type
-   size stop reading as equals. */
+/* One size for all three: tiles that disagree about their type size stop
+   reading as equals. The binding constraint is turn rate's "1.18x" against a
+   third of the sidebar — health is a bare number now, so four digits late in a
+   run are still comfortable. Measured at 1.15rem: the widest of the three
+   leaves room to spare in an 83px tile. */
 .vital-num {
   display: block;
   margin-top: 0.15rem;
   font-family: 'Orbitron', sans-serif;
   font-weight: 700;
-  font-size: 0.82rem;
+  font-size: 1.15rem;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   color: var(--vital, var(--text));
