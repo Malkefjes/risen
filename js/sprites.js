@@ -64,11 +64,13 @@ BASE_SPRITES.skills = {
 
 // Any strain can do the same; bio/psy/sym simply define no "skills" map yet.
 
-const SYM_STANCE = 'assets/sprites/sym-stance.png';
+// ONE BODY, NO SWING YET — the same shape as bio: no `strike` declared, so
+// spriteSrcFor falls back to the stance and the figure does not change when it
+// attacks. Adding one later is a line here and nothing else.
+const SYM_STANCE = 'assets/sprites/sym ready.png';
 const SYM_SPRITES = {
   idle: SYM_STANCE,
-  ready: SYM_STANCE,
-  strike: 'assets/sprites/sym-strike.png'
+  ready: SYM_STANCE
 };
 
 // ---- Zone rosters ---------------------------------------------------------
