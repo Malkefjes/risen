@@ -1490,12 +1490,16 @@ body {
               inset 0 0 40px rgba(var(--panel-edge, var(--base-rgb)), 0.05);
 }
 
-/* Sidebar only: edge and highlight disappear into its own face. Transparent
-   rather than the face's colour, because the background paints under the
-   border — a second 0.68 layer on top would read darker, not identical. */
-.sidebar { border-color: transparent; box-shadow: none; }
+/* Sidebar and action panel: the edge and its glow disappear into the panel's
+   own face, so only the arena card is framed. Transparent rather than the
+   face's colour, because the background paints under the border — a second
+   0.68 layer on top would read darker, not identical. The 1px stays so
+   removing the colour cannot move anything. */
+.sidebar,
+.action-panel { border-color: transparent; box-shadow: none; }
 
-/* The run's strain tints the three panel edges. base keeps the default white. */
+/* The run's strain tints what edge is left, which is the arena card's. base
+   keeps the default white. */
 #combat-screen[data-strain="bio"] { --panel-edge: 125, 255, 160; }
 #combat-screen[data-strain="psy"] { --panel-edge: 192, 132, 252; }
 #combat-screen[data-strain="sym"] { --panel-edge: 251, 146, 60; }
