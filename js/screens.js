@@ -463,7 +463,7 @@ function commitStats() {
 // where a row lives.
 const STAT_GROUPS = {
   combat: ['hit','crit','critmult','turns','strain','hp','evade','block','guard'],
-  other:  ['bleedchance','bleeddmg','poisonchance','poisondmg']
+  other:  ['bleeddmg','poisondmg']
 };
 const groupOfRow = id => Object.keys(STAT_GROUPS).find(g => STAT_GROUPS[g].indexOf(id) >= 0);
 

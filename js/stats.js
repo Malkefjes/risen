@@ -446,18 +446,10 @@ function applyDerivedStats(p) {
     ? Math.max(0, Math.round((p.maxHp * B.thornsFrac + (p.thornsGrown || 0)))) : 0;
 
   // ---- Ailments ----
-  // Bleed and poison are one mechanic wearing two coats: a stacking tick on
-  // whatever you hit. Each reports a CHANCE (how often a landed hit applies it)
-  // and a DAMAGE (what one stack ticks for), so the pair reads the same way for
-  // both. Chance is honest about today rather than a placeholder zero — bio
-  // poisons on every landed basic, and nothing applies bleed at all yet.
-  const basicPoisons = p.class === 'bio' && !!(p.basicSkill && p.basicSkill.poison > 0);
-  p.poisonChance = Math.min(1, basicPoisons ? 1 : 0);
+  // What one stack of each ticks for. There is no CHANCE beside them: both
+  // apply on every landed basic that carries them, so the row could only ever
+  // read 100% or 0% and never moved.
   p.poisonDamage = p.poisonPerStack;
-  // Unmutated bleeds on every landed basic, the way bio poisons on every
-  // landed basic — so the chance reads 100% for him and 0% for everyone else.
-  const basicBleeds = p.class === 'base' && !!(p.basicSkill && p.basicSkill.bleed > 0);
-  p.bleedChance = Math.min(1, basicBleeds ? 1 : 0);
   // What a cut opened RIGHT NOW would tick for. Live rather than baked, because
   // the depth rides held RESOLVE — the readout has to move when the number it
   // depends on moves, or the sheet would disagree with the next Strike.
@@ -578,12 +570,9 @@ function readouts(p) {
     { id:'turns',    text: turnRateText(p), num: turnRateValue(p), unit:'\u00d7', dp: 2 }
   ];
   const st = strainReadout(p); if (st) rows.push(st);
-  // Ailments — the two damage-over-time effects, each as chance + damage so the
-  // pair reads identically and a third one would slot in the same way.
+  // Ailments — what one stack of each ticks for.
   rows.push(
-    pct('bleedchance', p.bleedChance),
     { id:'bleeddmg',   text: formatNum(p.bleedDamage) + '/turn', num: p.bleedDamage, unit:'/turn' },
-    pct('poisonchance', p.poisonChance),
     { id:'poisondmg',  text: formatNum(p.poisonDamage) + '/turn', num: p.poisonDamage, unit:'/turn' }
   );
   rows.push(
