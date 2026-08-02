@@ -10,28 +10,19 @@ const BIO_SPRITES = {
   ready: BIO_STANCE
 };
 
-// PSY EVOLVES. Three bodies, and which one is worn is READ OFF THE LEVEL rather
-// than stored on the player — so a loaded save shows the right one with nothing
-// to migrate, and a dev handover or a bot's sheet is never out of step with its
-// own art.
+// PSY WEARS ITS THIRD BODY, and only that one for now. The first two forms and
+// their attacks are still in assets/ — this is a `for now`, not a deletion —
+// but nothing points at them, so the strain has one stance and one swing like
+// everybody else.
 //
-// `from` is the level the stage begins at, lowest first. Adding a fourth is an
-// entry here; giving another strain stages is a `stages` array on its set.
-const PSY_STAGES = [
-  { from: 1,  idle: 'assets/sprites/psy ready.png',
-              ready: 'assets/sprites/psy ready.png',
-              strike: 'assets/sprites/psy attack.png' },
-  { from: 5,  idle: 'assets/sprites/psy 2 ready.png',
-              ready: 'assets/sprites/psy 2 ready.png',
-              strike: 'assets/sprites/psy 2 attack.png' },
-  { from: 10, idle: 'assets/sprites/psy 3 ready.png',
-              ready: 'assets/sprites/psy 3 ready.png',
-              strike: 'assets/sprites/psy 3 attack.png' }
-];
-// The set itself is stage one, so anything that asks for psy's art without a
-// unit to read a level from — the strain-select preview, the preload sweep —
-// gets the body you start in.
-const PSY_SPRITES = Object.assign({}, PSY_STAGES[0], { stages: PSY_STAGES });
+// Bringing the evolution back is a `stages` array on this set: an entry per
+// form, each with the level it begins at, lowest first. poseSetFor already
+// reads it.
+const PSY_SPRITES = {
+  idle: 'assets/sprites/psy 3 ready.png',
+  ready: 'assets/sprites/psy 3 ready.png',
+  strike: 'assets/sprites/psy 3 attack.png'
+};
 
 const BASE_SPRITES = {
   ready: 'assets/sprites/base-ready.png',
@@ -209,8 +200,9 @@ const PLAYER_SPRITES = {
 // single PLAYER_SPRITES image regardless of pose.
 const POSE_SPRITES = { bio: BIO_SPRITES, psy: PSY_SPRITES, sym: SYM_SPRITES, base: BASE_SPRITES };
 
-// The art set a unit is wearing right now. Only psy has stages today; every
-// other strain returns the one set it has ever had.
+// The art set a unit is wearing right now. NO STRAIN DECLARES `stages` today —
+// psy did and will again — so this returns the strain's one set, and the level
+// branch below is the seam that makes an evolving strain a data change.
 function poseSetFor(unit) {
   const base = POSE_SPRITES[unit && unit.class] || null;
   if (!base || !base.stages) return base;
