@@ -70,12 +70,13 @@ const ENFORCER_SPRITES = {
   strike: 'assets/sprites/mcp enforcer attack new.png',
   mirror: true
 };
-// NO MIRROR, unlike the rank and file: the Captain is drawn facing the viewer
-// rather than side-on, so flipping him buys nothing and puts his cape and his
-// off-hand on the wrong sides.
+// Mirrored like the rank and file. He reads as near enough front-on to look
+// symmetrical in isolation, but he is not — and on the enemy side of the arena
+// the unflipped art faces away from the player.
 const CAPTAIN_SPRITES = {
   ready: 'assets/sprites/mcp captain ready new.png',
-  strike: 'assets/sprites/mcp captain attack new.png'
+  strike: 'assets/sprites/mcp captain attack new.png',
+  mirror: true
 };
 // City Streets: the Mercenary on the street and the Brute who runs it.
 const MERCENARY_SPRITES = {
