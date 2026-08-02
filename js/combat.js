@@ -968,24 +968,34 @@ function onEnemyDefeated() {
   // screen stay the identical fight.
   const scene = HEADLESS.on ? null : sceneAfterWave(killedWave);
   if (scene) {
-    scheduleTurn(() => openScene(scene, doSpawn), turnDelay(1500));
+    scheduleTurn(() => openScene(scene, doSpawn), turnDelay(SCENE_HOLD_MS));
     return;
   }
   scheduleTurn(doSpawn, turnDelay(BALANCE.spawnDelay * 1000 + 320));
 }
 
+// HOW LONG A FIGHT'S LAST MOMENT IS HELD before a scene takes the card. A boss
+// kill and a death both need it, and the death needs it more: without one the
+// player is revived on the same frame they fell, so the death they are being
+// rescued from never visibly happens.
+const SCENE_HOLD_MS = 2200;    // after a boss kill
+const RESCUE_HOLD_MS = 2000;   // after the first boss kills you
+
 // Pulled out of the fight you lost. The boss is behind you rather than beaten,
-// so its XP is gone with it; what you keep is the run. Mirrors the tail of
-// onEnemyDefeated, because from here on this IS a wave ending.
-function rescueRun() {
+// so its XP is gone with it; what you keep is the run.
+//
+// The rules half is in applyRescue and runs BEHIND THE BLACKOUT, not before it.
+// Reviving in the open was the abrupt part: you died, and were instantly on
+// half a bar with a scene starting, so the moment being rescued from was never
+// on screen.
+function applyRescue() {
   const p = state.player;
-  state.rescued = true;
   state.wave++;
   if (p) {
     p.hp = Math.max(1, Math.floor(p.maxHp * (P().rescueHpFrac || 0.5)));
     logEvent('RESCUED', p, null, ['the first boss is behind you', logNum(p.hp) + '/' + logNum(p.maxHp)]);
   }
-  stopCombatLoop();
+  // From here on this IS a wave ending, so it mirrors the tail of onEnemyDefeated.
   state.awaitingSpawn = true;
   state.awaitingInput = false;
   state.pendingEnemyAct = false;
@@ -993,14 +1003,27 @@ function rescueRun() {
   saveRun();
   updateHud(); renderSkills();
   if (p) updateUnitCard(p);
-  // Straight into the scene: there is no quiet beat to hold here, because the
-  // thing being held would be the player's own corpse.
-  //
-  // startCombatLoop, not doSpawn — every path into endRun has already stopped
-  // the loop, and doSpawn refuses to do anything while combatActive is false.
-  // startCombatLoop turns it back on and, seeing awaitingSpawn, schedules the
-  // spawn itself.
-  openScene('rescue', startCombatLoop);
+}
+
+function rescueRun() {
+  state.rescued = true;
+  stopCombatLoop();
+  // Headless plays the rule and nothing else: no hold, no scene, no timers —
+  // the sim has no clock to wait on.
+  if (HEADLESS.on) { applyRescue(); startCombatLoop(); return; }
+
+  // The blow lands, and is allowed to have landed. Same beat endRun gives a
+  // real defeat before the result screen replaces it, and the same drained
+  // arena, because for these two seconds this IS a defeat.
+  const cs = document.getElementById('combat-screen');
+  if (cs) cs.classList.add('defeat-beat');
+  if (state.player) updateUnitCard(state.player);
+  _revealTimers.push(setTimeout(() => {
+    if (cs) cs.classList.remove('defeat-beat');
+    // startCombatLoop, not doSpawn — every path into endRun has already stopped
+    // the loop, and doSpawn refuses to run while combatActive is false.
+    openScene('rescue', startCombatLoop, applyRescue);
+  }, RESCUE_HOLD_MS));
 }
 
 // ---- The run ledger -------------------------------------------

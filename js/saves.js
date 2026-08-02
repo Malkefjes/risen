@@ -93,6 +93,24 @@ function devEnterCombat(handoverLine) {
   saveRun();
 }
 
+// Straight to the fight that now has a scripted answer to losing. Psy only,
+// because it exists to test the first boss and its rescue rather than to be a
+// second way into a run.
+function devSkipToFirstBoss() {
+  const classId = 'psy';
+  const gate = BALANCE.bossEvery - 1;
+  for (let attempt = 1; attempt <= 20; attempt++) {
+    simulateRun(classId, Object.assign({}, BOTS.smart, { stopWhen: s => s.wave > gate }));
+    if (state.runOver || state.wave <= gate) continue;
+    // The bot's own rescue must not carry into the handover, or the fight this
+    // button exists to reach would arrive with its answer already spent.
+    state.rescued = false;
+    devEnterCombat('DEV · the bot played waves 1-' + gate + ' (cleared on try ' + attempt
+      + ') · handed over at the first boss · level ' + state.player.level);
+    return;
+  }
+}
+
 function devSkipToZone(classId, zoneNum) {
   if (!CLASSES[classId]) return;
   const z = ZONES.find(x => x.num === (zoneNum || 2));

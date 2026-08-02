@@ -646,15 +646,21 @@ function sceneAfterWave(wave) {
 // the CSS takes. Out of step in either direction is the abruptness coming back:
 // too short and the swap happens on a visible frame, too long and the card sits
 // dead. Keep it matched to .arena-veil's transition.
-const SCENE_FADE_MS = 600;
+const SCENE_FADE_MS = 700;
 
-function openScene(id, onDone) {
+function openScene(id, onDone, onBlack) {
   const sc = SCENES[id];
   const layer = document.getElementById('scene-layer');
   const panel = document.getElementById('scene-panel');
   const card = document.getElementById('arena-card');
   const screen = document.getElementById('combat-screen');
-  if (HEADLESS.on || !sc || !layer || !panel || !card) { if (onDone) onDone(); return; }
+  // onBlack still has to run with no scene to play it behind — it carries the
+  // rules half of whatever the scene is dressing up, and headless plays rules.
+  if (HEADLESS.on || !sc || !layer || !panel || !card) {
+    if (onBlack) onBlack();
+    if (onDone) onDone();
+    return;
+  }
 
   state.inScene = true;
   const bossesCleared = Math.floor(state.wave / BALANCE.bossEvery);
@@ -687,8 +693,10 @@ function openScene(id, onDone) {
   if (screen) screen.classList.add('scene-on');
   if (veil) veil.classList.add('on');
 
-  // Everything that would be seen changing happens while the veil is opaque.
+  // Everything that would be seen changing happens while the veil is opaque —
+  // including the caller's own change, which is what onBlack is for.
   _revealTimers.push(setTimeout(() => {
+    if (onBlack) onBlack();
     card.classList.add('scene');
     panel.hidden = false;
     layer.hidden = false;

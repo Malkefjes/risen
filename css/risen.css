@@ -2762,7 +2762,7 @@ body {
   background: #05070c;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 600ms ease;
+  transition: opacity 700ms ease;
 }
 .arena-veil.on { opacity: 1; }
 
