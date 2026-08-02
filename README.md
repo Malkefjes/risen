@@ -36,7 +36,7 @@ that judgement into an argument with a machine. Numbers get measured in
 | `headless` | a headless run and an on-screen run play the identical game |
 | `restart` | a new run inherits nothing from the last, and every sprite loads |
 
-The last one is the load-bearing one: every balance number in this repo is
+`headless` is the load-bearing one: every balance number in this repo is
 measured through `simulateRun`, so if it ever stopped matching the real game,
 every measurement would quietly become fiction.
 

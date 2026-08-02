@@ -31,7 +31,8 @@ the second remove is where work goes to die.
 ## The comments are not law
 
 **Almost every comment in `js/` was written by Claude, not by the owner** —
-about 2,800 lines, roughly half the codebase. The owner has never read any of
+about 1,900 full-line comments in 5,300 lines, a third of the codebase
+(re-counted 2026-08-02an). The owner has never read any of
 it. Neither did he write this file. All of it is FINDINGS AND REASONING, and
 none of it is permission granted or withheld.
 
@@ -223,6 +224,9 @@ did not say.
   waves 15-45 the enemy grows 5.1x while the player grows 2.35x, which is why
   the telegraph multiplier has to shrink every zone (4.0 / 2.5 / 1.6). That
   mismatch is a known open thread, not a settled design.
+  **Re-measured 2026-08-02af, per axis rather than combined:** enemy HP x4.5 and
+  damage x4.5 against player attack x1.5, max HP x1.56 and turn rate x1.27, over
+  levels 7 -> 14. Same story, and the gap is in DAMAGE and HP rather than tempo.
 - **No changelog files.** Git history is the changelog; commit messages
   carry the detail.
 
@@ -239,7 +243,15 @@ did not say.
   retired per-strain plan tables named Vitality last, so psy played all of zone 1
   on a 100 HP bar. Both bots spread points evenly now and the column is about
   psy again.
-- Cooldown reduction is a live seam with no source.
+- **Balance pass 2026-08-02ag, measured before and after with `tools/autopsy.mjs`
+  at 150 runs a row.** Median reach on the best allocation: bio 22 -> 31,
+  psy 29 -> 32, sym 15 -> 26, base 30 -> 39. Runs won out of 150: bio 0 -> 5,
+  base 0 -> 6; psy and sym still 0. Four changes — every strain's sustain also
+  cleanses POISON (nothing removed a stack before, and venomous elites were the
+  top killer for three of four); Miasma to 20% x 5; sym's THORNS growth reads
+  the SHARE OF THE BAR a hit took rather than counting hits; Last Stand spends
+  70% of RESOLVE rather than all. The Last Stand fraction is steep and is one
+  number: 100% -> 32 median / 0 wins, 70% -> 37 / 6%, 50% -> 43 / 34%.
 - Sym was reworked around THORNS as a growing, run-permanent number (every hit
   taken feeds it, Shed spends it to heal, Provoke buys a swing to eat and baits
   a telegraph out as an ordinary hit). Its numbers are early and owner-tuned by
