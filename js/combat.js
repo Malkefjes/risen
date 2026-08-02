@@ -315,7 +315,9 @@ function enemySwing(e, opts) {
     const heal = Math.floor(dealt * e.elite.lifesteal);
     if (heal > 0) { e.hp = Math.min(e.maxHp, e.hp + heal); floatText(e, heal, 'heal'); }
   }
-  if (e.elite && e.elite.poison && dealt > 0) {
+  // `poisonHits` is the unit-level twin of the venomous affix: an enemy that
+  // rots you without being an elite. The scientist works in toxins.
+  if ((e.poisonHits || (e.elite && e.elite.poison)) && dealt > 0) {
     applyStatus(p, 'poison', { stacks:1, perStack: Math.max(1, Math.floor(e.damage*0.20)) });
   }
 
@@ -1022,7 +1024,9 @@ function rescueRun() {
     if (cs) cs.classList.remove('defeat-beat');
     // startCombatLoop, not doSpawn — every path into endRun has already stopped
     // the loop, and doSpawn refuses to run while combatActive is false.
-    openScene('rescue', startCombatLoop, applyRescue);
+    // The same conversation either way — whether he pulled you out of the boss
+    // or you walked away from it, this is the first time he speaks to you.
+    openScene('scientist', startCombatLoop, applyRescue);
   }, RESCUE_HOLD_MS));
 }
 

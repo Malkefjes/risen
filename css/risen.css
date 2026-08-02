@@ -2826,3 +2826,31 @@ body {
   gap: 10px;
   margin-top: 16px;
 }
+.scene-choices:empty { display: none; }
+
+/* CONTINUE IS NOT A BUTTON. Advancing a conversation is not a decision, and
+   dressing it as one puts it at the same weight as "attack" two lines later.
+   It is a quiet line that brightens under the cursor, and it appears only once
+   he has finished the sentence he is on. */
+.scene-continue {
+  margin-top: 16px;
+  align-self: flex-start;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.14rem;
+  text-transform: uppercase;
+  color: var(--muted);
+  opacity: 0.65;
+  cursor: pointer;
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+.scene-continue[hidden] { display: none; }
+.scene-continue:hover { color: var(--scene-tint, var(--text)); opacity: 1; }
+.scene-continue::after { content: ' \203A\203A'; }
+
+/* The line is typed a character at a time, so it has to hold its own height or
+   the block below it walks up the card as the words arrive. */
+.scene-line { min-height: 3.3em; }
+
+/* While he is still typing, the whole panel is a "finish that sentence" target. */
+#combat-screen.scene-typing .scene-panel { cursor: pointer; }

@@ -231,8 +231,14 @@ function stageCombatReveal(onDone) {
 
 function getZoneName(wave) { return zoneForWave(wave).label; }
 
+// A one-shot override for the next spawn, so an enemy that arrives outside the
+// wave table (the scientist, out of a scene) still goes through all of
+// spawnEnemy's bookkeeping instead of a second, thinner spawn path.
+let _nextFoe = null;
+
 function spawnEnemy() {
-  state.enemy = makeEnemy(state.wave);
+  state.enemy = _nextFoe || makeEnemy(state.wave);
+  _nextFoe = null;
   const p = state.player;
 
   const zn = document.getElementById('zone-name');
@@ -240,7 +246,11 @@ function spawnEnemy() {
   // The zone stamp is what lets CSS dress the arena per zone; scenery stays a
   // class/attr concern, never a re-render, same contract as backdrop-on.
   const ac = document.getElementById('arena-card');
-  if (ac) ac.dataset.zone = zoneForWave(state.wave).num;
+  if (ac) {
+    ac.dataset.zone = zoneForWave(state.wave).num;
+    // His lab lasts exactly as long as he does.
+    ac.classList.toggle('scene', !!state.enemy.sceneFoe);
+  }
   // Every wave gets a header, not just bosses and elites. A transcript with
   // silent waves in it cannot be read back — the reader has no way to tell
   // which fight a turn belonged to. The second line is the enemy's actual
@@ -603,27 +613,38 @@ const SCENES = {
     // What his name is written in. Teal to match his own art — the coat, the
     // goggles and the room he stands in are all the same cyan.
     tint: '#45dfe0',
-    // One per boss cleared, falling back to the last once they run out.
-    lines: [
-      'You are still standing. I did not expect that, and I have been watching for a while.',
-      'The infection is not finished with you. I can read what it is doing — most of it, anyway.',
-      'They are hunting something they do not understand. That is usually how this ends badly for them.',
-      'Come back when you have more to show me. I will have something for you by then.'
-    ],
-    choices: [{ label: 'MOVE ON', quiet: false }]
-  },
-  // The same man, on the one occasion you did not walk here. See rescueRun.
-  rescue: {
-    speaker: 'ROGUE LAB SCIENTIST',
-    portrait: 'assets/sprites/rogue lab scientist.png',
-    tint: '#45dfe0',
-    lines: ['You were dead. I have spent a great deal to make that a temporary condition, and I do not intend to spend it twice — so listen carefully the next time we meet.'],
-    choices: [{ label: 'MOVE ON', quiet: false }]
+    // STEPS, not lines. A step is a sentence plus how it can be left: nothing
+    // at all, which offers a continue, or a set of choices. A choice with no
+    // `act` simply walks to the next step, so branching costs an entry rather
+    // than a mechanism.
+    steps: [
+      { text: '…You are not following the behavioral template...' },
+      { text: 'Most either converge on the nearest uninfected mass or collapse into pure stimulus loops.' },
+      { text: 'You have been systematically eliminating specimens since the containment breach.' },
+      { text: 'I am authorized to complete specimen termination.',
+        choices: [{ label: 'wait…' }, { label: 'attack', act: 'fight' }] },
+      { text: '…Language. Coherent.' },
+      // PLACEHOLDER END. The conversation stops here until there is more of it;
+      // MOVE ON is standing in for whatever it becomes.
+      { text: 'The cascade was designed to erase residual cognition. Speak now or be terminated',
+        choices: [{ label: 'MOVE ON', act: 'leave' }] }
+    ]
   }
 };
 
-// Which scene, if any, belongs after the wave that was just cleared. Bosses
-// only, and never the run's last one — the win screen owns that moment.
+// HIS NUMBERS ARE THE FIRST BOSS'S, because that is the fight you have just won
+// or just lost — attacking him is a rematch against the same wall rather than a
+// softer option. He carries his own art and his own venom; nothing else about
+// him needs a table of its own.
+function makeScientistFoe() {
+  const e = makeEnemy(BALANCE.bossEvery);
+  e.name = 'Rogue Lab Scientist';
+  e.artSet = SCIENTIST_SPRITES;
+  e.poisonHits = true;
+  e.sceneFoe = true;          // keeps his lab up for the length of the fight
+  return e;
+}
+
 // THE FIRST BOSS DOES NOT GET TO END THE RUN. It hits for double (see
 // firstBossMult) precisely so it usually wins, and losing to it is the one
 // death in the game with an answer: he pulls you out, you lose the boss and its
@@ -651,6 +672,84 @@ const SCENE_FADE_MS = 700;
 // matched to .scene-layer's transition.
 const SCENE_FIGURE_MS = 1400;
 
+// ---- Playing a scene ------------------------------------------
+// The typing is the only thing here that needs state: a line arrives a
+// character at a time, and every way out of a step waits on it finishing.
+const TYPE_MS = 26;
+let _typing = null;    // the line currently arriving
+let _scene = null;     // { def, step, onDone } while a scene is up
+
+// Finish the sentence now. Returns whether there was one to finish, so a click
+// can ask "did that press get used up here".
+function finishTyping() {
+  if (!_typing) return false;
+  const t = _typing;
+  clearTimeout(t.timer);
+  _typing = null;
+  t.el.textContent = t.text;
+  const cs = document.getElementById('combat-screen');
+  if (cs) cs.classList.remove('scene-typing');
+  t.done();
+  return true;
+}
+
+function typeLine(el, text, done) {
+  if (_typing) clearTimeout(_typing.timer);
+  const t = _typing = { el, text, i: 0, timer: null, done };
+  el.textContent = '';
+  const cs = document.getElementById('combat-screen');
+  if (cs) cs.classList.add('scene-typing');
+  const tick = () => {
+    if (_typing !== t) return;                  // superseded, or finished early
+    t.i++;
+    el.textContent = text.slice(0, t.i);
+    if (t.i >= text.length) { finishTyping(); return; }
+    t.timer = setTimeout(tick, TYPE_MS);
+  };
+  t.timer = setTimeout(tick, TYPE_MS);
+}
+
+// One step: he says it, and the way out appears only once he has finished.
+function showSceneStep(i) {
+  if (!_scene) return;
+  const step = _scene.def.steps[i];
+  if (!step) { closeScene(_scene.onDone); return; }
+  _scene.step = i;
+  const choices = document.getElementById('scene-choices');
+  const cont = document.getElementById('scene-continue');
+  choices.innerHTML = '';
+  cont.hidden = true;
+  typeLine(document.getElementById('scene-line'), step.text, () => {
+    if (!step.choices) { cont.hidden = false; return; }
+    step.choices.forEach(c => {
+      const b = document.createElement('button');
+      b.className = 'ui-btn' + (c.quiet ? ' is-quiet' : '');
+      b.type = 'button';
+      b.textContent = c.label;
+      b.addEventListener('click', ev => { ev.stopPropagation(); takeSceneChoice(c); });
+      choices.appendChild(b);
+    });
+  });
+}
+
+function advanceScene() { if (_scene) showSceneStep(_scene.step + 1); }
+
+function takeSceneChoice(c) {
+  if (c.act === 'leave') { closeScene(_scene && _scene.onDone); return; }
+  if (c.act === 'fight') { sceneToFight(); return; }
+  if (c.go != null) { showSceneStep(c.go); return; }
+  advanceScene();
+}
+
+// A click in the panel finishes the sentence, and a second walks on — but only
+// where walking on is what the step offers. Buttons stop their own clicks
+// before they reach here.
+function onScenePanelClick() {
+  if (finishTyping()) return;
+  const step = _scene && _scene.def.steps[_scene.step];
+  if (step && !step.choices) advanceScene();
+}
+
 function openScene(id, onDone, onBlack) {
   const sc = SCENES[id];
   const layer = document.getElementById('scene-layer');
@@ -666,25 +765,16 @@ function openScene(id, onDone, onBlack) {
   }
 
   state.inScene = true;
-  const bossesCleared = Math.floor(state.wave / BALANCE.bossEvery);
-  const line = sc.lines[Math.min(sc.lines.length - 1, Math.max(0, bossesCleared - 1))];
+  _scene = { def: sc, step: 0, onDone: onDone };
 
   document.getElementById('scene-speaker').textContent = sc.speaker;
   panel.style.setProperty('--scene-tint', sc.tint || 'var(--text)');
-  document.getElementById('scene-line').textContent = line;
+  document.getElementById('scene-line').textContent = '';
+  document.getElementById('scene-choices').innerHTML = '';
+  document.getElementById('scene-continue').hidden = true;
   const portrait = document.getElementById('scene-portrait');
   if (portrait) portrait.src = sc.portrait;
-
-  const choices = document.getElementById('scene-choices');
-  choices.innerHTML = '';
-  sc.choices.forEach(c => {
-    const b = document.createElement('button');
-    b.className = 'ui-btn' + (c.quiet ? ' is-quiet' : '');
-    b.type = 'button';
-    b.textContent = c.label;
-    b.addEventListener('click', () => closeScene(onDone));
-    choices.appendChild(b);
-  });
+  panel.onclick = onScenePanelClick;
 
   // THROUGH BLACK, NOT ACROSS. The first pass swapped the backdrop on a lit
   // frame while the old room was still up, which is the abrupt part — a room
@@ -709,6 +799,7 @@ function openScene(id, onDone, onBlack) {
       panel.hidden = false;
       void panel.offsetWidth;
       panel.classList.add('in');
+      showSceneStep(0);
     }, SCENE_FIGURE_MS));
     // A held beat on full black before the lab arrives. Without it the veil
     // reads as a flicker rather than as a cut.
@@ -716,6 +807,32 @@ function openScene(id, onDone, onBlack) {
   }, SCENE_FADE_MS));
 }
 
+
+// Everything a scene leaves behind, whichever way it is left — out to the next
+// wave, or sideways into a fight with the man who was talking.
+function teardownScene() {
+  finishTyping();
+  _scene = null;
+  const layer = document.getElementById('scene-layer');
+  const panel = document.getElementById('scene-panel');
+  const screen = document.getElementById('combat-screen');
+  if (layer) { layer.classList.remove('in'); layer.hidden = true; }
+  if (panel) { panel.classList.remove('in'); panel.hidden = true; panel.onclick = null; }
+  if (screen) { screen.classList.remove('scene-on', 'scene-typing'); }
+  state.inScene = false;
+}
+
+// TALKING STOPS, THE FIGHT DOES NOT MOVE ROOMS. His lab stays up — the card
+// keeps `scene` until a wave that is not him spawns — so the rematch happens
+// where the conversation did rather than cutting back to the corridor.
+function sceneToFight() {
+  teardownScene();
+  _nextFoe = makeScientistFoe();
+  state.awaitingSpawn = true;
+  state.awaitingInput = false;
+  state.pendingEnemyAct = false;
+  startCombatLoop();
+}
 
 function closeScene(onDone) {
   const layer = document.getElementById('scene-layer');
@@ -726,12 +843,8 @@ function closeScene(onDone) {
   // room comes back underneath it.
   if (veil) veil.classList.add('on');
   _revealTimers.push(setTimeout(() => {
-    if (layer) { layer.classList.remove('in'); layer.hidden = true; }
-    const panel = document.getElementById('scene-panel');
-    if (panel) { panel.classList.remove('in'); panel.hidden = true; }
+    teardownScene();
     if (card) card.classList.remove('scene');
-    if (screen) screen.classList.remove('scene-on');
-    state.inScene = false;
     // The next enemy is spawned behind the veil and revealed with it, so the
     // wave does not start with a figure appearing out of nothing.
     if (onDone) onDone();

@@ -136,12 +136,24 @@ const ZONE_SPRITES = {
        trashScale: 1.15 }
 };
 
+// The scientist fights in his own coat: his portrait is the stance, and the
+// upload beside it is the swing. He is not on any zone's roster — he is reached
+// through a scene, not a wave — so he travels as art ON THE UNIT (see artSet
+// below) rather than as an entry in the table above.
+const SCIENTIST_SPRITES = {
+  ready:  'assets/sprites/rogue lab scientist.png',
+  strike: 'assets/sprites/rogue lab scientist attack.png'
+};
+
 // Last resort when a unit carries no act stamp or an unknown roster id — an old
 // save, a hand-built enemy in a tool. The encampment's Enforcer stands in.
 const ENEMY_SPRITE = ENFORCER_SPRITES.ready;
 
 // The art set for one enemy: its act's boss, or its act's roster entry.
 function enemyArtSet(unit) {
+  // A unit may carry its own art. Anything that arrives outside the wave table
+  // has nowhere else to declare it.
+  if (unit && unit.artSet) return unit.artSet;
   const zone = ZONE_SPRITES[unit && unit.zone];
   if (!zone) return ENFORCER_SPRITES;
   if (unit.isBoss) return zone.boss || GRENADIER_SPRITES;
