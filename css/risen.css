@@ -11,6 +11,17 @@
 @font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 500; font-display: swap; src: url('../assets/fonts/jetbrainsmono-500.woff2') format('woff2'); }
 
 :root {
+  /* THE BODY FACE, in one place. Orbitron is the display face and is named
+     literally wherever something is a label; everything you actually READ —
+     skill descriptions, class blurbs, the transition line, every number on the
+     result screen — inherits this.
+
+     TRYING ALL-ORBITRON. To go back to the two-face split, put this line back:
+         --font-body: 'JetBrains Mono', monospace;
+     and nothing else needs touching. Mono is what makes a column of damage
+     figures line up, so the result screen is where the difference shows most. */
+  --font-body: 'Orbitron', sans-serif;
+
   /* One unit of viewport height, indirected so it can be overridden. Everything
      that sizes itself against the screen goes through this instead of using
      `vh` directly.
@@ -98,7 +109,7 @@ html { font-size: 17.5px; } /* was ~16px — scales all rem text up slightly */
    and never as detail, so two dark washes take the painting down to a hint. */
 body {
   color: var(--text);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-body);
   min-height: calc(var(--vh) * 100);
   overflow-x: hidden;
   background:
@@ -315,7 +326,7 @@ body {
   border: 0;
   border-left: 1px solid rgba(var(--class-rgb), 0.18);
   color: rgba(226,236,230,0.40);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-body);
   font-size: 1rem;
   letter-spacing: 1px;
   cursor: pointer;
@@ -530,7 +541,7 @@ body {
 
 .title-foot { text-align: center; }
 .build-tag {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-body);
   font-size: 0.64rem;
   letter-spacing: 3px;
   color: rgba(214,240,222,0.45);
@@ -1525,7 +1536,7 @@ body {
   cursor: pointer;
   transition: border-color 0.2s, background 0.2s, transform 0.2s, opacity 0.2s;
   text-align: left;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-body);
   /* A <button> vertically centres its own content, so a card with less text
      used to sit its name ~17px lower than a full one. Flex column pins the
      name to the top of every card regardless of description length. */
@@ -2340,7 +2351,7 @@ body {
 .rs-sheet-cell span { display: block; font-size: 0.58rem; letter-spacing: 1.2px; color: var(--muted); }
 .rs-sheet-cell b {
   display: block;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-body);
   font-size: 0.95rem; color: var(--text);
 }
 .rs-sheet-cell i {
@@ -2358,7 +2369,7 @@ body {
 .rs-stat:last-child { border-bottom: 0; }
 .rs-stat span { color: var(--muted); }
 .rs-stat b {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-body);
   font-weight: 500; color: var(--text); white-space: nowrap;
 }
 
@@ -2386,12 +2397,12 @@ body {
   border-radius: 4px;
 }
 .rs-bar-v {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-body);
   font-weight: 500; color: var(--text);
   text-align: right; white-space: nowrap;
 }
 .rs-bar-p {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-body);
   color: var(--muted); text-align: right; font-size: 0.75rem;
 }
 /* A button nobody pressed is a finding, not a blank — it stays on the list and
@@ -2421,7 +2432,7 @@ body {
 .rs-copy:hover { background: color-mix(in srgb, var(--rc) 18%, transparent); }
 .rs-copy.copied { background: var(--rc); color: var(--bg); border-color: var(--rc); }
 .rs-build {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-body);
   font-size: 0.66rem; color: var(--muted); white-space: nowrap;
 }
 
