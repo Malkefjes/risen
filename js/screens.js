@@ -185,11 +185,17 @@ function skipIntro() {
   offerSkip(null);
   if (fn) fn();
 }
-// Spacebar is SKIP. Bound to the offer, not the button: inert unless an intro
-// sequence is actually running, so it can never scroll the page, re-click a
+// SPACEBAR, and it means whatever is in front of you. A scene owns it while one
+// is up — finish the line, then walk on, exactly as a click in the panel does,
+// including refusing to walk past a step that is asking you something. Failing
+// that it is SKIP, bound to the offer rather than the button.
+//
+// Inert otherwise, which is the point: it can never scroll the page, re-click a
 // focused button, or leak into combat as an accidental action.
 document.addEventListener('keydown', ev => {
-  if (ev.code !== 'Space' || !_skipIntro) return;
+  if (ev.code !== 'Space') return;
+  if (_scene) { ev.preventDefault(); onScenePanelClick(); return; }
+  if (!_skipIntro) return;
   ev.preventDefault();
   skipIntro();
 });
@@ -776,7 +782,6 @@ function openScene(id, onDone, onBlack) {
   }
 
   state.inScene = true;
-  _scene = { def: sc, step: 0, onDone: onDone };
 
   document.getElementById('scene-speaker').textContent = sc.speaker;
   panel.style.setProperty('--scene-tint', sc.tint || 'var(--text)');
@@ -810,6 +815,11 @@ function openScene(id, onDone, onBlack) {
       panel.hidden = false;
       void panel.offsetWidth;
       panel.classList.add('in');
+      // _scene IS THE INPUT GATE, so it is set here and not when the scene was
+      // asked for. Held at the top of openScene, a spacebar mashed during the
+      // fade walked steps 1, 2 and 3 in a room that was still arriving — and
+      // then the deferred first step landed and dropped it back to 0.
+      _scene = { def: sc, step: 0, onDone: onDone };
       showSceneStep(0);
     }, SCENE_FIGURE_MS));
     // A held beat on full black before the lab arrives. Without it the veil
