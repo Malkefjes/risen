@@ -145,10 +145,12 @@ body {
 #combat-screen.staged.reveal .combat-header,
 #combat-screen.staged.reveal .action-panel,
 #combat-screen.staged.reveal .sidebar { opacity: 1; transition: opacity 900ms ease; }
-#combat-screen.staged.reveal .battlefield   { transition-delay: 0ms; }
-#combat-screen.staged.reveal .combat-header { transition-delay: 800ms; }
-#combat-screen.staged.reveal .action-panel  { transition-delay: 1600ms; }
-#combat-screen.staged.reveal .sidebar       { transition-delay: 2400ms; }
+/* The header comes up WITH the arena — it is the frame around it, not a
+   separate beat. The panel and the sidebar still land one at a time. */
+#combat-screen.staged.reveal .battlefield,
+#combat-screen.staged.reveal .combat-header { transition-delay: 0ms; }
+#combat-screen.staged.reveal .action-panel  { transition-delay: 800ms; }
+#combat-screen.staged.reveal .sidebar       { transition-delay: 1600ms; }
 
 .screen { display: none; animation: fadeIn 0.35s ease; }
 .screen.active { display: block; }

@@ -201,7 +201,7 @@ document.addEventListener('keydown', ev => {
 // so re-ordering the pieces is a CSS edit alone — but REVEAL_LAST_MS has to
 // stay matched to the bottom delay plus its duration, or combat starts early.
 const REVEAL_HOLD_MS = 700;    // black before the arena arrives
-const REVEAL_LAST_MS = 3300;   // sidebar: 2400ms delay + 900ms fade
+const REVEAL_LAST_MS = 2500;   // sidebar: 1600ms delay + 900ms fade
 let _revealTimers = [];
 function clearRevealTimers() { _revealTimers.forEach(clearTimeout); _revealTimers = []; }
 
