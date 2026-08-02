@@ -130,21 +130,10 @@ function devSkipToZone(classId, zoneNum) {
     + 'on waves 1-' + gate + ' — worth knowing) · wave ' + state.wave + ' · level ' + p.level);
 }
 
-// RESIST MUTATION: a quiet transition beat, then drop into the run as base Sonny.
+// RESIST MUTATION: a quiet transition beat, then drop into the run as base
+// Sonny. 'base' is named outright rather than leaning on a stored choice.
 function resistMutation() {
-  leaveMenuTab(); closeSettings();
-  showScreen('resist-screen');
-  // Restart the fade each time (the animation only plays once with fill: forwards).
-  const line = document.querySelector('#resist-screen .resist-line');
-  if (line) { line.style.animation = 'none'; void line.offsetWidth; line.style.animation = ''; }
-  // Black hold 1.8s, then fade in / hold / fade out over 5s, then a beat -> run.
-  // Both start points name 'base' outright rather than leaning on a stored
-  // choice. This one waits ~7 seconds before it fires, and a delayed start that
-  // reads shared state is precisely how the wrong strain got launched.
-  const t = setTimeout(() => { offerSkip(null); startGame(false, 'base'); }, 7100);
-  // Skipping here goes straight into a playable fight: cancel the transition
-  // and start the run with its reveal already finished.
-  offerSkip(() => { clearTimeout(t); startGame(true, 'base'); });
+  playStrainIntro('base', 'You have chosen to resist your new powers…');
 }
 
 function goToMenu() {

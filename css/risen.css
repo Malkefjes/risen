@@ -130,16 +130,25 @@ body {
   flex: 1;
 }
 
-/* Fresh-run reveal: the arena card fades in first; a beat later the rest of
-   the UI eases in. Classes toggled by stageCombatReveal() on a new run. */
+/* Fresh-run reveal: the room assembles out of the black one piece at a time,
+   arena first. Classes toggled by stageCombatReveal() on a new run.
+
+   The ORDER lives here as transition-delay rather than in a chain of timers,
+   so the sequence is one list to read and re-order. stageCombatReveal only
+   needs to know when the last piece lands — keep REVEAL_LAST_MS in screens.js
+   matched to the bottom delay plus the duration. */
+#combat-screen.staged .battlefield,
 #combat-screen.staged .combat-header,
 #combat-screen.staged .action-panel,
 #combat-screen.staged .sidebar { opacity: 0; }
+#combat-screen.staged.reveal .battlefield,
 #combat-screen.staged.reveal .combat-header,
 #combat-screen.staged.reveal .action-panel,
-#combat-screen.staged.reveal .sidebar { opacity: 1; transition: opacity 1s ease; }
-/* Hold black ~1s, then a slow arena fade-in. */
-#combat-screen.staged .battlefield { opacity: 0; animation: fadeIn 1.3s ease 1s forwards; }
+#combat-screen.staged.reveal .sidebar { opacity: 1; transition: opacity 900ms ease; }
+#combat-screen.staged.reveal .battlefield   { transition-delay: 0ms; }
+#combat-screen.staged.reveal .combat-header { transition-delay: 800ms; }
+#combat-screen.staged.reveal .action-panel  { transition-delay: 1600ms; }
+#combat-screen.staged.reveal .sidebar       { transition-delay: 2400ms; }
 
 .screen { display: none; animation: fadeIn 0.35s ease; }
 .screen.active { display: block; }
@@ -535,25 +544,6 @@ body {
   .title-menu { margin-top: clamp(14px, 3.5vh, 26px); gap: 7px; }
   .title-btn { padding: 8px 16px; }
   .title-sub { margin-top: 6px; }
-}
-
-/* ---- Intro cinematic ---------------------------------------------------
-   Full-bleed and out of #app's padding, like the title screen. Below the SKIP
-   button's z-index so the escape hatch stays on top. */
-#cinematic-screen.active {
-  display: flex;
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  background: #000;
-  align-items: center;
-  justify-content: center;
-}
-#intro-video {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  background: #000;
 }
 
 /* ---- Intro ---------------------------------------------------------------

@@ -120,49 +120,32 @@ function resetRunState(classId) {
   log('RISEN · build ' + BUILD);
 }
 
-// `classId` is optional: the EVOLVE button omits it and the menu's pending
-// choice is used, while resistMutation passes 'base' outright so its delayed
-// start cannot depend on a variable something else might have cleared.
+// THE ONE WAY INTO A RUN. Both doors — EVOLVE and RESIST MUTATION — come
+// through here, so the beat before a run is the same beat whichever strain you
+// picked; only the sentence differs.
 //
-// If neither yields a real strain the run does NOT start — falling back to
-// state.classId is exactly what produced the wrong-strain bug. EVOLVE goes
-// through the cinematic and claims the strain BEFORE the video, passing it
-// explicitly on the far side.
-function startGameFromSelect() {
-  const cls = claimPendingClass();
-  if (!CLASSES[cls]) return;
-  playIntroCinematic(() => startGame(true, cls));
+// The strain is passed in and captured, never read back off shared state when
+// the timer fires. A delayed start that reads a stored choice is precisely how
+// the wrong strain got launched.
+function playStrainIntro(classId, line) {
+  if (!CLASSES[classId]) return;
+  leaveMenuTab(); closeSettings();
+  const el = document.querySelector('#resist-screen .resist-line');
+  if (el) {
+    el.textContent = line;
+    // Restart the fade each time (the animation only plays once with fill: forwards).
+    el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
+  }
+  showScreen('resist-screen');
+  // Black hold 1.8s, then fade in / hold / fade out over 5s, then a beat -> run.
+  const t = setTimeout(() => { offerSkip(null); startGame(false, classId); }, 7100);
+  // Skipping goes straight into a playable fight: cancel the transition and
+  // start the run with its reveal already finished.
+  offerSkip(() => { clearTimeout(t); startGame(true, classId); });
 }
 
-// Plays the intro once, then runs `done`. EVERY failure path also runs `done`:
-// a missing file, a decode error, a browser that refuses to autoplay, or a
-// stall — a cinematic that cannot play must never be a locked door in front of
-// the game. SKIP (and spacebar, which it is bound to) ends it early.
-function playIntroCinematic(done) {
-  const screen = document.getElementById('cinematic-screen');
-  const vid = document.getElementById('intro-video');
-  if (HEADLESS.on || !screen || !vid) return done();
-
-  let over = false;
-  const finish = () => {
-    if (over) return;
-    over = true;
-    clearTimeout(stall);
-    offerSkip(null);
-    try { vid.pause(); } catch (e) {}
-    done();
-  };
-  vid.onended = finish;
-  vid.onerror = finish;
-  // A file that never starts (offline, blocked, still moving its index) must
-  // not hold the run hostage: if nothing has buffered in 6s, go without it.
-  const stall = setTimeout(() => { if (vid.readyState < 2) finish(); }, 6000);
-
-  showScreen('cinematic-screen');
-  offerSkip(finish);
-  try { vid.currentTime = 0; } catch (e) {}
-  const p = vid.play();
-  if (p && p.catch) p.catch(finish);
+function startGameFromSelect() {
+  playStrainIntro(claimPendingClass(), 'You have chosen to embrace your new powers…');
 }
 
 function startGame(skipReveal, classId) {
@@ -209,9 +192,16 @@ document.addEventListener('keydown', ev => {
   skipIntro();
 });
 
-// Arena card fades in first, then (after a beat) the rest of the UI eases in.
-// onDone fires once the UI is up, so the fight doesn't begin behind hidden controls.
+// The run's first frame assembles out of the black one piece at a time, arena
+// first. onDone fires once the LAST piece is up, so the fight never begins
+// behind a control still fading in.
 // Timers are tracked so stopCombatLoop() can cancel a pending start (menu, reload, tests).
+//
+// The order and spacing live in CSS as transition-delay under .staged.reveal,
+// so re-ordering the pieces is a CSS edit alone — but REVEAL_LAST_MS has to
+// stay matched to the bottom delay plus its duration, or combat starts early.
+const REVEAL_HOLD_MS = 700;    // black before the arena arrives
+const REVEAL_LAST_MS = 3300;   // sidebar: 2400ms delay + 900ms fade
 let _revealTimers = [];
 function clearRevealTimers() { _revealTimers.forEach(clearTimeout); _revealTimers = []; }
 
@@ -231,11 +221,10 @@ function stageCombatReveal(onDone) {
   void cs.offsetWidth;                     // restart the arena fade-in
   cs.classList.add('staged');
   offerSkip(() => { revealCombatNow(); if (onDone) onDone(); });
-  // Black ~1s, arena fades in over 1.3s (in by ~2.3s), brief hold, then the UI.
   _revealTimers.push(setTimeout(() => {
-    cs.classList.add('reveal');            // the rest of the UI fades in (1s)
-    _revealTimers.push(setTimeout(() => { offerSkip(null); if (onDone) onDone(); }, 1000));
-  }, 2600));
+    cs.classList.add('reveal');            // arena, header, action panel, sidebar
+    _revealTimers.push(setTimeout(() => { offerSkip(null); if (onDone) onDone(); }, REVEAL_LAST_MS));
+  }, REVEAL_HOLD_MS));
 }
 
 function getZoneName(wave) { return zoneForWave(wave).label; }
