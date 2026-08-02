@@ -24,36 +24,19 @@ const PSY_SPRITES = {
   strike: 'assets/sprites/psy 3 attack.png'
 };
 
+// ONE BODY, like bio and sym. No `strike`, so spriteSrcFor falls back to the
+// stance and the figure does not change when it attacks.
+//
+// The per-skill art went with the old sprites: base used to carry a `skills`
+// map so Bandage, Counterpunch and Last Stand each wore their own pose. The
+// mechanism is still there (see skillArtFor) and any strain can use it — a
+// `skills` map keyed by skill id is all it takes — but nothing declares one
+// today.
+const BASE_STANCE = 'assets/sprites/base sonny ready.png';
 const BASE_SPRITES = {
-  ready: 'assets/sprites/base-ready.png',
-  strike: 'assets/sprites/base-strike.png'
+  idle: BASE_STANCE,
+  ready: BASE_STANCE
 };
-
-// Per-skill art for base Sonny, keyed by skill id. Slot a data URI in beside a
-// key and that skill wears its own sprite for the beat of its animation:
-// attacks instead of the generic "strike" pose, heals and buffs instead of
-// standing in "ready". Any key left out just uses the generic pose, so this
-// can be filled in one skill at a time.
-//
-// Kept as a separate assignment purely so the ids stay readable next to each
-// other rather than buried after a megabyte of base64.
-//
-// Ids come straight from CLASSES.base.skills:
-// Base has one standing pose, so idle and ready are the same art. Assigned by
-// reference rather than embedded twice. Without this, asking for base's idle
-// fell through PLAYER_SPRITES (which had no 'base' key) all the way to the bio
-// sprite — an unmutated Sonny rendered as a green mutant.
-BASE_SPRITES.idle = BASE_SPRITES.ready;
-
-BASE_SPRITES.skills = {
-  // jab deliberately absent: the basic Strike IS the generic strike
-  // pose above, so it resolves there rather than storing it twice.
-  bandage:   'assets/sprites/base-skill-bandage.png',
-  counter:   'assets/sprites/base-skill-counter.png',
-  laststand: 'assets/sprites/base-skill-laststand.png'
-};
-
-// Any strain can do the same; bio/psy/sym simply define no "skills" map yet.
 
 // ONE BODY, NO SWING YET — the same shape as bio: no `strike` declared, so
 // spriteSrcFor falls back to the stance and the figure does not change when it
