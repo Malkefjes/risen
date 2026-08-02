@@ -637,6 +637,8 @@ function makeEnemy(wave) {
           * (1 + within*(zone.withinStep != null ? zone.withinStep : E.withinStep))
           * (zone.growthMult || 1);
   const isBoss = wave % BALANCE.bossEvery === 0;
+  // The first boss only — see firstBossMult in BALANCE.enemy.
+  const bossBump = (isBoss && wave === BALANCE.bossEvery) ? (BALANCE.enemy.firstBossMult || 1) : 1;
   const isFinal = wave === BALANCE.finalWave;
 
   // Elites are purely a roll now. The door used to be able to force one for
@@ -679,8 +681,8 @@ function makeEnemy(wave) {
     zone: zone.num,        // which zone's roster (and art) this enemy belongs to
     rosterId: face.id,     // which face of that roster — art only, never a rule
     windupEvery: isBoss ? (isFinal ? E.finalWindupEvery : E.windupEvery) : (elite ? E.eliteWindupEvery : 0),
-    maxHp: Math.max(1, Math.round(E.hpBase * g * (isBoss?E.bossHp:1) * (elite&&elite.hpMult?elite.hpMult:1))),
-    damage: Math.max(1, Math.round(E.dmgBase * Math.pow(g, E.dmgExp) * (isBoss?E.bossDmg:E.trashDmgMult))),
+    maxHp: Math.max(1, Math.round(E.hpBase * g * (isBoss?E.bossHp:1) * bossBump * (elite&&elite.hpMult?elite.hpMult:1))),
+    damage: Math.max(1, Math.round(E.dmgBase * Math.pow(g, E.dmgExp) * (isBoss?E.bossDmg:E.trashDmgMult) * bossBump)),
     attackSpeed: Math.min(E.apsCap, (E.apsBase + rateTier*E.apsPerTier) * (isBoss?E.bossAps:1) * (elite&&elite.apsMult?elite.apsMult:1)),
     evadeChance: 0,
     critChance: E.crit, critMult: E.critMult,

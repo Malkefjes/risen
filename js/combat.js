@@ -974,6 +974,35 @@ function onEnemyDefeated() {
   scheduleTurn(doSpawn, turnDelay(BALANCE.spawnDelay * 1000 + 320));
 }
 
+// Pulled out of the fight you lost. The boss is behind you rather than beaten,
+// so its XP is gone with it; what you keep is the run. Mirrors the tail of
+// onEnemyDefeated, because from here on this IS a wave ending.
+function rescueRun() {
+  const p = state.player;
+  state.rescued = true;
+  state.wave++;
+  if (p) {
+    p.hp = Math.max(1, Math.floor(p.maxHp * (P().rescueHpFrac || 0.5)));
+    logEvent('RESCUED', p, null, ['the first boss is behind you', logNum(p.hp) + '/' + logNum(p.maxHp)]);
+  }
+  stopCombatLoop();
+  state.awaitingSpawn = true;
+  state.awaitingInput = false;
+  state.pendingEnemyAct = false;
+  state._defeatLock = false;
+  saveRun();
+  updateHud(); renderSkills();
+  if (p) updateUnitCard(p);
+  // Straight into the scene: there is no quiet beat to hold here, because the
+  // thing being held would be the player's own corpse.
+  //
+  // startCombatLoop, not doSpawn — every path into endRun has already stopped
+  // the loop, and doSpawn refuses to do anything while combatActive is false.
+  // startCombatLoop turns it back on and, seeing awaitingSpawn, schedules the
+  // spawn itself.
+  openScene('rescue', startCombatLoop);
+}
+
 // ---- The run ledger -------------------------------------------
 // ONE FUNNEL FOR EVERY POINT OF DAMAGE THE PLAYER DEALS, so the run total and
 // the per-source breakdown cannot disagree — the total is the sum of the sources
@@ -1006,6 +1035,8 @@ function endRun(won) {
   // it is visible — headless never shows it, and a run ending is a fact about
   // the run either way.
   if (state.runOver) return;
+  // Losing the first boss is survivable exactly once — see rescueAvailable.
+  if (rescueAvailable(won)) { rescueRun(); return; }
   state.runOver = true;
   state.won = !!won;
   stopCombatLoop();

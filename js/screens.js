@@ -109,6 +109,7 @@ function resetRunState(classId) {
   state.runOver = false;
   state.won = false;
   state.inScene = false;
+  state.rescued = false;
 
   // The transient combat UI does not rebuild itself: the fighter panels are
   // replaced by spawnEnemy, but these three only change when something happens
@@ -610,11 +611,32 @@ const SCENES = {
       'Come back when you have more to show me. I will have something for you by then.'
     ],
     choices: [{ label: 'MOVE ON', quiet: false }]
+  },
+  // The same man, on the one occasion you did not walk here. See rescueRun.
+  rescue: {
+    speaker: 'ROGUE LAB SCIENTIST',
+    portrait: 'assets/sprites/rogue lab scientist.png',
+    tint: '#45dfe0',
+    lines: ['You were dead. I have spent a great deal to make that a temporary condition, and I do not intend to spend it twice — so listen carefully the next time we meet.'],
+    choices: [{ label: 'MOVE ON', quiet: false }]
   }
 };
 
 // Which scene, if any, belongs after the wave that was just cleared. Bosses
 // only, and never the run's last one — the win screen owns that moment.
+// THE FIRST BOSS DOES NOT GET TO END THE RUN. It hits for double (see
+// firstBossMult) precisely so it usually wins, and losing to it is the one
+// death in the game with an answer: he pulls you out, you lose the boss and its
+// XP, and you come round on the next wave at half a bar.
+//
+// ONCE ONLY, and the flag rides in the save so a reload cannot re-arm it.
+// It applies in HEADLESS too — it is a rule, not a cutscene, and a rule the sim
+// does not play would break the one invariant that keeps every measured number
+// honest. Only the scene around it is skipped there.
+function rescueAvailable(won) {
+  return !won && !state.rescued && state.wave === BALANCE.bossEvery;
+}
+
 function sceneAfterWave(wave) {
   if (wave % BALANCE.bossEvery !== 0 || wave >= BALANCE.finalWave) return null;
   return 'scientist';

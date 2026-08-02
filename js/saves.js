@@ -179,6 +179,9 @@ function serializeRun() {
     // report a breakdown that starts from the moment you pressed CONTINUE.
     dmgBySource:state.dmgBySource||{}, skillUses:state.skillUses||{},
     peakStrain:state.peakStrain||0,
+    // The one-shot rescue. Saved because it is spent, not because it is a
+    // counter: without it a reload would hand the first boss's answer back.
+    rescued:!!state.rescued,
     // An unconfirmed allocation is not saved — it is refunded. The stats
     // written here are the committed ones, so the points sitting in pending
     // would otherwise vanish with it; reloading puts you back at "N to place,
@@ -349,6 +352,7 @@ function continueRun(slot){
   state.wave=d.wave||1;
   // kills and bestCombo are not saved. They stay at resetRunState's 0 and count
   // from the reload on; the end-of-run report is the only thing that reads them.
+  state.rescued=!!d.rescued;
   state.damageDealt=d.damageDealt||0;
   state.runTurns=d.runTurns||0; state.damageTaken=d.damageTaken||0;
   state.critsLanded=d.critsLanded||0; state.dodges=d.dodges||0;

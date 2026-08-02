@@ -37,7 +37,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-02t';
+const BUILD = '2026-08-02u';
 
 const BALANCE = {
   player: {
@@ -165,6 +165,10 @@ const BALANCE = {
     // to x5 moved the spread build 10w -> 15w, while resolvePerHit 1 -> 8 moved
     // it 12w -> 23w. Speed does not benefit — more of your turns is fewer of
     // theirs, and theirs are the food.
+    // What the scientist leaves you with when he pulls you out of the first
+    // boss. Not a full bar: being saved has to cost something, and the boss's
+    // XP is already gone with it.
+    rescueHpFrac: 0.5,
     resolveDR: 0.03,       // Unmutated: each held Resolve = 3% flat damage reduction
     resolvePerHit: 3,      // Unmutated: Resolve gained whenever you take a hit
     reloadHpFloor: 0.15    // deliberate mercy: continuing a run never puts you below this
@@ -198,6 +202,11 @@ const BALANCE = {
     // bossHp came DOWN from 5.27 to soften the FIRST boss; bossDmg and bossAps
     // are the old brute chassis, folded in when archetypes were removed.
     bossHp: 4.5, bossDmg: 1.82, bossAps: 0.72, bossXp: 3.0,
+    // THE FIRST BOSS IS MEANT TO KILL YOU. It is the one fight in the run with
+    // a scripted answer to losing — the scientist pulls you out — so it hits
+    // for twice the HP and twice the damage of an ordinary boss at its wave.
+    // Applied at wave 5 alone; every later boss is the plain bossHp/bossDmg.
+    firstBossMult: 2,
     trashDmgMult: 1.45,                // trash hits harder so fights cost real HP (bosses use bossDmg)
     // THE TELEGRAPH MULTIPLIER IS FLAT ACROSS ALL THREE BOSSES, so the SHARE of
     // your bar it takes is what moves — and enemy damage grows faster than the
