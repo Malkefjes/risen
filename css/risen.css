@@ -64,7 +64,11 @@
      Retune the four hues here and the whole feature follows — nothing below
      hardcodes a colour. To remove it entirely, see the block near
      .side-stat-row further down. */
-  --stat-str: #ffa93d;      --stat-str-glow: rgba(255,169,61,0.40);
+  --stat-str: #ff6b6b;      --stat-str-glow: rgba(255,107,107,0.40);
+  /* The ATTACK tile's amber. Its own hue rather than Strength's red: the
+     owner wants the stat red and the tile amber, so the two are named
+     separately instead of one pretending to be the other. */
+  --stat-atk: #ffa93d;      --stat-atk-glow: rgba(255,169,61,0.40);
   --stat-instinct: #ffd15c; --stat-instinct-glow: rgba(255,209,92,0.40);
   --stat-speed: #b98cff;    --stat-speed-glow: rgba(185,140,255,0.40);
   --stat-vit: #5fe08a;      --stat-vit-glow: rgba(95,224,138,0.40);
@@ -1825,11 +1829,11 @@ body {
 
 /* ---- THE THREE THAT DECIDE A FIGHT --------------------------------------
    Read as figures, not looked up in a list, and sized as three equals because
-   none of them outranks the others. Each takes the hue of the stat that buys
-   it (see the stat colours in :root), so the tile and the row under it are
-   visibly the same thing. The left rule carries the colour and the number
-   wears it; the label stays muted, because the label is read once and the
-   number is read every turn. */
+   none of them outranks the others. Health and turn rate take the hue of the
+   stat that buys them — green Vitality, purple Speed — so tile and row read as
+   one thing; ATTACK is amber by the owner's choice while Strength stays red.
+   The left rule carries the colour and the number wears it; the label stays
+   muted, because the label is read once and the number is read every turn. */
 .vitals {
   display: flex;
   gap: 0.4rem;
@@ -1879,7 +1883,7 @@ body {
 .vital .delta.on { opacity: 1; }
 
 .vital-hp  { --vital: var(--stat-vit);   --vital-glow: var(--stat-vit-glow); }
-.vital-atk { --vital: var(--stat-str);   --vital-glow: var(--stat-str-glow); }
+.vital-atk { --vital: var(--stat-atk);   --vital-glow: var(--stat-atk-glow); }
 .vital-spd { --vital: var(--stat-speed); --vital-glow: var(--stat-speed-glow); }
 
 .side-stat-row {
