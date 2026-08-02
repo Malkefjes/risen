@@ -2698,3 +2698,100 @@ body {
   .level-badge.level-up { transform: none; }
 }
 
+
+/* ===== SCENES ==============================================================
+   AN EVENT INSIDE THE ARENA, not a screen of its own. The card keeps its frame
+   and its place on the page; what changes is the room, who is standing in it,
+   and the fact that the UI around it steps back. That is the whole trick — a
+   scene that swapped screens would read as leaving the game, and one that
+   spawned a talker into the fighter slot would read as another enemy.
+
+   Sonny keeps his side of the card. Whoever he is meeting takes the enemy's. */
+#combat-screen.scene-on .combat-header,
+#combat-screen.scene-on .action-panel,
+#combat-screen.scene-on .sidebar {
+  opacity: 0;
+  pointer-events: none;
+}
+#combat-screen .combat-header,
+#combat-screen .action-panel,
+#combat-screen .sidebar { transition: opacity 0.7s ease; }
+/* BOTH fighter slots empty for the scene. Keeping Sonny in frame was tried and
+   read badly: his card brings a name plate, a health bar and a THORNS badge —
+   combat furniture in a conversation — and the two sprites are drawn at
+   different scales, so he stood knee-high beside his visitor. The room and the
+   person talking are enough. */
+#combat-screen.scene-on .arena-side { opacity: 0; pointer-events: none; transition: opacity 0.45s ease; }
+
+/* The lab. Declared after the per-zone rules so it wins wherever the run is. */
+.arena-card.scene .arena-backdrop {
+  background:
+    radial-gradient(ellipse 130% 60% at 50% 100%, rgba(4,6,10,0.62) 0%, rgba(4,6,10,0.22) 45%, transparent 75%),
+    linear-gradient(180deg, rgba(7,10,16,0.5) 0%, rgba(7,10,16,0.18) 35%, transparent 65%),
+    url('../assets/zones/rogue%20scientist%20lab.jpg') center bottom / cover no-repeat;
+  filter: blur(1.1px) saturate(1) brightness(1.05);
+}
+
+.scene-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.scene-layer[hidden] { display: none; }
+.scene-layer.in { opacity: 1; }
+
+/* Standing on the floor of the room, clear of the words. `bottom` is set to the
+   height the text block occupies, so he stands ON the box rather than behind
+   it — the one overlap that made the first pass look like two layers instead of
+   one place. */
+.scene-figure {
+  position: absolute;
+  right: 14%;
+  bottom: 23%;
+  height: 58%;
+  display: flex;
+  align-items: flex-end;
+  pointer-events: none;
+}
+.scene-figure img {
+  height: 100%;
+  width: auto;
+  image-rendering: auto;
+  filter: drop-shadow(0 12px 26px rgba(0,0,0,0.65));
+}
+
+/* The words sit along the bottom of the card, clear of both figures. */
+.scene-box {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 26px 22px 18px;
+  background: linear-gradient(180deg, transparent, rgba(4,7,12,0.86) 42%);
+}
+.scene-speaker {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12rem;
+  color: var(--psy);
+  text-shadow: 0 0 18px rgba(192,132,252,0.45);
+  margin-bottom: 5px;
+}
+.scene-line {
+  max-width: 46rem;
+  font-size: 0.86rem;
+  line-height: 1.6;
+  color: var(--text);
+  text-shadow: 0 2px 12px rgba(0,0,0,0.9);
+  min-height: 2.6em;
+}
+.scene-choices {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}

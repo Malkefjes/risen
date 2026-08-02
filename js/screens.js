@@ -108,6 +108,7 @@ function resetRunState(classId) {
   state._lastOverkill = 0;
   state.runOver = false;
   state.won = false;
+  state.inScene = false;
 
   // The transient combat UI does not rebuild itself: the fighter panels are
   // replaced by spawnEnemy, but these three only change when something happens
@@ -579,3 +580,91 @@ function adjustStat(stat, delta) {
   updateHud(); saveRun();
 }
 
+
+// ---- Scenes ---------------------------------------------------
+// A BEAT BETWEEN FIGHTS, played inside the arena card. Combat is spawn-to-spawn
+// and deliberately quick, so the only way an encounter reads as an EVENT rather
+// than as another enemy is to change what the card is: the room becomes
+// somewhere else, the UI around it steps back, and nothing on screen can be
+// pressed except the scene's own choices.
+//
+// It is data, not code. A scene is a speaker, a portrait, a line per visit and
+// a set of choices — so a second character, or a different thing to say at
+// wave 30 than at wave 5, costs an entry here and nothing else.
+//
+// PLACEHOLDER, and knowingly so: the only choice is to leave. The shape is what
+// is being built, so that whatever this becomes — a trade, a boon with a price,
+// a branch — drops into `choices` without touching the wiring.
+const SCENES = {
+  scientist: {
+    speaker: 'ROGUE LAB SCIENTIST',
+    portrait: 'assets/sprites/rogue lab scientist.png',
+    // One per boss cleared, falling back to the last once they run out.
+    lines: [
+      'You are still standing. I did not expect that, and I have been watching for a while.',
+      'The infection is not finished with you. I can read what it is doing — most of it, anyway.',
+      'They are hunting something they do not understand. That is usually how this ends badly for them.',
+      'Come back when you have more to show me. I will have something for you by then.'
+    ],
+    choices: [{ label: 'MOVE ON', quiet: false }]
+  }
+};
+
+// Which scene, if any, belongs after the wave that was just cleared. Bosses
+// only, and never the run's last one — the win screen owns that moment.
+function sceneAfterWave(wave) {
+  if (wave % BALANCE.bossEvery !== 0 || wave >= BALANCE.finalWave) return null;
+  return 'scientist';
+}
+
+function openScene(id, onDone) {
+  const sc = SCENES[id];
+  const layer = document.getElementById('scene-layer');
+  const card = document.getElementById('arena-card');
+  const screen = document.getElementById('combat-screen');
+  if (HEADLESS.on || !sc || !layer || !card) { if (onDone) onDone(); return; }
+
+  state.inScene = true;
+  const bossesCleared = Math.floor(state.wave / BALANCE.bossEvery);
+  const line = sc.lines[Math.min(sc.lines.length - 1, Math.max(0, bossesCleared - 1))];
+
+  document.getElementById('scene-speaker').textContent = sc.speaker;
+  document.getElementById('scene-line').textContent = line;
+  const portrait = document.getElementById('scene-portrait');
+  if (portrait) portrait.src = sc.portrait;
+
+  const choices = document.getElementById('scene-choices');
+  choices.innerHTML = '';
+  sc.choices.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'ui-btn' + (c.quiet ? ' is-quiet' : '');
+    b.type = 'button';
+    b.textContent = c.label;
+    b.addEventListener('click', () => closeScene(onDone));
+    choices.appendChild(b);
+  });
+
+  // The room changes first and the guest arrives into it, rather than both at
+  // once — one movement reads as a place, two read as a slideshow.
+  if (screen) screen.classList.add('scene-on');
+  card.classList.add('scene');
+  layer.hidden = false;
+  void layer.offsetWidth;
+  _revealTimers.push(setTimeout(() => layer.classList.add('in'), 260));
+}
+
+function closeScene(onDone) {
+  const layer = document.getElementById('scene-layer');
+  const card = document.getElementById('arena-card');
+  const screen = document.getElementById('combat-screen');
+  if (layer) layer.classList.remove('in');
+  // Held until the fade is actually over: dropping the lab on the same frame
+  // as the guest puts the next wave's room behind him for an instant.
+  _revealTimers.push(setTimeout(() => {
+    if (layer) layer.hidden = true;
+    if (card) card.classList.remove('scene');
+    if (screen) screen.classList.remove('scene-on');
+    state.inScene = false;
+    if (onDone) onDone();
+  }, 600));
+}

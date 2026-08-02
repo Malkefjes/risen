@@ -956,6 +956,20 @@ function onEnemyDefeated() {
   state._defeatLock = false;
   saveRun();
   updateTurnInfo(); renderSkills();
+
+  // A BOSS EARNS A BEAT. Wave-to-wave the next enemy is already walking in by
+  // design, but dropping straight from a boss into the next grunt gives the
+  // kill nowhere to land — so a scene, if one belongs here, gets a full second
+  // of quiet room first and then takes the card over.
+  //
+  // HEADLESS NEVER SEES IT. A scene changes no rule and no number, so the sim
+  // goes straight on to the next wave: the fight the bot plays and the fight on
+  // screen stay the identical fight.
+  const scene = HEADLESS.on ? null : sceneAfterWave(killedWave);
+  if (scene) {
+    scheduleTurn(() => openScene(scene, doSpawn), turnDelay(1100));
+    return;
+  }
   scheduleTurn(doSpawn, turnDelay(BALANCE.spawnDelay * 1000 + 320));
 }
 

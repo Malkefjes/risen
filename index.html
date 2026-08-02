@@ -159,6 +159,18 @@
             <div class="arena-side" id="enemy-side">
               <div id="enemy-slot"></div>
             </div>
+            <!-- A SCENE INSIDE THE ARENA, not a screen of its own. Sonny keeps
+                 his side of the card; whoever he is meeting takes the enemy's,
+                 and the room around them changes. Hidden until openScene fills
+                 it. -->
+            <div class="scene-layer" id="scene-layer" hidden>
+              <div class="scene-figure"><img id="scene-portrait" alt="" draggable="false"></div>
+              <div class="scene-box">
+                <div class="scene-speaker" id="scene-speaker"></div>
+                <div class="scene-line" id="scene-line"></div>
+                <div class="scene-choices" id="scene-choices"></div>
+              </div>
+            </div>
           </div>
         </div>
 
