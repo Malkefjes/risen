@@ -617,6 +617,12 @@ function sceneAfterWave(wave) {
   return 'scientist';
 }
 
+// The veil's own transition, in one place so the JS waits exactly as long as
+// the CSS takes. Out of step in either direction is the abruptness coming back:
+// too short and the swap happens on a visible frame, too long and the card sits
+// dead. Keep it matched to .arena-veil's transition.
+const SCENE_FADE_MS = 600;
+
 function openScene(id, onDone) {
   const sc = SCENES[id];
   const layer = document.getElementById('scene-layer');
@@ -644,27 +650,45 @@ function openScene(id, onDone) {
     choices.appendChild(b);
   });
 
-  // The room changes first and the guest arrives into it, rather than both at
-  // once — one movement reads as a place, two read as a slideshow.
+  // THROUGH BLACK, NOT ACROSS. The first pass swapped the backdrop on a lit
+  // frame while the old room was still up, which is the abrupt part — a room
+  // does not become another room, it goes dark and you are somewhere else.
+  //
+  // The UI around the card leaves on the same beat as the veil arriving, so the
+  // world recedes and the card blacks out as one movement rather than two.
+  const veil = document.getElementById('arena-veil');
   if (screen) screen.classList.add('scene-on');
-  card.classList.add('scene');
-  layer.hidden = false;
-  void layer.offsetWidth;
-  _revealTimers.push(setTimeout(() => layer.classList.add('in'), 260));
+  if (veil) veil.classList.add('on');
+
+  // Everything that would be seen changing happens while the veil is opaque.
+  _revealTimers.push(setTimeout(() => {
+    card.classList.add('scene');
+    layer.hidden = false;
+    void layer.offsetWidth;
+    layer.classList.add('in');
+    // A held beat on full black before the lab arrives. Without it the veil
+    // reads as a flicker rather than as a cut.
+    _revealTimers.push(setTimeout(() => { if (veil) veil.classList.remove('on'); }, 220));
+  }, SCENE_FADE_MS));
 }
+
 
 function closeScene(onDone) {
   const layer = document.getElementById('scene-layer');
   const card = document.getElementById('arena-card');
   const screen = document.getElementById('combat-screen');
-  if (layer) layer.classList.remove('in');
-  // Held until the fade is actually over: dropping the lab on the same frame
-  // as the guest puts the next wave's room behind him for an instant.
+  const veil = document.getElementById('arena-veil');
+  // Out the way it came in: black first, then the lab goes and the fight's own
+  // room comes back underneath it.
+  if (veil) veil.classList.add('on');
   _revealTimers.push(setTimeout(() => {
-    if (layer) layer.hidden = true;
+    if (layer) { layer.classList.remove('in'); layer.hidden = true; }
     if (card) card.classList.remove('scene');
     if (screen) screen.classList.remove('scene-on');
     state.inScene = false;
+    // The next enemy is spawned behind the veil and revealed with it, so the
+    // wave does not start with a figure appearing out of nothing.
     if (onDone) onDone();
-  }, 600));
+    _revealTimers.push(setTimeout(() => { if (veil) veil.classList.remove('on'); }, 260));
+  }, SCENE_FADE_MS));
 }

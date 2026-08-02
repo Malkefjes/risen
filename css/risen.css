@@ -2732,6 +2732,20 @@ body {
   filter: blur(1.1px) saturate(1) brightness(1.05);
 }
 
+/* Over the room and everyone in it, under nothing. The swap happens while this
+   is opaque, which is the whole reason it exists: a backdrop that changes on a
+   lit frame reads as a bug, and one that changes behind black reads as a cut. */
+.arena-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: #05070c;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 600ms ease;
+}
+.arena-veil.on { opacity: 1; }
+
 .scene-layer {
   position: absolute;
   inset: 0;

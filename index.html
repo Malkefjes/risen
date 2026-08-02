@@ -159,6 +159,10 @@
             <div class="arena-side" id="enemy-side">
               <div id="enemy-slot"></div>
             </div>
+            <!-- The card's own blackout. Every hard cut inside the arena goes
+                 through it, so the room is never seen changing — it goes dark,
+                 becomes somewhere else, and comes back. -->
+            <div class="arena-veil" id="arena-veil"></div>
             <!-- A SCENE INSIDE THE ARENA, not a screen of its own. Sonny keeps
                  his side of the card; whoever he is meeting takes the enemy's,
                  and the room around them changes. Hidden until openScene fills
