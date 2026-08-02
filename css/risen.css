@@ -782,10 +782,14 @@ body {
    the strain art reads on the select screen; .class-preview's height above is
    its box and wants to move with it. */
 .class-preview .char-figure { --sprite-h: clamp(168px, 20vh, 210px); }
-/* The figure box is 1.9x its height, which is wider than a card once the art
-   gets this big. The art itself is portrait so it never reaches that, but the
-   cap keeps a wide pose inside the card instead of behind its clipped edge. */
-.class-preview .char-svg { max-width: 100%; }
+/* NO WIDTH CAP HERE, and that is the whole reason the art sits on its shadow.
+   The strain canvases are 1.83:1 with the figure centred in the middle third
+   and its feet flush to the bottom edge, so at 210px tall the art wants 384px
+   of width — more than a card holds. Capping it to the card made object-fit
+   letterbox the image: it rendered SHORTER than --sprite-h and, being centred,
+   floated clear of the floor plane the shadow is pinned to. Sized by height
+   alone the bottom edge lands on the shadow by construction.
+   What overflows is empty canvas, and .class-card clips it symmetrically. */
 
 .class-name {
   font-family: 'Orbitron', sans-serif;
