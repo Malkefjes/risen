@@ -371,21 +371,29 @@ body {
   transition: background 0.18s ease, border-color 0.18s ease,
               color 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease;
 }
+/* HOVER IS A LIFT, NOT A HUE. The wash and the glow were bio's green while the
+   border was already neutral, so every shared button greened over on hover
+   whatever screen it was on. Both now read --base-rgb, the near-white these
+   edges already use. Alphas sit slightly under the old ones because white
+   carries further than a saturated green at the same value.
+   A button that means something still gets to say so: EVOLVE keeps its strain
+   colour (see #start-btn below), MUTATE its green edge, and the allocation
+   confirm its own. */
 .ui-btn:hover {
-  background: rgba(125, 255, 160, 0.13);
+  background: rgba(var(--base-rgb), 0.10);
   border-color: rgba(var(--base-rgb), 0.75);
   color: #ffffff;
-  box-shadow: 0 0 26px rgba(125, 255, 160, 0.24);
+  box-shadow: 0 0 26px rgba(var(--base-rgb), 0.14);
 }
 .ui-btn:active { transform: translateY(1px); }
 .ui-btn:focus-visible {
-  outline: 2px solid rgba(125, 255, 160, 0.9);
+  outline: 2px solid rgba(var(--base-rgb), 0.9);
   outline-offset: 3px;
 }
 .ui-btn.is-primary {
   border-color: rgba(var(--base-rgb), 0.62);
   color: #f2fff7;
-  box-shadow: inset 0 0 26px rgba(125, 255, 160, 0.10), 0 0 20px rgba(125, 255, 160, 0.12);
+  box-shadow: inset 0 0 26px rgba(var(--base-rgb), 0.08), 0 0 20px rgba(var(--base-rgb), 0.10);
 }
 .ui-btn.is-quiet {
   border-color: rgba(255, 255, 255, 0.14);
