@@ -44,7 +44,7 @@
   --bio: #7dffa0;
   --psy: #c084fc;
   --sym: #fb923c;
-  /* Unmutated has no strain tint — it is the plain white the unit names use,
+  /* Unaugmented has no strain tint — it is the plain white the unit names use,
      which is the point of the class. Aliased rather than copied so it cannot
      drift from --text. */
   --base: var(--text);
@@ -263,7 +263,7 @@ body {
 .save-slot.strain-bio { --class-rgb: 125, 255, 160; }
 .save-slot.strain-psy { --class-rgb: 192, 132, 252; }
 .save-slot.strain-sym { --class-rgb: 251, 146, 60; }
-/* base is --text, aliased not copied: unmutated has no strain tint. */
+/* base is --text, aliased not copied: unaugmented has no strain tint. */
 .save-slot.strain-base { --class-rgb: 238, 242, 255; }
 
 .save-slot-body {
@@ -622,14 +622,17 @@ body {
   text-shadow: 0 2px 12px rgba(0,0,0,0.9), 0 0 26px rgba(238,242,255,0.35);
 }
 
-/* `OWNER:` MUTATE is green is-primary, RESIST MUTATION the same quiet grey as
-   BACK — styling only; RESIST keeps .intro-choice's size. Both stay the same
-   size on purpose: the row before this had three buttons at three sizes and
-   MUTATE read as the answer, RESIST as a warning. */
+/* `OWNER:` the augment door is green is-primary and the clean door the same
+   quiet grey as BACK — styling only; both keep .intro-choice's size. Same size
+   on purpose: the row before this had three buttons at three sizes and the
+   green one read as the answer, the grey one as a warning. (The labels were
+   MUTATE and RESIST MUTATION when this was decided; they are AUGMENT and RUN
+   CLEAN now, and the decision is about the two ROLES, not the words.) */
 /* A GRID, not a flex row, so the two are exactly equal regardless of label
-   length — "MUTATE" and "RESIST MUTATION" are six characters apart and a flex
-   row sized them to their text, which made the shorter one look like the
-   smaller choice. Folds to one column when there is no room for two. */
+   length. A flex row sized them to their text and the shorter one read as the
+   smaller choice — which is why the rename from a six-character gap to a
+   two-character one changed nothing here. Folds to one column when there is no
+   room for two. */
 .intro-fork {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1410,7 +1413,7 @@ body {
    The enemy got this treatment first and the player was deliberately left with
    chips, because its statuses sat beside the old bank pips and needed an edge to
    read as separate things. That reason retired with sym's wallet: only
-   Unmutated draws pips at all now, so the row is statuses and nothing else and
+   Unaugmented draws pips at all now, so the row is statuses and nothing else and
    the boxes were drawing a distinction that no longer exists. One rule, both
    sides — and anything that renders into this row is a `.status` (THORNS is,
    see buildStatusesHtml), so it inherits the treatment for free. */
@@ -1436,7 +1439,7 @@ body {
 .status.stun { color: var(--psy); }
 .status.predator { color: var(--accent); }
 .status.spines { color: var(--sym); }
-/* var(--base), not a hardcoded white: Unmutated's word on a skill card is
+/* var(--base), not a hardcoded white: Unaugmented's word on a skill card is
    .kw-base, and a badge that is a different white from the word naming it is
    the same disagreement in miniature. */
 .status.resolve { color: var(--base); }
@@ -1446,7 +1449,7 @@ body {
 /* THE BANK PIPS ARE GONE, and so is the row that held them. Every strain now
    runs on one uncapped number worn as a status badge above — a fixed row of six
    dots cannot draw a number with no ceiling, so the UI was quietly the thing
-   forcing the ceiling to exist. Unmutated's RESOLVE was the last one left and
+   forcing the ceiling to exist. Unaugmented's RESOLVE was the last one left and
    it reads as a status now like everyone else's. */
 
 /* Floater color is a fixed vocabulary — the color names the EVENT, never the
@@ -1642,7 +1645,7 @@ body {
 .skills[data-built-for="bio"]  { --strain: var(--bio); --strain-glow: rgba(125,255,160,0.55); }
 .skills[data-built-for="psy"]  { --strain: var(--psy); --strain-glow: rgba(192,132,252,0.55); }
 .skills[data-built-for="sym"]  { --strain: var(--sym); --strain-glow: rgba(251,146,60,0.55); }
-/* Unmutated's white carries further than a tint at the same alpha, so its
+/* Unaugmented's white carries further than a tint at the same alpha, so its
    bloom is pulled back to sit at the weight of the other three. */
 .skills[data-built-for="base"] { --strain: var(--base); --strain-glow: rgba(238,242,255,0.32); }
 

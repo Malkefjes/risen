@@ -37,7 +37,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-02am';
+const BUILD = '2026-08-02an';
 
 const BALANCE = {
   player: {
@@ -307,7 +307,7 @@ const CLASSES = {
       { id:'miasma', name:'Miasma', desc:'For {duration#turn}: regenerate {power+} and shed {tickCleanse} POISON each turn. The enemy is WEAK for {weak.duration#turn}', type:'buff', buff:'regen', duration:5, power:0.20, tickCleanse:1, applies:[{ id:'weak', power:0.25, duration:3 }], target:'self', cdTurns:5 }
     ]
   },
-  // THE TERROR MUTANT. Psy's mechanic is DREAD, a mark stacked ON THE ENEMY —
+  // THE TERROR EXTRACTION. Psy's mechanic is DREAD, a mark stacked ON THE ENEMY —
   // see the DREAD block in BALANCE. Four verbs in order: Hunt (land a hit, plant
   // fear), Terrify (a burst of stacks), Traumatize (at 3+ the mind breaks:
   // stun), Kill (cash stacks in as damage — and with the fear spent the enemy
@@ -454,7 +454,7 @@ const ZONES = [
     bossName: 'Prime Symbiote',
     growthMult: 1 },
 
-  { num: 2, name: 'The Laboratory: Mutant Pest Control', label: 'THE LABORATORY: MUTANT PEST CONTROL',
+  { num: 2, name: 'The Laboratory: Asset Recovery', label: 'THE LABORATORY: ASSET RECOVERY',
     startWave: 16, endWave: 30,
     // THREE FACES, ONE STAT LINE. They rotate by wave (see makeEnemy) and are
     // deliberately identical in numbers: a wave-N enemy is a wave-N enemy. If a

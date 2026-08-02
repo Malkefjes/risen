@@ -81,8 +81,6 @@ function devEnterCombat(handoverLine) {
   state.saveSlot = 0;
   const zn = document.getElementById('zone-name');
   if (zn) zn.textContent = getZoneName(state.wave);
-  const an = document.getElementById('act-name');
-  if (an) an.textContent = getActLabel(state.wave);
   const ac = document.getElementById('arena-card');
   if (ac) ac.dataset.zone = zoneForWave(state.wave).num;
   updateHud(); renderCombat(true); renderSkills(); updateTurnInfo();
@@ -150,7 +148,7 @@ function devSkipToZone(classId, zoneNum) {
 
 // RUN CLEAN: a quiet transition beat, then drop into the run as base
 // Sonny. 'base' is named outright rather than leaning on a stored choice.
-function resistMutation() {
+function runClean() {
   playStrainIntro('base', 'You have chosen to go out in the suit as issued…');
 }
 

@@ -106,6 +106,16 @@ did not say.
   want a fun game."* A mechanic he cannot hold in his head is worse than a
   shallower one he can. If explaining a design takes more than a breath, that
   is the design's problem.
+- **`OWNER:` The premise, as of `2026-08-02an`.** Sonny is a MAN IN A CYBERNETIC
+  SUIT — not infected, not a mutant. Mutant Pest Control built the suit to clear
+  its own laboratory, and the Laboratory keeps it strong with EXTRACTIONS refined
+  from its subjects: the ones that mutated, and the ones that were people first.
+  He has started asking what he is made of, which is why MCP now wants him back.
+  The three strains are extraction types; UNAUGMENTED is the suit as issued, with
+  nothing in the lining. Write copy in that voice — clinical, and the horror is
+  in the euphemism ("inventory", "recovered in pieces"). The word *strain* is
+  kept everywhere internal (CSS, save format, `strainNumberNow`) and reads fine
+  as a strain of extracted material; only player-facing text says EXTRACTION.
 - **Design by feel, not by plan.** There is deliberately no roadmap. Don't
   create planning documents; don't accumulate TODO lists in the repo. The
   owner decides what's next by playing.
@@ -198,7 +208,7 @@ did not say.
   rate); enemies are fitted to it and computed by separate functions. See
   the header comment in `js/data.js` before touching balance.
 - **The run is 45 waves across three ZONES** — The Laboratory, The Laboratory:
-  Mutant Pest Control, City Streets — a boss every 5th, and WINNING MEANS CLEARING WAVE 45. The
+  Asset Recovery, City Streets — a boss every 5th, and WINNING MEANS CLEARING WAVE 45. The
   whole run is act 1; the zone is the unit that shapes difficulty. Read the
   count off `BALANCE.finalWave`, never from a literal: a hardcoded 30 in
   `tools/autopsy.mjs` went on reporting a 30-wave game after the run grew.
