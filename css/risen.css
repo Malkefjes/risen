@@ -2742,6 +2742,11 @@ body {
   gap: 2px;
 }
 .scene-panel[hidden] { display: none; }
+/* The words come after he has finished arriving, never with him: a speaker and
+   his line appearing together reads as a screen being drawn, one after the
+   other reads as someone showing up and then talking. */
+.scene-panel { opacity: 0; transition: opacity 500ms ease; }
+.scene-panel.in { opacity: 1; }
 
 /* The lab. Declared after the per-zone rules so it wins wherever the run is. */
 .arena-card.scene .arena-backdrop {
@@ -2766,12 +2771,15 @@ body {
 }
 .arena-veil.on { opacity: 1; }
 
+/* HE ARRIVES SLOWLY. The blackout is a cut; this is a figure resolving out of
+   the room behind it, and at 0.6s it read as a pop. Keep SCENE_FIGURE_MS in
+   screens.js matched to this — the words wait on exactly this duration. */
 .scene-layer {
   position: absolute;
   inset: 0;
   z-index: 2;
   opacity: 0;
-  transition: opacity 0.6s ease;
+  transition: opacity 1400ms ease;
   pointer-events: none;
 }
 .scene-layer[hidden] { display: none; }

@@ -647,6 +647,9 @@ function sceneAfterWave(wave) {
 // too short and the swap happens on a visible frame, too long and the card sits
 // dead. Keep it matched to .arena-veil's transition.
 const SCENE_FADE_MS = 700;
+// How long the figure takes to resolve. The dialogue waits it out — keep it
+// matched to .scene-layer's transition.
+const SCENE_FIGURE_MS = 1400;
 
 function openScene(id, onDone, onBlack) {
   const sc = SCENES[id];
@@ -698,10 +701,15 @@ function openScene(id, onDone, onBlack) {
   _revealTimers.push(setTimeout(() => {
     if (onBlack) onBlack();
     card.classList.add('scene');
-    panel.hidden = false;
     layer.hidden = false;
     void layer.offsetWidth;
     layer.classList.add('in');
+    // He speaks once he is all the way here.
+    _revealTimers.push(setTimeout(() => {
+      panel.hidden = false;
+      void panel.offsetWidth;
+      panel.classList.add('in');
+    }, SCENE_FIGURE_MS));
     // A held beat on full black before the lab arrives. Without it the veil
     // reads as a flicker rather than as a cut.
     _revealTimers.push(setTimeout(() => { if (veil) veil.classList.remove('on'); }, 220));
@@ -720,7 +728,7 @@ function closeScene(onDone) {
   _revealTimers.push(setTimeout(() => {
     if (layer) { layer.classList.remove('in'); layer.hidden = true; }
     const panel = document.getElementById('scene-panel');
-    if (panel) panel.hidden = true;
+    if (panel) { panel.classList.remove('in'); panel.hidden = true; }
     if (card) card.classList.remove('scene');
     if (screen) screen.classList.remove('scene-on');
     state.inScene = false;
