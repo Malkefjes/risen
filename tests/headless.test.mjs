@@ -69,6 +69,16 @@ export default async function ({ page, ok }) {
   // play different games and this assertion failed for a reason that had
   // nothing to do with headless equivalence. Naming the policy on both sides
   // is what makes the comparison mean what it says.
+  //
+  // THE ON-SCREEN SIDE HAS TO PRESS THROUGH A SCENE, because a scene is UI and
+  // the sim skips it by design (see the note above sceneAfterWave). It is not a
+  // pause the run recovers from on its own: the scientist after the first boss
+  // waits on a click forever, so this side used to stop dead at wave 6 while
+  // headless walked on, and the assertion failed for something that is not a
+  // rules difference at all. The bot takes the FIRST choice at every step,
+  // which is the path that leaves rather than the one that starts a fight —
+  // taking `attack` would spawn an enemy headless never sees, and then the two
+  // sides really would be playing different games.
   const head = await page.evaluate((s) => {
     eval('(' + s + ')()');
     const r = simulateRun('bio', { policy: BOTS.smart.policy, allocate: () => 'vit' });
@@ -80,7 +90,12 @@ export default async function ({ page, ok }) {
     localStorage.clear(); goToMenu(); startGame(true, 'bio'); SETTINGS.fastTurns = true;
     for (let i = 0; i < 40000; i++) {
       if (state.runOver) break;
-      if (state.awaitingInput && state.combatActive) {
+      if (state.inScene) {
+        // Exactly what a player does: a press finishes the line, the next one
+        // walks on, and a step that asks something is answered by its buttons.
+        const btn = document.querySelector('#scene-choices button');
+        if (btn) btn.click(); else onScenePanelClick();
+      } else if (state.awaitingInput && state.combatActive) {
         const p = state.player;
         if (p.points > 0) adjustStat('vit', 1);
         else if (pendingTotal(p) > 0) commitStats();
