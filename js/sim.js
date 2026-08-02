@@ -45,9 +45,10 @@ function pumpSteps(limit) {
 //
 //   DUMB     mashes. Presses a button at random with no idea what any of them
 //            do, and throws its stat points wherever.
-//   SMART    presses everything the moment it is available, spreads its points
-//            evenly, and does exactly ONE clever thing: it holds whatever
-//            answers a telegraph, and spends it on the telegraph.
+//   SMART    spreads its points evenly and presses what is worth pressing: it
+//            holds a telegraph answer for the telegraph — but only against
+//            something that can actually telegraph — it does not heal a full
+//            bar, and it does not cash out a finisher with nothing banked.
 //
 // Neither can say whether the answer is GOOD, which is not a machine's call.
 //
@@ -150,6 +151,87 @@ function answerConnects(s, p, e) {
   return forecastTurns(1)[0] === 'foe';
 }
 
+// ---- WHEN A CARD IS WORTH PRESSING ---------------------------------------
+// Pressing everything the moment it lights up throws two cards away, and both
+// are checkable off the card rather than by knowing which class you are:
+//
+//   A HEAL INTO A FULL BAR restores nothing and takes its cooldown with it, so
+//   the heal is missing later when the bar is not full. Healing was measured at
+//   68-91% of all the punishment any build absorbs, and 68-95% of deaths are
+//   ordinary hits rather than telegraphs — attrition is what kills these runs,
+//   and this is the button that answers attrition.
+//
+//   A SPENDER WITH NOTHING BANKED. Kill and Last Stand price themselves off a
+//   pile they consume (perDreadPower per DREAD, perResolvePower per RESOLVE);
+//   at zero stacks they are an ordinary hit on a five-turn cooldown.
+//
+// Neither is an attempt to find the optimal press. They are the two mistakes a
+// person would never make, which is the whole difference the smart column is
+// supposed to be measuring.
+
+// The thresholds, in one object so they can be swept from outside without
+// editing this file. Every one of them was picked by measuring, not by taste.
+const SMART = {
+  healLands: 0.80,   // this share of a heal must land...
+  healPanic: 0.35,   // ...unless the bar is under this, where waste beats dying
+  spendMin: 3,       // never cash a finisher at less than this
+  spendDeep: 15      // ...and otherwise only when the pile is at least this deep
+};
+
+// What the heal would restore. Only the declared share of the anchor counts:
+// sym's Shed tops up out of THORNS as well, but shedForHeal tears off only as
+// many as the wound still needs, so that half can never be wasted.
+function healAmount(s, p) {
+  if (s.healFrac == null) return 0;
+  return Math.max(1, Math.floor(healAnchorFor(p) * s.healFrac));
+}
+// SWEPT, AND IT MOVES NOTHING at today's heal numbers: eager (0.5/0.55) and
+// strict (1.3/0.20) both landed within a wave of this, on every strain. Kept
+// because a bot that heals a full bar is not a proxy for anybody, but do not
+// credit it with a number — re-run the sweep before assuming it earns one.
+function healWorthIt(s, p) {
+  if (p.hp / Math.max(1, p.maxHp) <= SMART.healPanic) return true;
+  return (p.maxHp - p.hp) >= healAmount(s, p) * SMART.healLands;
+}
+
+// A FINISHER IS FOR FINISHING, and that is the whole of this rule. Measured on
+// the bot that pressed them on cooldown: base cashed Last Stand 17.7 times per
+// 100 turns against a five-turn cooldown — nine opportunities in ten — and Last
+// Stand spends ALL of its RESOLVE. RESOLVE is not a damage counter, it is base's
+// damage reduction and the depth of every wound it opens, so the bot was
+// resetting the class's own ramp every five turns for one big hit.
+//
+// So a spender is pressed on one of two conditions: the blow would drop the
+// enemy, or the pile is deep enough that cashing it beats holding it.
+//
+// The damage estimate mirrors the pipeline's shape rather than calling into it
+// — a bot's guess about its own next press, not a number shown to anybody, so
+// it is allowed to be approximate in a way a card is not.
+function spendStacks(s, p, e) {
+  if (s.consumesDread) return e ? statusStacks(e, 'dread') : 0;
+  if (s.consumesResolve) return statusStacks(p, 'resolve');
+  return 0;
+}
+function spenderDamage(s, p, e) {
+  let mult = s.power || 1;
+  if (s.consumesDread)
+    mult += (s.perDreadPower || 0) * Math.ceil(spendStacks(s, p, e) * (s.consumeFrac || 1));
+  if (s.consumesResolve) mult += (s.perResolvePower || 0) * spendStacks(s, p, e);
+  return p.atkPower * mult;
+}
+function spenderWorthIt(s, p, e) {
+  if (!s.consumesDread && !s.consumesResolve) return true;
+  const stacks = spendStacks(s, p, e);
+  if (stacks < SMART.spendMin) return false;
+  if (e && spenderDamage(s, p, e) >= e.hp) return true;   // it finishes — take it
+  return stacks >= SMART.spendDeep;
+}
+
+function worthPressing(s, p, e) {
+  if (s.healFrac != null && !healWorthIt(s, p)) return false;
+  return spenderWorthIt(s, p, e);
+}
+
 function smartPolicy(p) {
   const e = state.enemy;
   const ready = p.skills.filter(s => !s.basic && s.cd <= 0);
@@ -164,11 +246,25 @@ function smartPolicy(p) {
     if (answer) return answer;
   }
 
-  // 2. EVERYTHING ELSE, ON COOLDOWN — except an answer, which is never spent
-  //    on anything but rule 1. Held through a full bar, held at one HP, held
-  //    against trash that has no telegraph at all. That is the experiment:
-  //    what the discipline alone is worth.
-  return ready.find(s => !isAnswer(s)) || basic;
+  // 2. AGAINST SOMETHING THAT NEVER TELEGRAPHS, AN ANSWER IS JUST A CARD.
+  //    Trash carries windupEvery 0 — it has no charge to interrupt, ever — so
+  //    holding a stun or a brace against one is hoarding against a threat that
+  //    cannot arrive. The discipline is kept exactly where it is paid for:
+  //    bosses and elites do telegraph, and they still never see these cards
+  //    spent on anything but rule 1.
+  //
+  //    Measured, even spread, 60 runs a cell: psy 12 -> 19, base 22 -> 27,
+  //    bio 12 -> 13, sym unchanged. Spending answers against EVERYTHING instead
+  //    was tried and thrown out — it cost base 8 waves and sym 5, because a
+  //    brace spent early and a Provoke that buys a swing for nothing are both
+  //    straight losses.
+  const neverTelegraphs = !e || !(e.windupEvery > 0);
+  const pool = neverTelegraphs ? ready : ready.filter(s => !isAnswer(s));
+
+  //    A card held back by worthPressing is NOT skipped for the turn — the
+  //    search falls through to the next ready card and then to the basic, which
+  //    is what a person does while waiting for a finisher to be worth cashing.
+  return pool.find(s => worthPressing(s, p, e)) || basic;
 }
 
 // The registry, shaped so a bot IS a simulateRun opts object: pass it straight

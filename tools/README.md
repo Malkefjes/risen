@@ -17,18 +17,24 @@ All of them go through `simulateRun` inside the game, so a few hundred runs
 finish in the time it takes to start a browser. They used to drive the real UI
 one turn at a time and took minutes per run.
 
-There are TWO bots, defined as `BOTS` in `js/sim.js`, and one difference
-between them that matters. **dumb** presses a button at random — cooldowns
-included, it does not know what a cooldown is — and throws its stat points
-anywhere. **smart** presses everything the moment it is available, spreads its
-points evenly one at a time, and holds whatever answers a telegraph (a stun, a
-Provoke, a brace, a damage-reducing buff), spending it on the telegraph and
-never on anything else. Either drops straight into `simulateRun(cls,
-BOTS.smart)`.
+There are TWO bots, defined as `BOTS` in `js/sim.js`. **dumb** presses a button
+at random — cooldowns included, it does not know what a cooldown is — and
+throws its stat points anywhere. **smart** spreads its points evenly one at a
+time and presses what is worth pressing: it holds a telegraph answer (a stun, a
+Provoke, a brace, a damage-reducing buff) for the telegraph, but only against an
+enemy that can actually telegraph; it does not heal a full bar; and it does not
+cash a finisher that spends a resource with nothing banked behind it. Either
+drops straight into `simulateRun(cls, BOTS.smart)`.
 
-So the gap between the columns is close to one question: what is reading the
-windup worth, in waves? Measured when they were built, smart answers 79-93% of
-the telegraphs it faces with no whiffs, against 0-44% for dumb.
+Those last three came out of measuring what the bot was throwing away rather
+than from taste, and the sizes are in the comments beside them. The largest was
+base: pressing Last Stand on cooldown dumped the RESOLVE that is also its damage
+reduction, and holding it took base's median from 15 to 24.
+
+The gap between the columns is no longer one question — it is now "what is
+playing the cards properly worth", of which reading the windup is one part. The
+telegraph answer-rates quoted here previously (79-93% smart against 0-44% dumb)
+were taken before that, and have not been re-measured since.
 
 There used to be a third, "greedy", frozen so that balance numbers quoted in
 old commit messages stayed comparable. It is gone, and so are the per-strain

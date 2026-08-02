@@ -166,10 +166,10 @@ did not say.
 - `tools/` — read-only balance instruments built on `simulateRun`
   (autopsy, bot-bracket, single-stat, double-stat, transcript). They print
   numbers, never verdicts. TWO bots live in `js/sim.js`: **dumb** mashes random
-  buttons and allocates at random; **smart** presses everything on cooldown, spreads
-  points evenly, and holds its telegraph answer for the telegraph. The spread
-  between them is close to a single question — what is reading the windup
-  worth.
+  buttons and allocates at random; **smart** spreads points evenly and skips the
+  presses that throw a card away — it holds a telegraph answer for the telegraph
+  (but only against something that telegraphs), never heals a full bar, and
+  never cashes a finisher on an empty pile.
 
 ## Invariants (learned the hard way — do not rediscover)
 
