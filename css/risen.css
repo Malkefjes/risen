@@ -2718,6 +2718,15 @@ body {
    different scales, so he stood knee-high beside his visitor. */
 #combat-screen.scene-on .arena-side { opacity: 0; pointer-events: none; transition: opacity 0.45s ease; }
 
+/* The chain counter belongs to the fight, not to the room. It carries a z-index
+   of 6 to sit over the arena, which put it over the blackout as well — so a
+   "4x CHAIN" rode straight through the cut and stood in the scientist's lab.
+   VISIBILITY, not display: updateCombo writes `display` inline as it shows and
+   hides the meter, and an inline style beats a stylesheet rule — the first
+   attempt at this did nothing at all for exactly that reason. The streak
+   itself is untouched underneath. */
+#combat-screen.scene-on .combo-meter { visibility: hidden; }
+
 /* The skills stay in the layout and go invisible, rather than leaving it. The
    panel keeps its exact height, so the sidebar beside it does not move and the
    page does not jump on the way in or out. */
@@ -2785,13 +2794,18 @@ body {
   filter: drop-shadow(0 14px 30px rgba(0,0,0,0.7));
 }
 
+/* THE SPEAKER WEARS THEIR OWN COLOUR, set per scene as --scene-tint (see the
+   `tint` field in SCENES). The scientist is teal because his coat, his goggles
+   and his lab all are; a purple name was the strain palette leaking into
+   somebody who has nothing to do with it. The glow is currentColor, so it
+   follows the tint without a second value to keep in step. */
 .scene-speaker {
   font-family: 'Orbitron', sans-serif;
   font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.12rem;
-  color: var(--psy);
-  text-shadow: 0 0 18px rgba(192,132,252,0.45);
+  color: var(--scene-tint, var(--text));
+  text-shadow: 0 0 16px currentColor;
   margin-bottom: 7px;
 }
 .scene-line {

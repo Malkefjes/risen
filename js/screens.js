@@ -599,6 +599,9 @@ const SCENES = {
   scientist: {
     speaker: 'ROGUE LAB SCIENTIST',
     portrait: 'assets/sprites/rogue lab scientist.png',
+    // What his name is written in. Teal to match his own art — the coat, the
+    // goggles and the room he stands in are all the same cyan.
+    tint: '#45dfe0',
     // One per boss cleared, falling back to the last once they run out.
     lines: [
       'You are still standing. I did not expect that, and I have been watching for a while.',
@@ -636,6 +639,7 @@ function openScene(id, onDone) {
   const line = sc.lines[Math.min(sc.lines.length - 1, Math.max(0, bossesCleared - 1))];
 
   document.getElementById('scene-speaker').textContent = sc.speaker;
+  panel.style.setProperty('--scene-tint', sc.tint || 'var(--text)');
   document.getElementById('scene-line').textContent = line;
   const portrait = document.getElementById('scene-portrait');
   if (portrait) portrait.src = sc.portrait;
