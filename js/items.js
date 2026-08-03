@@ -20,11 +20,11 @@
 // nothing and gives the deferred REFINEMENT system something to act on ("this
 // has an open suffix" becomes a real statement).
 //
-// TIERS T1-T5, T1 BEST, PRINTED ON EVERY LINE. The drop wave sets the ceiling
-// and the roll is weighted toward the top of what is unlocked, so late drops
-// are usually good and a T1 is still a moment. The tier on the card is the
-// point: it makes a drop legible at a glance instead of arithmetic against
-// what you are wearing.
+// TIERS T1-T5, T1 BEST, AND INVISIBLE. The drop wave sets the ceiling and the
+// roll is weighted toward the top of what is unlocked, so late drops are
+// usually good and a T1 is still a moment — but the tier itself never reaches
+// the card (owner's call): the rolled VALUE already says how good a line is,
+// and a tier beside it is a second number to decode for the same answer.
 //
 // Items are plain JSON: they ride in the save (player.gear) and must stay
 // serializable. Every roll uses Math.random — a drop is a rule, and headless
@@ -82,7 +82,8 @@ function rollTier(wave) {
   }
   return avail[avail.length - 1];
 }
-const tierName = t => 'T' + (t + 1);
+// The tier is NOT shown on a card — see affixLine. It still decides what a
+// line rolls and the bots still price by it; the player reads the value.
 
 // ---- Prefixes: stat points --------------------------------------
 // `groups` is what the no-duplicates rule reads: a hybrid claims BOTH of its
@@ -301,7 +302,10 @@ function botTakesDrop(p, it) {
 }
 
 // ---- Display ----------------------------------------------------
-function affixLine(tier, text) { return tierName(tier) + '  ' + text; }
+// `tier` is taken and deliberately unused: it stays in the data (generation
+// reads it, itemScore prices by it) and off the card, where "T4" is a second
+// number to decode beside the one that already says how good the line is.
+function affixLine(tier, text) { return text; }
 function itemImplicitLine(it) {
   if (!it || !it.implicit) return '';
   const def = ITEM_MODS[it.implicit.mod];

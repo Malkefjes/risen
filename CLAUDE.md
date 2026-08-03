@@ -339,8 +339,9 @@ did not say.
   fixed to the slot, PREFIXES that are stat POINTS (singles and hybrids),
   SUFFIXES that are PERCENTAGES, no two affixes sharing a group (the implicit
   claims its own, so a card never spends two of four lines saying one thing),
-  and T1-T5 tiers gated by the drop wave and PRINTED on every line — the tier
-  is what makes a drop legible without arithmetic. Rarity is affix count and
+  and T1-T5 tiers gated by the drop wave but NEVER SHOWN (his call — the
+  rolled value already says how good a line is, and a tier beside it is a
+  second number to decode for the same answer). Rarity is affix count and
   nothing else: STANDARD 1 prefix, REFINED 1+1, PROTOTYPE 2+1. FOUR LINES IS
   THE CEILING, because the drop card is a three-second read with no inventory
   behind it. Measured after: gear supplies 39% of the stat sheet at wave 30
