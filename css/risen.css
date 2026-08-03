@@ -1761,6 +1761,10 @@ body {
   flex-direction: column;
   gap: 14px;
 }
+/* The two glass slabs end on the same line: the sidebar already stretches to
+   the row's full height, so the action panel absorbs the column's leftover
+   instead of leaving it as a gap under its own bottom edge. */
+.combat-main .action-panel { flex: 1 0 auto; }
 
 .sidebar {
   overflow: hidden;
