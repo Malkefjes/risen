@@ -37,7 +37,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-03q';
+const BUILD = '2026-08-03r';
 
 const BALANCE = {
   player: {
@@ -660,6 +660,17 @@ const ZONES = [
     bossSegment: 10, extraBossChance: 0.12,
     eliteBaseChance: 0.35, eliteChanceCap: 0.65,
     growthMult: 17, tierGrowth: 1.22, withinStep: 0.04,
+    // ---- THE WALL (2026-08-03r) -------------------------------------------
+    // HARDER, NOT LONGER, and that is the only shape of difficulty worth
+    // adding here. Measured before: a zone-4 boss took 116-134 basic attacks
+    // at every depth, so the endgame was a GRIND that also happened to be
+    // dangerous. These three move the danger and shorten the grind:
+    //   dmgMult  every enemy in the zone swings harder
+    //   apsMult  and acts more often, which is where attrition actually comes
+    //            from — 87-96% of deaths all session have been ordinary hits
+    //   hpExp    while pools grow slower than the rest of the game's 0.75, so
+    //            the wall is SHARP rather than long
+    dmgMult: 1.18, apsMult: 1.25, hpExp: 0.70,
     windupMult: 1.35, eliteWindupMult: 1.15 }
 ];
 function zoneForWave(wave) {

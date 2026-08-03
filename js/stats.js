@@ -761,9 +761,16 @@ function makeEnemy(wave) {
     windupEvery: isBoss ? (isFinal ? E.finalWindupEvery : E.windupEvery) : (elite ? E.eliteWindupEvery : 0),
     // Pools ride hpExp, damage rides dmgExp — see the note on hpExp for why
     // the two are deliberately different exponents on the same growth factor.
-    maxHp: Math.max(1, Math.round(E.hpBase * Math.pow(g, E.hpExp != null ? E.hpExp : 1) * (isBoss?E.bossHp:1) * bossBump * (elite&&elite.hpMult?elite.hpMult:1))),
-    damage: Math.max(1, Math.round(E.dmgBase * Math.pow(g, E.dmgExp) * (isBoss?E.bossDmg:E.trashDmgMult) * bossBump)),
-    attackSpeed: Math.min(E.apsCap, (E.apsBase + rateTier*E.apsPerTier) * (isBoss?E.bossAps:1) * (elite&&elite.apsMult?elite.apsMult:1)),
+    // A zone may override either, and may scale damage and tempo outright:
+    // that trio is how a zone gets HARDER without getting LONGER, which is the
+    // only shape of difficulty worth adding (see the endgame's note in ZONES).
+    maxHp: Math.max(1, Math.round(E.hpBase
+      * Math.pow(g, zone.hpExp != null ? zone.hpExp : (E.hpExp != null ? E.hpExp : 1))
+      * (isBoss?E.bossHp:1) * bossBump * (elite&&elite.hpMult?elite.hpMult:1))),
+    damage: Math.max(1, Math.round(E.dmgBase * Math.pow(g, E.dmgExp)
+      * (zone.dmgMult || 1) * (isBoss?E.bossDmg:E.trashDmgMult) * bossBump)),
+    attackSpeed: Math.min(E.apsCap, (E.apsBase + rateTier*E.apsPerTier)
+      * (zone.apsMult || 1) * (isBoss?E.bossAps:1) * (elite&&elite.apsMult?elite.apsMult:1)),
     evadeChance: 0,
     critChance: E.crit, critMult: E.critMult,
     xpMult: (isBoss?E.bossXp:1) * (elite?elite.xp:1),
