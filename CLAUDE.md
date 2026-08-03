@@ -221,16 +221,11 @@ did not say.
   10-wave boundary (40/50/60) plus `extraBossChance` on any other wave, about
   6 a run, all wearing one face and rolling their VERB rather than carrying an
   authored one. WINNING MEANS CLEARING WAVE 60.
-  **THE DIFFICULTY LIVES HERE AND ONLY HERE, and that is the owner's design**
-  (stated 2026-08-03r): *"what i like personally is which thing do i scale as
-  hard as possible such that i can beat the hardest content."* Many axes to
-  scale, an easy ramp to assemble on, and a wall at the end. A change that
-  makes zones 1-3 easier is NOT a regression — do not report it as one. The
-  wall is what says no.
-  Its three levers are HARDER, NOT LONGER — `dmgMult`, `apsMult` and a steeper
-  `hpExp` — because a zone-4 boss already took 116-134 basic attacks and a
-  grind is not a difficulty. Measured after: a boss blow runs 52% of the bar
-  at wave 31 and 86% at 60, its telegraph 117% (lethal) at the finale.
+  **`OWNER:` The difficulty is concentrated here** — *"which thing do i scale
+  as hard as possible such that i can beat the hardest content."* Zone 4's
+  levers are `dmgMult` / `apsMult` / `hpExp`, chosen over pools because a boss
+  already took 116-134 basic attacks. Measured after: a boss blow is 52% of
+  the bar at wave 31 and 86% at 60, its telegraph 117%.
   Read the count off `BALANCE.finalWave`, never from a literal: a hardcoded 30
   in `tools/autopsy.mjs` went on reporting a 30-wave game after the run grew.
   A level grants exactly 3 stat points (`pointsPerLevel`).
