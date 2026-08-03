@@ -432,13 +432,12 @@ function applyDerivedStats(p) {
     (1 + Math.max(0, (p.level || 1) - 1) * (B.healAnchorPerLevel || 0))
   ));
 
-  // THE THREE DEFENSIVE LAYERS, one curve, one K — see the block above
-  // defenseK. Gear adds to the reduction directly and the cap is a backstop.
+  // THE TWO DEFENSIVE LAYERS, one curve, one K — see the block above defenseK.
+  // Gear adds to the reduction directly and the cap is a backstop.
   const K = B.defenseK || 45, cap = B.defenseCap || 0.90;
   const layer = (pts, mod) => Math.min(cap, pts / (pts + K) + gearMod(p, mod));
   p.armor   = layer(str, 'armor');        // every hit
-  p.evasion = layer(speed, 'evasion');    // ordinary swings
-  p.read    = layer(instinct, 'read');    // telegraphed heavies
+  p.evasion = layer(speed, 'evasion');    // every swing, heavy or not
   // Vitality's faucet: a share of the anchor per turn, from points above the
   // starting sheet only.
   p.regen = Math.max(0, vit - BALANCE.player.sheetAnchor) * (B.regenPerVit || 0);
@@ -628,7 +627,6 @@ function readouts(p) {
     { id:'hp',    text: formatNum(Math.floor(p.maxHp)), num: Math.floor(p.maxHp) },
     pct('armor', p.armor),
     pct('evasion', p.evasion),
-    pct('read', p.read),
     { id:'regen', text: p.regen > 0 ? formatNum(Math.floor(healAnchorFor(p) * p.regen)) + '/turn' : '\u2014',
       num: Math.floor(healAnchorFor(p) * p.regen), unit:'/turn' }
   );

@@ -111,7 +111,7 @@ const ITEM_PREFIXES = [
 
 // ---- Suffixes: percentages --------------------------------------
 // Where each lands in the rules:
-//   critCh / critDmg / evasion / armor / read / apsBoost / dmgMult
+//   critCh / critDmg / evasion / armor / apsBoost / dmgMult
 //                                 applyDerivedStats, folded into the layers
 //   healBoost                     healAnchorFor — every anchored heal
 //   xpBoost                       the kill XP in onEnemyDefeated
@@ -120,7 +120,6 @@ const ITEM_MODS = {
   critDmg:   { id: 'critDmg',   step: 0.05, text: v => '+' + v.toFixed(2) + '× crit damage' },
   evasion:   { id: 'evasion',   step: 0.01, text: v => '+' + Math.round(v * 100) + '% evasion' },
   armor:     { id: 'armor',     step: 0.01, text: v => '+' + Math.round(v * 100) + '% armor' },
-  read:      { id: 'read',      step: 0.02, text: v => '+' + Math.round(v * 100) + '% read (telegraphs)' },
   healBoost: { id: 'healBoost', step: 0.02, text: v => '+' + Math.round(v * 100) + '% healing' },
   xpBoost:   { id: 'xpBoost',   step: 0.01, text: v => '+' + Math.round(v * 100) + '% XP' },
   apsBoost:  { id: 'apsBoost',  step: 0.01, text: v => '+' + Math.round(v * 100) + '% turn rate' },
@@ -136,8 +135,6 @@ const ITEM_SUFFIXES = [
     tiers: [[0.08, 0.10], [0.06, 0.08], [0.04, 0.06], [0.03, 0.04], [0.02, 0.03]] },
   { id: 's_armor',     mod: 'armor',     groups: ['armor'],
     tiers: [[0.10, 0.13], [0.07, 0.10], [0.05, 0.07], [0.03, 0.05], [0.02, 0.03]] },
-  { id: 's_read',      mod: 'read',      groups: ['read'],
-    tiers: [[0.30, 0.38], [0.24, 0.30], [0.18, 0.24], [0.12, 0.18], [0.08, 0.12]] },
   { id: 's_healBoost', mod: 'healBoost', groups: ['healBoost'],
     tiers: [[0.38, 0.50], [0.28, 0.38], [0.20, 0.28], [0.14, 0.20], [0.08, 0.14]] },
   { id: 's_xpBoost',   mod: 'xpBoost',   groups: ['xpBoost'],
@@ -152,8 +149,8 @@ const ITEM_SUFFIXES = [
 const SLOT_SUFFIXES = {
   optics:    ['s_critCh', 's_critDmg', 's_xpBoost'],
   gauntlets: ['s_dmgMult', 's_critDmg', 's_critCh'],
-  armor:     ['s_armor', 's_read', 's_healBoost'],
-  repair:    ['s_healBoost', 's_read', 's_xpBoost'],
+  armor:     ['s_armor', 's_evasion', 's_healBoost'],
+  repair:    ['s_healBoost', 's_armor', 's_xpBoost'],
   boots:     ['s_apsBoost', 's_evasion', 's_critCh']
 };
 

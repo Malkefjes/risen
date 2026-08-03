@@ -208,16 +208,19 @@ did not say.
 - **The player sheet is the anchor** (5/5/5/5, 25 dmg, 100 HP, 1.00 turn
   rate); enemies are fitted to it and computed by separate functions. See
   the header comment in `js/data.js` before touching balance.
-- **`OWNER:` EVERY STAT BUYS OFFENCE AND A DEFENSIVE LAYER** (2026-08-03s).
-  Block and evade were CHANCE and both capped, so past ~41 Vitality a point
-  bought no defence at all — and a coin flip is worth less the bigger a hit
-  gets. Replaced with three reductions on one curve, `X / (X + defenseK)`: no
-  cap, always worth another point, never immunity. ARMOR (Strength) answers
-  every hit, EVASION (Speed) ordinary swings, READ (Instinct) telegraphed
-  heavies, and Vitality adds HP plus per-turn recovery. They MULTIPLY, so the
-  right pair depends on what is killing you. Measured: it roughly tripled
-  effective HP, which is why zone 4's `dmgMult` went 1.18 -> 2.6 in the same
-  change.
+- **`OWNER:` DEFENCE IS REDUCTION, NOT CHANCE** (2026-08-03s). Block and evade
+  were CHANCE and both capped, so past ~41 Vitality a point bought no defence
+  at all — and a coin flip is worth less the bigger a hit gets. Replaced with
+  reductions on one curve, `X / (X + defenseK)`: no cap, always worth another
+  point, never immunity. ARMOR (Strength) and EVASION (Speed) both answer every
+  hit; Vitality adds HP plus per-turn recovery. They MULTIPLY. Measured: it
+  roughly tripled effective HP, which is why zone 4's `dmgMult` went
+  1.18 -> 2.6 in the same change.
+  **A third layer, READ (Instinct, telegraphed heavies only), was CUT
+  2026-08-03w** — his call: *"just not clicking and i dont think it deserves to
+  be a stat."* A telegraph is answered by pressing the answer. So Instinct is
+  offence alone now, and the earlier "every stat buys a defensive layer" rule
+  is retired rather than a thing to restore.
 - **`OWNER:` The run is 60 waves: three ZONES of ten, then a 30-wave ENDGAME**
   (restructured 2026-08-03d, endgame added 2026-08-03n, both his design) — The
   Laboratory, The Laboratory: Asset Recovery, City Streets, then MUTANT PEST

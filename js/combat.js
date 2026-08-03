@@ -567,13 +567,11 @@ function applyEnemyDamage(e, p, mult, opts) {
   if (Math.random() < e.critChance) { dmg = Math.floor(dmg * e.critMult); notes.push('CRIT ×' + e.critMult.toFixed(1)); }
   notes.push(...statusNotes(p, 'incomingMult', { attacker: e }));
   dmg = Math.floor(dmg * statusMult(p, 'incomingMult', { attacker: e }));
-  // THE DEFENSIVE LAYERS, multiplied. ARMOR answers every hit; the second
-  // layer depends on what is coming — a telegraphed heavy is answered by the
-  // READ (Instinct: you saw it), an ordinary swing by EVASION (Speed). That
-  // split is what makes the right defence depend on what is killing you.
-  const heavy = (mult || 1) > 1;
-  const layers = [['ARMOR', p.armor || 0]];
-  layers.push(heavy ? ['READ', p.read || 0] : ['EVASION', p.evasion || 0]);
+  // THE DEFENSIVE LAYERS, multiplied. ARMOR (Strength) and EVASION (Speed)
+  // both answer every hit, heavy or not. READ was a third layer on Instinct,
+  // against telegraphed heavies only, and it is gone (owner, 2026-08-03w) — a
+  // telegraph is answered by PRESSING the answer, not by a stat.
+  const layers = [['ARMOR', p.armor || 0], ['EVASION', p.evasion || 0]];
   let kept = 1;
   for (const [name, r] of layers) {
     if (!(r > 0)) continue;

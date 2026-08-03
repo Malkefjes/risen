@@ -37,7 +37,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-03v';
+const BUILD = '2026-08-03w';
 
 const BALANCE = {
   player: {
@@ -62,24 +62,24 @@ const BALANCE = {
     pointsPerLevel: 3,
     // Set so a starting sheet reads 10 / 10 / 10 at 5 in every stat. Evade and
     // block look odd alone because each is "10% minus the starting 5 points".
-    // ---- DEFENCE: EVERY STAT BUYS A LAYER ---------------------------------
+    // ---- DEFENCE ----------------------------------------------------------
     // Block and evade were CHANCE, and chance does not scale: both capped
     // (40% / 35%), so past ~41 Vitality a point bought no defence at all, and
     // a coin flip is worth less the bigger a hit gets — you live until two
-    // land in a row. Replaced with three reductions on one curve:
+    // land in a row. Replaced with reductions on one curve:
     //
     //   ARMOR    (Strength)  every hit
-    //   EVASION  (Speed)     ordinary swings only
-    //   READ     (Instinct)  telegraphed heavies only
+    //   EVASION  (Speed)     every hit
     //
-    // X / (X + defenseK): no cap, always worth another point, never immunity —
-    // which is what makes "how far do I push this before switching layers" a
-    // real question. One shared K so the three are directly comparable, and 5
-    // points reads 10% exactly like the old pair did.
+    // X / (X + defenseK): no cap, always worth another point, never immunity.
+    // One shared K so the two are directly comparable, and 5 points reads 10%
+    // exactly like the old pair did. THEY MULTIPLY, so two at 50% is 4x
+    // effective HP, not 2x.
     //
-    // THEY MULTIPLY, so two layers at 50% is 4x effective HP, not 2x — and
-    // because Instinct answers the telegraph and Speed answers attrition, the
-    // right pair depends on what is actually killing you.
+    // A third layer, READ (Instinct, against telegraphed heavies only), was cut
+    // 2026-08-03w — the owner was not pressing it and did not want a stat for
+    // it. A telegraph is answered by the button that answers it. Vitality buys
+    // HP and recovery; Instinct is now offence alone.
     defenseK: 45,
     defenseCap: 0.90,        // per layer, after gear — a backstop, not a target
     // Vitality's second job. Zero at the starting sheet (it reads points ABOVE
