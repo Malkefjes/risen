@@ -333,14 +333,25 @@ did not say.
   psy/sym/base each have two to four. After: Poison 70% / Slash 25%, the shape
   base (54/23) and sym (56/38) already had; damage per turn 366 -> 454, wins
   1 -> 5 per 100, median wave 38 -> 44.
-  **IT IS STILL LAST, AND DAMAGE IS NOT WHY.** bio now out-damages base per
-  turn (454 against 401) and wins 5 against its 63. What separates them is
-  MITIGATION — 53% of what was aimed at bio is stopped, against 73% for base at
-  the same allocation — and the reason is that base's ramp is DEFENSIVE as well
-  as offensive: RESOLVE grows all fight and buys reduction, while bio's Chitin
-  is a flat -40% that is worth the same at wave 1 and wave 60. Bio scales
-  damage and never scales survival, and 93-95% of its deaths are ordinary hits.
-  That is the next thing to try, not a bigger `poisonScale`.
+  **AND THE PIPE WAS NOT THE WHOLE PROBLEM.** With it, bio out-damaged base per
+  turn (454 against 401) and still won 5 against its 63 — so damage was never
+  the gap. MITIGATION was: 53% of what was aimed at bio got stopped against
+  base's 73% on the same allocation, because base's ramp is DEFENSIVE as well
+  as offensive (RESOLVE grows all fight and buys reduction) while Chitin is a
+  flat -40% worth the same at wave 1 and wave 60. Bio scaled damage and never
+  scaled survival, and 93-95% of its deaths were ordinary hits.
+  **SO POISON GOT A SECOND JOB TOO** (`poisonWeakenPerStack` 0.008, cap 0.30,
+  2026-08-03aa): the rot takes the edge off its host's swing, which is the same
+  uncapped-count/bounded-effect shape DREAD and RESOLVE already use. It
+  SATURATES LATE on purpose — ~37 stacks against a median peak of 57, so most
+  of a fight is spent below the cap and stacking more still pays. That is the
+  lesson from DREAD, whose slow saturated at 9 out of 30-44 and was therefore
+  free. Only the rot bio plants weakens; a venomous elite's poison on the
+  player is the same status and is excluded, or every strain would quietly get
+  a damage debuff nobody built for. Measured after: mitigation 53% -> 64%,
+  wins 5 -> 39 per 100, median wave 44 -> 57, p10 30 -> 40. Standings went
+  base 63 / psy 28 / sym 12 / bio 5 to base 62 / bio 39 / psy 24 / sym 10 —
+  sym is the outlier now.
 - Psy was reworked around DREAD (a mark on the enemy: Hunt plants it on hit,
   stacks slow the enemy and open its guard, and fear feeds psy — a SIPHON
   drip per stack each player turn, a DEVOUR burst when stacks are consumed by

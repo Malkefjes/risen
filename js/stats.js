@@ -595,8 +595,14 @@ function strainReadout(p) {
   return null;
 }
 function guardReadout(p) {
-  if (p.class !== 'base') return null;
-  return { id:'guard', label:'Per Resolve', text: '\u2212' + Math.round(P().resolveDR*100) + '% taken' };
+  if (p.class === 'base')
+    return { id:'guard', label:'Per Resolve', text: '\u2212' + Math.round(P().resolveDR*100) + '% taken' };
+  // Bio's defensive half lives on the ENEMY, so the sheet states the rate
+  // rather than a current value — the badge over the enemy carries the count.
+  if (p.class === 'bio')
+    return { id:'guard', label:'Per Poison',
+             text: '\u2212' + (P().poisonWeakenPerStack * 100).toFixed(1) + '% dealt' };
+  return null;
 }
 
 // Rows carry a `num` (and its unit) as well as their text wherever a difference

@@ -37,7 +37,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-03z';
+const BUILD = '2026-08-03aa';
 
 const BALANCE = {
   player: {
@@ -146,6 +146,19 @@ const BALANCE = {
     // AT THE STARTING SHEET (floor(5/N) = 0 for N > 5): this must reward
     // INVESTMENT, not hand every build a free stack it never bought.
     poisonPerStr: 8,           // bio: extra POISON per application, per this much Strength
+    // THE ROT WEAKENS WHAT IT IS IN (2026-08-03aa). Bio was the one strain
+    // whose ramp did nothing defensive: measured, 53% of what was aimed at it
+    // got stopped against base's 73% on the same allocation, because RESOLVE
+    // grows all fight and buys reduction while Chitin is a flat -40% worth the
+    // same at wave 1 and wave 60. So POISON now does two jobs like every other
+    // strain number does — it eats their health AND takes the edge off their
+    // swing. Uncapped count, bounded effect, the shape DREAD and RESOLVE use.
+    // SATURATES LATE ON PURPOSE: at 0.008 the cap needs ~37 stacks, against a
+    // median peak of 57, so most of a fight is spent below it and stacking
+    // more still pays. DREAD's slow saturating at 9 out of 30-44 is exactly
+    // the mistake this avoids.
+    poisonWeakenPerStack: 0.008,
+    poisonWeakenCap: 0.30,
     // PSY PAYS THE MOST PER STACK, so it buys them at the worst rate: a DREAD
     // stack slows, opens the guard, feeds the siphon AND prices Kill, where a
     // POISON stack only ticks. At a shared 8 psy ran away with it (measured:
@@ -794,6 +807,11 @@ const STATUSES = {
     inflicted: true,
     // No timer on the badge — there is nothing left to count down.
     label: st => 'POISON ×' + (st.stacks||1),
+    // Only the rot BIO plants weakens its host. A venomous elite's poison on
+    // the player is the same status, and giving it this hook would quietly
+    // hand every strain a damage debuff nobody built for.
+    outgoingMult: (u, st) => (u && u.isPlayer) ? 1
+      : 1 - Math.min(P().poisonWeakenCap, (st.stacks || 0) * P().poisonWeakenPerStack),
     onTurnStart(unit, st) {
       // CHITIN on the opponent quickens the rot: two full ticks, two floaters,
       // two log lines, so what was paid is exactly what shows.
