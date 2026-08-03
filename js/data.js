@@ -37,7 +37,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-03e';
+const BUILD = '2026-08-03f';
 
 const BALANCE = {
   player: {
@@ -110,7 +110,10 @@ const BALANCE = {
     // takes it when they swing, Latch reads a share of it back on your turns,
     // and Shed converts it to healing.
     thornsFrac: 0.05,          // INNATE thorns: a twentieth of max HP, and the floor Shed can never eat into
-    thornsPerHit: 1,           // every hit taken grows thorns by this, no window and no condition
+    // 1 -> 2 with the 30-wave restructure: the run feeds sym a third fewer
+    // hits than the 45-wave one did, and this is the only run-permanent ramp.
+    // Derived, not measured — judge by play.
+    thornsPerHit: 2,           // every hit taken grows thorns by this, no window and no condition
     thornsBigHitFrac: 0.15,    // what counts as a BIG hit — the log line only; growth reads the share directly
     thornsPerBar: 12,          // ...plus this many for a hit that took your WHOLE bar, pro rata. No ceiling: the share is its own bound
     thornsSpinesGrow: 2,       // extra growth per hit while Spines is up
@@ -118,6 +121,10 @@ const BALANCE = {
     // below. A percentage cost against a runaway number would grow without bound
     // while its payout (bounded by max HP) does not, so the button would stop
     // being worth pressing exactly when you had played best.
+    // TORN SPINES REGROW AT THE NEXT SPAWN (2026-08-03f): the cost is
+    // per-fight, never the run's. Sym was the only strain whose sustain ate
+    // its own progression, and a heal that shrinks the class's number is why
+    // the class felt weak to play.
     shedCapFrac: 0.35,         // Shed never takes more than this share of GROWN thorns in one press
     shedHpPerThorn: 0.04,      // one thorn shed is worth this share of the heal anchor
     reflectFrac: 0.20, reflectSpinesMult: 2,   // sym: share of damage taken reflected back; doubled while Spines is up
@@ -370,8 +377,11 @@ const CLASSES = {
   // ordinary one. Raise Spines + Provoke is the combo, and it asks a question no
   // other combo asks: you have to be healthy enough to eat what you invited.
   //
-  // Sustain is SHED, the one place a run-permanent ramp can be spent — healing
-  // costs growth you cannot get back this fight. No burst finisher, on purpose.
+  // 2026-08-03f: PROVOKE LASHES BACK — the invited swing is answered with the
+  // full wall (THORNS × lashMult), so the ramp has an on-demand payoff on the
+  // player's own initiative without spending a single spine. And SHED's torn
+  // spines regrow at the next spawn: blunter for the rest of THIS fight, never
+  // poorer for the run.
   //
   // SPEED IS THE INTERESTING STAT: more of your turns means proportionally FEWER
   // enemy swings, and swings are food. The only stat in the game with a real cost
@@ -384,8 +394,8 @@ const CLASSES = {
       // gets read back on your OWN turns, carrying the share Bloom used to.
       { id:'latch', name:'Latch', desc:'Deal {power!} damage + {thornsScale%} of your THORNS.', type:'attack', power:1.0, thornsScale:0.55, target:'enemy', basic:true },
       { id:'spines', name:'Raise Spines', desc:'THORNS ×{power} and pain reflect doubled for {duration#turn}. Every hit taken grows +{growBonus} extra THORNS.', type:'buff', buff:'spines', duration:3, power:2, growBonus:BALANCE.player.thornsSpinesGrow, target:'self', cdTurns:4 },
-      { id:'shed', name:'Shed', desc:'Heal {healFrac+}, then tear off THORNS to heal {hpPerThorn+} more each. Takes only as many as the wound needed, up to {capFrac%} of what you have grown. Sheds {cleanse} POISON.', type:'heal', healFrac:0.08, shedFuel:true, cleanse:2, hpPerThorn:BALANCE.player.shedHpPerThorn, capFrac:BALANCE.player.shedCapFrac, target:'self', cdTurns:3 },
-      { id:'provoke', name:'Provoke', desc:'Bare your guard: the enemy strikes at once and cannot miss. +{growBonus} THORNS, and a charged telegraph comes out now — ordinary, or half-strength if it shrugs you off.', type:'provoke', growBonus:3, target:'enemy', cdTurns:4 }
+      { id:'shed', name:'Shed', desc:'Heal {healFrac+}, then tear off THORNS to heal {hpPerThorn+} more each — they regrow by the next fight. Takes only as many as the wound needs, up to {capFrac%} of what you have grown. Sheds {cleanse} POISON.', type:'heal', healFrac:0.08, shedFuel:true, cleanse:2, hpPerThorn:BALANCE.player.shedHpPerThorn, capFrac:BALANCE.player.shedCapFrac, target:'self', cdTurns:3 },
+      { id:'provoke', name:'Provoke', desc:'Bare your guard: the enemy strikes at once and cannot miss — then every spine answers: ×{lashMult} THORNS as damage. +{growBonus} THORNS, and a charged telegraph comes out now, ordinary or half-strength.', type:'provoke', growBonus:3, lashMult:1.5, target:'enemy', cdTurns:4 }
     ]
   },
   // Base Sonny, reached via RUN CLEAN. The suit as issued, no extraction in the

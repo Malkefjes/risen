@@ -454,8 +454,11 @@ function applyDerivedStats(p) {
   // by being hit (see growThorns). The innate share of max HP is the floor Shed
   // can never eat into, so a sym who has spent everything is still spiky; the
   // grown part is the class.
+  // Grown minus torn-this-fight: Shed's cost is per-fight (the offset clears
+  // at the next spawn), so the run's ramp is read here but never reduced.
   p.thorns = p.class === 'sym'
-    ? Math.max(0, Math.round((p.maxHp * B.thornsFrac + (p.thornsGrown || 0)))) : 0;
+    ? Math.max(0, Math.round((p.maxHp * B.thornsFrac
+        + Math.max(0, (p.thornsGrown || 0) - (p.thornsShedded || 0))))) : 0;
 
   // ---- Ailments ----
   // What one stack of each ticks for. There is no CHANCE beside them: both

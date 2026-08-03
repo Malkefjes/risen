@@ -415,8 +415,11 @@ function thornsGrowthFor(p, damage) {
 // spendable; the innate share of max HP is a floor, so shedding can never leave
 // you blunt.
 function shedForHeal(p, skill, already, notes, critMult) {
-  const grown = p.thornsGrown || 0;
-  if (grown <= 0) { notes.push('nothing grown to shed'); return 0; }
+  // What is still standing THIS FIGHT: grown minus already torn. Torn spines
+  // regrow at the next spawn (2026-08-03f) — the cost is per-fight, so the
+  // heal never eats the run's progression.
+  const grown = Math.max(0, (p.thornsGrown || 0) - (p.thornsShedded || 0));
+  if (grown <= 0) { notes.push('nothing standing to shed'); return 0; }
   // What a thorn is WORTH is sustain, so it prices off the anchor. What you are
   // MISSING is a fact about your actual bar and stays on maxHp — a wide sym
   // still has a wide hole to fill, it just no longer fills it faster for being
@@ -432,9 +435,9 @@ function shedForHeal(p, skill, already, notes, critMult) {
   const cap = Math.max(1, Math.floor(grown * (skill.capFrac || 0.25)));
   const shed = Math.max(0, Math.min(Math.ceil(missing / perThorn), cap, grown));
   if (shed <= 0) { notes.push('no THORNS needed'); return 0; }
-  p.thornsGrown = grown - shed;
+  p.thornsShedded = (p.thornsShedded || 0) + shed;
   applyDerivedStats(p);
-  notes.push('SHED ' + shed + ' THORNS (' + formatNum(p.thorns) + ' left)');
+  notes.push('SHED ' + shed + ' THORNS (' + formatNum(p.thorns) + ' left, regrow next fight)');
   return shed * perThorn;
 }
 
@@ -479,6 +482,28 @@ function provokeSwing(p, e, skill) {
   // answer this hit are already the bigger ones.
   growThorns(p, skill.growBonus || 0, skill.name);
   enemySwing(e, { unevadable: true, ordinary });
+
+  // THE LASH (2026-08-03f). The invited swing is answered with the whole wall:
+  // full THORNS × lashMult, on top of the passive spines that already fired.
+  // This is the ramp's on-demand payoff — read, never spent — and it rides
+  // getThornsDamage, so Raise Spines' ×2 flows straight into it. No crit roll:
+  // like Counterpunch's counter, a triggered answer is not an action.
+  if (skill.lashMult && p.hp > 0 && e.hp > 0 && !e._defeated) {
+    const lash = Math.max(1, Math.floor(getThornsDamage(p) * skill.lashMult));
+    const before = e.hp;
+    e.hp = Math.max(0, e.hp - lash);
+    creditDamage('Provoke', lash);
+    if (e.hp <= 0) state._lastOverkill = Math.max(0, lash - before);
+    floatText(e, lash, 'damage');
+    logDamage('LASH', e, lash, [
+      'THORNS ×' + skill.lashMult,
+      logNum(e.hp) + '/' + logNum(e.maxHp) + ' left'
+    ]);
+    playAttackAnim(p, e, true, skill);
+    updateUnitCard(e);
+    // A lash kill falls through to fireSkill's tail, which already asks
+    // whether the enemy died during the cast.
+  }
 }
 
 // Enemy -> player. Enemies use a flat designed damage number, not a stat formula.

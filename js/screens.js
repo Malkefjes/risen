@@ -61,7 +61,7 @@ function freshPlayer(classId) {
     gear: emptyGear(),
     // thornsGrown starts at 0 for everyone and only sym ever moves it: the
     // ramp is run-scoped, so a fresh player is a fresh organism.
-    statuses:[], isPlayer:true, meter:0, thornsGrown:0, _statusKey:''
+    statuses:[], isPlayer:true, meter:0, thornsGrown:0, thornsShedded:0, _statusKey:''
   };
   p.basicSkill = p.skills.find(s => s.basic) || p.skills[0];
   return p;
@@ -290,6 +290,15 @@ function spawnEnemy() {
     const lost = p.statuses.filter(s => { const dd = STATUSES[s.type]; return !(dd && dd.persists); });
     p.statuses = survivingStatuses(p);
     lost.forEach(s => { const dd = STATUSES[s.type]; if (dd) logEvent('− ' + dd.name + ' ended', p, 'fight over'); });
+    // Sym: spines torn off by Shed grow back between fights — the cost is
+    // per-fight, never the run's. Logged, or the number climbing back on its
+    // own would look like a bug.
+    if (p.thornsShedded > 0) {
+      const back = p.thornsShedded;
+      p.thornsShedded = 0;
+      applyDerivedStats(p);
+      logEvent('THORNS regrown', null, '+' + back + ' (' + formatNum(p.thorns) + ')', ['shed last fight']);
+    }
   }
 
   // THE PLAYER ALWAYS OPENS. Both gauges used to start empty, so any enemy

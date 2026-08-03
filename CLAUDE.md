@@ -253,10 +253,15 @@ did not say.
   70% of RESOLVE rather than all. The Last Stand fraction is steep and is one
   number: 100% -> 32 median / 0 wins, 70% -> 37 / 6%, 50% -> 43 / 34%.
 - Sym was reworked around THORNS as a growing, run-permanent number (every hit
-  taken feeds it, Shed spends it to heal, Provoke buys a swing to eat and baits
-  a telegraph out as an ordinary hit). Its numbers are early and owner-tuned by
-  play. Speed is deliberately a COST for this class — more of your turns means
-  fewer enemy swings, and swings are food.
+  taken feeds it). Reworked again 2026-08-03f after the owner said he felt weak
+  playing it: PROVOKE LASHES BACK (the invited swing is answered with full
+  THORNS × 1.5 — the ramp's on-demand payoff, read rather than spent) and
+  SHED'S torn spines REGROW at the next spawn (per-fight cost; it was the only
+  sustain in the game that ate its own class's progression). thornsPerHit also
+  1 -> 2, because the 30-wave restructure feeds the ramp a third fewer hits.
+  All derived, none measured, owner judges by play. Speed is deliberately a
+  COST for this class — more of your turns means fewer enemy swings, and
+  swings are food.
 - **Base was never underpowered — it was unforgiving of one mistake.** 60% of
   its deaths were the ×5 heavy landing, and its answer (Counterpunch's brace)
   was fired as filler the moment it came off cooldown, so it met 3% of heavies.
