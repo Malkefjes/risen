@@ -208,25 +208,25 @@ did not say.
 - **The player sheet is the anchor** (5/5/5/5, 25 dmg, 100 HP, 1.00 turn
   rate); enemies are fitted to it and computed by separate functions. See
   the header comment in `js/data.js` before touching balance.
-- **The run is 45 waves across three ZONES** — The Laboratory, The Laboratory:
-  Asset Recovery, City Streets — a boss every 5th, and WINNING MEANS CLEARING WAVE 45. The
-  whole run is act 1; the zone is the unit that shapes difficulty. Read the
-  count off `BALANCE.finalWave`, never from a literal: a hardcoded 30 in
-  `tools/autopsy.mjs` went on reporting a 30-wave game after the run grew.
+- **`OWNER:` The run is 30 waves across three ZONES of ten** (restructured
+  2026-08-03d, his design) — The Laboratory, The Laboratory: Asset Recovery,
+  City Streets. Nine fights and ONE boss per zone, wave 5 of every zone a
+  guaranteed named CHAMPION (elite chassis, rolled affix), and WINNING MEANS
+  CLEARING WAVE 30. One boss per zone instead of the same face three times:
+  the champion is the midterm, the boss the final, an exam every fifth wave.
+  Read the count off `BALANCE.finalWave`, never from a literal: a hardcoded 30
+  in `tools/autopsy.mjs` went on reporting a 30-wave game after the run grew.
   A level grants exactly 3 stat points (`pointsPerLevel`).
-  **Measured, not assumed** — median level at each boss wave:
-  L6 (15 points) at wave 15, L8 (21) at 20, L11 (30) at 30, L15 (42) at 45.
-  Waves past 30 were measured with survivability inflated so a bot could reach
-  them at all; that reads the XP curve, not the difficulty.
-  Two consequences worth holding: the balance notes that say "~18-20 points"
-  describe a run that ENDS around wave 15, so the enemy table is fitted against
-  a sheet roughly HALF what the back half of the run actually meets; and across
-  waves 15-45 the enemy grows 5.1x while the player grows 2.35x, which is why
-  the telegraph multiplier has to shrink every zone (4.0 / 2.5 / 1.6). That
-  mismatch is a known open thread, not a settled design.
-  **Re-measured 2026-08-02af, per axis rather than combined:** enemy HP x4.5 and
-  damage x4.5 against player attack x1.5, max HP x1.56 and turn rate x1.27, over
-  levels 7 -> 14. Same story, and the gap is in DAMAGE and HP rather than tempo.
+  **The restructure's growth numbers are DERIVED, not measured** (owner's
+  call): zone-end multipliers ~3.2 / ~8.3 / ~16.1, fitted to the old 45-wave
+  walls scaled ~0.8x for the smaller sheet a 30-wave run earns. Nothing has
+  played or measured them; the first autopsy on this build supersedes the
+  paragraph below.
+  **Stale but instructive, all measured on the 45-wave pre-item build:**
+  median level was L6 at wave 15, L8 at 20, L11 at 30, L15 at 45; across the
+  back half the enemy grew 5.1x to the player's 2.35x (the reason telegraphs
+  shrink per zone, 4.0 / 2.5 / 1.6 — kept); per axis the gap was in DAMAGE
+  and HP, not tempo. The refit plus items AIMS at closing that gap.
 - **No changelog files.** Git history is the changelog; commit messages
   carry the detail.
 

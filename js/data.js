@@ -37,7 +37,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-03c';
+const BUILD = '2026-08-03d';
 
 const BALANCE = {
   player: {
@@ -193,20 +193,24 @@ const BALANCE = {
     // RATE COUNTS FROM THE RUN'S START, NOT THE ZONE'S — the one place the
     // zone-local rule is deliberately broken. Everything else about an enemy
     // restarts per zone, but tempo is the one axis the player never resets, so
-    // it is the one the enemy cannot afford to either. 1.00 -> 1.56 across 45
-    // waves; fitted when a run was 30, so the last zone meets a tempo nobody
-    // chose. Flagged, not changed.
+    // it is the one the enemy cannot afford to either. 1.00 -> 1.35 across 30
+    // waves — the range this rate was originally fitted for; the 45-wave run
+    // overshot it to 1.56, and the restructure walks that back for free.
     apsPerTier: 0.070,
     apsCap: 2.15,
     crit: 0.10, critMult: 1.5,
     // bossHp came DOWN from 5.27 to soften the FIRST boss; bossDmg and bossAps
     // are the old brute chassis, folded in when archetypes were removed.
-    bossHp: 4.5, bossDmg: 1.82, bossAps: 0.72, bossXp: 3.0,
+    // bossXp 3.0 -> 5.0 with the 30-wave restructure: a zone has ONE boss now
+    // where it had three, so the one kill carries the weight the three shared.
+    bossHp: 4.5, bossDmg: 1.82, bossAps: 0.72, bossXp: 5.0,
     // THE FIRST BOSS IS MEANT TO KILL YOU. It is the one fight in the run with
     // a scripted answer to losing — the scientist pulls you out — so it hits
-    // for twice the HP and twice the damage of an ordinary boss at its wave.
-    // Applied at wave 5 alone; every later boss is the plain bossHp/bossDmg.
-    firstBossMult: 2,
+    // above an ordinary boss at its wave. Was 2 when the first boss stood at
+    // wave 5 on a near-starting sheet; at wave 10 the same bump compounds on
+    // ten waves of growth, so 1.5 aims for the same "usually kills you, but
+    // answerable" — derived, not measured. Applied at wave bossEvery alone.
+    firstBossMult: 1.5,
     trashDmgMult: 1.45,                // trash hits harder so fights cost real HP (bosses use bossDmg)
     // THE TELEGRAPH MULTIPLIER IS FLAT ACROSS ALL THREE BOSSES, so the SHARE of
     // your bar it takes is what moves — and enemy damage grows faster than the
@@ -232,18 +236,19 @@ const BALANCE = {
   // first kill still levels you, then the curve restarts fat and quadratic from
   // level 2. One formula could not price both ends of a 10x cliff.
   //
-  // Measured median level at each boss wave: L2 at 5, L4 at 10, L6 at 15, L8 at
-  // 20, L10 at 25, L11 at 30, L12 at 35, L14 at 40, L15 at 45. Waves past 30
-  // were sampled with survivability inflated so a bot could reach them, so they
-  // read the XP curve, not the difficulty.
+  // Measured median level per wave ON THE 45-WAVE BUILD (pre-2026-08-03d,
+  // pre-items): L2 at 5, L4 at 10, L6 at 15, L8 at 20, L11 at 30, L15 at 45.
+  // The 30-wave restructure keeps this table as-is — fewer kills but a 5.0
+  // boss XP and champion XP partly refill the pool. Not re-measured.
   //
-  // OPEN THREAD: across waves 15-45 the enemy grows 5.1x and the player 2.35x.
-  // That is why the telegraph multiplier has to shrink every zone.
+  // OPEN THREAD (measured on the 45-wave build): across the back half the
+  // enemy grew 5.1x to the player's 2.35x — the reason telegraphs shrink per
+  // zone. The restructure's growth refit AIMS at closing this; unverified.
   xp: { firstCost: 58, base: 485, pow: 2, powScale: 35,
         killBase: 46, killWave: 15, killTier: 36 },
   combo: { maxEnemyActionsPerKill: 3, xpPerStack: 0.05, maxStack: 20 },   // chain continues if the kill let the enemy act <= N times (speed-fair)
-  bossEvery: 5,          // boss on every Nth wave
-  finalWave: 45,         // beating this wave's boss wins the run (zone 3's finale)
+  bossEvery: 10,         // boss on every Nth wave — ONE per zone, its finale
+  finalWave: 30,         // beating this wave's boss wins the run (zone 3's finale)
   spawnDelay: 0.16,
   // ONE DIAL FOR THE WHOLE GAME'S TEMPO: every pause between turns is a raw ms
   // figure multiplied by this. Purely how it is watched — cooldowns tick on
@@ -264,7 +269,10 @@ const BALANCE = {
   // v11 -> v12 is the three-zone run — 30 waves across two acts became 45 across
   // three zones, every enemy carries a `zone` stamp where it carried `act`, and
   // the wave a save stores describes a different place in a different structure.
-  saveKey: 'risen_run_v12',
+  // v12 -> v13 is the 30-wave restructure: zones of 10, one boss per zone. A
+  // saved wave 37 has nowhere to exist, and a saved wave 14 is a different
+  // place — the same argument that forced v12.
+  saveKey: 'risen_run_v13',
   // Storage keys from older versions, cleared once on load so they cannot
   // accumulate invisibly. Oldest first. Slot keys are listed explicitly because
   // the purge removes literal keys — on a bump, list _s0 through _s<saveSlots>.
@@ -276,7 +284,9 @@ const BALANCE = {
                 'risen_run_v8', 'risen_run_v8_s1', 'risen_run_v8_s2',
                 'risen_run_v9', 'risen_run_v9_s0', 'risen_run_v9_s1', 'risen_run_v9_s2',
                 'risen_run_v10', 'risen_run_v10_s0', 'risen_run_v10_s1', 'risen_run_v10_s2',
-                'risen_run_v11', 'risen_run_v11_s0', 'risen_run_v11_s1', 'risen_run_v11_s2'],
+                'risen_run_v11', 'risen_run_v11_s0', 'risen_run_v11_s1', 'risen_run_v11_s2',
+                'risen_run_v12', 'risen_run_v12_s0', 'risen_run_v12_s1', 'risen_run_v12_s2',
+                'risen_run_v12_s3', 'risen_run_v12_s4'],
   saveSlots: 4
 };
 
@@ -446,55 +456,44 @@ const ELITES = {
 //                multiplier on a number that outruns your bar is a one-shot
 //                eventually — see the note on zone 2.
 const ZONES = [
+  // 2026-08-03d RESTRUCTURE: three zones of TEN waves — nine fights and one
+  // boss, with wave 5 of every zone a guaranteed named CHAMPION (elite
+  // chassis, affix still rolled). One boss per zone instead of the same face
+  // three times: the champion is the zone's midterm, the boss its final, and
+  // an exam still lands every fifth wave.
+  //
+  // GROWTH WAS DERIVED, NOT MEASURED (owner's call — tune by play): each
+  // zone's end is the old 45-wave wall scaled by the smaller sheet a 30-wave
+  // player brings (~0.8x), floors chain at a +5% seam, and each zone climbs
+  // more gently than the last because points land on an ever-bigger base.
+  // Zone ends: ~3.2 / ~8.3 / ~16.1. Nothing has played these numbers yet.
+  //
+  // THE TELEGRAPH MULTIPLIERS CARRY OVER from the 45-wave fit (4.0 / 2.5 /
+  // 1.6) — a flat multiplier crosses the bar eventually, so each zone prices
+  // its own. Re-judge by play.
   { num: 1, name: 'The Laboratory', label: 'THE LABORATORY',
-    startWave: 1, endWave: 15,
+    startWave: 1, endWave: 10,
     // enemies: the zone's trash ROSTER — an id (the key its art is filed under
     // in sprites.js) and the name that appears on the card.
     enemies: [{ id: 'experiment', name: 'Escaped Experiment' }],
     bossName: 'Prime Symbiote',
-    growthMult: 1 },
+    champion: { at: 5, id: 'experiment', name: 'Apex Specimen' },
+    growthMult: 1, tierGrowth: 2.4, withinStep: 0.08 },
 
   { num: 2, name: 'The Laboratory: Asset Recovery', label: 'THE LABORATORY: ASSET RECOVERY',
-    startWave: 16, endWave: 30,
-    // ONE FACE between the bosses, and the Captain on them. The rotation in
-    // makeEnemy still works — it just always lands on the same entry.
+    startWave: 11, endWave: 20,
     enemies: [{ id: 'enforcer', name: 'MCP Enforcer' }],
     bossName: 'MCP Captain',
-    // THE ZONE'S CHAMPION — a guaranteed, named elite so the stretch between
-    // bosses has a landmark of its own. `at` is an absolute wave inside the
-    // zone: it is the one number to move if the zone's shape ever changes.
-    // The affix is still ROLLED, so the Lieutenant is a fight you learn the
-    // shape of without learning the answer.
-    champion: { at: 23, id: 'lieutenant', name: 'MCP Lieutenant' },
-    growthMult: 4.5, tierGrowth: 1.45, withinStep: 0.04,
-    // A FLAT TELEGRAPH MULTIPLIER CROSSES THE BAR EVENTUALLY, and that is
-    // arithmetic rather than tuning: enemy damage grows far faster across a run
-    // than the biggest bar anyone can buy. At the shared x4.0 it crossed in zone
-    // 2 and never came back — measured on a real run, base died on wave 25 to a
-    // 426 telegraph on a 340 bar. At x2.5 that same sheet pays 81%, and 32% with
-    // Counterpunch up, so the ANSWER works and the window was what was missing.
-    // Elites keep a 0.75 ratio to the zone's boss rather than being picked
-    // again.
+    champion: { at: 15, id: 'lieutenant', name: 'MCP Lieutenant' },
+    growthMult: 3.33, tierGrowth: 2.0, withinStep: 0.06,
     windupMult: 2.5, eliteWindupMult: 2.0 },
 
   { num: 3, name: 'City Streets', label: 'CITY STREETS',
-    startWave: 31, endWave: 45,
+    startWave: 21, endWave: 30,
     enemies: [{ id: 'mercenary', name: 'Mercenary' }],
     bossName: 'Mercenary Brute',
-    // ---- FITTED, BUT NOTHING HAS PLAYED IT -------------------------------
-    // growthMult starts where zone 2 ends (~10.97), so the seam between zones is
-    // a +5% step rather than a cliff. tierGrowth continues the flattening each
-    // zone has followed — 4.25x across zone 1, 2.44x across zone 2, 1.67x here —
-    // because points arrive at a fixed rate onto an ever-bigger base.
-    //
-    // The first pass was 1.30 and was measured and thrown out: it put the
-    // wave-45 boss at 15,672 HP and 317 damage against a spread build's 310 bar,
-    // so an ORDINARY hit was a one-shot and the kill took ~200 turns.
-    //
-    // THE TELEGRAPH KEEPS SHRINKING PER ZONE — 4.0, 2.5, now 1.6 — and that is a
-    // symptom worth naming rather than a tuning choice. The real fix is pricing a
-    // telegraph against the PLAYER's bar; until then, each zone gets its own.
-    growthMult: 11.5, tierGrowth: 1.22, withinStep: 0.03,
+    champion: { at: 25, id: 'mercenary', name: 'Veteran Mercenary' },
+    growthMult: 8.67, tierGrowth: 1.6, withinStep: 0.04,
     windupMult: 1.6, eliteWindupMult: 1.2 }
 ];
 function zoneForWave(wave) {
