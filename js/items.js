@@ -156,12 +156,24 @@ const SLOT_SUFFIXES = {
 
 // The slot's own line, always present, roughly half a suffix roll — identity
 // rather than power.
+// ARMOR AND BOOTS GRANT STAT POINTS, not percentages (2026-08-03af, owner's
+// design). Every measurement of the allocation space said the same thing:
+// SPD+VIT won every row for every class, because a bar you can survive on and a
+// rate you can act on are NEEDS, and a need is not a choice. Putting the
+// baseline on the two slots that plainly carry it — plating is what keeps you
+// alive, boots are what make you quick — means the run arrives with its needs
+// mostly met and the four bars are free to say what the build IS. Roll badly and
+// you go fill the gap yourself, which is the decision returning rather than
+// leaving.
+// An implicit is fixed to its slot and always present, so this is reliable in a
+// way a prefix roll is not. Sized against the single-stat prefixes above (7-10
+// at T1) to be the same order: gear supplies the floor, not the build.
 const SLOT_IMPLICIT = {
   optics:    { mod: 'critCh',    tiers: [[0.06, 0.08], [0.05, 0.06], [0.04, 0.05], [0.03, 0.04], [0.02, 0.03]] },
   gauntlets: { mod: 'dmgMult',   tiers: [[0.14, 0.20], [0.11, 0.14], [0.08, 0.11], [0.06, 0.08], [0.04, 0.06]] },
-  armor:     { mod: 'armor',     tiers: [[0.06, 0.09], [0.05, 0.06], [0.04, 0.05], [0.03, 0.04], [0.02, 0.03]] },
+  armor:     { stats: ['vit'],   tiers: [[9, 13], [7, 10], [6, 8], [4, 6], [2, 4]] },
   repair:    { mod: 'healBoost', tiers: [[0.20, 0.28], [0.16, 0.20], [0.12, 0.16], [0.09, 0.12], [0.06, 0.09]] },
-  boots:     { mod: 'apsBoost',  tiers: [[0.08, 0.11], [0.06, 0.08], [0.05, 0.06], [0.04, 0.05], [0.02, 0.04]] }
+  boots:     { stats: ['speed'], tiers: [[9, 13], [7, 10], [6, 8], [4, 6], [2, 4]] }
 };
 
 // Who drops, how often, and what it comes out as. Rarity weights are
@@ -195,8 +207,10 @@ function makeItem(wave, rarityId) {
   // The implicit: the slot's own line, at its own rolled tier.
   const impDef = SLOT_IMPLICIT[slot.id];
   const impTier = rollTier(wave);
-  const implicit = { mod: impDef.mod, tier: impTier,
-                     v: rollRange(impDef.tiers[impTier], ITEM_MODS[impDef.mod].step) };
+  const implicit = impDef.stats
+    ? { stats: impDef.stats.slice(), tier: impTier, v: rollRange(impDef.tiers[impTier], 1) }
+    : { mod: impDef.mod, tier: impTier,
+        v: rollRange(impDef.tiers[impTier], ITEM_MODS[impDef.mod].step) };
 
   // NO DUPLICATE GROUPS, across prefixes and suffixes alike: an affix is only
   // eligible if none of its groups is already claimed.
@@ -206,7 +220,9 @@ function makeItem(wave, rarityId) {
   // the same thing. Here the drop card is a three-second read with no
   // inventory behind it, and "+3% armor / +5% armor" spends two of its four
   // lines saying one thing. Every item now shows two different percentages.
-  const used = [impDef.mod];
+  // A stat implicit claims its STAT as the group, so the armor slot cannot also
+  // roll a Vitality prefix and spend two of four lines on one number.
+  const used = impDef.stats ? impDef.stats.slice() : [impDef.mod];
   const free = a => a.groups.every(g => used.indexOf(g) < 0);
 
   const prefixes = [];
@@ -268,6 +284,10 @@ function gearStat(p, key) {
   for (const it of gearList(p))
     for (const pre of (it.prefixes || []))
       if (pre.stats.indexOf(key) >= 0) n += pre.v;
+  // ...and the implicit, on the two slots whose own line IS a stat.
+  for (const it of gearList(p))
+    if (it.implicit && it.implicit.stats && it.implicit.stats.indexOf(key) >= 0)
+      n += it.implicit.v;
   return n;
 }
 // Summed percentage for one modifier: the implicit plus any suffix granting it.
@@ -291,7 +311,11 @@ function itemScore(it) {
   let n = 0;
   for (const pre of (it.prefixes || [])) n += pre.v * pre.stats.length;
   for (const s of (it.suffixes || [])) n += (5 - s.tier);
-  if (it.implicit) n += (5 - it.implicit.tier) * 0.5;
+  // A stat implicit is worth its points outright; a percentage one is priced by
+  // tier like the suffixes are.
+  if (it.implicit) n += it.implicit.stats
+    ? it.implicit.v * it.implicit.stats.length
+    : (5 - it.implicit.tier) * 0.5;
   return n;
 }
 function botTakesDrop(p, it) {
@@ -305,6 +329,9 @@ function botTakesDrop(p, it) {
 function affixLine(tier, text) { return text; }
 function itemImplicitLine(it) {
   if (!it || !it.implicit) return '';
+  if (it.implicit.stats)
+    return affixLine(it.implicit.tier,
+      it.implicit.stats.map(k => '+' + it.implicit.v + ' ' + ITEM_STAT_NAMES[k]).join(', '));
   const def = ITEM_MODS[it.implicit.mod];
   return def ? affixLine(it.implicit.tier, def.text(it.implicit.v)) : '';
 }

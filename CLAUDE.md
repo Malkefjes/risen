@@ -330,6 +330,28 @@ did not say.
   is a global multiplier — more turns is more presses, more PRESSURE and more
   Ruptures — so crit has to out-scale turns before the identity lands.
 
+- **`OWNER:` GEAR CARRIES THE BASELINE SO THE BARS CAN BE A CHOICE**
+  (2026-08-03af, his design). The armor slot's implicit is +VITALITY and the
+  boots' is +SPEED, as stat POINTS rather than percentages — the same currency
+  allocation spends, so gear substitutes for it directly. An implicit is fixed
+  to its slot and always present, which is what makes it reliable where a prefix
+  roll is not; a stat implicit claims its stat as a group, so armor cannot also
+  roll a Vitality prefix and spend two of four lines on one number.
+  His reasoning, and it is the right diagnosis: a bar you can survive on and a
+  rate you can act on are NEEDS, and a need is not a choice — which is why
+  SPD+VIT won every row for every class in every measurement. Meet the needs
+  from gear and the four bars are free to say what the build IS; roll badly and
+  you go fill the gap yourself, which is the decision returning rather than
+  leaving.
+  Measured after, wins per 100 on the best partner: bio STR 73 (SPD 57), psy
+  SPD 47 (STR 13), sym SPD 68 = pure VIT 68, base STR 52 (SPD 50). Three of the
+  four identities hold; SYM'S IS A TIE, not a win.
+  **IT IS ALSO A LARGE POWER INCREASE and that is not free.** A full wave-40
+  prototype suit now grants 16 STR / 20 INS / 12 SPD / 22 VIT — about 70 points,
+  more than a level-15 player has allocated. Every class got stronger (bio 57
+  -> 73, sym 43 -> 68). If the difficulty needs to come back, the endgame ramp
+  is the dial; shrinking these implicits just undoes the design.
+
 ## Known soft spots (context, not a to-do list)
 
 - **STRENGTH IS THE WEAKEST STAT, and it is not a tuning problem** (measured
