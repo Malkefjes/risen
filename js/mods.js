@@ -35,48 +35,48 @@ const MODIFICATIONS = {
   // ---- BIOLOGICAL ---------------------------------------------------------
   bio: {
     slash: [
-      { id: 'bio_sl_1', name: 'WEEPING EDGE',
-        text: 'Slash plants 3 POISON instead of 1 — but the blade barely cuts.',
+      { id: 'bio_sl_1', name: 'DOSAGE',
+        text: 'POISON 3, damage \u00d70.15.',
         skills: { slash: { poison: 3, power: 0.15 } } },
-      { id: 'bio_sl_2', name: 'CLEAN STEEL',
-        text: 'Slash hits for half again as much, and plants nothing at all.',
+      { id: 'bio_sl_2', name: 'STERILE EDGE',
+        text: 'Damage \u00d71.50, no POISON.',
         skills: { slash: { power: 1.5, poison: 0 } } },
-      { id: 'bio_sl_3', name: 'FEEDING WOUND',
-        text: 'Slash drinks a quarter of what it deals — a weaker cut that keeps you standing.',
+      { id: 'bio_sl_3', name: 'ABSORPTION',
+        text: 'Damage \u00d70.70, recovers 25% of damage dealt.',
         skills: { slash: { lifesteal: 0.25, power: 0.7 } } }
     ],
     infest: [
       { id: 'bio_in_1', name: 'NECROSIS',
-        text: 'Infest comes every 2 turns instead of 3, and stops doing damage of its own.',
+        text: 'Cooldown 2t, damage \u00d70.10.',
         skills: { infest: { cdTurns: 2, power: 0.1 } } },
-      { id: 'bio_in_2', name: 'BLOOM',
-        text: 'Infest plants 8 POISON instead of 4, but comes only every 5 turns.',
+      { id: 'bio_in_2', name: 'SATURATION',
+        text: 'POISON 8, cooldown 5t.',
         skills: { infest: { poison: 8, cdTurns: 5 } } },
       { id: 'bio_in_3', name: 'SEPSIS',
-        text: 'Infest leaves the host WEAK for 3 turns, and its own blow becomes a formality.',
+        text: 'Applies WEAK 30% for 3t, damage \u00d70.10.',
         skills: { infest: { power: 0.1, applies: [{ id: 'weak', power: 0.30, duration: 3 }] } } }
     ],
     chitin: [
-      { id: 'bio_ch_1', name: 'THIN CARAPACE',
-        text: 'Chitin lasts 5 turns instead of 3, but blunts only 15% instead of 40%.',
+      { id: 'bio_ch_1', name: 'THIN PLATING',
+        text: 'Duration 5t, damage taken \u221215%.',
         skills: { chitin: { duration: 5, power: 0.15 } } },
-      { id: 'bio_ch_2', name: 'DEEP SHELL',
-        text: 'Chitin blunts 70% instead of 40% — for a single turn.',
+      { id: 'bio_ch_2', name: 'DENSE PLATING',
+        text: 'Duration 1t, damage taken \u221270%.',
         skills: { chitin: { duration: 1, power: 0.70 } } },
-      { id: 'bio_ch_3', name: 'PURGING SHELL',
-        text: 'Chitin scrubs 3 POISON off you as it hardens, and holds only 2 turns.',
+      { id: 'bio_ch_3', name: 'PURGE CYCLE',
+        text: 'Duration 2t, removes 3 POISON on cast.',
         skills: { chitin: { duration: 2, cleanse: 3 } } }
     ],
     miasma: [
       { id: 'bio_mi_1', name: 'CONCENTRATE',
-        text: 'Miasma mends twice as hard over 3 turns rather than 5.',
+        text: 'Duration 3t, regenerates 40% per turn.',
         skills: { miasma: { duration: 3, power: 0.40 } } },
-      { id: 'bio_mi_2', name: 'VIRULENT CULTURE',
-        text: 'The rot carries to the next host in FULL instead of half — but Miasma stops scrubbing it off you.',
+      { id: 'bio_mi_2', name: 'VIRULENCE',
+        text: 'POISON carried to the next enemy 100%. No POISON cleanse.',
         player: { modCarryFrac: 1.0 },
         skills: { miasma: { tickCleanse: 0 } } },
-      { id: 'bio_mi_3', name: 'CHOKING FOG',
-        text: 'Miasma comes every 3 turns and leaves them WEAK far longer — it barely mends you now.',
+      { id: 'bio_mi_3', name: 'AEROSOL',
+        text: 'Cooldown 3t, duration 3t, regenerates 6% per turn, WEAK 25% for 6t.',
         skills: { miasma: { cdTurns: 3, power: 0.06, duration: 3,
                             applies: [{ id: 'weak', power: 0.25, duration: 6 }] } } }
     ]
@@ -85,47 +85,47 @@ const MODIFICATIONS = {
   // ---- PSYCHOLOGICAL ------------------------------------------------------
   psy: {
     hunt: [
-      { id: 'psy_hu_1', name: 'CREEPING DREAD',
-        text: 'Hunt plants 2 DREAD instead of 1, and strikes at half strength.',
+      { id: 'psy_hu_1', name: 'IMPRINT',
+        text: 'DREAD 2, damage \u00d70.50.',
         skills: { hunt: { dread: 2, power: 0.5 } } },
-      { id: 'psy_hu_2', name: 'SILENT APPROACH',
-        text: 'Hunt hits for 60% more, and leaves no fear behind it.',
+      { id: 'psy_hu_2', name: 'SUPPRESSED',
+        text: 'Damage \u00d71.60, no DREAD.',
         skills: { hunt: { power: 1.6, dread: 0 } } },
-      { id: 'psy_hu_3', name: 'PARASITIC HUNT',
-        text: 'Hunt drinks a fifth of what it deals, at a weaker blow.',
+      { id: 'psy_hu_3', name: 'FEEDBACK',
+        text: 'Damage \u00d70.60, recovers 20% of damage dealt.',
         skills: { hunt: { lifesteal: 0.20, power: 0.6 } } }
     ],
     terrify: [
       { id: 'psy_te_1', name: 'PANIC',
-        text: 'Terrify plants 8 DREAD instead of 4, but comes only every 5 turns.',
+        text: 'DREAD 8, cooldown 5t.',
         skills: { terrify: { dread: 8, cdTurns: 5 } } },
-      { id: 'psy_te_2', name: 'STEADY WHISPER',
-        text: 'Terrify comes every 2 turns, and plants 2 fear rather than 4.',
+      { id: 'psy_te_2', name: 'SUSTAINED',
+        text: 'Cooldown 2t, DREAD 2.',
         skills: { terrify: { cdTurns: 2, dread: 2 } } },
-      { id: 'psy_te_3', name: 'EXPOSED NERVE',
-        text: 'Terrify leaves them VULNERABLE for 4 turns; its own blow becomes a formality.',
+      { id: 'psy_te_3', name: 'EXPOSURE',
+        text: 'Applies VULNERABLE 35% for 4t, damage \u00d70.10.',
         skills: { terrify: { power: 0.1, applies: [{ id: 'vulnerable', power: 0.35, duration: 4 }] } } }
     ],
     traumatize: [
-      { id: 'psy_tr_1', name: 'SHATTERED MIND',
-        text: 'Traumatize breaks a mind for 2 turns instead of 1, but needs 5 DREAD rather than 3.',
+      { id: 'psy_tr_1', name: 'DEEP TRAUMA',
+        text: 'Stun 2t, requires 5 DREAD.',
         skills: { traumatize: { stun: 2, dreadNeed: 5 } } },
-      { id: 'psy_tr_2', name: 'HAIRLINE CRACK',
-        text: 'Traumatize breaks a mind at a single DREAD — and hits for far less.',
+      { id: 'psy_tr_2', name: 'LOW THRESHOLD',
+        text: 'Requires 1 DREAD, damage \u00d70.40.',
         skills: { traumatize: { dreadNeed: 1, power: 0.4 } } },
-      { id: 'psy_tr_3', name: 'BLUNT TRAUMA',
-        text: 'Traumatize becomes a heavy blow and breaks nothing at all.',
+      { id: 'psy_tr_3', name: 'CONCUSSION',
+        text: 'Damage \u00d71.90, no stun.',
         skills: { traumatize: { power: 1.9, stun: 0 } } }
     ],
     kill: [
-      { id: 'psy_ki_1', name: 'TOTAL CONSUMPTION',
-        text: 'Kill tears away ALL the fear instead of half — the enemy gets its whole tempo back with it.',
+      { id: 'psy_ki_1', name: 'FULL CONSUMPTION',
+        text: 'Consumes 100% of DREAD, cooldown 4t.',
         skills: { kill: { consumeFrac: 1.0, cdTurns: 4 } } },
-      { id: 'psy_ki_2', name: 'PATIENT APPETITE',
-        text: 'Kill takes a quarter of the pile every 3 turns, and pays less for each.',
+      { id: 'psy_ki_2', name: 'PARTIAL INTAKE',
+        text: 'Consumes 25% of DREAD, \u00d70.35 damage per DREAD, cooldown 3t.',
         skills: { kill: { consumeFrac: 0.25, perDreadPower: 0.35, cdTurns: 3 } } },
-      { id: 'psy_ki_3', name: 'GORGE',
-        text: 'Kill pays double for every stack it eats, but its own blow is a quarter of what it was, and it comes every 6 turns.',
+      { id: 'psy_ki_3', name: 'OVERFEED',
+        text: '\u00d71.20 damage per DREAD, base damage \u00d70.50, cooldown 6t.',
         skills: { kill: { perDreadPower: 1.2, power: 0.5, cdTurns: 6 } } }
     ]
   },
@@ -133,47 +133,47 @@ const MODIFICATIONS = {
   // ---- SYMBIOTIC ----------------------------------------------------------
   sym: {
     latch: [
-      { id: 'sym_la_1', name: 'PARASITIC LATCH',
-        text: 'Latch reads your WHOLE wall back instead of half, but its own blow is halved.',
+      { id: 'sym_la_1', name: 'FULL DRAW',
+        text: 'Adds 100% of THORNS, damage \u00d70.50.',
         skills: { latch: { thornsScale: 1.0, power: 0.5 } } },
-      { id: 'sym_la_2', name: 'BARE HANDS',
-        text: 'Latch hits half again as hard, and stops reading THORNS entirely.',
+      { id: 'sym_la_2', name: 'SEVERED',
+        text: 'Damage \u00d71.50, adds no THORNS.',
         skills: { latch: { power: 1.5, thornsScale: 0 } } },
-      { id: 'sym_la_3', name: 'ROOTED',
-        text: 'Latch drinks a share of what it deals, at a weaker blow.',
+      { id: 'sym_la_3', name: 'UPTAKE',
+        text: 'Damage \u00d70.70, recovers 15% of damage dealt.',
         skills: { latch: { lifesteal: 0.15, power: 0.7 } } }
     ],
     spines: [
-      { id: 'sym_sp_1', name: 'IRON SPINES',
-        text: 'Raise Spines multiplies THORNS ×3 — for two turns instead of three.',
+      { id: 'sym_sp_1', name: 'DENSE GROWTH',
+        text: 'THORNS \u00d73, duration 2t.',
         skills: { spines: { duration: 2, power: 3 } } },
-      { id: 'sym_sp_2', name: 'FEEDING SPINES',
-        text: 'Every hit taken under Spines grows +5 THORNS rather than +2, and the wall only ×1.5.',
+      { id: 'sym_sp_2', name: 'REACTIVE GROWTH',
+        text: 'THORNS \u00d71.5, +5 THORNS per hit taken.',
         skills: { spines: { power: 1.5, growBonus: 5 } } },
-      { id: 'sym_sp_3', name: 'QUICK GROWTH',
-        text: 'Raise Spines comes every 3 turns, holds 2, and multiplies only ×1.5.',
+      { id: 'sym_sp_3', name: 'RAPID CYCLE',
+        text: 'Cooldown 3t, duration 2t, THORNS \u00d71.5.',
         skills: { spines: { cdTurns: 3, duration: 2, power: 1.5 } } }
     ],
     shed: [
-      { id: 'sym_sh_1', name: 'SCAR TISSUE',
-        text: 'Shed heals twice as much on its own, but tears no spines to do it.',
+      { id: 'sym_sh_1', name: 'SEALED',
+        text: 'Heals 16%, converts no THORNS.',
         skills: { shed: { healFrac: 0.16, shedFuel: false } } },
-      { id: 'sym_sh_2', name: 'DEEP HARVEST',
-        text: 'Shed tears far more of the wall at once, and its own mend all but disappears.',
+      { id: 'sym_sh_2', name: 'HARVEST',
+        text: 'Heals 1%, spends up to 60% of grown THORNS.',
         skills: { shed: { healFrac: 0.01, capFrac: 0.60 } } },
-      { id: 'sym_sh_3', name: 'CLOSED WOUND',
-        text: 'Shed comes every 3 turns and scrubs nothing off you.',
+      { id: 'sym_sh_3', name: 'RAPID SHED',
+        text: 'Cooldown 3t, heals 6%, no POISON cleanse.',
         skills: { shed: { cdTurns: 3, cleanse: 0, healFrac: 0.06 } } }
     ],
     provoke: [
-      { id: 'sym_pr_1', name: 'BARBED HOST',
-        text: 'Provoke lashes for ×2.5 THORNS instead of ×1.5, and no longer grows any.',
+      { id: 'sym_pr_1', name: 'BARBED',
+        text: 'Lash \u00d72.5 THORNS, +0 THORNS.',
         skills: { provoke: { lashMult: 2.5, growBonus: 0 } } },
-      { id: 'sym_pr_2', name: 'OPEN INVITATION',
-        text: 'Provoke grows +8 THORNS rather than +3, and the spines no longer lash back.',
+      { id: 'sym_pr_2', name: 'BAIT',
+        text: '+8 THORNS, no lash.',
         skills: { provoke: { growBonus: 8, lashMult: 0 } } },
-      { id: 'sym_pr_3', name: 'STANDING TARGET',
-        text: 'Provoke comes every 2 turns, grows nothing, and lashes for half.',
+      { id: 'sym_pr_3', name: 'REPEAT CYCLE',
+        text: 'Cooldown 2t, lash \u00d70.75 THORNS, +0 THORNS.',
         skills: { provoke: { cdTurns: 2, growBonus: 0, lashMult: 0.75 } } }
     ]
   },
@@ -181,47 +181,47 @@ const MODIFICATIONS = {
   // ---- UNAUGMENTED --------------------------------------------------------
   base: {
     jab: [
-      { id: 'base_ja_1', name: 'STEADY HANDS',
-        text: 'Strike steadies you twice as hard, and opens no wound at all.',
+      { id: 'base_ja_1', name: 'BRACED FORM',
+        text: '+2 RESOLVE, no BLEED.',
         skills: { jab: { buildsResolve: 2, bleed: 0 } } },
-      { id: 'base_ja_2', name: 'CLEAN FORM',
-        text: 'Strike hits 40% harder and steadies you not at all.',
+      { id: 'base_ja_2', name: 'COMMITTED',
+        text: 'Damage \u00d71.40, no RESOLVE.',
         skills: { jab: { power: 1.4, buildsResolve: 0 } } },
-      { id: 'base_ja_3', name: 'DUG IN',
-        text: 'Strike steadies you three times over — and lands like a tap.',
+      { id: 'base_ja_3', name: 'DEFENSIVE FORM',
+        text: '+3 RESOLVE, damage \u00d70.50.',
         skills: { jab: { buildsResolve: 3, power: 0.5 } } }
     ],
     bandage: [
-      { id: 'base_ba_1', name: 'FIELD SUTURE',
-        text: 'Bandage patches far better per held RESOLVE, and almost nothing without it.',
+      { id: 'base_ba_1', name: 'SUTURE',
+        text: 'Heals 4%, +5% per held RESOLVE.',
         skills: { bandage: { healFrac: 0.04, resolveHealBonus: 0.05 } } },
       { id: 'base_ba_2', name: 'TOURNIQUET',
-        text: 'Bandage closes a third of you at once, but comes only every 6 turns.',
+        text: 'Heals 22%, cooldown 6t.',
         skills: { bandage: { healFrac: 0.22, cdTurns: 6 } } },
-      { id: 'base_ba_3', name: 'QUICK PATCH',
-        text: 'Bandage comes every 3 turns, mends less, and scrubs no rot.',
+      { id: 'base_ba_3', name: 'FIELD DRESSING',
+        text: 'Cooldown 3t, heals 9%, no POISON cleanse.',
         skills: { bandage: { cdTurns: 3, healFrac: 0.09, cleanse: 0 } } }
     ],
     counter: [
-      { id: 'base_co_1', name: 'IRON GUARD',
-        text: 'Counterpunch braces for 3 turns instead of 2, but comes every 5.',
+      { id: 'base_co_1', name: 'EXTENDED GUARD',
+        text: 'Duration 3t, cooldown 5t.',
         skills: { counter: { duration: 3, cdTurns: 5 } } },
-      { id: 'base_co_2', name: 'OPEN GUARD',
-        text: 'The counter hits for double — the brace behind it barely blunts anything.',
+      { id: 'base_co_2', name: 'AGGRESSIVE GUARD',
+        text: 'Damage taken \u221225%, counter \u00d72.50.',
         skills: { counter: { power: 0.25, counterPower: 2.5 } } },
-      { id: 'base_co_3', name: 'SHORT BRACE',
-        text: 'Counterpunch blunts 85% for a single turn, every 3 turns.',
+      { id: 'base_co_3', name: 'HARD GUARD',
+        text: 'Duration 1t, damage taken \u221285%, cooldown 3t.',
         skills: { counter: { duration: 1, power: 0.85, cdTurns: 3 } } }
     ],
     laststand: [
-      { id: 'base_ls_1', name: 'BLOOD DEBT',
-        text: 'Last Stand spends ALL your RESOLVE and pays far more for each — you keep none of the guard it was buying.',
+      { id: 'base_ls_1', name: 'FULL COMMIT',
+        text: 'Spends 100% of RESOLVE, \u00d70.70 damage per RESOLVE.',
         skills: { laststand: { consumeFrac: 1.0, perResolvePower: 0.70 } } },
       { id: 'base_ls_2', name: 'MEASURED',
-        text: 'Last Stand spends only a third of the pile, every 3 turns.',
+        text: 'Spends 35% of RESOLVE, cooldown 3t.',
         skills: { laststand: { consumeFrac: 0.35, cdTurns: 3 } } },
-      { id: 'base_ls_3', name: 'HAYMAKER',
-        text: 'Last Stand opens with twice the blow and cares far less what you endured.',
+      { id: 'base_ls_3', name: 'FLAT STRIKE',
+        text: 'Base damage \u00d72.50, \u00d70.15 damage per RESOLVE.',
         skills: { laststand: { power: 2.5, perResolvePower: 0.15 } } }
     ]
   }
@@ -314,13 +314,14 @@ function takeMod(id) {
     p.mods = (p.mods || []).concat(mod.id);
     applyMod(p, mod);
     applyDerivedStats(p);
-    logEvent('MODIFICATION', null, mod.name, [mod.text]);
+    logEvent('MODIFICATION', null, mod.name,
+             [modSkillName(p.class, mod.skill), mod.text]);
     floatText(p, mod.name, 'tally');
     // forceRebuild: a patched card can change its own text AND the row can
     // change shape, so the skill bar is rebuilt rather than refreshed.
     updateHud(); renderSkills(true);
   } else {
-    logEvent('MODIFICATION', null, 'declined', ['the suit goes back as it was']);
+    logEvent('MODIFICATION', null, 'declined');
   }
   saveRun();
   // resumeAfterKill, NOT proceedAfterKill: coming back through the entry point
@@ -366,7 +367,7 @@ function renderModModal(offer) {
       '<div class="mod-text">' + highlightKeywords(m.text) + '</div>' +
     '</button>').join('')
     + '<button class="ui-btn is-quiet mod-skip" type="button" onclick="takeMod(null)">'
-    + 'DECLINE — LEAVE THE SUIT AS IT IS</button>';
+    + 'DECLINE</button>';
 }
 
 function renderModList() {
