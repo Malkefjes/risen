@@ -398,7 +398,7 @@ function clearLog(){ if (HEADLESS.on) HEADLESS.log.length = 0; }
 document.addEventListener('visibilitychange', () => {
   // A drop card is a scene in this one respect: it waits on a click, not on a
   // clock, and resolveDrop is what resumes the run — not startCombatLoop.
-  if (state.inScene || state.pendingDrop || state.pendingMods) return;
+  if (state.inScene) return;
   if (document.hidden) { if (state.combatActive) stopCombatLoop(); }
   else if (state.player && state.player.hp > 0 && document.getElementById('combat-screen').classList.contains('active')) {
     startCombatLoop();

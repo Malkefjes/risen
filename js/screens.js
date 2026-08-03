@@ -64,6 +64,13 @@ function freshPlayer(classId) {
     // Modification ids, in the order taken. The patches themselves are
     // re-applied from these on load (applyTakenMods).
     mods: [],
+    // AUTO-ALLOCATION. Relative parts, not percentages that must sum — the
+    // sidebar shows each as its share of the total, so a player can set STR 100
+    // and VIT 100 and mean half each. Every point a level grants is spread by
+    // these (autoAllocate). A bot with its own plan sets this to null and banks
+    // points the old way instead.
+    weights: { str: 25, instinct: 25, speed: 25, vit: 25 },
+    allocCarry: { str: 0, instinct: 0, speed: 0, vit: 0 },
     statuses:[], isPlayer:true, meter:0, thornsGrown:0, thornsShedded:0,
     poisonCarry:0, _statusKey:''
   };
@@ -375,7 +382,14 @@ function updateHud() {
   if (statsTab) statsTab.classList.toggle('points-alert', p.points > 0 || pendingTotal(p) > 0);
   refreshSidebarStats();
   renderSuitPanel();
-  renderModList();
+  renderModPanel();
+  // The dot clears once the queue behind it is empty.
+  const mark = (tab, on) => {
+    const t = document.querySelector('.sidebar-tab[data-tab="' + tab + '"]');
+    if (t) t.classList.toggle('tab-alert', !!on);
+  };
+  mark('suit', !!nextDrop());
+  mark('mods', !!nextModOffer());
   // AND THE FIGHTER CARD, which shows the same HP this just redrew in the
   // sidebar. updateHud fires on the run-scale beats — a level, a commit, a
   // resume — and every one of them can move max HP or current HP, so leaving
@@ -413,7 +427,8 @@ function gainXP(amount, bonus) {
     // The grant reads off BALANCE rather than being typed here and again in the
     // log line, so the number the player is told is the number they get.
     const grant = P().pointsPerLevel;
-    p.xp -= p.xpNext; p.level++; p.xpNext = xpForLevel(p.level); p.points += grant;
+    p.xp -= p.xpNext; p.level++; p.xpNext = xpForLevel(p.level);
+    if (p.weights) autoAllocate(p, grant); else p.points += grant;
     recalcPlayerStats();
     // recalcPlayerStats above has already moved the anchor to the NEW level, so
     // the level-up heal pays at the size the level you just earned is worth.
@@ -464,6 +479,15 @@ function switchTab(tabId) {
 // Changing runs: park the sidebar back on STATS so the next run does not open
 // on the menu, and drop any pending SKIP so the button cannot outlive the intro
 // it belonged to. Callers that then start an intro re-offer it afterwards.
+// A queued drop or offer switches the sidebar to its tab and marks it, so the
+// notification lands where the mouse already is instead of over the arena.
+function notifyTab(tabId) {
+  if (HEADLESS.on) return;
+  showSidebarTab(tabId);
+  const t = document.querySelector('.sidebar-tab[data-tab="' + tabId + '"]');
+  if (t) t.classList.add('tab-alert');
+}
+
 function leaveMenuTab() {
   showSidebarTab('stats');
   offerSkip(null);
@@ -542,35 +566,29 @@ function refreshSidebarStats() {
   STAT_KEYS.forEach(k => {
     const el = document.getElementById('stat-' + k);
     if (!el) return;
-    // Fitted gear shows as its own small "+N" beside the allocated value, so
-    // what you bought and what the suit grants stay readable apart.
+    // Fitted gear shows as its own small "+N" beside the allocated value.
     const g = gearStat(p, k);
     el.innerHTML = (p[k] + pendingOf(p, k))
       + (g ? '<i class="gear-plus">+' + g + '</i>' : '');
     el.classList.toggle('pending', pendingOf(p, k) > 0);
-  });
-
-  // The build profile: each stat as a share of the biggest of the four, so a
-  // lopsided sheet is visible before any number is read. Pending points are in
-  // it, so a staged allocation shows what the build is about to become.
-  const spread = STAT_KEYS.map(k => p[k] + pendingOf(p, k) + gearStat(p, k));
-  const top = Math.max(1, ...spread);
-  STAT_KEYS.forEach((k, i) => {
+    // The bar is the WEIGHT, and the number on it is that weight's share.
     const bar = document.getElementById('bar-' + k);
-    if (bar) bar.style.width = Math.round(spread[i] / top * 100) + '%';
+    const pctEl = document.getElementById('wpct-' + k);
+    const share = p.weights ? weightShare(p, k) : 0;
+    if (bar) bar.style.width = Math.round(share * 100) + '%';
+    if (pctEl) pctEl.textContent = p.weights ? Math.round(share * 100) + '%' : '';
   });
 
-  // The plus adds a point while there are points, becomes the confirm when the
-  // pool runs dry, and goes dark once there is nothing left to do. The minus
-  // only lights for a stat that actually has something pending to give back.
+  // The buttons nudge the WEIGHT now, so they are live whenever weights are —
+  // there is no pool to run dry and nothing to confirm. A stat already at 0 or
+  // 100 has no nudge left in that direction.
   document.querySelectorAll('.side-stat-controls .stat-btn.plus').forEach(b => {
-    b.disabled = p.points <= 0 && !confirming;
-    b.textContent = confirming ? 'V' : '+';
-    b.classList.toggle('confirm', confirming);
-    b.title = confirming ? 'Confirm allocation — this cannot be undone' : '';
+    b.disabled = p.weights ? (p.weights[b.dataset.stat] || 0) >= 100 : (p.points <= 0 && !confirming);
+    b.textContent = !p.weights && confirming ? 'V' : '+';
+    b.classList.toggle('confirm', !p.weights && confirming);
   });
   document.querySelectorAll('.side-stat-controls .stat-btn.minus').forEach(b => {
-    b.disabled = pendingOf(p, b.dataset.stat) <= 0;
+    b.disabled = p.weights ? (p.weights[b.dataset.stat] || 0) <= 0 : pendingOf(p, b.dataset.stat) <= 0;
   });
 
   // Values stay on the COMMITTED sheet. A staged allocation shows up as a
@@ -599,6 +617,58 @@ function refreshSidebarStats() {
     const note = document.getElementById('preview-' + k);
     if (note) { note.textContent = ''; note.classList.remove('on'); }
   });
+}
+
+// ---- Auto-allocation -----------------------------------------
+// Points land by WEIGHT the moment a level grants them, because placing three
+// points by hand every level is friction the run does not need (owner,
+// 2026-08-03t). Largest-remainder with a running carry, so a 25/25/25/25 split
+// over eleven levels lands 8/8/8/9 rather than losing the fractions.
+const WEIGHT_STEP = 5;
+function weightTotal(p) {
+  return STAT_KEYS.reduce((n, k) => n + Math.max(0, (p.weights && p.weights[k]) || 0), 0);
+}
+function weightShare(p, stat) {
+  const t = weightTotal(p);
+  if (!t) return 0.25;                       // all zero reads as an even split
+  return Math.max(0, p.weights[stat] || 0) / t;
+}
+function autoAllocate(p, points) {
+  if (!p || !(points > 0)) return;
+  if (!p.allocCarry) p.allocCarry = { str:0, instinct:0, speed:0, vit:0 };
+  const want = {}, given = {};
+  let placed = 0;
+  STAT_KEYS.forEach(k => {
+    want[k] = p.allocCarry[k] + points * weightShare(p, k);
+    given[k] = Math.floor(want[k]);
+    placed += given[k];
+  });
+  // Whatever rounding left over goes to the biggest remainder, one at a time.
+  while (placed < points) {
+    let best = STAT_KEYS[0];
+    STAT_KEYS.forEach(k => { if ((want[k]-given[k]) > (want[best]-given[best])) best = k; });
+    given[best]++; placed++;
+  }
+  STAT_KEYS.forEach(k => { p[k] += given[k]; p.allocCarry[k] = want[k] - given[k]; });
+  logEvent('POINTS', null, '+' + points,
+           STAT_KEYS.filter(k => given[k]).map(k => k.toUpperCase() + ' +' + given[k]));
+}
+
+// The bars under each stat ARE the control: click one to set its weight, or
+// nudge with the buttons beside it.
+function adjustWeight(stat, delta) {
+  const p = state.player;
+  if (!p || !p.weights) return;
+  p.weights[stat] = Math.max(0, Math.min(100, (p.weights[stat] || 0) + delta));
+  updateHud(); saveRun();
+}
+function setWeightFromClick(ev, stat) {
+  const p = state.player;
+  if (!p || !p.weights) return;
+  const box = ev.currentTarget.getBoundingClientRect();
+  const pct = Math.round(((ev.clientX - box.left) / Math.max(1, box.width)) * 100 / WEIGHT_STEP) * WEIGHT_STEP;
+  p.weights[stat] = Math.max(0, Math.min(100, pct));
+  updateHud(); saveRun();
 }
 
 // Hovering a plus adds its point on top of whatever is already staged, so the

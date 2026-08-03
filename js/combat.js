@@ -8,7 +8,6 @@ function startCombatLoop() {
   stopCombatLoop();
   state.combatActive = true;
   updateTurnInfo();
-  if (state.pendingDrop || state.pendingMods) return;    // waiting on a between-fight card
   if (state.awaitingInput) { renderSkills(); return; }   // waiting on the player
   if (state.pendingEnemyAct) { scheduleTurn(enemyAct, turnDelay(380)); return; }
   if (state.awaitingSpawn)   { scheduleTurn(doSpawn, turnDelay(220)); return; }
@@ -314,7 +313,6 @@ function enemyAct() {
 
 function doSpawn() {
   if (!state.combatActive) return;
-  if (state.pendingDrop || state.pendingMods) return;   // a card resumes the spawn
   spawnEnemy();
   if (!state.player || state.player.hp <= 0) return;
   if (state.enemy && state.enemy._defeated) return;        // overflow killed it too
@@ -1096,23 +1094,17 @@ function onEnemyDefeated() {
   saveRun();
   updateTurnInfo(); renderSkills();
 
-  // LOOT. Rolled here, on the rules stream, in both paths — headless rolls the
-  // identical item. The card pauses the between-fight beat: resolveDrop is the
-  // only way on to the spawn (the sim answers it with botTakesDrop).
+  // LOOT AND THE LABORATORY'S OFFER. Both are ROLLED here, on the rules stream,
+  // in both paths — so headless rolls the identical item and the identical
+  // three. Neither STOPS the run any more: they queue into the sidebar and the
+  // fight walks on, because a modal over the arena breaks the one flow this
+  // game has (owner, 2026-08-03t). Answering them is mouse work on the right
+  // while the left hand keeps playing.
   const drop = rollDrop(e, killedWave);
-  if (drop) { presentDrop(drop, killedWave); return; }
-  proceedAfterKill(killedWave);
-}
-
-// The between-fight beat after a kill (and after any drop card is answered).
-// THE ORDER OF THE PUNCTUATION IS: loot, then the Laboratory's offer, then a
-// scene, then the next wave — each one gated, each one resuming the next.
-// takeMod resumes at resumeAfterKill rather than here, which is what keeps a
-// pick from re-offering itself forever.
-function proceedAfterKill(killedWave) {
-  if (modDueAfter(killedWave) && state.player) {
-    const offer = offerMods(state.player);
-    if (offer.length) { presentMods(offer, killedWave); return; }
+  if (drop) queueDrop(drop);
+  if (modDueAfter(killedWave) && p) {
+    const offer = offerMods(p);
+    if (offer.length) queueMods(offer);
   }
   resumeAfterKill(killedWave);
 }

@@ -223,43 +223,45 @@ function offerMods(p) {
   return picked;
 }
 
-// id null (or unknown) declines. Kept even though every pick is now an upgrade:
-// it costs nothing to leave open, and a player who wants none of the three
-// should not be made to install one.
+// QUEUED into the MODS tab, same as a drop — the fight does not stop for it.
+function queueMods(offer) {
+  (state.modQueue = state.modQueue || []).push(offer);
+  logEvent('LABORATORY', null, 'offering ' + offer.length + ' modifications',
+           offer.map(m => m.name));
+  if (HEADLESS.on) return;
+  floatText(state.player, 'LABORATORY', 'tally');
+  notifyTab('mods');
+  updateHud();
+}
+function nextModOffer() { return (state.modQueue && state.modQueue[0]) || null; }
+
+// id null (or unknown) declines. Kept even though every pick is an upgrade:
+// a player who wants none of the three should not be made to install one.
 function takeMod(id) {
-  const st = state.pendingMods;
-  if (!st) return;
+  const q = state.modQueue || [];
+  const offer = q.shift();
+  if (!offer) return;
   const p = state.player;
   const mod = id ? modById(p.class, id) : null;
-  state.pendingMods = null;
-  if (!HEADLESS.on) {
-    const m = document.getElementById('mod-modal');
-    if (m) m.classList.remove('show');
-  }
   if (mod) {
     p.mods = (p.mods || []).concat(mod.id);
     applyMod(p, mod);
     applyDerivedStats(p);
     const n = modCount(p, mod.id);
-    logEvent('MODIFICATION', null, mod.name + (n > 1 ? ' ×' + n : ''),
+    logEvent('MODIFICATION', null, mod.name + (n > 1 ? ' \u00d7' + n : ''),
              [modSkillName(p.class, mod.skill), mod.text]);
     floatText(p, mod.name, 'tally');
-    // forceRebuild: a patched card rewrites its own text.
-    updateHud(); renderSkills(true);
+    renderSkills(true);
   } else {
     logEvent('MODIFICATION', null, 'declined');
   }
   saveRun();
-  // resumeAfterKill, NOT proceedAfterKill: coming back through the entry point
-  // would offer this wave a modification again, forever.
-  resumeAfterKill(st.killedWave);
+  updateHud();
 }
 
-// The bot's hand. Every pick is an upgrade now, so there is no trap to avoid —
-// what is left is which BUTTON to feed, and it feeds the one it presses most.
-// Reads state.skillUses, the same tally the result screen shows. Draws no RNG:
-// the OFFER is the rules draw, and a second one here would make a bot and a
-// player consume different amounts of the stream.
+// The bot's hand: every pick is an upgrade, so what is left is which BUTTON to
+// feed, and it feeds the one it presses most. Draws no RNG — the OFFER was the
+// rules draw.
 function botTakesMod(offer, p) {
   p = p || state.player;
   if (!offer || !offer.length || !p) return null;
@@ -272,41 +274,32 @@ function botTakesMod(offer, p) {
   return best.id;
 }
 
-function presentMods(offer, killedWave) {
-  state.pendingMods = { offer, killedWave };
-  logEvent('LABORATORY', null, 'offering ' + offer.length + ' modifications',
-           offer.map(m => m.name));
-  if (HEADLESS.on) return;
-  renderModModal(offer);
-  const m = document.getElementById('mod-modal');
-  if (m) m.classList.add('show');
-}
-
-function abandonMods() {
-  if (!state.pendingMods) return;
-  state.pendingMods = null;
-  if (!HEADLESS.on) {
-    const m = document.getElementById('mod-modal');
-    if (m) m.classList.remove('show');
-  }
-}
+function abandonMods() { state.modQueue = []; }
 
 // ---- UI ---------------------------------------------------------
-function renderModModal(offer) {
-  const el = document.getElementById('mod-body');
+// The offer, in the MODS tab. Three cards and a decline, and the fight keeps
+// running behind them.
+function renderModPanel() {
+  if (HEADLESS.on) return;
+  renderModList();
+  const el = document.getElementById('mod-offer');
   if (!el) return;
+  const offer = nextModOffer();
+  if (!offer) { el.innerHTML = ''; el.classList.remove('on'); return; }
+  el.classList.add('on');
   const p = state.player;
   const cls = p ? p.class : '';
-  el.innerHTML = offer.map(m => {
-    const held = modCount(p, m.id);
-    return '<button class="mod-card strain-' + cls + '" type="button" onclick="takeMod(\'' + m.id + '\')">'
-      + '<div class="mod-head">'
-      + '<span class="mod-name">' + m.name + (held ? ' <i class="mod-held">×' + held + ' held</i>' : '') + '</span>'
-      + '<span class="mod-on">' + modSkillName(cls, m.skill) + '</span>'
-      + '</div>'
-      + '<div class="mod-text">' + highlightKeywords(m.text) + '</div>'
-      + '</button>';
-  }).join('')
+  const more = (state.modQueue || []).length - 1;
+  el.innerHTML = '<div class="pending-head">LABORATORY'
+      + (more > 0 ? ' <i>+' + more + ' waiting</i>' : '') + '</div>'
+    + offer.map(m => {
+        const held = modCount(p, m.id);
+        return '<button class="mod-card strain-' + cls + '" type="button" onclick="takeMod(\'' + m.id + '\')">'
+          + '<div class="mod-head">'
+          + '<span class="mod-name">' + m.name + (held ? ' <i class="mod-held">×' + held + '</i>' : '') + '</span>'
+          + '<span class="mod-on">' + modSkillName(cls, m.skill) + '</span></div>'
+          + '<div class="mod-text">' + highlightKeywords(m.text) + '</div></button>';
+      }).join('')
     + '<button class="ui-btn is-quiet mod-skip" type="button" onclick="takeMod(null)">DECLINE</button>';
 }
 

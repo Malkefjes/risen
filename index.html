@@ -199,6 +199,7 @@
         <div class="sidebar-tabs">
           <button class="sidebar-tab active" data-tab="stats" onclick="switchTab('stats')">STATS</button>
           <button class="sidebar-tab" data-tab="suit" onclick="switchTab('suit')">SUIT</button>
+          <button class="sidebar-tab" data-tab="mods" onclick="switchTab('mods')">MODS</button>
           <button class="sidebar-tab" data-tab="menu" onclick="switchTab('menu')">MENU</button>
         </div>
         <div class="sidebar-body">
@@ -242,11 +243,12 @@
                 <div class="stat-preview" id="preview-str"></div>
               </div>
               <div class="side-stat-controls">
-                <button class="stat-btn minus" data-stat="str" onclick="adjustStat('str', -1)">−</button>
+                <button class="stat-btn minus" data-stat="str" onclick="adjustWeight('str', -5)">−</button>
                 <div class="side-stat-value" id="stat-str" data-stat="str">10</div>
-                <button class="stat-btn plus" data-stat="str" onclick="adjustStat('str', 1)" onmouseenter="previewStat('str', true)" onmouseleave="previewStat('str', false)">+</button>
+                <button class="stat-btn plus" data-stat="str" onclick="adjustWeight('str', 5)">+</button>
               </div>
-              <div class="side-stat-bar"><i id="bar-str"></i></div>
+              <div class="side-stat-bar weight-bar" title="Share of each level's points"
+                   onclick="setWeightFromClick(event, 'str')"><i id="bar-str"></i><span class="weight-pct" id="wpct-str"></span></div>
             </div>
             <div class="side-stat-row" data-stat="instinct">
               <div class="side-stat-info" title="Crit chance · crit damage · read (telegraphs)">
@@ -254,11 +256,12 @@
                 <div class="stat-preview" id="preview-instinct"></div>
               </div>
               <div class="side-stat-controls">
-                <button class="stat-btn minus" data-stat="instinct" onclick="adjustStat('instinct', -1)">−</button>
+                <button class="stat-btn minus" data-stat="instinct" onclick="adjustWeight('instinct', -5)">−</button>
                 <div class="side-stat-value" id="stat-instinct" data-stat="instinct">10</div>
-                <button class="stat-btn plus" data-stat="instinct" onclick="adjustStat('instinct', 1)" onmouseenter="previewStat('instinct', true)" onmouseleave="previewStat('instinct', false)">+</button>
+                <button class="stat-btn plus" data-stat="instinct" onclick="adjustWeight('instinct', 5)">+</button>
               </div>
-              <div class="side-stat-bar"><i id="bar-instinct"></i></div>
+              <div class="side-stat-bar weight-bar" title="Share of each level's points"
+                   onclick="setWeightFromClick(event, 'instinct')"><i id="bar-instinct"></i><span class="weight-pct" id="wpct-instinct"></span></div>
             </div>
             <div class="side-stat-row" data-stat="speed">
               <div class="side-stat-info" title="Turn rate · evasion">
@@ -266,11 +269,12 @@
                 <div class="stat-preview" id="preview-speed"></div>
               </div>
               <div class="side-stat-controls">
-                <button class="stat-btn minus" data-stat="speed" onclick="adjustStat('speed', -1)">−</button>
+                <button class="stat-btn minus" data-stat="speed" onclick="adjustWeight('speed', -5)">−</button>
                 <div class="side-stat-value" id="stat-speed" data-stat="speed">10</div>
-                <button class="stat-btn plus" data-stat="speed" onclick="adjustStat('speed', 1)" onmouseenter="previewStat('speed', true)" onmouseleave="previewStat('speed', false)">+</button>
+                <button class="stat-btn plus" data-stat="speed" onclick="adjustWeight('speed', 5)">+</button>
               </div>
-              <div class="side-stat-bar"><i id="bar-speed"></i></div>
+              <div class="side-stat-bar weight-bar" title="Share of each level's points"
+                   onclick="setWeightFromClick(event, 'speed')"><i id="bar-speed"></i><span class="weight-pct" id="wpct-speed"></span></div>
             </div>
             <div class="side-stat-row" data-stat="vit">
               <div class="side-stat-info" title="Health · recovery · thorns (Symbiotic)">
@@ -278,11 +282,12 @@
                 <div class="stat-preview" id="preview-vit"></div>
               </div>
               <div class="side-stat-controls">
-                <button class="stat-btn minus" data-stat="vit" onclick="adjustStat('vit', -1)">−</button>
+                <button class="stat-btn minus" data-stat="vit" onclick="adjustWeight('vit', -5)">−</button>
                 <div class="side-stat-value" id="stat-vit" data-stat="vit">10</div>
-                <button class="stat-btn plus" data-stat="vit" onclick="adjustStat('vit', 1)" onmouseenter="previewStat('vit', true)" onmouseleave="previewStat('vit', false)">+</button>
+                <button class="stat-btn plus" data-stat="vit" onclick="adjustWeight('vit', 5)">+</button>
               </div>
-              <div class="side-stat-bar"><i id="bar-vit"></i></div>
+              <div class="side-stat-bar weight-bar" title="Share of each level's points"
+                   onclick="setWeightFromClick(event, 'vit')"><i id="bar-vit"></i><span class="weight-pct" id="wpct-vit"></span></div>
             </div>
             <!-- Exact values only. Every row is a number the fight actually
                  uses, and carries a .delta the hover preview fills in with the
@@ -311,11 +316,15 @@
               </div>
             </div>
           </div>
-          <!-- The five mounts and what is fitted in them (renderSuitPanel),
-               then what the Laboratory has installed (renderModList). -->
+          <!-- A recovered item waits HERE rather than over the arena, so the
+               fight keeps running while the decision is made. -->
           <div class="sidebar-panel" id="tab-suit">
+            <div class="pending" id="drop-pending"></div>
             <div class="suit-list" id="suit-list"></div>
-            <div class="derived-subhead">MODIFICATIONS</div>
+          </div>
+          <div class="sidebar-panel" id="tab-mods">
+            <div class="pending" id="mod-offer"></div>
+            <div class="derived-subhead">INSTALLED</div>
             <div class="mod-list" id="mod-list"></div>
           </div>
           <div class="sidebar-panel" id="tab-menu">
@@ -335,30 +344,7 @@
     <div class="result-stats" id="result-stats"></div>
   </div>
 
-  <!-- FIELD RECOVERY — the drop card. Only ever up between fights: combat is
-       already waiting on the spawn, and resolveDrop is the only way on. -->
-  <div class="modal-overlay" id="drop-modal">
-    <div class="modal drop-modal">
-      <h3>FIELD RECOVERY</h3>
-      <div id="drop-body"></div>
-      <div class="modal-actions drop-actions">
-        <button class="ui-btn is-primary" onclick="resolveDrop(true)">FIT TO SUIT</button>
-        <button class="ui-btn is-quiet" onclick="resolveDrop(false)">LEAVE IT</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- THE LABORATORY'S OFFER. One pick, no decline — the choice is which,
-       never whether. Only ever up between fights (see state.pendingMods). -->
-  <div class="modal-overlay" id="mod-modal">
-    <div class="modal mod-modal">
-      <h3>LABORATORY</h3>
-      <p class="mod-lead">Select one modification, or decline.</p>
-      <div id="mod-body"></div>
-    </div>
-  </div>
-
-  <!-- SETTINGS -->
+      <!-- SETTINGS -->
   <div class="modal-overlay" id="settings-modal">
     <div class="modal">
       <h3>SETTINGS</h3>

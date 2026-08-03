@@ -26,14 +26,17 @@ const HEADLESS = {
 // The step the turn engine has queued. Headless replaces the timer with this.
 let _pendingStep = null;
 
-// Drain queued steps until the run needs the player, ends, or stalls.
+// Drain queued steps until the run needs the player, ends, or stalls. A queued
+// drop or offer counts as needing the player: on screen the spawn is a timer
+// the mouse beats to the sidebar, so draining through it here would fit an item
+// a whole wave later than a player does.
 function pumpSteps(limit) {
   let n = 0;
   while (_pendingStep && n++ < (limit || 10000)) {
     const fn = _pendingStep;
     _pendingStep = null;
     fn();
-    if (state.awaitingInput || state.runOver) break;
+    if (state.awaitingInput || state.runOver || nextDrop() || nextModOffer()) break;
   }
   return n;
 }
@@ -311,6 +314,10 @@ function simulateRun(classId, opts) {
   _pendingStep = null;
   try {
     startGame(true, classId);
+    // A bot that was handed an allocation plan banks its points and spends
+    // them itself; auto-allocation is the player's convenience, and leaving
+    // it on would make every `allocate` option in tools/ silently dead.
+    if (opts.allocate && state.player) state.player.weights = null;
     let steps = 0;
     // ADVANCE FIRST, THEN ACT. The bot only touches anything while the game is
     // waiting on the player, because that is the only moment a human can. An
@@ -320,23 +327,26 @@ function simulateRun(classId, opts) {
     // early changed how much it healed. The rules were identical; the driver
     // was playing at a moment no player can reach.
     while (!state.runOver && steps++ < maxSteps) {
+      // THE QUEUES COME BEFORE THE CLOCK. Neither holds the fight any more, so
+      // on screen they are answered in the gap between the kill and the next
+      // spawn — the mouse is already on the sidebar. Draining a scheduled step
+      // first would fit the item one wave later than a player does, and fitting
+      // it changes the sheet the next fight opens on.
+      // The bot answers a drop the naive way (take it if it outscores what is
+      // fitted) and always takes the first Modification: the OFFER is a rules
+      // draw, the choice must not be a second one. Neither draws RNG, so both
+      // bots share them — see botTakesDrop / botTakesMod.
+      if (nextDrop()) {
+        resolveDrop(botTakesDrop(state.player, nextDrop()));
+        continue;
+      }
+      if (nextModOffer()) {
+        takeMod(botTakesMod(nextModOffer()));
+        continue;
+      }
       pumpSteps();
       if (state.runOver) break;
       if (opts.stopWhen && opts.stopWhen(state)) break;
-      // A drop waits on the player exactly like a turn does. The bot answers
-      // it the naive way — take it if it outscores what is fitted — and the
-      // decision draws no RNG, so both bots share it.
-      if (state.pendingDrop) {
-        resolveDrop(botTakesDrop(state.player, state.pendingDrop.item));
-        continue;
-      }
-      // A Modification offer waits on the player the same way. The OFFER is a
-      // rules draw; the choice must not be a second one, so the bot always
-      // takes the first — see botTakesMod.
-      if (state.pendingMods) {
-        takeMod(botTakesMod(state.pendingMods.offer));
-        continue;
-      }
       if (!state.awaitingInput) {
         if (!_pendingStep) break;                // nothing queued, nobody to ask
         continue;

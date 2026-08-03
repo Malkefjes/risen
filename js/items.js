@@ -339,6 +339,12 @@ function loadGear(saved) {
   return g;
 }
 
+// Same validation as a fitted item, for the undecided ones a save carries.
+function loadDropQueue(saved) {
+  if (!Array.isArray(saved)) return [];
+  return saved.filter(it => it && SLOTS[it.slot] && RARITIES[it.rarity] && Array.isArray(it.prefixes));
+}
+
 // ---- Equip / drop flow -----------------------------------------
 // Equip-or-leave, no inventory: fitting replaces the slot, leaving is forever.
 function equipItem(p, it) {
@@ -354,43 +360,34 @@ function equipItem(p, it) {
   updateHud(); renderSkills();
 }
 
-// The pause between fights while the card is up. state.pendingDrop is the
-// gate: startCombatLoop and doSpawn refuse to move past it, and resolveDrop is
-// the only way through — the sim answers it with botTakesDrop.
-function presentDrop(item, killedWave) {
-  state.pendingDrop = { item, killedWave };
+// QUEUED, NEVER MODAL. A drop lands in the SUIT tab and waits there; the fight
+// carries on. A queue rather than one slot so a second drop can never destroy
+// an undecided first — it is a queue of DECISIONS, not an inventory, since
+// nothing in it is worn or usable until it is fitted.
+function queueDrop(item) {
+  (state.dropQueue = state.dropQueue || []).push(item);
   logEvent('RECOVERED', null, itemLogName(item),
            [itemImplicitLine(item)].concat(itemAffixLines(item)));
   if (HEADLESS.on) return;
-  renderDropModal(item);
-  const m = document.getElementById('drop-modal');
-  if (m) m.classList.add('show');
+  floatText(state.player, 'SALVAGE', 'tally');
+  notifyTab('suit');
+  updateHud();
 }
+function nextDrop() { return (state.dropQueue && state.dropQueue[0]) || null; }
 
+// take: fit it. Anything else leaves it, and leaving is forever.
 function resolveDrop(take) {
-  const d = state.pendingDrop;
-  if (!d) return;
-  state.pendingDrop = null;
-  if (!HEADLESS.on) {
-    const m = document.getElementById('drop-modal');
-    if (m) m.classList.remove('show');
-  }
-  if (take) equipItem(state.player, d.item);
-  else logEvent('LEFT BEHIND', null, itemLogName(d.item));
+  const q = state.dropQueue || [];
+  const item = q.shift();
+  if (!item) return;
+  if (take) equipItem(state.player, item);
+  else logEvent('LEFT BEHIND', null, itemLogName(item));
   saveRun();
-  proceedAfterKill(d.killedWave);
+  updateHud();
 }
 
-// Leaving the run mid-card (menu, new game) forfeits the drop — the item is
-// deliberately not serialized, so there is nothing to hand back.
-function abandonDrop() {
-  if (!state.pendingDrop) return;
-  state.pendingDrop = null;
-  if (!HEADLESS.on) {
-    const m = document.getElementById('drop-modal');
-    if (m) m.classList.remove('show');
-  }
-}
+// A run ending or being left behind forfeits whatever was still undecided.
+function abandonDrop() { state.dropQueue = []; }
 
 // ---- UI ---------------------------------------------------------
 function itemCardHtml(it, headline) {
@@ -409,16 +406,32 @@ function itemCardHtml(it, headline) {
     + itemAffixLines(it).map(l => '<div class="drop-affix">' + l + '</div>').join('')
     + '</div></div>';
 }
-function renderDropModal(it) {
-  const el = document.getElementById('drop-body');
+// The undecided drop, at the top of the SUIT tab with what it would replace
+// directly underneath — the comparison is the decision, and the arena keeps
+// running behind it.
+function renderPendingDrop() {
+  if (HEADLESS.on) return;
+  const el = document.getElementById('drop-pending');
   if (!el) return;
-  const cur = state.player && state.player.gear ? state.player.gear[it.slot] : null;
-  el.innerHTML = itemCardHtml(it, 'RECOVERED · ' + SLOTS[it.slot].label)
-    + itemCardHtml(cur, 'CURRENTLY FITTED');
+  const it = nextDrop();
+  if (!it) { el.innerHTML = ''; el.classList.remove('on'); return; }
+  el.classList.add('on');
+  const p = state.player;
+  const worn = p && p.gear ? p.gear[it.slot] : null;
+  const more = (state.dropQueue || []).length - 1;
+  el.innerHTML = '<div class="pending-head">FIELD RECOVERY'
+      + (more > 0 ? ' <i>+' + more + ' waiting</i>' : '') + '</div>'
+    + itemCardHtml(it, SLOTS[it.slot].label + ' · RECOVERED')
+    + itemCardHtml(worn, 'CURRENTLY FITTED')
+    + '<div class="pending-actions">'
+    + '<button class="ui-btn" type="button" onclick="resolveDrop(true)">FIT</button>'
+    + '<button class="ui-btn is-quiet" type="button" onclick="resolveDrop(false)">LEAVE</button>'
+    + '</div>';
 }
 
 function renderSuitPanel() {
   if (HEADLESS.on) return;
+  renderPendingDrop();
   const el = document.getElementById('suit-list');
   if (!el) return;
   const p = state.player;

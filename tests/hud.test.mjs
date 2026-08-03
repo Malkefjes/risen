@@ -22,13 +22,9 @@
 export default async function ({ page, ok }) {
   await page.evaluate(() => {
     localStorage.clear(); startGame(true, 'bio'); SETTINGS.fastTurns = true;
-    // A level is handed over rather than earned, through the game's own gainXP.
-    // Waiting for one costs about a minute of real turns and then arrives or
-    // does not depending on the dice — and the tile guard below is vacuous
-    // until max HP moves, so the run would sometimes prove nothing and say it
-    // passed. The points land in the pool and the loop spends them on Vitality
-    // in its first two samples, which is what moves the ceiling.
-    gainXP(state.player.xpNext);
+    // Allocation is automatic now, by weight. All the way to Vitality, so the
+    // level handed over mid-loop below lands its points where the ceiling is.
+    state.player.weights = { str: 0, instinct: 0, speed: 0, vit: 100 };
   });
   await page.waitForTimeout(500);
 
@@ -50,16 +46,21 @@ export default async function ({ page, ok }) {
   const maxSeen = new Set();
   for (let i = 0; i < 16; i++) {
     await page.evaluate(() => {
-      // A drop card pauses the run until answered; this suite is about HP
-      // agreement, so it just declines and moves on.
-      if (state.pendingDrop) { resolveDrop(false); return; }
-      if (state.pendingMods) { takeMod(botTakesMod(state.pendingMods.offer)); return; }
+      // Neither queue holds the fight any more, but leaving them unanswered
+      // would leave the sidebar mid-decision for the whole sample; this suite
+      // is about HP agreement, so it clears them and moves on.
+      if (nextDrop()) { resolveDrop(false); return; }
+      if (nextModOffer()) { takeMod(botTakesMod(nextModOffer())); return; }
       if (!state.awaitingInput || !state.combatActive) return;
       const p = state.player;
-      if (p.points > 0) { adjustStat('vit', 1); return; }
-      if (pendingTotal(p) > 0) { commitStats(); return; }
       playerAct(p.skills.find(s => s.basic) || p.skills[0]);
     });
+    // A level is handed over rather than earned, through the game's own gainXP,
+    // and DURING the sample so the tile guard below sees the ceiling move.
+    // Waiting for one costs about a minute of real turns and then arrives or
+    // does not depending on the dice, so the run would sometimes prove nothing
+    // and say it passed.
+    if (i === 4) await page.evaluate(() => gainXP(state.player.xpNext));
     await page.waitForTimeout(420);
     const s = await read();
     samples++;
@@ -72,8 +73,8 @@ export default async function ({ page, ok }) {
 
   // Each guard only means something if the run actually moved the number it
   // watches — a sample that never dropped below full, or never bought a point
-  // of Vitality, would pass a frozen readout too. Allocating vit is what moves
-  // max HP, and the loop above does it on the first points it is handed.
+  // of Vitality, would pass a frozen readout too. The all-Vitality weight plus
+  // the level handed over mid-loop is what moves max HP.
   ok('the player actually took damage during the sample',
      damaged > 0, `${damaged}/${samples} samples below full HP`);
   ok('max HP actually moved during the sample',

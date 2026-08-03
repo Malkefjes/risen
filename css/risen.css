@@ -1948,6 +1948,37 @@ body {
   transition: width 0.25s ease;
 }
 
+/* The same bar, now a CONTROL: it is this stat's share of every point the run
+   earns, set by clicking along it. Taller than the readout it replaced because
+   a 3px strip is not a click target. */
+.weight-bar {
+  position: relative;
+  height: 14px;
+  border-radius: 3px;
+  cursor: ew-resize;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.07);
+}
+.weight-bar i { opacity: 0.55; }
+.weight-bar:hover { border-color: rgba(255,255,255,0.2); }
+.weight-bar:hover i { opacity: 0.85; }
+.weight-pct {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 6px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.55rem;
+  letter-spacing: 1.5px;
+  color: rgba(238, 242, 255, 0.8);
+  /* Sits over both the filled and the empty half of its own bar, so it carries
+     its own contrast rather than borrowing the background's. */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+}
+
 .side-stat-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .side-stat-name {
   font-family: 'Orbitron', sans-serif;
@@ -2727,10 +2758,14 @@ body {
 /* The yellow is the notification on its own — no dot marker. */
 .sidebar-tab.alert { color: var(--xp); border-color: var(--xp); }
 .sidebar-tab.points-alert { color: var(--xp); }
+/* A tab holding an undecided drop or offer. Pulses, because the fight is still
+   running and the notification has to be findable without being read. */
+.sidebar-tab.tab-alert { color: var(--xp); border-color: var(--xp); animation: tabAlert 1.6s ease-in-out infinite; }
+@keyframes tabAlert { 0%, 100% { box-shadow: none; } 50% { box-shadow: 0 0 10px rgba(255, 200, 60, 0.35); } }
 
 @media (prefers-reduced-motion: reduce) {
   .combo-meter, .fighter.killed .char-figure,
-  .logo, .skill-btn.ready, .level-badge.level-up { animation: none; }
+  .logo, .skill-btn.ready, .level-badge.level-up, .sidebar-tab.tab-alert { animation: none; }
   .bar-ghost { transition: none; }
   .level-badge.level-up { transform: none; }
 }
@@ -2900,8 +2935,35 @@ body {
 .rar-standard { --rar: #aab6c9; --rar-rgb: 170, 182, 201; }
 .rar-refined  { --rar: #45dfe0; --rar-rgb: 69, 223, 224; }
 
-/* The drop card (FIELD RECOVERY modal) */
-.drop-modal { max-width: 480px; }
+/* A DECISION WAITING IN A TAB, never over the arena — a drop in SUIT, an offer
+   in MODS. Framed and inset so it reads as the thing to answer while the fight
+   carries on behind it. */
+.pending {
+  display: none;
+  border: 1px solid rgba(255, 200, 60, 0.35);
+  border-radius: 6px;
+  background: rgba(255, 200, 60, 0.035);
+  padding: 12px 12px 10px;
+  margin-bottom: 14px;
+}
+.pending.on { display: block; }
+.pending-head {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.58rem;
+  letter-spacing: 2.4px;
+  color: var(--xp);
+  margin-bottom: 10px;
+}
+.pending-head i { font-style: normal; color: var(--muted); letter-spacing: 1px; }
+.pending-actions { display: flex; gap: 8px; margin-top: 10px; }
+.pending-actions .ui-btn { flex: 1 1 0; width: auto; font-size: 0.66rem; }
+/* Inside a sidebar panel the card has no room for the big art. */
+.pending .drop-card { margin-bottom: 8px; padding: 10px 12px 8px; gap: 10px; }
+.pending .drop-art { width: 48px; height: 48px; }
+.pending .drop-name { font-size: 0.82rem; }
+.pending .mod-card { padding: 10px 12px; margin-bottom: 8px; width: 100%; }
+
+/* The drop card */
 .drop-card {
   border: 1px solid rgba(var(--rar-rgb, 170, 182, 201), 0.55);
   border-radius: 6px;
@@ -2927,10 +2989,6 @@ body {
 .drop-lot { color: var(--muted); font-size: 0.68rem; letter-spacing: 1px; }
 .drop-affix, .suit-affix { font-size: 0.78rem; color: rgba(238, 242, 255, 0.82); line-height: 1.6; }
 .drop-empty { color: var(--muted); font-size: 0.78rem; }
-/* FIT and LEAVE side by side: one decision, two equal hands. */
-.drop-actions { flex-direction: row; }
-.drop-actions .ui-btn { width: auto; flex: 1 1 0; }
-
 /* The SUIT tab: five mounts, fitted or bare. */
 .suit-list { display: flex; flex-direction: column; gap: 10px; }
 .suit-slot {
@@ -2982,17 +3040,8 @@ body {
 .suit-thumb.ghost { opacity: 0.22; filter: grayscale(1); }
 
 /* ---- Modifications -------------------------------------------------------
-   The Laboratory's offer. Three cards, one press, no decline — so they are
-   buttons, sized to be read rather than skimmed. The run's strain tints the
-   edge, because a Modification belongs to the extraction it rewrites. */
-.mod-modal { max-width: 560px; }
-.mod-lead {
-  color: var(--muted);
-  font-size: 0.78rem;
-  text-align: center;
-  margin: -14px 0 20px;
-}
-#mod-body { display: flex; flex-direction: column; gap: 12px; }
+   The Laboratory's offer. Three cards and a decline, so they are buttons. The
+   run's strain tints the edge. */
 .mod-card {
   --edge: var(--base-rgb);
   text-align: left;

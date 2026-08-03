@@ -243,11 +243,10 @@ let state = {
   // or is loaded (continueRun); every saveRun/clearSavedRun targets it.
   saveSlot:1,
   awaitingSpawn:false, awaitingInput:false, active:null, pendingEnemyAct:false,
-  // A drop waiting on equip-or-leave; the between-fight beat holds until
-  // resolveDrop answers it (js/items.js).
-  pendingDrop:null,
-  // A Modification offer waiting on a pick; same gate, same resume path.
-  pendingMods:null,
+  // Decisions waiting in the sidebar — recovered items, Modification offers.
+  // Neither holds the fight; the run carries on until they are answered
+  // (js/items.js, js/mods.js).
+  dropQueue:[], modQueue:[],
   combo:0, fightTurns:0, enemyActions:0, bestCombo:0,
   runOver:false, won:false,
   // Turns taken by EITHER side this fight, purely so the log can number them.

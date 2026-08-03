@@ -81,7 +81,12 @@ export default async function ({ page, ok }) {
   // sides really would be playing different games.
   const head = await page.evaluate((s) => {
     eval('(' + s + ')()');
-    const r = simulateRun('bio', { policy: BOTS.smart.policy, allocate: () => 'vit' });
+    // NO allocate plan on either side: an explicit plan switches the sim to
+    // the manual pool (simulateRun nulls weights for it), and the on-screen run
+    // auto-allocates by weight. Naming a plan here would make the two sides
+    // spend points by different rules and fail for something that is not a
+    // headless difference at all.
+    const r = simulateRun('bio', { policy: BOTS.smart.policy });
     return { wave: r.wave, level: r.level, kills: r.kills, dmg: r.damageDealt,
              won: r.won, turns: r.turns, stats: r.stats, derived: r.derived };
   }, SEED);
@@ -102,17 +107,15 @@ export default async function ({ page, ok }) {
         // walks on, and a step that asks something is answered by its buttons.
         const btn = document.querySelector('#scene-choices button');
         if (btn) btn.click(); else onScenePanelClick();
-      } else if (state.pendingDrop) {
-        // The same hand the sim uses on a drop card, so both sides make the
-        // identical equip-or-leave call. The decision draws no RNG.
-        resolveDrop(botTakesDrop(state.player, state.pendingDrop.item));
-      } else if (state.pendingMods) {
-        takeMod(botTakesMod(state.pendingMods.offer));
+      } else if (nextDrop()) {
+        // The same hand the sim uses, so both sides make the identical calls.
+        // Neither decision draws RNG.
+        resolveDrop(botTakesDrop(state.player, nextDrop()));
+      } else if (nextModOffer()) {
+        takeMod(botTakesMod(nextModOffer()));
       } else if (state.awaitingInput && state.combatActive) {
         const p = state.player;
-        if (p.points > 0) adjustStat('vit', 1);
-        else if (pendingTotal(p) > 0) commitStats();
-        else playerAct(BOTS.smart.policy(p));   // same hand on the controls
+        playerAct(BOTS.smart.policy(p));      // same hand on the controls
       }
       await new Promise(r => setTimeout(r, 0));
     }

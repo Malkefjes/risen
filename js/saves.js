@@ -80,9 +80,9 @@ function openDevTools() { showScreen('dev-screen'); }
 function devEnterCombat(handoverLine) {
   state.saveSlot = 0;
   // The bot may have stopped mid-drop; answer it its own way before handover,
-  // or the pendingDrop gate would hold a card that was never drawn on screen.
-  if (state.pendingDrop) resolveDrop(botTakesDrop(state.player, state.pendingDrop.item));
-  if (state.pendingMods) takeMod(botTakesMod(state.pendingMods.offer));
+  // so the player is not handed a decision the bot's run made for itself.
+  while (nextDrop()) resolveDrop(botTakesDrop(state.player, nextDrop()));
+  while (nextModOffer()) takeMod(botTakesMod(nextModOffer()));
   const zn = document.getElementById('zone-name');
   if (zn) zn.textContent = getZoneName(state.wave);
   const ac = document.getElementById('arena-card');
@@ -207,6 +207,12 @@ function serializeRun() {
     // The one-shot rescue. Saved because it is spent, not because it is a
     // counter: without it a reload would hand the first boss's answer back.
     rescued:!!state.rescued,
+    // The two undecided queues. They used to be modals that held the whole run
+    // until answered, so nothing could be saved mid-decision; now the fight
+    // carries on behind them and one can sit for waves, so a reload has to hand
+    // it back. Offers ride as ids, like taken mods do.
+    dropQueue:(state.dropQueue||[]).slice(),
+    modQueue:(state.modQueue||[]).map(o => o.map(m => m.id)),
     // An unconfirmed allocation is not saved — it is refunded. The stats
     // written here are the committed ones, so the points sitting in pending
     // would otherwise vanish with it; reloading puts you back at "N to place,
@@ -229,12 +235,12 @@ function serializeRun() {
       // Bio's carry lives BETWEEN fights, so a reload mid-run would otherwise
       // drop the pile the last kill earned.
       poisonCarry:p.poisonCarry||0,
+      weights:p.weights||null, allocCarry:p.allocCarry||null,
       // Modifications ride as IDS, never as the patched skills — the patch is
       // re-applied onto fresh copies on load, so retuning a mod reaches runs
       // already carrying it instead of freezing at the version it was taken on.
       mods:Array.isArray(p.mods)?p.mods.slice():[],
-      // The suit. Items are plain data; an unresolved drop card is NOT saved —
-      // leaving mid-decision forfeits the item.
+      // The suit. Items are plain data.
       gear:p.gear||null,
       // Only the statuses marked to persist — the same set that survives into
       // the next fight, so a reload lands you in the shape a kill left you in.
@@ -375,7 +381,9 @@ function continueRun(slot){
     points:sp.points||0, str:sp.str, instinct:sp.instinct, speed:sp.speed, vit:sp.vit,
     dmgMult:sp.dmgMult||1, hpMult:sp.hpMult||1, apsMult:sp.apsMult||1,
     thornsGrown:sp.thornsGrown||0, thornsShedded:sp.thornsShedded||0,
-    poisonCarry:sp.poisonCarry||0 });
+    poisonCarry:sp.poisonCarry||0,
+    weights:sp.weights||{ str:25, instinct:25, speed:25, vit:25 },
+    allocCarry:sp.allocCarry||{ str:0, instinct:0, speed:0, vit:0 } });
   p.gear = loadGear(sp.gear);
   // Only ids the tables still recognise; a deleted Modification drops out
   // rather than being trusted, exactly as a deleted status does.
@@ -400,6 +408,12 @@ function continueRun(slot){
   // kills and bestCombo are not saved. They stay at resetRunState's 0 and count
   // from the reload on; the end-of-run report is the only thing that reads them.
   state.rescued=!!d.rescued;
+  state.dropQueue=loadDropQueue(d.dropQueue);
+  // An offer whose ids no longer resolve is dropped whole rather than shown
+  // short — three cards is what the panel is.
+  state.modQueue=(Array.isArray(d.modQueue)?d.modQueue:[])
+    .map(o => (Array.isArray(o)?o:[]).map(id => modById(d.classId, id)).filter(Boolean))
+    .filter(o => o.length);
   state.damageDealt=d.damageDealt||0;
   state.runTurns=d.runTurns||0; state.damageTaken=d.damageTaken||0;
   state.critsLanded=d.critsLanded||0; state.damagePrevented=d.damagePrevented||0;
