@@ -37,7 +37,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-03w';
+const BUILD = '2026-08-03x';
 
 const BALANCE = {
   player: {
@@ -298,7 +298,13 @@ const BALANCE = {
     // are the old brute chassis, folded in when archetypes were removed.
     // bossXp 3.0 -> 5.0 with the 30-wave restructure: a zone has ONE boss now
     // where it had three, so the one kill carries the weight the three shared.
-    bossHp: 4.5, bossDmg: 1.82, bossAps: 0.72, bossXp: 5.0,
+    // bossAps 0.72 -> 1.00 and bossHp 4.5 -> 3.6 (2026-08-03x). Measured
+    // before: a boss traded so much rate for pool that it was the SAFEST fight
+    // in its zone — 227 DPS at wave 30 against 235-387 for the trash beside it,
+    // so the exam was the breather. A boss now acts as often as its trash and
+    // hits 26% harder for it; the pool comes down so the fight got tenser
+    // rather than simply longer.
+    bossHp: 3.6, bossDmg: 1.82, bossAps: 1.00, bossXp: 5.0,
     // THE FIRST BOSS IS MEANT TO KILL YOU. It is the one fight in the run with
     // a scripted answer to losing — the scientist pulls you out — so it hits
     // above an ordinary boss at its wave. Was 2 when the first boss stood at
@@ -642,7 +648,7 @@ const ZONES = [
     bossName: 'MCP Captain',
     bossVerb: 'guard',       // shield discipline: answers cost more here
     champion: { at: 15, id: 'lieutenant', name: 'MCP Lieutenant' },
-    growthMult: 3.33, tierGrowth: 2.0, withinStep: 0.06,
+    growthMult: 3.33, tierGrowth: 2.6, withinStep: 0.06,
     windupMult: 2.5, eliteWindupMult: 2.0 },
 
   { num: 3, name: 'City Streets', label: 'CITY STREETS',
@@ -653,7 +659,7 @@ const ZONES = [
     // hand-checked two-mechanic exam, authored rather than rolled.
     bossVerb: 'enrage',
     champion: { at: 25, id: 'mercenary', name: 'Veteran Mercenary' },
-    growthMult: 8.67, tierGrowth: 1.6, withinStep: 0.04,
+    growthMult: 11.3, tierGrowth: 2.1, withinStep: 0.04,
     windupMult: 1.6, eliteWindupMult: 1.2 },
 
   // ---- THE ENDGAME (2026-08-03n, owner's design) --------------------------
@@ -689,7 +695,7 @@ const ZONES = [
     rollBossVerb: true,
     bossSegment: 10, extraBossChance: 0.12,
     eliteBaseChance: 0.35, eliteChanceCap: 0.65,
-    growthMult: 17, tierGrowth: 1.22, withinStep: 0.04,
+    growthMult: 28.9, tierGrowth: 1.22, withinStep: 0.04,
     // ---- THE WALL (2026-08-03r) -------------------------------------------
     // HARDER, NOT LONGER, and that is the only shape of difficulty worth
     // adding here. Measured before: a zone-4 boss took 116-134 basic attacks
@@ -704,7 +710,8 @@ const ZONES = [
     // effective HP (three stacking layers where there had been two capped
     // coin flips). At the old 1.18/1.25 every strain cleared 88-100% of
     // runs; these put the best build back near a quarter.
-    dmgMult: 2.6, apsMult: 1.45, hpExp: 0.70,
+    dmgMult: 1.13, dmgMultEnd: 1.32,
+    apsMult: 1.00, apsMultEnd: 1.45, hpExp: 0.70,
     windupMult: 1.35, eliteWindupMult: 1.15 }
 ];
 function zoneForWave(wave) {

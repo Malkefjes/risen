@@ -681,6 +681,21 @@ function makeEnemy(wave) {
   const g = Math.pow(zone.tierGrowth || E.tierGrowth, tier)
           * (1 + within*(zone.withinStep != null ? zone.withinStep : E.withinStep))
           * (zone.growthMult || 1);
+  // A ZONE MAY RAMP ITS MULTIPLIERS ACROSS ITS OWN WAVES instead of applying
+  // them at its first. Measured 2026-08-03x: with zone 4 stepping straight to
+  // its full dmgMult/apsMult, enemy DPS went 227 at wave 30 to 1056 at wave 31
+  // — a 4.65x step in one wave, against 3.5x across the whole of zone 4 behind
+  // it. The doorway was steeper than the room. Linear from the zone's own
+  // multiplier at startWave to its *End twin at endWave; a zone declaring no
+  // End is flat, which is every zone but the endgame.
+  const zoneSpan = Math.max(1, zone.endWave - zone.startWave);
+  const zoneT = Math.min(1, Math.max(0, (wave - zone.startWave) / zoneSpan));
+  const rampMult = (from, to) => {
+    const a = from || 1;
+    return to == null ? a : a + (to - a) * zoneT;
+  };
+  const dmgMult = rampMult(zone.dmgMult, zone.dmgMultEnd);
+  const apsMult = rampMult(zone.apsMult, zone.apsMultEnd);
   // WHICH WAVES ARE BOSSES. Zones 1-3 keep the flat rule — one boss, on the
   // zone's tenth. A zone with `bossSegment` (the endgame) instead guarantees
   // one on every segment boundary and lets any other wave roll an extra, so
@@ -774,9 +789,9 @@ function makeEnemy(wave) {
       * Math.pow(g, zone.hpExp != null ? zone.hpExp : (E.hpExp != null ? E.hpExp : 1))
       * (isBoss?E.bossHp:1) * bossBump * (elite&&elite.hpMult?elite.hpMult:1))),
     damage: Math.max(1, Math.round(E.dmgBase * Math.pow(g, E.dmgExp)
-      * (zone.dmgMult || 1) * (isBoss?E.bossDmg:E.trashDmgMult) * bossBump)),
+      * dmgMult * (isBoss?E.bossDmg:E.trashDmgMult) * bossBump)),
     attackSpeed: Math.min(E.apsCap, (E.apsBase + rateTier*E.apsPerTier)
-      * (zone.apsMult || 1) * (isBoss?E.bossAps:1) * (elite&&elite.apsMult?elite.apsMult:1)),
+      * apsMult * (isBoss?E.bossAps:1) * (elite&&elite.apsMult?elite.apsMult:1)),
     evadeChance: 0,
     critChance: E.crit, critMult: E.critMult,
     xpMult: (isBoss?E.bossXp:1) * (elite?elite.xp:1),

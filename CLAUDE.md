@@ -237,8 +237,29 @@ did not say.
   **`OWNER:` The difficulty is concentrated here** — *"which thing do i scale
   as hard as possible such that i can beat the hardest content."* Zone 4's
   levers are `dmgMult` / `apsMult` / `hpExp`, chosen over pools because a boss
-  already took 116-134 basic attacks. Measured after: a boss blow is 52% of
-  the bar at wave 31 and 86% at 60, its telegraph 117%.
+  already took 116-134 basic attacks.
+  **THE ZONE'S MULTIPLIERS RAMP ACROSS ITS OWN WAVES** (`dmgMultEnd` /
+  `apsMultEnd`, 2026-08-03x) rather than stepping at its first. Measured
+  before: enemy DPS went 227 at wave 30 to 1056 at wave 31 — a 4.65x step in
+  ONE wave, against 3.5x across all thirty waves behind it, so the doorway was
+  steeper than the room and p10 was wave 31-32 on every class and every
+  allocation. After: the 30->31 step is 1.2x, zone 4 grows 5.5x internally and
+  is now the steepest stretch of the run, and wave 60 is where it was (3743
+  DPS against 3733).
+  **The zones compound now** (2026-08-03x, same measurement). Zones 1-3 grew
+  4.4x / 2.0x / 2.2x while the player grew faster, so turns-to-die went
+  4.1 -> 5.6 -> 4.1 across waves 10/20/30 — zone 2 was SAFER than zone 1. Zone
+  2 and 3 `tierGrowth` went 2.0 -> 2.6 and 1.6 -> 2.1 with the floors re-seamed
+  (11.3, and zone 4's to 28.9). Measured after: 3.3 -> 2.7 -> 1.5 -> 1.1 ->
+  0.7 -> 0.6, declining the whole way. Win rates ROSE with it (psy 46 -> 68,
+  base 17 -> 61, sym 1 -> 11) because the wall came out AND mid-zone-4 fell
+  ~30% as a side effect of the linear ramp — wave 60 is unchanged but wave 45
+  went 1903 DPS to ~1273. If the endgame should bite harder again that is the
+  place, not the doorway. What fell is where a BAD build reaches (bio and sym
+  on the even spread, p10 20 and 19), which is the point.
+  **A BOSS ACTS AT ITS TRASH'S RATE** (`bossAps` 0.72 -> 1.00, `bossHp`
+  4.5 -> 3.6, same change). It was the safest fight in its zone — 227 DPS at
+  wave 30 against 235-387 for the trash beside it, so the exam was the breather.
   Read the count off `BALANCE.finalWave`, never from a literal: a hardcoded 30
   in `tools/autopsy.mjs` went on reporting a 30-wave game after the run grew.
   A level grants exactly 3 stat points (`pointsPerLevel`).
