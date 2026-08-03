@@ -37,7 +37,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-03g';
+const BUILD = '2026-08-03h';
 
 const BALANCE = {
   player: {
@@ -482,9 +482,10 @@ const ELITES = {
 };
 
 // ZONE STRUCTURE. The whole run is ACT 1; a zone is the unit that actually
-// shapes it. Three zones of 15 waves, three bosses each, 45 waves total. Each
-// zone owns its label, its enemy roster (names here, art in sprites.js keyed by
-// zone number), its difficulty floor, and its telegraph.
+// shapes it. Three zones of TEN waves — nine fights and ONE boss each, 30 waves
+// total, with a named CHAMPION on every zone's wave 5. Each zone owns its
+// label, its enemy roster (names here, art in sprites.js keyed by zone number),
+// its difficulty floor, its telegraph, and its boss's VERB.
 //
 //   growthMult   the zone's DIFFICULTY FLOOR — enemy hp/dmg growth restarts from
 //                here, so within a zone the tier curve retraces at a higher
@@ -497,6 +498,10 @@ const ELITES = {
 //   windupMult / eliteWindupMult   the zone's telegraph. Per-zone because a flat
 //                multiplier on a number that outruns your bar is a one-shot
 //                eventually — see the note on zone 2.
+//   bossVerb     the question this zone's boss asks, from ENEMY_VERBS. One
+//                authored verb per boss; champions roll theirs.
+//   champion     the zone's named elite: { at, id, name }. `at` is an absolute
+//                wave — the one number to move if a zone's shape changes.
 const ZONES = [
   // 2026-08-03d RESTRUCTURE: three zones of TEN waves — nine fights and one
   // boss, with wave 5 of every zone a guaranteed named CHAMPION (elite

@@ -175,7 +175,7 @@ did not say.
 
 - `index.html` + `css/` + `js/` + `assets/` — the game. No build step. The
   js files are ordinary scripts sharing one global scope, loaded in order
-  (data → stats → screens → sim → combat → saves → render → sprites); they
+  (data → items → stats → screens → sim → combat → saves → render → sprites); they
   are chapters of one program, not modules. Keep new code in the chapter
   where it belongs; keep load order in mind for top-level statements.
 - `tests/` — playwright suites driving the real game (`npm test`). One

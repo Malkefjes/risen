@@ -138,8 +138,11 @@ function devSkipToZone(classId, zoneNum) {
   state.player = p;
   p.level = level;
   p.xp = 0; p.xpNext = xpForLevel(level);
-  const plan = (typeof SKILLED_PLANS !== 'undefined' && SKILLED_PLANS[classId]) || ROTATE_STATS;
-  for (let i = 0; i < (level - 1) * P().pointsPerLevel; i++) p[plan[i % plan.length]] += 1;
+  // An even spread, the same shape the smart bot allocates in. (This used to
+  // consult SKILLED_PLANS, a per-strain plan table deleted with the old bots —
+  // the guard meant it had silently been the even spread for a long time.)
+  for (let i = 0; i < (level - 1) * P().pointsPerLevel; i++)
+    p[ROTATE_STATS[i % ROTATE_STATS.length]] += 1;
   recalcPlayerStats();
   p.hp = p.maxHp;
   state.wave = z.startWave;
@@ -216,6 +219,12 @@ function serializeRun() {
       // from it on load (see applyDerivedStats), so losing it would silently
       // hand back a wave-20 sym with a wave-1 body.
       thornsGrown:p.thornsGrown||0,
+      // ...and what Shed tore off THIS fight, so the save round-trips the
+      // player's real state rather than silently handing the spines back.
+      // Between fights it is zeroed by the regrow in spawnEnemy, which is what
+      // a reload lands in anyway — so this only bites where it should: a
+      // reload inside the run's first fight keeps the cost.
+      thornsShedded:p.thornsShedded||0,
       // The suit. Items are plain data; an unresolved drop card is NOT saved —
       // leaving mid-decision forfeits the item.
       gear:p.gear||null,
@@ -357,7 +366,7 @@ function continueRun(slot){
   Object.assign(p,{ level:sp.level||1, xp:sp.xp||0, xpNext:sp.xpNext||xpForLevel(sp.level||1),
     points:sp.points||0, str:sp.str, instinct:sp.instinct, speed:sp.speed, vit:sp.vit,
     dmgMult:sp.dmgMult||1, hpMult:sp.hpMult||1, apsMult:sp.apsMult||1,
-    thornsGrown:sp.thornsGrown||0 });
+    thornsGrown:sp.thornsGrown||0, thornsShedded:sp.thornsShedded||0 });
   p.gear = loadGear(sp.gear);
   state.player=p;
   // Saves written before statuses were persisted simply have none; anything

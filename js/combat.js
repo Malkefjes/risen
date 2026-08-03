@@ -1053,6 +1053,11 @@ function onEnemyDefeated() {
   if (p.hp <= 0) { state._defeatLock = false; stopCombatLoop(); endRun(); return; }
 
   // Beating the final wave's boss wins the run.
+  //
+  // AND IT DROPS NOTHING, deliberately: this returns before the loot roll
+  // below, because there is no next fight to fit an item for. Making it drop
+  // would put an equip-or-leave card between the last blow and the result
+  // screen, and the item could never be worn.
   if (killedWave >= BALANCE.finalWave) {
     state._defeatLock = false;
     stopCombatLoop();
