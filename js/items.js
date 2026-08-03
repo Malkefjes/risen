@@ -12,7 +12,7 @@ const ITEM_STAT_NAMES = { str: 'STRENGTH', instinct: 'INSTINCT', speed: 'SPEED',
 // identity is its mod pool (healing), not a stat. The art is the owner's — the
 // five suit pieces he drew name the slots.
 const SLOTS = {
-  optics:    { id: 'optics',    name: 'Helmet',        label: 'HELMET',    home: 'instinct', lot: 'H',
+  optics:    { id: 'optics',    name: 'Optics',        label: 'OPTICS',    home: 'instinct', lot: 'O',
                art: 'assets/sprites/mcp helmet.png' },
   gauntlets: { id: 'gauntlets', name: 'Gauntlets',     label: 'GAUNTLETS', home: 'str',      lot: 'G',
                art: 'assets/sprites/mcp gauntlets.png' },
