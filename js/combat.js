@@ -373,6 +373,15 @@ function enemySwing(e, opts) {
 }
 
 // ---- Damage --------------------------------------------------
+// BIO'S RAMP, VALUED. What the rot on a target is ticking for right now — the
+// same number the pile pays each of your turns, so a card that reads a share of
+// it cannot disagree with what the player watches land.
+function getPoisonDamage(e) {
+  const st = getStatus(e, 'poison');
+  if (!st) return 0;
+  return Math.floor((st.perStack || 1) * (st.stacks || 0));
+}
+
 function getThornsDamage(p) {
   if (!p || !(p.thorns > 0)) return 0;
   return Math.floor(p.thorns * statusMult(p, 'thornsMult'));
@@ -736,6 +745,13 @@ function applyPlayerDamage(p, e, skill) {
     const t = getThornsDamage(p) * skill.thornsBurst;
     dmg += t;
     notes.push('THORNS +' + logNum(t));
+  }
+  if (skill.poisonScale) {                                  // Slash: reads the rot back
+    const t = getPoisonDamage(e) * skill.poisonScale;
+    if (t > 0) {
+      dmg += t;
+      notes.push('+' + logNum(t) + ' from POISON');
+    }
   }
   if (skill.thornsScale) {                                  // Latch: reads the ramp back
     const t = getThornsDamage(p) * skill.thornsScale;

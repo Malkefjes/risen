@@ -326,6 +326,21 @@ did not say.
   a fight a decision (finish, or stack once more for the pile you carry).
   Self-limiting rather than a snowball: S = S/2 + G solves to S = 2G, so it
   doubles the working stack count and holds. Derived, unmeasured.
+  **BIO GOT A SECOND DAMAGE PIPE 2026-08-03z** (`poisonScale` on Slash, which
+  adds a share of what the rot is ticking for, the way Latch reads THORNS).
+  Measured before: 89% of a bio run's damage was POISON and its attack button
+  was 6% — the only strain routing nearly everything through one number, where
+  psy/sym/base each have two to four. After: Poison 70% / Slash 25%, the shape
+  base (54/23) and sym (56/38) already had; damage per turn 366 -> 454, wins
+  1 -> 5 per 100, median wave 38 -> 44.
+  **IT IS STILL LAST, AND DAMAGE IS NOT WHY.** bio now out-damages base per
+  turn (454 against 401) and wins 5 against its 63. What separates them is
+  MITIGATION — 53% of what was aimed at bio is stopped, against 73% for base at
+  the same allocation — and the reason is that base's ramp is DEFENSIVE as well
+  as offensive: RESOLVE grows all fight and buys reduction, while bio's Chitin
+  is a flat -40% that is worth the same at wave 1 and wave 60. Bio scales
+  damage and never scales survival, and 93-95% of its deaths are ordinary hits.
+  That is the next thing to try, not a bigger `poisonScale`.
 - Psy was reworked around DREAD (a mark on the enemy: Hunt plants it on hit,
   stacks slow the enemy and open its guard, and fear feeds psy — a SIPHON
   drip per stack each player turn, a DEVOUR burst when stacks are consumed by

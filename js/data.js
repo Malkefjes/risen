@@ -37,7 +37,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-03y';
+const BUILD = '2026-08-03z';
 
 const BALANCE = {
   player: {
@@ -416,7 +416,14 @@ const CLASSES = {
       // The card prints what the next application will actually plant, off the
       // live sheet — Strength moves it (see poisonPerStr), so a stated "+1"
       // would contradict the hit as soon as a point landed.
-      { id:'slash', name:'Slash', desc:'Deal {power!} damage. +{poisonStacks} POISON', type:'attack', power:1.0, poison:1, poisonStacks:(p,s) => poisonStacks(p,s), target:'enemy', basic:true },
+      // BIO'S SECOND DAMAGE PIPE (2026-08-03z). Measured before: 89% of a bio
+      // run's damage was POISON and its attack button was 6% — the only strain
+      // routing almost everything through one number, where psy/sym/base each
+      // have two to four that add up. Slash now reads the pile back the way
+      // Latch reads THORNS, so stacking and attacking feed each other instead
+      // of competing for the same turns, and the fight has a decision in it:
+      // stack once more, or start cashing in.
+      { id:'slash', name:'Slash', desc:'Deal {power!} damage + {poisonScale%} of what the rot is ticking for. +{poisonStacks} POISON', type:'attack', power:1.0, poison:1, poisonScale:1.0, poisonStacks:(p,s) => poisonStacks(p,s), target:'enemy', basic:true },
       // The carry is a property of the ROT rather than of any one button, but
       // it is named on this card because Infest is where the pile comes from —
       // the player has to know that stacking before a kill is worth something.
