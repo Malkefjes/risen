@@ -336,9 +336,13 @@ did not say.
   fields through fmtDesc for free. PER STRAIN, never a shared pool: a pool bio
   and base both draw from is a pool that makes them the same class.
   Offered after every 5th wave EXCEPT the last (`modWaves`) — the champion and
-  boss rhythm, five picks a run, and nothing handed over as the run ends. Only
-  3 per strain are written, so a run currently exhausts the pool at 3; the
-  content is the part worth growing.
+  boss rhythm, five picks a run, and nothing handed over as the run ends.
+  FILED UNDER THE BUTTON THEY REWRITE, three per ability (48 total), so "every
+  ability has three" is a property of the table's shape rather than something
+  to count; an offer takes one from each of three DIFFERENT abilities, because
+  three ways to change the same press is not three choices. DECLINING is a real
+  option (`takeMod(null)`) — three picks that all cut against the build you are
+  assembling is a worse offer than none.
 - **Cooldowns follow a grammar, discovered rather than designed** (surveyed
   2026-08-03k). `cdTurns` reads directly as "once every N of YOUR turns" — Speed
   never accelerates a rotation, only the number of turns — and the twelve

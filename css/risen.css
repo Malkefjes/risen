@@ -3033,3 +3033,16 @@ body {
 }
 .mod-entry .mod-name { font-size: 0.62rem; color: var(--text); margin-bottom: 3px; }
 .mod-entry .mod-text { font-size: 0.72rem; line-height: 1.5; color: var(--muted); }
+
+/* Which button a Modification rewrites, beside its name. */
+.mod-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.mod-on {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.55rem;
+  letter-spacing: 1.4px;
+  color: var(--muted);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+/* Declining is a real option, and reads as the quietest thing on the card. */
+.mod-skip { width: 100%; margin-top: 4px; font-size: 0.66rem; }
