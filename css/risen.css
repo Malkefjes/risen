@@ -2626,6 +2626,11 @@ body {
 .unit-tag.vampiric { --tint: #f472b6; }
 .unit-tag.venomous { --tint: #7dffa0; }
 .unit-tag.volatile { --tint: #fb923c; }
+/* Verb plates (ENEMY_VERBS) — the fight's question, worn beside the affix. */
+.unit-tag.guard    { --tint: #60a5fa; }
+.unit-tag.regrow   { --tint: #34d399; }
+.unit-tag.flurry   { --tint: #fbbf24; }
+.unit-tag.enrage   { --tint: #f97316; }
 
 .fighter.boss .unit-name {
   color: var(--accent2);

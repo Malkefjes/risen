@@ -232,6 +232,16 @@ did not say.
 
 ## Known soft spots (context, not a to-do list)
 
+- **Enemy VERBS (2026-08-03g): the six named fights each ask a question.**
+  Bosses carry one AUTHORED verb (`ZONES.bossVerb`: REGROW / GUARD / ENRAGE);
+  champions ROLL one of four (`CHAMPION_VERBS`, includes FLURRY) beside their
+  rolled affix — fixed face, rolled question. Trash never carries one, on
+  purpose. The filter for a new verb: IT MUST CHANGE WHICH BUTTON THE PLAYER
+  PRESSES, and it must announce itself through the intent badge and a plate —
+  verbs multiply the read-and-answer skill, never bypass it. Verbs never
+  stack by roll; a hand-authored compound is allowed (the finale's ENRAGE
+  rides its every-2 windup). All numbers derived, none measured.
+
 - Psy was reworked around DREAD (a mark on the enemy: Hunt plants it on hit,
   stacks slow the enemy and open its guard, and fear feeds psy — a SIPHON
   drip per stack each player turn, a DEVOUR burst when stacks are consumed by

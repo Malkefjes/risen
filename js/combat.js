@@ -184,6 +184,17 @@ function tickTurnStart(unit) {
     return true;
   }
 
+  // ENRAGE: the race clock ticks on its OWN turns — stunning it does not slow
+  // the rage, which is the point: control buys turns, never time.
+  if (!unit.isPlayer && unit.verb === 'enrage') {
+    unit._enrageTicks = (unit._enrageTicks || 0) + 1;
+    const V = ENEMY_VERBS.enrage;
+    if (unit._enrageTicks % V.every === 0) {
+      applyStatus(unit, 'enrage', { stacks: 1, power: V.perStack });
+      floatText(unit, 'ENRAGED', 'note');
+    }
+  }
+
   if (unit.isPlayer) {
     unit.skills.forEach(s => { if (!s.basic && s.cd > 0) s.cd--; });
     state.fightTurns++;
@@ -258,6 +269,11 @@ function enemyAct() {
       e.windupSpoiled = false;               // a fresh charge is a whole one
       logEvent('WINDUP', e, 'next strike ×' + windupMultFor(e),
                ['action ' + e.actionCount + ' of every ' + e.windupEvery]);
+      // GUARD: it charges behind its shield — the free turn a telegraph hands
+      // you costs double to spend on damage. Duration 1 on its own clock, so
+      // the fortify expires exactly as the heavy lands.
+      if (e.verb === 'guard')
+        applyStatus(e, 'fortify', { duration: 1, power: ENEMY_VERBS.guard.power });
       const fig = getFigureForUnit(e);
       if (fig) fig.style.filter = 'brightness(1.35)';
       updateUnitCard(e); updateTurnInfo(); renderSkills();
@@ -266,7 +282,18 @@ function enemyAct() {
     }
   }
 
-  enemySwing(e);
+  // FLURRY: every Nth ordinary action is several smaller strikes — more total
+  // damage and twice the on-hit economy, on both sides of the exchange. Never
+  // on a heavy: the telegraph stays one blow with one answer.
+  const V = ENEMY_VERBS.flurry;
+  if (e.verb === 'flurry' && !e.windup && e.actionCount % V.every === 0) {
+    for (let i = 0; i < V.hits; i++) {
+      if (!state.combatActive || p.hp <= 0 || e.hp <= 0 || e._defeated) break;
+      enemySwing(e, { scale: V.scale });
+    }
+  } else {
+    enemySwing(e);
+  }
   updateTurnInfo(); renderSkills();
 
   if (p.hp <= 0) return;
@@ -318,7 +345,7 @@ function enemySwing(e, opts) {
     const fig = getFigureForUnit(e);
     if (fig) fig.style.filter = '';
   }
-  const dealt = applyEnemyDamage(e, p, mult, Object.assign({}, opts, { spoiled }));
+  const dealt = applyEnemyDamage(e, p, mult * ((opts && opts.scale) || 1), Object.assign({}, opts, { spoiled }));
   if (dealt > 0) playAttackAnim(e, p, true);
 
   if (e.elite && e.elite.lifesteal && dealt > 0) {

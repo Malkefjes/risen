@@ -48,10 +48,21 @@ function enemyIntent(e) {
              dmg: Math.max(1, Math.floor(e.damage * mult)), tone:'heavy' };
   }
   if (e.windupEvery > 0 && ((e.actionCount || 0) + 1) % e.windupEvery === 0)
-    return { kind:'charge', icon:'⚡', label:'Winding up', tone:'charge' };
+    // GUARD raises its shield WITH the charge — the rider says the free turn
+    // will cost double before it is spent.
+    return { kind:'charge', icon:'⚡', label:'Winding up', tone:'charge',
+             riders: e.verb === 'guard' ? ['🛡'] : [] };
   const riders = [];
   if (e.elite && e.elite.poison) riders.push('☠');       // applies poison on hit
   if (e.elite && e.elite.lifesteal) riders.push('🩸');   // heals itself on hit
+  // FLURRY next: same cadence check enemyAct makes, one action ahead. The
+  // number shown is the whole volley.
+  const FV = ENEMY_VERBS.flurry;
+  if (e.verb === 'flurry' && ((e.actionCount || 0) + 1) % FV.every === 0) {
+    riders.push('×' + FV.hits);
+    return { kind:'attack', icon:'⚔', label:'Flurry',
+             dmg: Math.max(1, Math.floor(e.damage * FV.scale)) * FV.hits, riders, tone:'attack' };
+  }
   return { kind:'attack', icon:'⚔', label:'Attack',
            dmg: Math.max(1, Math.floor(e.damage)), riders, tone:'attack' };
 }

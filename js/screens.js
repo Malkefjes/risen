@@ -273,6 +273,14 @@ function spawnEnemy() {
     + (e.evadeChance ? ' · EVADE ' + Math.round(e.evadeChance*100) + '%' : '')
     + (e.windupEvery ? ' · WINDUP every ' + e.windupEvery + ' (×' + windupMultFor(e) + ')' : '')
     + (e.xpMult !== 1 ? ' · XP ×' + e.xpMult.toFixed(1) : ''));
+  // The fight's question, stated in the transcript the way the plate states
+  // it on screen. REGROW is also WORN from spawn — the badge is up before the
+  // first swing, so the second half of the bar never surprises.
+  if (e.verb && ENEMY_VERBS[e.verb]) {
+    log('TRAIT · ' + ENEMY_VERBS[e.verb].tag + ' — ' + ENEMY_VERBS[e.verb].blurb);
+    if (e.verb === 'regrow')
+      applyStatus(e, 'regrow', { below: ENEMY_VERBS.regrow.below, power: ENEMY_VERBS.regrow.power });
+  }
 
   // Everything that lands on the fight before the first turn is logged under
   // that header, in the order it applies, so an enemy that arrives already

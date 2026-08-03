@@ -700,6 +700,11 @@ function makeEnemy(wave) {
     id: 'enemy-' + wave + '-' + Math.floor(Math.random()*99999),
     name, class:'enemy', isPlayer:false, isBoss, isFinal, elite, rank,
     champion: !!champ,     // the zone's named elite — read by the drop table
+    // THE FIGHT'S QUESTION (see ENEMY_VERBS): bosses carry their zone's
+    // authored verb, champions roll one. Trash never carries one.
+    verb: isBoss ? (zone.bossVerb || null)
+        : champ ? CHAMPION_VERBS[Math.floor(Math.random() * CHAMPION_VERBS.length)]
+        : null,
     zone: zone.num,        // which zone's roster (and art) this enemy belongs to
     rosterId: face.id,     // which face of that roster — art only, never a rule
     windupEvery: isBoss ? (isFinal ? E.finalWindupEvery : E.windupEvery) : (elite ? E.eliteWindupEvery : 0),
@@ -727,6 +732,9 @@ function enemyTags(e) {
   const out = [];
   if (e.isBoss) out.push('BOSS');
   if (e.elite) out.push(e.elite.tag);
+  // The verb is worn as a plate like an affix: the question is announced
+  // before the first swing, never discovered mid-fight.
+  if (e.verb && ENEMY_VERBS[e.verb]) out.push(ENEMY_VERBS[e.verb].tag);
   return out;
 }
 

@@ -37,7 +37,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-03f';
+const BUILD = '2026-08-03g';
 
 const BALANCE = {
   player: {
@@ -436,6 +436,38 @@ const CLASSES = {
 // sprite. A thing that fights differently must LOOK different and be NAMED
 // differently, so new types arrive as name + sprite + behavior together.
 
+// ---- Enemy verbs ------------------------------------------------
+// THE QUESTION A NAMED FIGHT ASKS (2026-08-03g). Bosses carry ONE authored
+// verb each (ZONES.bossVerb); champions ROLL one — fixed face, rolled
+// question, same promise as their rolled affix. Trash never carries one:
+// trash is the rhythm section, the exams are where questions live.
+//
+// THE FILTER FOR A NEW VERB: it must change which button the player presses.
+// If it never changes a press, it is a stat in a costume — delete it.
+// Every verb must announce itself through the intent badge (enemyIntent
+// mirrors enemyAct) — verbs multiply the read-and-answer skill, never
+// bypass it. Numbers here are derived, not measured; owner tunes by play.
+const ENEMY_VERBS = {
+  // Braces while winding up: the free turn a telegraph hands you costs double
+  // to spend on damage. Rides the windup cadence; the fortify expires exactly
+  // as the heavy lands.
+  guard:  { id:'guard',  tag:'GUARD',  power:0.5,
+            blurb:'braces while winding up: takes −50% until the heavy lands' },
+  // Below half it knits itself back every turn: a throughput check — burst
+  // the second half of the bar or grind forever.
+  regrow: { id:'regrow', tag:'REGROW', below:0.5, power:0.06,
+            blurb:'below half HP, knits 6% of its frame each of its turns' },
+  // Every 2nd action is two strikes: more total damage, and twice the on-hit
+  // economy — a feast for sym, a bleed on psy's steadying rule.
+  flurry: { id:'flurry', tag:'FLURRY', every:2, hits:2, scale:0.65,
+            blurb:'every 2nd action strikes twice at 65%' },
+  // The race clock: swings harden permanently, uncapped, every 3rd of its
+  // turns. The anti-turtle — deliberately unbounded, doom is the point.
+  enrage: { id:'enrage', tag:'ENRAGE', every:3, perStack:0.12,
+            blurb:'every 3rd of its turns, swings harden +12% forever' }
+};
+const CHAMPION_VERBS = ['guard', 'regrow', 'flurry', 'enrage'];
+
 // Opt-in risk: elites hit harder but pay far more XP.
 const ELITES = {
   // ARMORED went with armor itself — its only effect was armorAdd, so without
@@ -487,6 +519,7 @@ const ZONES = [
     // in sprites.js) and the name that appears on the card.
     enemies: [{ id: 'experiment', name: 'Escaped Experiment' }],
     bossName: 'Prime Symbiote',
+    bossVerb: 'regrow',      // the one that won't stay down
     champion: { at: 5, id: 'experiment', name: 'Apex Specimen' },
     growthMult: 1, tierGrowth: 2.4, withinStep: 0.08 },
 
@@ -494,6 +527,7 @@ const ZONES = [
     startWave: 11, endWave: 20,
     enemies: [{ id: 'enforcer', name: 'MCP Enforcer' }],
     bossName: 'MCP Captain',
+    bossVerb: 'guard',       // shield discipline: answers cost more here
     champion: { at: 15, id: 'lieutenant', name: 'MCP Lieutenant' },
     growthMult: 3.33, tierGrowth: 2.0, withinStep: 0.06,
     windupMult: 2.5, eliteWindupMult: 2.0 },
@@ -502,6 +536,9 @@ const ZONES = [
     startWave: 21, endWave: 30,
     enemies: [{ id: 'mercenary', name: 'Mercenary' }],
     bossName: 'Mercenary Brute',
+    // ENRAGE on the finale compounds with its every-2 windup cadence: the
+    // hand-checked two-mechanic exam, authored rather than rolled.
+    bossVerb: 'enrage',
     champion: { at: 25, id: 'mercenary', name: 'Veteran Mercenary' },
     growthMult: 8.67, tierGrowth: 1.6, withinStep: 0.04,
     windupMult: 1.6, eliteWindupMult: 1.2 }
@@ -732,6 +769,37 @@ const STATUSES = {
     // after the damage resolves). This half is psy's offense; the slow is its
     // skin.
     incomingMult: (u, st) => 1 + (st.stacks||0) * P().dreadVulnPerStack
+  },
+
+  // --- Enemy verbs (see ENEMY_VERBS) ---------------------------------------
+  // REGROW: the zone-1 boss's verb, worn from spawn so the fight's question is
+  // visible before the first swing. Heals off its OWN max HP — healAnchorFor
+  // falls through to maxHp for non-players.
+  regrow: {
+    id:'regrow', name:'REGROW', tone:'buff', kind:'buff',
+    stacking:'replace', permanent:true, defaults:{ below:0.5, power:0.06 },
+    label: () => 'REGROW',
+    onTurnStart(unit, st) {
+      if (unit.hp <= 0 || unit.hp >= unit.maxHp * (st.below || 0.5)) return false;
+      const heal = Math.max(1, Math.floor(unit.maxHp * (st.power || 0)));
+      const before = unit.hp;
+      unit.hp = Math.min(unit.maxHp, unit.hp + heal);
+      floatText(unit, unit.hp - before, 'heal');
+      logHeal('REGROW', unit, unit.hp - before, [
+        Math.round((st.power || 0) * 100) + '% of frame, below ' + Math.round((st.below || 0) * 100) + '%',
+        logNum(unit.hp) + '/' + logNum(unit.maxHp)
+      ]);
+      updateUnitCard(unit);
+      return false;
+    }
+  },
+  // ENRAGE: the race clock. Uncapped on purpose — this is the one place an
+  // unbounded effect is the design: the anti-turtle, and doom if you stall.
+  enrage: {
+    id:'enrage', name:'ENRAGE', tone:'debuff', kind:'buff',
+    stacking:'stack', permanent:true, defaults:{ stacks:1, power:0.12 },
+    label: st => 'ENRAGE ×' + (st.stacks || 1),
+    outgoingMult: (u, st) => 1 + (st.stacks || 0) * (st.power || 0)
   },
 
   predator: {
