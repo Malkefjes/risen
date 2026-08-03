@@ -2950,3 +2950,24 @@ body {
   margin-left: 5px;
   opacity: 0.9;
 }
+
+/* The owner's item art. The drop card gets the big moment; the suit panel a
+   thumbnail, ghosted when the mount is bare. */
+.drop-card { display: flex; gap: 14px; align-items: center; }
+.drop-card-body { flex: 1 1 0; min-width: 0; }
+.drop-art {
+  width: 84px;
+  height: 84px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.55));
+}
+.suit-slot { display: flex; gap: 10px; align-items: center; }
+.suit-slot-body { flex: 1 1 0; min-width: 0; }
+.suit-thumb {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.suit-thumb.ghost { opacity: 0.22; filter: grayscale(1); }

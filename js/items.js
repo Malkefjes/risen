@@ -9,13 +9,19 @@ const ITEM_STAT_NAMES = { str: 'STRENGTH', instinct: 'INSTINCT', speed: 'SPEED',
 
 // `home` biases which stat a slot tends to roll (60%, first affix only) so a
 // slot feels like itself without being locked. Repair has no home stat — its
-// identity is its mod pool (healing), not a stat.
+// identity is its mod pool (healing), not a stat. The art is the owner's — the
+// five suit pieces he drew name the slots.
 const SLOTS = {
-  optics:    { id: 'optics',    name: 'Acquisition Optics', label: 'OPTICS',    home: 'instinct', lot: 'O' },
-  gauntlets: { id: 'gauntlets', name: 'Impact Gauntlets',   label: 'GAUNTLETS', home: 'str',      lot: 'G' },
-  armor:     { id: 'armor',     name: 'Chassis Plating',    label: 'PLATING',   home: 'vit',      lot: 'P' },
-  repair:    { id: 'repair',    name: 'Repair Module',      label: 'REPAIR',    home: null,       lot: 'R' },
-  boots:     { id: 'boots',     name: 'Servo Boots',        label: 'SERVOS',    home: 'speed',    lot: 'S' }
+  optics:    { id: 'optics',    name: 'Helmet',        label: 'HELMET',    home: 'instinct', lot: 'H',
+               art: 'assets/sprites/mcp helmet.png' },
+  gauntlets: { id: 'gauntlets', name: 'Gauntlets',     label: 'GAUNTLETS', home: 'str',      lot: 'G',
+               art: 'assets/sprites/mcp gauntlets.png' },
+  armor:     { id: 'armor',     name: 'Body Armor',    label: 'ARMOR',     home: 'vit',      lot: 'A',
+               art: 'assets/sprites/mcp body armor.png' },
+  repair:    { id: 'repair',    name: 'Repair Module', label: 'REPAIR',    home: null,       lot: 'R',
+               art: 'assets/sprites/mcp repair module.png' },
+  boots:     { id: 'boots',     name: 'Boots',         label: 'BOOTS',     home: 'speed',    lot: 'B',
+               art: 'assets/sprites/mcp boots.png' }
 };
 
 // Tier decides SHAPE, the drop wave decides SIZE: a late STANDARD ISSUE
@@ -221,14 +227,18 @@ function abandonDrop() {
 
 // ---- UI ---------------------------------------------------------
 function itemCardHtml(it, headline) {
-  if (!it) return '<div class="drop-card empty"><div class="drop-card-head">' + headline + '</div>'
-    + '<div class="drop-empty">— the mount is bare —</div></div>';
+  if (!it) return '<div class="drop-card empty"><div class="drop-card-body">'
+    + '<div class="drop-card-head">' + headline + '</div>'
+    + '<div class="drop-empty">— the mount is bare —</div></div></div>';
+  const s = SLOTS[it.slot];
   return '<div class="drop-card rar-' + it.rarity + '">'
+    + (s.art ? '<img class="drop-art" src="' + s.art + '" alt="" draggable="false">' : '')
+    + '<div class="drop-card-body">'
     + '<div class="drop-card-head">' + headline + '</div>'
     + '<div class="drop-rarity">' + RARITIES[it.rarity].name + '</div>'
     + '<div class="drop-name">' + it.name + ' <span class="drop-lot">LOT ' + it.lot + '</span></div>'
     + itemAffixLines(it).map(l => '<div class="drop-affix">' + l + '</div>').join('')
-    + '</div>';
+    + '</div></div>';
 }
 function renderDropModal(it) {
   const el = document.getElementById('drop-body');
@@ -246,12 +256,19 @@ function renderSuitPanel() {
   el.innerHTML = Object.keys(SLOTS).map(sid => {
     const s = SLOTS[sid];
     const it = p && p.gear ? p.gear[sid] : null;
-    if (!it) return '<div class="suit-slot empty"><div class="suit-slot-label">' + s.label + '</div>'
-      + '<div class="suit-slot-name">NOT FITTED</div></div>';
-    return '<div class="suit-slot rar-' + it.rarity + '">'
+    // A bare mount still shows the piece, ghosted — what goes there is part
+    // of what the panel says.
+    const thumb = s.art
+      ? '<img class="suit-thumb' + (it ? '' : ' ghost') + '" src="' + s.art + '" alt="" draggable="false">'
+      : '';
+    if (!it) return '<div class="suit-slot empty">' + thumb
+      + '<div class="suit-slot-body"><div class="suit-slot-label">' + s.label + '</div>'
+      + '<div class="suit-slot-name">NOT FITTED</div></div></div>';
+    return '<div class="suit-slot rar-' + it.rarity + '">' + thumb
+      + '<div class="suit-slot-body">'
       + '<div class="suit-slot-label">' + s.label + ' · ' + RARITIES[it.rarity].name + '</div>'
       + '<div class="suit-slot-name">' + it.name + ' <span class="drop-lot">LOT ' + it.lot + '</span></div>'
       + itemAffixLines(it).map(l => '<div class="suit-affix">' + l + '</div>').join('')
-      + '</div>';
+      + '</div></div>';
   }).join('');
 }

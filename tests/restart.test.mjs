@@ -54,7 +54,7 @@ export default async function ({ page, ok }) {
       if (typeof v === 'string') { if (v.startsWith('assets/')) urls.add(v); }
       else if (v && typeof v === 'object') Object.values(v).forEach(walk);
     };
-    [ZONE_SPRITES, POSE_SPRITES, PLAYER_SPRITES, SCIENTIST_SPRITES, SCENES].forEach(walk);
+    [ZONE_SPRITES, POSE_SPRITES, PLAYER_SPRITES, SCIENTIST_SPRITES, SCENES, SLOTS].forEach(walk);
     const cssText = [...document.styleSheets]
       .flatMap(sh => { try { return [...sh.cssRules].map(r => r.cssText); } catch { return []; } }).join('\n');
     // Images only — @font-face lives in the same stylesheet and does not decode.
