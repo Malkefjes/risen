@@ -37,7 +37,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-03ac';
+const BUILD = '2026-08-03ad';
 
 const BALANCE = {
   player: {
@@ -145,7 +145,13 @@ const BALANCE = {
     // Each is "one extra stack per N Strength" and DELIBERATELY GIVES NOTHING
     // AT THE STARTING SHEET (floor(5/N) = 0 for N > 5): this must reward
     // INVESTMENT, not hand every build a free stack it never bought.
-    poisonPerStr: 8,           // bio: extra POISON per application, per this much Strength
+    // 8 -> 2 on 2026-08-03ad, so STRENGTH is bio's stat rather than a stat it
+    // tolerates (owner: bio STR, psy SPD, sym VIT, hyd INS). Measured, bio's
+    // wins per 100 on STR+VIT against SPD+VIT: at 8 it was 12 v 30, at 5 14 v
+    // 37, at 3 35 v 33 (a tie inside the noise), at 2 51 v 38. Speed is hard to
+    // beat here because POISON ticks on YOUR turn, so rate multiplies bio's
+    // biggest damage source directly — the stack term has to out-pull that.
+    poisonPerStr: 2,           // bio: extra POISON per application, per this much Strength
     // THE ROT WEAKENS WHAT IT IS IN (2026-08-03aa). Bio was the one strain
     // whose ramp did nothing defensive: measured, 53% of what was aimed at it
     // got stopped against base's 73% on the same allocation, because RESOLVE
@@ -161,10 +167,13 @@ const BALANCE = {
     poisonWeakenCap: 0.30,
     // PSY PAYS THE MOST PER STACK, so it buys them at the worst rate: a DREAD
     // stack slows, opens the guard, feeds the siphon AND prices Kill, where a
-    // POISON stack only ticks. At a shared 8 psy ran away with it (measured:
-    // STR+VIT 3% -> 57% wins, spread 10% -> 55%).
-    dreadPerStr: 14,           // psy: extra DREAD planted, per this much Strength
-    thornsPerStr: 10,          // sym: extra THORNS per hit taken, per this much Strength
+    // POISON stack only ticks.
+    dreadPerSpeed: 14,         // psy: extra DREAD planted, per this much Speed
+    // 10 -> 6 on 2026-08-03ad so VITALITY is decisively sym's stat rather than
+    // marginally so. Measured, sym's wins per 100 pure VIT against SPD+VIT: at
+    // 10 it was 47 v 38 (a 9-point gap, inside the noise floor), at 6 59 v 35,
+    // at 4 48 v 51, at 2 74 v 65. 6 is the one that separates.
+    thornsPerVit: 6,           // sym: extra THORNS per hit taken, per this much Vitality
     // ---- BLEED (Unaugmented) ------------------------------------------------
     // Base's second number. IT MUST NOT BECOME BIO IN RED, and three differences
     // keep them apart: a wound ticks on EVERY turn, both sides, and eats a stack

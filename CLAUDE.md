@@ -276,6 +276,35 @@ did not say.
 - **No changelog files.** Git history is the changelog; commit messages
   carry the detail.
 
+## Stat identity (owner's design, 2026-08-03ad)
+
+- **`OWNER:` EACH STRAIN SCALES BEST WITH ONE STAT**: bio STRENGTH, psy SPEED,
+  sym VITALITY, hyd INSTINCT. Base is the generalist and was deliberately left
+  alone. All three ramp-growth terms used to read STRENGTH — a legacy of the
+  pass that fixed Strength being weak — so psy's fear and sym's spines both grew
+  on a stat neither class wants. They now read their own: `poisonPerStr`,
+  `dreadPerSpeed`, `thornsPerVit`, through one helper (`statBonusStacks`).
+- **HOW TO MEASURE "SCALES BEST WITH X", and the first way was wrong.** Pouring
+  100% into one stat measures whether you can survive at 5 Vitality, not whether
+  the stat scales — every such build sits on a 100 HP bar and VIT won all four
+  rows. Pair each stat 50/50 WITH Vitality and compare against pure VIT: that is
+  the shape a real build has. Measured that way, wins per 100 after the refit:
+  bio STR 49 / SPD 41, psy SPD 23 / STR 5, sym VIT 59 / SPD 35, base SPD 38.
+- **SPEED IS A GLOBAL MULTIPLIER, NOT A CLASS STAT.** Before the refit SPD+VIT
+  won every row for every class, because every class's output is per-turn — more
+  rate is more presses, more applications, and (for ailments that tick on your
+  turn) more ticks. A stat term has to out-pull that to claim a class, which is
+  why `poisonPerStr` needed 8 -> 2 and `thornsPerVit` 10 -> 6 rather than a nudge.
+- **INSTINCT IS DEAD FOR EVERY EXISTING CLASS** (1-2 wins per 100 on INS+VIT,
+  against 20-40 for SPD+VIT) and that is STRUCTURAL, not a tuning gap: it buys
+  crit chance and crit damage, which only multiply damage that goes through an
+  ATTACK ROLL, and bio is 70% poison ticks, base 60% bleed, sym 58% reflect.
+  Crit multiplies the leftovers. The fix is NOT to make Instinct scale ramps —
+  that would blur every identity above. It is that HYDRAULIC routes its damage
+  through attack rolls, so Instinct's quadratic (chance x multiplier, the
+  multiplier uncapped) finally lands on something. Do not "fix Instinct"
+  globally without re-reading this.
+
 ## Known soft spots (context, not a to-do list)
 
 - **STRENGTH IS THE WEAKEST STAT, and it is not a tuning problem** (measured

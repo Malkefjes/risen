@@ -495,23 +495,25 @@ function bleedStacks(p) {
   return Math.max(1, (B.bleedBase || 2) + Math.floor(((p.str || 0) + gearStat(p, 'str')) / per));
 }
 
-// STRENGTH'S SECOND TERM, the same shape for every strain: one extra stack per
-// N Strength on top of whatever the card plants. See the block above
-// poisonPerStr in BALANCE for the measurement that forced it. Gear Strength
-// counts, exactly as it does for bleedStacks.
-function strBonusStacks(p, per) {
+// EACH RAMP'S SECOND TERM, one extra stack per N of the strain's SIGNATURE
+// STAT. All three used to read Strength, which was a legacy of the pass that
+// fixed Strength being weak — it meant psy's fear and sym's spines both grew on
+// a stat neither class wants (owner, 2026-08-03ad: bio scales with STR, psy
+// with SPD, sym with VIT, hyd with INS). Gear counts, exactly as it does for
+// bleedStacks.
+function statBonusStacks(p, stat, per) {
   if (!p || !(per > 0)) return 0;
-  return Math.floor(((p.str || 0) + gearStat(p, 'str')) / per);
+  return Math.floor((((p[stat] || 0) + gearStat(p, stat))) / per);
 }
-// bio: what one application of a POISON skill actually plants.
+// bio: what one application of a POISON skill actually plants. STRENGTH.
 function poisonStacks(p, skill) {
   const base = (skill && skill.poison) || 1;
-  return Math.max(1, base + strBonusStacks(p, P().poisonPerStr));
+  return Math.max(1, base + statBonusStacks(p, 'str', P().poisonPerStr));
 }
-// psy: what one application of a DREAD skill actually plants.
+// psy: what one application of a DREAD skill actually plants. SPEED.
 function dreadStacks(p, skill) {
   const base = (skill && skill.dread) || 1;
-  return Math.max(1, base + strBonusStacks(p, P().dreadPerStr));
+  return Math.max(1, base + statBonusStacks(p, 'speed', P().dreadPerSpeed));
 }
 
 function bleedDepth(p) {

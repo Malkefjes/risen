@@ -449,11 +449,9 @@ function thornsGrowthFor(p, damage) {
   // beat the wave-35 boss. Reading the share of the bar is what makes eating a
   // telegraph on purpose still pay at wave 40.
   const share = Math.max(0, damage) / Math.max(1, p.maxHp);
-  // Strength's second term for sym: a stronger frame drives the spines deeper
-  // on every hit it eats. See poisonPerStr in BALANCE for why the stat needed
-  // one at all.
-  const str = strBonusStacks(p, B.thornsPerStr);
-  return Math.max(B.thornsPerHit, Math.round(B.thornsPerHit + share * B.thornsPerBar)) + str;
+  // Sym's second term reads VITALITY: a bigger frame carries more spine.
+  const bonus = statBonusStacks(p, 'vit', B.thornsPerVit);
+  return Math.max(B.thornsPerHit, Math.round(B.thornsPerHit + share * B.thornsPerBar)) + bonus;
 }
 
 // SHED — sym's sustain, and the one place a run-permanent ramp can be spent.
