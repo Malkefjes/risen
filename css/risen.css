@@ -44,6 +44,7 @@
   --bio: #7dffa0;
   --psy: #c084fc;
   --sym: #fb923c;
+  --hyd: #38bdf8;
   /* Unaugmented has no strain tint — it is the plain white the unit names use,
      which is the point of the class. Aliased rather than copied so it cannot
      drift from --text. */
@@ -263,6 +264,7 @@ body {
 .save-slot.strain-bio { --class-rgb: 125, 255, 160; }
 .save-slot.strain-psy { --class-rgb: 192, 132, 252; }
 .save-slot.strain-sym { --class-rgb: 251, 146, 60; }
+.save-slot.strain-hyd { --class-rgb: 56, 189, 248; }
 /* base is --text, aliased not copied: unaugmented has no strain tint. */
 .save-slot.strain-base { --class-rgb: 238, 242, 255; }
 
@@ -729,6 +731,7 @@ body {
 .class-card.bio { --class-color: var(--bio); --class-rgb: 125, 255, 160; }
 .class-card.psy { --class-color: var(--psy); --class-rgb: 192, 132, 252; }
 .class-card.sym { --class-color: var(--sym); --class-rgb: 251, 146, 60; }
+.class-card.hyd { --class-color: var(--hyd); --class-rgb: 56, 189, 248; }
 
 .class-card:hover {
   background: rgba(var(--class-rgb), 0.10);
@@ -830,6 +833,7 @@ body {
 #start-btn.strain-bio { --class-rgb: 125, 255, 160; }
 #start-btn.strain-psy { --class-rgb: 192, 132, 252; }
 #start-btn.strain-sym { --class-rgb: 251, 146, 60; }
+#start-btn.strain-hyd { --class-rgb: 56, 189, 248; }
 #start-btn[class*="strain-"] {
   border-color: rgba(var(--class-rgb), 0.85);
   color: #ffffff;
@@ -907,6 +911,7 @@ body {
 .strain-word.bio  { color: var(--bio); }
 .strain-word.psy  { color: var(--psy); }
 .strain-word.sym  { color: var(--sym); }
+.strain-word.hyd  { color: var(--hyd); }
 .strain-word.base { color: var(--base); }
 
 /* COMBAT HEADER */
@@ -1446,6 +1451,8 @@ body {
 .status.stun { color: var(--psy); }
 .status.predator { color: var(--accent); }
 .status.spines { color: var(--sym); }
+/* Hyd's three all wear the strain blue: they are one system. */
+.status.pressure { color: var(--hyd); }
 /* var(--base), not a hardcoded white: Unaugmented's word on a skill card is
    .kw-base, and a badge that is a different white from the word naming it is
    the same disagreement in miniature. */
@@ -1547,6 +1554,7 @@ body {
 #combat-screen[data-strain="bio"] { --panel-edge: 125, 255, 160; }
 #combat-screen[data-strain="psy"] { --panel-edge: 192, 132, 252; }
 #combat-screen[data-strain="sym"] { --panel-edge: 251, 146, 60; }
+#combat-screen[data-strain="hyd"] { --panel-edge: 56, 189, 248; }
 
 .action-panel {
   padding: 16px 18px;
@@ -1653,6 +1661,7 @@ body {
 .skills[data-built-for="bio"]  { --strain: var(--bio); --strain-glow: rgba(125,255,160,0.55); }
 .skills[data-built-for="psy"]  { --strain: var(--psy); --strain-glow: rgba(192,132,252,0.55); }
 .skills[data-built-for="sym"]  { --strain: var(--sym); --strain-glow: rgba(251,146,60,0.55); }
+.skills[data-built-for="hyd"]  { --strain: var(--hyd); --strain-glow: rgba(56,189,248,0.55); }
 /* Unaugmented's white carries further than a tint at the same alpha, so its
    bloom is pulled back to sit at the weight of the other three. */
 .skills[data-built-for="base"] { --strain: var(--base); --strain-glow: rgba(238,242,255,0.32); }
@@ -1713,6 +1722,7 @@ body {
 .kw-base { color: var(--base); }
 .kw-bio { color: var(--bio); }
 .kw-sym { color: var(--sym); }
+.kw-hyd { color: var(--hyd); }
 .kw-weak { color: var(--weak); }
 /* Matched to the matching status' tone above, so the word on the card and the
    badge under the health bar are visibly the same thing. */
@@ -2380,6 +2390,7 @@ body {
 .rs-card.bio { --rc: var(--bio); --rc-rgb: 125, 255, 160; }
 .rs-card.psy { --rc: var(--psy); --rc-rgb: 192, 132, 252; }
 .rs-card.sym { --rc: var(--sym); --rc-rgb: 251, 146, 60; }
+.rs-card.hyd { --rc: var(--hyd); --rc-rgb: 56, 189, 248; }
 
 .rs-head { padding: 14px 18px 12px; border-bottom: 1px solid var(--border); }
 .rs-class {
@@ -3062,6 +3073,7 @@ body {
 .mod-card.strain-bio  { --edge: 125, 255, 160; }
 .mod-card.strain-psy  { --edge: 192, 132, 252; }
 .mod-card.strain-sym  { --edge: 251, 146, 60; }
+.mod-card.strain-hyd  { --edge: 56, 189, 248; }
 .mod-card.strain-base { --edge: var(--base-rgb); }
 .mod-card:hover {
   border-color: rgba(var(--edge), 0.95);

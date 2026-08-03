@@ -213,6 +213,7 @@ function healWorthIt(s, p) {
 function spendStacks(s, p, e) {
   if (s.consumesDread) return e ? statusStacks(e, 'dread') : 0;
   if (s.consumesResolve) return statusStacks(p, 'resolve');
+  if (s.consumesPressure) return statusStacks(p, 'pressure');
   return 0;
 }
 function spenderDamage(s, p, e) {
@@ -220,10 +221,11 @@ function spenderDamage(s, p, e) {
   if (s.consumesDread)
     mult += (s.perDreadPower || 0) * Math.ceil(spendStacks(s, p, e) * (s.consumeFrac || 1));
   if (s.consumesResolve) mult += (s.perResolvePower || 0) * spendStacks(s, p, e);
+  if (s.consumesPressure) mult += (s.perPressurePower || 0) * spendStacks(s, p, e);
   return p.atkPower * mult;
 }
 function spenderWorthIt(s, p, e) {
-  if (!s.consumesDread && !s.consumesResolve) return true;
+  if (!s.consumesDread && !s.consumesResolve && !s.consumesPressure) return true;
   const stacks = spendStacks(s, p, e);
   if (stacks < SMART.spendMin) return false;
   if (e && spenderDamage(s, p, e) >= e.hp) return true;   // it finishes — take it

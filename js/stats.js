@@ -295,7 +295,8 @@ function formatNum(n) {
 // `.kw-<x>` rule is the whole cost of adding one; keep it matched to the status'
 // `tone` in STATUSES.
 const DESC_KEYWORDS = { RESOLVE: 'base', POISON: 'bio', CHITIN: 'bio', WEAK: 'weak',
-                        THORNS: 'sym', BLEED: 'bleed', DREAD: 'dread' };
+                        THORNS: 'sym', BLEED: 'bleed', DREAD: 'dread',
+                        PRESSURE: 'hyd', CRIT: 'hyd' };
 const KEYWORD_RE = new RegExp('\\b(' + Object.keys(DESC_KEYWORDS).join('|') + ')\\b', 'g');
 function highlightKeywords(html) {
   return html.replace(KEYWORD_RE, w => '<span class="kw kw-' + DESC_KEYWORDS[w] + '">' + w + '</span>');
@@ -441,14 +442,19 @@ function applyDerivedStats(p) {
   // Vitality's faucet: a share of the anchor per turn, from points above the
   // starting sheet only.
   p.regen = Math.max(0, vit - BALANCE.player.sheetAnchor) * (B.regenPerVit || 0);
-  p.critChance = Math.min(B.critCap, B.critBase + instinct*B.critPerInstinct + gearMod(p, 'critCh'));
+  p.critChance = Math.min(B.critCap, B.critBase + instinct*B.critPerInstinct + gearMod(p, 'critCh')
+    + (p.class === 'hyd' ? statusStacks(p, 'pressure') * (B.critChancePerPressure || 0) : 0));
   // CRIT DAMAGE CLIMBS WITH THE SAME POINTS, from point one rather than as an
   // overflow past the chance cap. Both terms rising at once is what makes
   // Instinct quadratic and what lets it reach Strength at all — the balance
   // header carries the arithmetic. No cap of its own and it needs none: Instinct
   // is the only source, the chance it multiplies is capped, and points past that
   // cap keep landing here, so overinvestment bends instead of hitting a wall.
-  p.critMult = B.critMultBase + instinct * (B.critMultPerInstinct || 0) + gearMod(p, 'critDmg');
+  // PRESSURE drives crit DAMAGE, which is why hyd's number pays into single
+  // hits rather than over time. On the sheet rather than in a status hook
+  // because the sidebar has to be able to show it.
+  p.critMult = B.critMultBase + instinct * (B.critMultPerInstinct || 0) + gearMod(p, 'critDmg')
+    + (p.class === 'hyd' ? statusStacks(p, 'pressure') * (B.critPerPressure || 0) : 0);
 
   // A fifth of Attack Damage and a twentieth of max HP — both already carry
   // dmgMult / hpMult through those two, so neither is applied again here.
@@ -580,6 +586,10 @@ function strainReadout(p) {
   // "Poison per stack" beside an identical "Poison damage" would be the same
   // number printed twice in one pane.
   if (p.class === 'sym') return { id:'strain', label:'Thorns', text: formatNum(p.thorns), num: p.thorns };
+  if (p.class === 'hyd') {
+    const held = statusStacks(p, 'pressure');
+    return { id:'strain', label:'Pressure', text: formatNum(held), num: held };
+  }
   // Held RESOLVE, now that it is a status rather than a row of pips. The pips
   // were the only place the count was ever written down; without a row here the
   // sidebar would be the one pane that cannot answer "how much do I have".
@@ -599,6 +609,14 @@ function strainReadout(p) {
 // Sym's defensive half. Read LIVE off p.thorns rather than baked onto the
 // sheet, because thorns grows mid-fight on every hit taken and a stale copy
 // would under-report the layer exactly when it was doing the most work.
+// Hyd's bracing half, read live off held PRESSURE for the same reason sym's is
+// read off live thorns: the pile moves every turn.
+function pressureWard(p) {
+  if (!p || p.class !== 'hyd') return 0;
+  const held = statusStacks(p, 'pressure');
+  return Math.min(P().pressureWardCap || 0, held * (P().pressureWardPerPoint || 0));
+}
+
 function thornsWard(p) {
   if (!p || p.class !== 'sym' || !(p.thorns > 0)) return 0;
   return Math.min(P().thornsWardCap || 0, p.thorns * (P().thornsWardPerPoint || 0));
@@ -616,6 +634,8 @@ function guardReadout(p) {
   // nothing, where the total is a number the fight actually uses.
   if (p.class === 'sym')
     return { id:'guard', label:'Carapace', text: Math.round(thornsWard(p) * 100) + '%' };
+  if (p.class === 'hyd')
+    return { id:'guard', label:'Servos', text: Math.round(pressureWard(p) * 100) + '%' };
   return null;
 }
 

@@ -305,6 +305,31 @@ did not say.
   multiplier uncapped) finally lands on something. Do not "fix Instinct"
   globally without re-reading this.
 
+- **HYDRAULIC, added 2026-08-03ae, and it is NOT BALANCED YET.** Fifth strain,
+  Instinct's class, built to the owner's brief: *"big crits, big single hits as
+  opposed to ramping dots."* PRESSURE is the number — every landed attack packs
+  it in, and it does two jobs like every other strain number: crit CHANCE and
+  crit DAMAGE (`critChancePerPressure` / `critPerPressure`), plus a bounded
+  reduction (`pressureWardPerPoint`, cap 0.25). Rupture vents the whole pile in
+  one always-crit blow, which also hands back the bracing it was buying — that
+  trade is the class. Four buttons: Piston (basic), Surge (cd 3 feeder, an
+  ATTACK), Dampen (cd 4, the telegraph answer AND the only faucet), Rupture
+  (cd 5).
+  **Three things were measured the hard way while building it, all worth
+  keeping:** (1) with the feeder as a pure buff, hyd spent 58% of its turns not
+  dealing damage and died at wave 4 — survivable for bio, whose rot ticks
+  regardless, fatal for a strain whose whole output is attacks. (2) With no
+  sustain at all it died at wave 6 on EVERY allocation; it was the only class in
+  the game with nothing that heals, so Dampen carries a regen through `applies`
+  while keeping the mitigation on `buff` so the bot still reads it as an answer.
+  (3) A roughly 2x damage buff moved its median from 20 to 20 — damage was never
+  the binding constraint, it was entering fights already low.
+  **WHERE IT STANDS: median wave 30 on SPD+VIT, 2 wins per 100, last of five.**
+  And INSTINCT IS NOT YET ITS BEST STAT (INS+VIT 20 against SPD+VIT 30), which
+  is the whole point of the class and is unfinished. Speed still wins because it
+  is a global multiplier — more turns is more presses, more PRESSURE and more
+  Ruptures — so crit has to out-scale turns before the identity lands.
+
 ## Known soft spots (context, not a to-do list)
 
 - **STRENGTH IS THE WEAKEST STAT, and it is not a tuning problem** (measured

@@ -426,6 +426,16 @@ function cleansePoison(unit, n, why) {
 // base gains Resolve on almost every turn of a fight, and a ramp the player
 // cannot see climbing is a ramp they do not feel. The pipped bank used to carry
 // that job.
+// HYD'S RAMP. Same shape as gainResolve: every gain is a floater and a line, and
+// the sheet is recomputed because crit damage rides the pile.
+function gainPressure(p, amount) {
+  if (!p || p.class !== 'hyd' || !(amount > 0) || p.hp <= 0) return 0;
+  applyStatus(p, 'pressure', { stacks: amount });
+  applyDerivedStats(p);
+  floatText(p, '+' + amount + ' PRESSURE', 'tally');
+  return amount;
+}
+
 function gainResolve(p, amount, why) {
   if (!p || p.class !== 'base' || !(amount > 0) || p.hp <= 0) return 0;
   applyStatus(p, 'resolve', { stacks: amount });
@@ -730,6 +740,15 @@ function applyPlayerDamage(p, e, skill) {
   // reach and wins: 100% -> 32 / 0%, 80% -> 37 / 3%, 70% -> 37 / 6%, 60% -> 41 /
   // 24%, 50% -> 43 / 34%. Tearing an extra wound worth the Resolve spent was
   // tried in the same sweep and made it WORSE, so it is not here.
+  // RUPTURE vents the whole pile. Unlike Last Stand there is no fraction: the
+  // cost of spending is that the bracing goes with it, which is the decision.
+  const pressureHeld = skill.consumesPressure ? statusStacks(p, 'pressure') : 0;
+  if (pressureHeld > 0) {
+    dmg += p.atkPower * (skill.perPressurePower || 0) * pressureHeld;
+    notes.push('PRESSURE \u00d7' + pressureHeld + ' vented');
+    removeStatus(p, 'pressure', 'vented');
+    applyDerivedStats(p);
+  }
   const resolveHeld = skill.consumesResolve ? statusStacks(p, 'resolve') : 0;
   const resolveSpent = Math.ceil(resolveHeld * (skill.consumeFrac || 1));
   if (resolveSpent > 0) {
@@ -776,7 +795,11 @@ function applyPlayerDamage(p, e, skill) {
     return false;
   }
 
-  let isCrit = Math.random() < p.critChance;
+  // The roll always happens, even for a card that crits regardless, so the
+  // rules stream advances identically either way — skipping it would desync a
+  // seeded replay the moment Rupture was pressed.
+  const rolled = Math.random() < p.critChance;
+  let isCrit = rolled || !!skill.alwaysCrit;
   // Printed the same way the Crit damage readout prints it — two decimals only
   // when there is a fraction to show — so the log and the sheet cannot report
   // the same x2.05 as two different numbers now that Instinct moves it.
@@ -814,6 +837,9 @@ function applyPlayerDamage(p, e, skill) {
   // Resolve (base): landing a hit steadies you.
   if (skill.buildsResolve) gainResolve(p, skill.buildsResolve, skill.name);
 
+  // Hyd packs the lines on every landed attack. Beside poison and dread rather
+  // than in the buff branch, because it has to depend on the blow CONNECTING.
+  if (skill.pressure) gainPressure(p, skill.pressure);
   if (skill.poison && p.class === 'bio')
     // The count comes off the sheet so Strength reaches it — skill.poison is
     // the card's base, not the whole application. Same shape as bleed.
@@ -969,6 +995,8 @@ function fireSkill(caster, skill, target) {
     logEvent(skill.name, null, 'cast');
     applyStatus(caster, skill.buff, skillStatusOpts(skill));
     applySkillStatuses(caster, skill);
+    // A buff may pack the lines as well as apply its status (Calibrate).
+    if (skill.pressure) gainPressure(caster, skill.pressure);
     playCastAnim(caster, skill);
   } else {
     const dealt = applyPlayerDamage(caster, target, skill);
@@ -1220,6 +1248,7 @@ function strainNumberNow(p) {
   if (p.class === 'sym')  return p.thorns || 0;
   if (p.class === 'base') return statusStacks(p, 'resolve');
   if (p.class === 'psy')  return live ? statusStacks(e, 'dread') : 0;
+  if (p.class === 'hyd')  return statusStacks(p, 'pressure');
   if (p.class === 'bio')  return live ? statusStacks(e, 'poison') : 0;
   return 0;
 }
@@ -1265,7 +1294,7 @@ function waveReached() {
 
 // The four strains wear their number under different names, and the result
 // screen has to say which one it is reporting.
-const STRAIN_LABEL = { bio:'POISON', psy:'DREAD', sym:'THORNS', base:'RESOLVE' };
+const STRAIN_LABEL = { bio:'POISON', psy:'DREAD', sym:'THORNS', hyd:'PRESSURE', base:'RESOLVE' };
 
 // Damage by source, biggest first, with each share of the run's total. Returns
 // [] when a run predates the ledger (an old save mid-run), so the section can

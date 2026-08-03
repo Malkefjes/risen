@@ -94,6 +94,33 @@ const MODIFICATIONS = {
   // ---- SYMBIOTIC ----------------------------------------------------------
   // NO DURATION UPGRADE ON RAISE SPINES: it stacks by 'amplify', so a duration
   // at or past its cooldown would let the multiplier ladder on itself forever.
+  hyd: {
+    piston: [
+      { id: 'hyd_pi_a', name: 'BORE',        text: 'Piston: +25% damage.',
+        mul: { power: 1.25 } },
+      { id: 'hyd_pi_b', name: 'TWIN STROKE', text: 'Piston: +1 PRESSURE per hit.',
+        add: { pressure: 1 } }
+    ],
+    surge: [
+      { id: 'hyd_su_a', name: 'PRECHARGE',   text: 'Surge: +3 PRESSURE.',
+        add: { pressure: 3 } },
+      { id: 'hyd_su_b', name: 'WIDE BORE',   text: 'Surge: +30% damage.',
+        mul: { power: 1.30 } }
+    ],
+    dampen: [
+      { id: 'hyd_da_a', name: 'HEAVY GAUGE', text: 'Dampen: +8% reduction, to a maximum of 75%.',
+        add: { power: 0.08 }, max: { power: 0.75 } },
+      { id: 'hyd_da_b', name: 'LONG SEAL',   text: 'Dampen: +1 turn.',
+        add: { duration: 1 } }
+    ],
+    rupture: [
+      { id: 'hyd_ru_a', name: 'FULL VENT',   text: 'Rupture: +0.04 damage per PRESSURE spent.',
+        add: { perPressurePower: 0.04 } },
+      { id: 'hyd_ru_b', name: 'BLOWOUT',     text: 'Rupture: +40% base damage.',
+        mul: { power: 1.40 } }
+    ]
+  },
+
   sym: {
     latch: [
       { id: 'sym_la_a', name: 'DEEP DRAW',    text: 'Latch: +10% of your THORNS added to the blow.',

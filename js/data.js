@@ -37,7 +37,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-03ad';
+const BUILD = '2026-08-03ae';
 
 const BALANCE = {
   player: {
@@ -96,7 +96,12 @@ const BALANCE = {
     // half-investing really is worse than not. What it costs is variance. When
     // re-deriving, remember a Strength build crits too — it keeps the starting 5
     // Instinct, so both columns are gain over the SAME starting sheet.
-    critBase: 0.00, critPerInstinct: 0.02, critCap: 0.90,
+    // critCap 0.90 -> 1.00 on 2026-08-03ae (owner: "uncap crit"). The ceiling
+    // was the only thing stopping Instinct from finishing what it buys; the
+    // MULTIPLIER was already uncapped and grows +0.25x a point forever, so past
+    // 50 Instinct every further point still pays, just all of it into size
+    // rather than frequency.
+    critBase: 0.00, critPerInstinct: 0.02, critCap: 1.00,
     // Capped at 0.90, not 1.00: one plain hit in ten keeps the gold CRIT floater
     // naming an event. Points past the cap still buy crit damage.
     critMultBase: 1.0, critMultPerInstinct: 0.25,   // crit damage = x(1 + 0.25 x Instinct)
@@ -222,6 +227,23 @@ const BALANCE = {
     shedCapFrac: 0.35,         // Shed never takes more than this share of GROWN thorns in one press
     shedHpPerThorn: 0.04,      // one thorn shed is worth this share of the heal anchor
     reflectFrac: 0.20, reflectSpinesMult: 2,   // sym: share of damage taken reflected back; doubled while Spines is up
+    // ---- PRESSURE (Hydraulic) ---------------------------------------------
+    // The fourth strain's number, and the only one that pays into SINGLE HITS
+    // rather than into a tick, a reflect or a debuff (owner: "big crits, big
+    // single hits as opposed to ramping dots"). Two jobs, like every other
+    // strain number: the lines drive the servos harder (crit DAMAGE, which is
+    // the uncapped half of crit) and they brace the frame (reduction, bounded).
+    // Uncapped count, bounded effect.
+    pressurePerHit: 4,             // every landed attack packs this much in
+    critPerPressure: 0.10,         // each point of it: +0.06x crit damage
+    // ...and crit CHANCE, which is what makes Instinct hyd's stat rather than
+    // a late-game luxury. Chance starts at 0 and Instinct buys 2% a point, so
+    // without this a young hyd crits a tenth of the time and its identity is
+    // theoretical until an investment it dies before reaching. Pressure supplies
+    // the frequency, Instinct the size; they multiply.
+    critChancePerPressure: 0.012,
+    pressureWardPerPoint: 0.010,   // ...and this much off what lands
+    pressureWardCap: 0.25,         // saturating at 50, past a typical fight's peak
     levelUpHealFrac: 0.15, recoverHpFrac: 0.08,
     // ---- THE HEAL ANCHOR --------------------------------------------------
     // EVERY HEAL FRACTION IN THE GAME IS A SHARE OF THE ANCHOR, NOT OF MAX HP.
@@ -545,6 +567,36 @@ const CLASSES = {
   // SPEED IS THE INTERESTING STAT: more of your turns means proportionally FEWER
   // enemy swings, and swings are food. The only stat in the game with a real cost
   // attached, landed on the strain whose allocation had nothing to say.
+  hyd: {
+    name: 'Hydraulic', color: 'hyd',
+    base: { str: 5, instinct: 5, speed: 5, vit: 5 },
+    skills: [
+      { id:'piston', name:'Piston', desc:'Deal {power!} damage. +{pressure} PRESSURE', type:'attack', power:1.25, pressure:BALANCE.player.pressurePerHit, target:'enemy', basic:true },
+      // The feeder AND the setup: pressure to spend later, and the next blow
+      // lands as a crit whatever the dice say. Cooldown 3, the ramp feeder's
+      // clock (see the cooldown grammar in CLAUDE.md).
+      // The feeder, and it ATTACKS. Measured 2026-08-03ae: with this as a pure
+      // buff, hyd spent 58% of its turns not dealing damage — survivable for
+      // bio, whose rot ticks anyway, and fatal for a strain whose whole output
+      // is attacks. It died at wave 4.
+      { id:'surge', name:'Surge', desc:'Deal {power!} damage. +{pressure} PRESSURE', type:'attack', power:1.7, pressure:10, target:'enemy', cdTurns:3 },
+      // The telegraph answer. It softens incoming rather than baiting or
+      // stunning, which is the shape the bot reads off the card by itself.
+      // HYD'S ONLY FAUCET as well as its telegraph answer, and it has to be
+      // both: with no sustain at all it died at wave 6 on every allocation
+      // tested — the only class in the game with nothing that heals. The
+      // mitigation stays on `buff` so the bot still reads it as an answer off
+      // the card; the regen rides `applies`, which routes a buff to the caster.
+      { id:'dampen', name:'Dampen', desc:'For {duration#turn}: take \u2212{power%} damage and regenerate {regen.power+} each turn.', type:'buff', buff:'dampen', duration:3, power:0.45, applies:[{ id:'regen', power:0.25, duration:3 }], target:'self', cdTurns:4 },
+      // The payoff. Spends the WHOLE pile in one blow, which also gives back
+      // the bracing it was buying — that is the decision the class is built on.
+      // ALWAYS CRITS, which is where the class's fantasy actually lives: the one
+      // blow that cashes the pile is never left to the dice, and it multiplies
+      // by a crit number PRESSURE has been inflating all fight.
+      { id:'rupture', name:'Rupture', desc:'Vent everything: {power!} damage +{perPressurePower!} per PRESSURE spent. Always CRITS.', type:'attack', power:1.4, alwaysCrit:true, consumesPressure:true, perPressurePower:0.18, target:'enemy', cdTurns:5 }
+    ]
+  },
+
   sym: {
     name: 'Symbiotic', color: 'sym',
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
@@ -940,6 +992,24 @@ const STATUSES = {
   //
   // The reduction is NOT an incomingMult here, for the same reason Brace's
   // isn't: applyEnemyDamage sums the two and caps the sum once.
+  pressure: {
+    id:'pressure', name:'PRESSURE', tone:'pressure', kind:'buff',
+    stacking:'stack', permanent:true, defaults:{ stacks:1 },
+    label: st => 'PRESSURE \u00d7' + (st.stacks||1),
+    // The bracing half. The crit half rides applyDerivedStats, because crit
+    // damage is a SHEET number the sidebar has to be able to show.
+    incomingMult: (u, st) => (u && u.isPlayer)
+      ? 1 - Math.min(P().pressureWardCap || 0, (st.stacks || 0) * (P().pressureWardPerPoint || 0))
+      : 1
+  },
+
+  dampen: {
+    id:'dampen', name:'DAMPEN', tone:'pressure', kind:'buff',
+    stacking:'replace', defaults:{ duration:2, power:0.45 },
+    label: st => 'DAMPEN ' + Math.ceil(st.duration) + 't',
+    incomingMult: (u, st) => 1 - (st.power || 0)
+  },
+
   resolve: {
     id:'resolve', name:'RESOLVE', tone:'resolve', kind:'buff',
     stacking:'stack', permanent:true, defaults:{ stacks:1 },

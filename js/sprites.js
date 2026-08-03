@@ -20,6 +20,13 @@ const PSY_SPRITES = {
   skill:  PSY_SKILL
 };
 
+const HYD_SPRITES = {
+  idle:   'assets/sprites/hyd idle.png',
+  ready:  'assets/sprites/hyd ready.png',
+  strike: 'assets/sprites/hyd attack.png',
+  skill:  'assets/sprites/hyd skill.png'
+};
+
 const SYM_SPRITES = {
   idle:   'assets/sprites/sym idle new.png',
   ready:  'assets/sprites/sym ready new.png',
@@ -180,12 +187,13 @@ const PLAYER_SPRITES = {
   bio: BIO_SPRITES.idle,
   psy: PSY_SPRITES.idle,
   sym: SYM_SPRITES.idle,
+  hyd: HYD_SPRITES.idle,
   base: BASE_SPRITES.ready,
 };
 
 // Strains with a full pose set (idle/ready/strike). Others fall back to their
 // single PLAYER_SPRITES image regardless of pose.
-const POSE_SPRITES = { bio: BIO_SPRITES, psy: PSY_SPRITES, sym: SYM_SPRITES, base: BASE_SPRITES };
+const POSE_SPRITES = { bio: BIO_SPRITES, psy: PSY_SPRITES, sym: SYM_SPRITES, hyd: HYD_SPRITES, base: BASE_SPRITES };
 
 // The art set a unit is wearing right now. NO STRAIN DECLARES `stages` today —
 // psy did and will again — so this returns the strain's one set, and the level
@@ -289,6 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderPreview('preview-bio', 'bio');
   renderPreview('preview-psy', 'psy');
   renderPreview('preview-sym', 'sym');
+  renderPreview('preview-hyd', 'hyd');
   showBuildVersion();
   loadSettings();
   purgeOldSaves();
