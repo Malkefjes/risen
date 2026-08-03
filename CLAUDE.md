@@ -392,6 +392,23 @@ did not say.
   the SHARE OF THE BAR a hit took rather than counting hits; Last Stand spends
   70% of RESOLVE rather than all. The Last Stand fraction is steep and is one
   number: 100% -> 32 median / 0 wins, 70% -> 37 / 6%, 50% -> 43 / 34%.
+- **SYM'S RAMP WAS ALL OFFENCE UNTIL 2026-08-03ac**, which is the same disease
+  bio had and the same cure. THORNS paid out three ways — reflect, Latch, Shed's
+  heal — and every one was damage or healing, so nothing it grew ever made a hit
+  land softer. Measured: 45-47% of what was aimed at sym got stopped, the worst
+  in the game, against 61% bio and 62% base — on the one class whose damage
+  REQUIRES being hit (58% of it is reflect, which fires on the ENEMY's swing).
+  So the spines now blunt what lands too (`thornsWardPerPoint` 0.0004, cap 0.25,
+  a third multiplicative layer beside ARMOR and EVASION). Read live off
+  `p.thorns` rather than baked onto the sheet, because thorns grows mid-fight
+  and a stale copy would under-report it exactly when it is working hardest.
+  Measured after: wins 1 -> 31 per 100, median wave 30 -> 50, and what the
+  allocation is worth went to +23 waves, the largest in the game.
+  **WHAT IT DID NOT FIX: sym still dies to telegraphs at 25-26%** against 1-10%
+  for everyone else. The ward is flat mitigation, and the gap is that sym has no
+  BRACE — base's Counterpunch took 0 deaths from 349 heavies and bio's Chitin 2
+  from 182, where sym took 3 from 50. Provoke baits a charge, it does not soften
+  one. That is the remaining hole, not a number.
 - Sym was reworked around THORNS as a growing, run-permanent number (every hit
   taken feeds it). Reworked again 2026-08-03f after the owner said he felt weak
   playing it: PROVOKE LASHES BACK (the invited swing is answered with full

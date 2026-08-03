@@ -37,7 +37,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-03ab';
+const BUILD = '2026-08-03ac';
 
 const BALANCE = {
   player: {
@@ -191,6 +191,16 @@ const BALANCE = {
     thornsPerHit: 2,           // every hit taken grows thorns by this, no window and no condition
     thornsBigHitFrac: 0.15,    // what counts as a BIG hit — the log line only; growth reads the share directly
     thornsPerBar: 12,          // ...plus this many for a hit that took your WHOLE bar, pro rata. No ceiling: the share is its own bound
+    // THE SPINES ALSO BLUNT WHAT LANDS (2026-08-03ac). Sym was the last strain
+    // whose ramp did nothing defensive: THORNS paid out three ways — reflect,
+    // Latch, Shed's heal — and every one of them was offence. Measured, 45-47%
+    // of what was aimed at sym got stopped against 61% for bio and 62% for
+    // base, the worst in the game, on a class whose damage REQUIRES being hit.
+    // Same fix that worked on bio's rot: uncapped count, bounded effect.
+    // The cap needs ~625 thorns against a median run peak of 493, so it
+    // saturates just past where a run ends and another thorn keeps paying.
+    thornsWardPerPoint: 0.0004,
+    thornsWardCap: 0.25,
     thornsSpinesGrow: 2,       // extra growth per hit while Spines is up
     // SHED TAKES ONLY AS MANY THORNS AS THE HEAL NEEDED, capped by the fraction
     // below. A percentage cost against a runaway number would grow without bound

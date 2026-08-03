@@ -594,6 +594,14 @@ function strainReadout(p) {
   // Constants belong on the cards that spend them, not in the readout.
   return null;
 }
+// Sym's defensive half. Read LIVE off p.thorns rather than baked onto the
+// sheet, because thorns grows mid-fight on every hit taken and a stale copy
+// would under-report the layer exactly when it was doing the most work.
+function thornsWard(p) {
+  if (!p || p.class !== 'sym' || !(p.thorns > 0)) return 0;
+  return Math.min(P().thornsWardCap || 0, p.thorns * (P().thornsWardPerPoint || 0));
+}
+
 function guardReadout(p) {
   if (p.class === 'base')
     return { id:'guard', label:'Per Resolve', text: '\u2212' + Math.round(P().resolveDR*100) + '% taken' };
@@ -602,6 +610,10 @@ function guardReadout(p) {
   if (p.class === 'bio')
     return { id:'guard', label:'Per Poison',
              text: '\u2212' + (P().poisonWeakenPerStack * 100).toFixed(1) + '% dealt' };
+  // Sym states the layer itself, not the rate: one thorn is 0.04% and reads as
+  // nothing, where the total is a number the fight actually uses.
+  if (p.class === 'sym')
+    return { id:'guard', label:'Carapace', text: Math.round(thornsWard(p) * 100) + '%' };
   return null;
 }
 

@@ -581,6 +581,10 @@ function applyEnemyDamage(e, p, mult, opts) {
   // against telegraphed heavies only, and it is gone (owner, 2026-08-03w) — a
   // telegraph is answered by PRESSING the answer, not by a stat.
   const layers = [['ARMOR', p.armor || 0], ['EVASION', p.evasion || 0]];
+  // Sym's ramp, doing its defensive half. Multiplies with the other two like
+  // everything else here, so it is worth more the more you already have.
+  const ward = thornsWard(p);
+  if (ward > 0) layers.push(['CARAPACE', ward]);
   let kept = 1;
   for (const [name, r] of layers) {
     if (!(r > 0)) continue;
