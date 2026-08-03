@@ -330,6 +330,22 @@ did not say.
   mashed. That gap IS the class working: for the one strain whose identity is
   reading a telegraph, mashing should fail. Nothing asserts a floor under it;
   `tools/bot-bracket.mjs` prints both columns if you want to see it still holds.
+- **`OWNER:` ITEMS ARE STAT STICKS, and that is the design.** In his words:
+  *"items are stat sticks, thats simple, understandable and thats what i want.
+  mods change behaviour, items grant you general power."* One system for what
+  you do, one for how much of it you do — so nothing in `js/items.js` may ever
+  change a rule; a drop that wants to rewrite a press is a Modification.
+  Structured after a PoE-shaped spec he brought in (2026-08-03o): an IMPLICIT
+  fixed to the slot, PREFIXES that are stat POINTS (singles and hybrids),
+  SUFFIXES that are PERCENTAGES, no two affixes sharing a group (the implicit
+  claims its own, so a card never spends two of four lines saying one thing),
+  and T1-T5 tiers gated by the drop wave and PRINTED on every line — the tier
+  is what makes a drop legible without arithmetic. Rarity is affix count and
+  nothing else: STANDARD 1 prefix, REFINED 1+1, PROTOTYPE 2+1. FOUR LINES IS
+  THE CEILING, because the drop card is a three-second read with no inventory
+  behind it. Measured after: gear supplies 39% of the stat sheet at wave 30
+  (47% before the restructure) and 48% at wave 45, so it was re-shaped rather
+  than nerfed.
 - **MODIFICATIONS are patches on BUTTONS, never numbers on the sheet**
   (`js/mods.js`, 2026-08-03m). Levels and gear already feed the stat sheet; a
   third source of "+15% damage" would be a third helping of the same meal, and

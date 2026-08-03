@@ -1314,7 +1314,8 @@ function runReport() {
     L.push('');
     L.push('Suit');
     worn.forEach(it => L.push('  ' + pad(SLOTS[it.slot].label, 11)
-      + itemLogName(it) + ' — ' + itemAffixLines(it).join(' · ')));
+      + itemLogName(it) + ' — '
+      + [itemImplicitLine(it)].concat(itemAffixLines(it)).filter(Boolean).join(' · ')));
   }
   L.push('');
   L.push('Turns ' + N(state.runTurns || 0)

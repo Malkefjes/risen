@@ -3057,3 +3057,21 @@ body {
     url('../assets/zones/mcp-compound-1.jpg') center bottom / cover no-repeat;
   filter: blur(1.2px) saturate(0.88) brightness(0.96);
 }
+
+/* PROTOTYPE — the third rarity. Amber, a step past REFINED's lab teal, so the
+   ladder reads standard grey -> refined teal -> prototype amber at a glance. */
+.rar-prototype { --rar: #fbbf24; --rar-rgb: 251, 191, 36; }
+
+/* The implicit sits above the explicits with a rule under it, the way the
+   slot's own line should read: fixed, not rolled. */
+.drop-implicit, .suit-implicit {
+  color: rgba(238, 242, 255, 0.66);
+  padding-bottom: 5px;
+  margin-bottom: 5px;
+  border-bottom: 1px solid rgba(255,255,255,0.10);
+}
+.drop-implicit { font-size: 0.78rem; line-height: 1.6; }
+
+/* Tier prefix on every affix line. Monospace column so T1..T5 line up down
+   the card and the eye can scan the tiers alone. */
+.drop-affix, .suit-affix { font-variant-numeric: tabular-nums; }

@@ -387,7 +387,9 @@ function applyDerivedStats(p) {
   // Strength was worth literally nothing to two of the four. 5 damage per point,
   // so the 5 everyone starts with is 25 Attack Damage. There is no per-strain
   // damage weight any more — dmgMult already covers earned multipliers.
-  p.atkPower = str * B.damagePerStr * p.dmgMult;
+  // gearMod('dmgMult') is the Gauntlets implicit and its matching suffix — a
+  // percentage on top of what Strength buys, never a replacement for it.
+  p.atkPower = str * B.damagePerStr * p.dmgMult * (1 + gearMod(p, 'dmgMult'));
 
   // TURN RATE. Speed and nothing else, the same shape as damage off Strength and
   // HP off Vitality: 5 Speed is 1.00, one point is +0.20. No per-strain base —

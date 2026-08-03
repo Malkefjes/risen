@@ -1,16 +1,41 @@
 // Suit hardware — slots, rarities, affixes, drops, the suit panel
-// Items are plain JSON data: they ride in the save (player.gear) and must stay
-// serializable — no functions on an item, display text comes off the tables.
-// Every roll here uses Math.random: a drop is a rule, and headless must roll
-// the identical item at the identical point in the stream.
+// ============================================================
+// ITEMS ARE STAT STICKS AND THAT IS THE DESIGN (owner's call, 2026-08-03o):
+// MODIFICATIONS change what a button does, items grant general power. One
+// system for what you do, one for how much of it you do. Nothing in this file
+// should ever change a rule — if a drop wants to rewrite a press, it is a
+// Modification and it belongs in mods.js.
+//
+// STRUCTURE, after the PoE-shaped spec the owner brought in:
+//
+//   IMPLICIT   fixed to the SLOT, always present, never rolled away. This is
+//              what makes a mount feel like itself before any affix lands.
+//   PREFIXES   STAT POINTS. +STR / +INS / +SPD / +VIT, and hybrids that grant
+//              two at a lower value each.
+//   SUFFIXES   PERCENTAGES. Crit, evade, block, tempo, healing, XP, telegraph
+//              resistance.
+//
+// The split is already latent in the game — points feed the same pipe as
+// allocation, percentages feed the derived sheet — so formalising it costs
+// nothing and gives the deferred REFINEMENT system something to act on ("this
+// has an open suffix" becomes a real statement).
+//
+// TIERS T1-T5, T1 BEST, PRINTED ON EVERY LINE. The drop wave sets the ceiling
+// and the roll is weighted toward the top of what is unlocked, so late drops
+// are usually good and a T1 is still a moment. The tier on the card is the
+// point: it makes a drop legible at a glance instead of arithmetic against
+// what you are wearing.
+//
+// Items are plain JSON: they ride in the save (player.gear) and must stay
+// serializable. Every roll uses Math.random — a drop is a rule, and headless
+// must roll the identical item at the identical point in the stream.
 
 const ITEM_STATS = ['str', 'instinct', 'speed', 'vit'];
 const ITEM_STAT_NAMES = { str: 'STRENGTH', instinct: 'INSTINCT', speed: 'SPEED', vit: 'VITALITY' };
 
-// `home` biases which stat a slot tends to roll (60%, first affix only) so a
-// slot feels like itself without being locked. Repair has no home stat — its
-// identity is its mod pool (healing), not a stat. The art is the owner's — the
-// five suit pieces he drew name the slots.
+// `home` biases which stat a slot's prefix tends to roll (60%, first prefix
+// only). The IMPLICIT is what actually fixes a slot's identity. Art is the
+// owner's five suit pieces.
 const SLOTS = {
   optics:    { id: 'optics',    name: 'Optics',        label: 'OPTICS',    home: 'instinct', lot: 'O',
                art: 'assets/sprites/mcp helmet.png' },
@@ -24,95 +49,201 @@ const SLOTS = {
                art: 'assets/sprites/mcp boots.png' }
 };
 
-// Tier decides SHAPE, the drop wave decides SIZE: a late STANDARD ISSUE
-// outrolls an early REFINED on raw points.
+// Rarity is AFFIX COUNT and nothing else — no hidden multipliers. Four lines
+// is the ceiling on purpose: the drop card is read between fights with no
+// inventory to retreat to, so it has to stay scannable in a few seconds.
 const RARITIES = {
-  standard: { id: 'standard', name: 'STANDARD ISSUE', statAffixes: 1, mods: 0 },
-  refined:  { id: 'refined',  name: 'REFINED',        statAffixes: 2, mods: 1 }
+  standard:  { id: 'standard',  name: 'STANDARD ISSUE', prefixes: 1, suffixes: 0 },
+  refined:   { id: 'refined',   name: 'REFINED',        prefixes: 1, suffixes: 1 },
+  prototype: { id: 'prototype', name: 'PROTOTYPE',      prefixes: 2, suffixes: 1 }
 };
 
-// Stat points per affix, banded by the zone the item dropped in. Points feed
-// the same pipe as allocation (see applyDerivedStats), so nothing else scales.
-const ITEM_STAT_BANDS = [[1, 2], [2, 4], [3, 6], [5, 9]];
-// READ EVERY BAND THROUGH HERE, clamped to the last entry. Indexing by zone-1
-// directly meant a zone past the end of a table fell through to `|| [0]` — the
-// WEAKEST tier — so the endgame would quietly have dropped zone-1 loot.
-function zoneBand(bands, zone) {
-  return bands[Math.min(Math.max(1, zone), bands.length) - 1];
+// ---- Tiers ------------------------------------------------------
+// Index 0 is T1 (best). A wave unlocks a tier once it reaches its minimum.
+const TIER_MIN_WAVE = [46, 31, 21, 11, 1];
+// Weights from the BEST unlocked tier downward. It has to DESCEND: a bell was
+// tried and it skewed the mid-game badly, because with only three tiers
+// unlocked the peak landed on the two WORST of them. Flat-topped instead —
+// the best two share the weight, the tail falls away.
+const TIER_WEIGHTS = [3, 3, 2, 1, 1];
+
+function tiersFor(wave) {
+  const out = [];
+  for (let i = 0; i < TIER_MIN_WAVE.length; i++) if (wave >= TIER_MIN_WAVE[i]) out.push(i);
+  return out.length ? out : [TIER_MIN_WAVE.length - 1];
+}
+function rollTier(wave) {
+  const avail = tiersFor(wave);
+  let total = 0;
+  for (let i = 0; i < avail.length; i++) total += TIER_WEIGHTS[i] || 1;
+  let r = Math.random() * total;
+  for (let i = 0; i < avail.length; i++) {
+    r -= (TIER_WEIGHTS[i] || 1);
+    if (r < 0) return avail[i];
+  }
+  return avail[avail.length - 1];
+}
+const tierName = t => 'T' + (t + 1);
+
+// ---- Prefixes: stat points --------------------------------------
+// `groups` is what the no-duplicates rule reads: a hybrid claims BOTH of its
+// stats, so it can never sit beside the single that grants one of them.
+// Tier ranges run T1 first.
+const ITEM_PREFIXES = [
+  { id: 'p_str', stats: ['str'],      groups: ['str'],
+    tiers: [[7, 10], [6, 9], [5, 7], [3, 5], [2, 3]] },
+  { id: 'p_ins', stats: ['instinct'], groups: ['instinct'],
+    tiers: [[7, 10], [6, 9], [5, 7], [3, 5], [2, 3]] },
+  { id: 'p_spd', stats: ['speed'],    groups: ['speed'],
+    tiers: [[7, 10], [6, 9], [5, 7], [3, 5], [2, 3]] },
+  { id: 'p_vit', stats: ['vit'],      groups: ['vit'],
+    tiers: [[7, 10], [6, 9], [5, 7], [3, 5], [2, 3]] },
+  // Hybrids: two stats at one rolled value each. Lower per stat, more total.
+  { id: 'p_str_vit', stats: ['str', 'vit'],      groups: ['str', 'vit'],
+    tiers: [[4, 6], [4, 5], [3, 4], [2, 3], [1, 2]] },
+  { id: 'p_spd_ins', stats: ['speed', 'instinct'], groups: ['speed', 'instinct'],
+    tiers: [[4, 6], [4, 5], [3, 4], [2, 3], [1, 2]] },
+  { id: 'p_str_ins', stats: ['str', 'instinct'], groups: ['str', 'instinct'],
+    tiers: [[4, 6], [4, 5], [3, 4], [2, 3], [1, 2]] },
+  { id: 'p_spd_vit', stats: ['speed', 'vit'],    groups: ['speed', 'vit'],
+    tiers: [[4, 6], [4, 5], [3, 4], [2, 3], [1, 2]] }
+];
+
+// ---- Suffixes: percentages --------------------------------------
+// Where each lands in the rules:
+//   critCh / critDmg / evade / block / apsBoost / dmgMult   applyDerivedStats
+//   heavyDR                       applyEnemyDamage, telegraphed hits only
+//   healBoost                     healAnchorFor — every anchored heal
+//   xpBoost                       the kill XP in onEnemyDefeated
+const ITEM_MODS = {
+  critCh:    { id: 'critCh',    step: 0.01, text: v => '+' + Math.round(v * 100) + '% crit chance' },
+  critDmg:   { id: 'critDmg',   step: 0.05, text: v => '+' + v.toFixed(2) + '× crit damage' },
+  evade:     { id: 'evade',     step: 0.01, text: v => '+' + Math.round(v * 100) + '% evade' },
+  block:     { id: 'block',     step: 0.01, text: v => '+' + Math.round(v * 100) + '% block' },
+  heavyDR:   { id: 'heavyDR',   step: 0.02, text: v => '−' + Math.round(v * 100) + '% from telegraphed heavies' },
+  healBoost: { id: 'healBoost', step: 0.02, text: v => '+' + Math.round(v * 100) + '% healing' },
+  xpBoost:   { id: 'xpBoost',   step: 0.01, text: v => '+' + Math.round(v * 100) + '% XP' },
+  apsBoost:  { id: 'apsBoost',  step: 0.01, text: v => '+' + Math.round(v * 100) + '% turn rate' },
+  dmgMult:   { id: 'dmgMult',   step: 0.01, text: v => '+' + Math.round(v * 100) + '% attack damage' }
+};
+
+const ITEM_SUFFIXES = [
+  { id: 's_critCh',    mod: 'critCh',    groups: ['critCh'],
+    tiers: [[0.09, 0.12], [0.07, 0.09], [0.05, 0.07], [0.03, 0.05], [0.02, 0.03]] },
+  { id: 's_critDmg',   mod: 'critDmg',   groups: ['critDmg'],
+    tiers: [[0.70, 0.95], [0.50, 0.70], [0.35, 0.50], [0.22, 0.35], [0.15, 0.22]] },
+  { id: 's_evade',     mod: 'evade',     groups: ['evade'],
+    tiers: [[0.08, 0.10], [0.06, 0.08], [0.04, 0.06], [0.03, 0.04], [0.02, 0.03]] },
+  { id: 's_block',     mod: 'block',     groups: ['block'],
+    tiers: [[0.10, 0.13], [0.07, 0.10], [0.05, 0.07], [0.03, 0.05], [0.02, 0.03]] },
+  { id: 's_heavyDR',   mod: 'heavyDR',   groups: ['heavyDR'],
+    tiers: [[0.30, 0.38], [0.24, 0.30], [0.18, 0.24], [0.12, 0.18], [0.08, 0.12]] },
+  { id: 's_healBoost', mod: 'healBoost', groups: ['healBoost'],
+    tiers: [[0.38, 0.50], [0.28, 0.38], [0.20, 0.28], [0.14, 0.20], [0.08, 0.14]] },
+  { id: 's_xpBoost',   mod: 'xpBoost',   groups: ['xpBoost'],
+    tiers: [[0.25, 0.32], [0.19, 0.25], [0.14, 0.19], [0.10, 0.14], [0.06, 0.10]] },
+  { id: 's_apsBoost',  mod: 'apsBoost',  groups: ['apsBoost'],
+    tiers: [[0.13, 0.17], [0.10, 0.13], [0.07, 0.10], [0.05, 0.07], [0.03, 0.05]] },
+  { id: 's_dmgMult',   mod: 'dmgMult',   groups: ['dmgMult'],
+    tiers: [[0.20, 0.26], [0.15, 0.20], [0.11, 0.15], [0.08, 0.11], [0.05, 0.08]] }
+];
+
+// Which suffixes a slot can carry. A mount only grants what it plausibly could.
+const SLOT_SUFFIXES = {
+  optics:    ['s_critCh', 's_critDmg', 's_xpBoost'],
+  gauntlets: ['s_dmgMult', 's_critDmg', 's_critCh'],
+  armor:     ['s_block', 's_heavyDR', 's_healBoost'],
+  repair:    ['s_healBoost', 's_heavyDR', 's_xpBoost'],
+  boots:     ['s_apsBoost', 's_evade', 's_critCh']
+};
+
+// The slot's own line, always present, roughly half a suffix roll — identity
+// rather than power.
+const SLOT_IMPLICIT = {
+  optics:    { mod: 'critCh',    tiers: [[0.06, 0.08], [0.05, 0.06], [0.04, 0.05], [0.03, 0.04], [0.02, 0.03]] },
+  gauntlets: { mod: 'dmgMult',   tiers: [[0.14, 0.20], [0.11, 0.14], [0.08, 0.11], [0.06, 0.08], [0.04, 0.06]] },
+  armor:     { mod: 'block',     tiers: [[0.06, 0.09], [0.05, 0.06], [0.04, 0.05], [0.03, 0.04], [0.02, 0.03]] },
+  repair:    { mod: 'healBoost', tiers: [[0.20, 0.28], [0.16, 0.20], [0.12, 0.16], [0.09, 0.12], [0.06, 0.09]] },
+  boots:     { mod: 'apsBoost',  tiers: [[0.08, 0.11], [0.06, 0.08], [0.05, 0.06], [0.04, 0.05], [0.02, 0.04]] }
+};
+
+// Who drops, how often, and what it comes out as. Rarity weights are
+// [standard, refined, prototype]; champions and bosses never roll standard.
+const DROPS = {
+  trash:    { chance: 0.08, weights: [75, 25, 0] },
+  elite:    { chance: 0.40, weights: [40, 50, 10] },
+  champion: { chance: 1.00, weights: [0, 70, 30] },
+  boss:     { chance: 1.00, weights: [0, 50, 50] }
+};
+
+// ---- Generation -------------------------------------------------
+function rollRange(range, step) {
+  const raw = range[0] + Math.random() * (range[1] - range[0]);
+  if (!step) return Math.round(raw);
+  return +(Math.round(raw / step) * step).toFixed(4);
+}
+function pickWeighted(weights) {
+  let total = 0;
+  for (const w of weights) total += w;
+  let r = Math.random() * total;
+  for (let i = 0; i < weights.length; i++) { r -= weights[i]; if (r < 0) return i; }
+  return weights.length - 1;
 }
 
-// Modifier affixes (REFINED only). `ranges` is per zone; `step` keeps rolls on
-// readable increments. Where each one lands in the rules:
-//   critCh/critDmg/evade/block/apsBoost  applyDerivedStats
-//   heavyDR                              applyEnemyDamage, telegraphed hits only
-//   healBoost                            healAnchorFor — every anchored heal
-//   xpBoost                              the kill XP in onEnemyDefeated
-const ITEM_MODS = {
-  critCh:    { id: 'critCh',    ranges: [[0.02, 0.04], [0.04, 0.06], [0.06, 0.09]], step: 0.01,
-               text: v => '+' + Math.round(v * 100) + '% crit chance' },
-  critDmg:   { id: 'critDmg',   ranges: [[0.15, 0.25], [0.25, 0.45], [0.45, 0.70]], step: 0.05,
-               text: v => '+' + v.toFixed(2) + '× crit damage' },
-  evade:     { id: 'evade',     ranges: [[0.02, 0.04], [0.04, 0.06], [0.06, 0.08]], step: 0.01,
-               text: v => '+' + Math.round(v * 100) + '% evade' },
-  block:     { id: 'block',     ranges: [[0.02, 0.04], [0.04, 0.07], [0.07, 0.10]], step: 0.01,
-               text: v => '+' + Math.round(v * 100) + '% block' },
-  heavyDR:   { id: 'heavyDR',   ranges: [[0.10, 0.16], [0.16, 0.24], [0.24, 0.32]], step: 0.02,
-               text: v => '−' + Math.round(v * 100) + '% from telegraphed heavies' },
-  healBoost: { id: 'healBoost', ranges: [[0.10, 0.16], [0.16, 0.26], [0.26, 0.38]], step: 0.02,
-               text: v => '+' + Math.round(v * 100) + '% to all healing' },
-  xpBoost:   { id: 'xpBoost',   ranges: [[0.08, 0.12], [0.12, 0.18], [0.18, 0.25]], step: 0.01,
-               text: v => '+' + Math.round(v * 100) + '% XP' },
-  apsBoost:  { id: 'apsBoost',  ranges: [[0.04, 0.06], [0.06, 0.10], [0.10, 0.14]], step: 0.02,
-               text: v => '+' + Math.round(v * 100) + '% turn rate' }
-};
-const SLOT_MODS = {
-  optics:    ['critCh', 'critDmg', 'xpBoost'],
-  gauntlets: ['critDmg', 'critCh'],
-  armor:     ['block', 'heavyDR'],
-  repair:    ['healBoost'],
-  boots:     ['apsBoost', 'evade']
-};
-
-// Who drops, how often, and how often it comes out REFINED. First pass is
-// deliberately generous — a 45-wave run with a loot drought is a boring run.
-const DROPS = {
-  trash:    { chance: 0.08, refined: 0.15 },
-  elite:    { chance: 0.40, refined: 0.50 },
-  champion: { chance: 1.00, refined: 1.00 },
-  boss:     { chance: 1.00, refined: 1.00 }
-};
-
-// ---- Generation ------------------------------------------------
 function makeItem(wave, rarityId) {
-  const zone = zoneForWave(wave).num;
   const slotIds = Object.keys(SLOTS);
   const slot = SLOTS[slotIds[Math.floor(Math.random() * slotIds.length)]];
   const rar = RARITIES[rarityId] || RARITIES.standard;
-  const band = zoneBand(ITEM_STAT_BANDS, zone);
 
-  const statPool = ITEM_STATS.slice();
-  const stats = {};
-  for (let i = 0; i < rar.statAffixes; i++) {
-    let k;
-    if (i === 0 && slot.home && Math.random() < 0.6) k = slot.home;
-    else k = statPool[Math.floor(Math.random() * statPool.length)];
-    statPool.splice(statPool.indexOf(k), 1);
-    stats[k] = band[0] + Math.floor(Math.random() * (band[1] - band[0] + 1));
+  // The implicit: the slot's own line, at its own rolled tier.
+  const impDef = SLOT_IMPLICIT[slot.id];
+  const impTier = rollTier(wave);
+  const implicit = { mod: impDef.mod, tier: impTier,
+                     v: rollRange(impDef.tiers[impTier], ITEM_MODS[impDef.mod].step) };
+
+  // NO DUPLICATE GROUPS, across prefixes and suffixes alike: an affix is only
+  // eligible if none of its groups is already claimed.
+  //
+  // THE IMPLICIT CLAIMS ITS GROUP TOO, which is a deliberate divergence from
+  // the spec this was built off — PoE lets an implicit and an explicit grant
+  // the same thing. Here the drop card is a three-second read with no
+  // inventory behind it, and "+3% block / +5% block" spends two of its four
+  // lines saying one thing. Every item now shows two different percentages.
+  const used = [impDef.mod];
+  const free = a => a.groups.every(g => used.indexOf(g) < 0);
+
+  const prefixes = [];
+  for (let i = 0; i < rar.prefixes; i++) {
+    let pool = ITEM_PREFIXES.filter(free);
+    // The home stat leans the FIRST prefix only, so a slot reads like itself
+    // without ever being locked to one stat.
+    if (i === 0 && slot.home && Math.random() < 0.6) {
+      const homed = pool.filter(a => a.stats.indexOf(slot.home) >= 0);
+      if (homed.length) pool = homed;
+    }
+    if (!pool.length) break;
+    const def = pool[Math.floor(Math.random() * pool.length)];
+    const tier = rollTier(wave);
+    prefixes.push({ id: def.id, stats: def.stats.slice(), tier,
+                    v: rollRange(def.tiers[tier]) });
+    def.groups.forEach(g => used.push(g));
   }
 
-  const mods = [];
-  for (let i = 0; i < rar.mods; i++) {
-    const pool = SLOT_MODS[slot.id] || [];
-    const def = ITEM_MODS[pool[Math.floor(Math.random() * pool.length)]];
-    if (!def) continue;
-    const r = zoneBand(def.ranges, zone);
-    const raw = r[0] + Math.random() * (r[1] - r[0]);
-    mods.push({ id: def.id, v: +(Math.round(raw / def.step) * def.step).toFixed(4) });
+  const suffixes = [];
+  for (let i = 0; i < rar.suffixes; i++) {
+    const allowed = SLOT_SUFFIXES[slot.id] || [];
+    const pool = ITEM_SUFFIXES.filter(a => allowed.indexOf(a.id) >= 0 && free(a));
+    if (!pool.length) break;
+    const def = pool[Math.floor(Math.random() * pool.length)];
+    const tier = rollTier(wave);
+    suffixes.push({ id: def.id, mod: def.mod, tier,
+                    v: rollRange(def.tiers[tier], ITEM_MODS[def.mod].step) });
+    def.groups.forEach(g => used.push(g));
   }
 
-  // The lot number is deterministic (wave + slot letter): flavor, never a roll.
+  // The lot number is deterministic (wave + slot letter): flavour, never a roll.
   return { slot: slot.id, rarity: rar.id, wave, name: slot.name,
-           lot: wave + '-' + slot.lot, stats, mods };
+           lot: wave + '-' + slot.lot, implicit, prefixes, suffixes };
 }
 
 function rollDrop(e, wave) {
@@ -120,7 +251,8 @@ function rollDrop(e, wave) {
   const kind = e.isBoss ? 'boss' : e.champion ? 'champion' : e.elite ? 'elite' : 'trash';
   const d = DROPS[kind];
   if (!d || Math.random() >= d.chance) return null;
-  return makeItem(wave, Math.random() < d.refined ? 'refined' : 'standard');
+  const rarities = ['standard', 'refined', 'prototype'];
+  return makeItem(wave, rarities[pickWeighted(d.weights)]);
 }
 
 // ---- Reading the suit ------------------------------------------
@@ -132,37 +264,56 @@ function emptyGear() {
 function gearList(p) {
   return (p && p.gear) ? Object.values(p.gear).filter(Boolean) : [];
 }
-// Stat points from fitted gear — the one seam the derived sheet reads.
+// Stat points from fitted gear — prefixes only. The one seam the derived
+// sheet reads for allocation-style points.
 function gearStat(p, key) {
   let n = 0;
-  for (const it of gearList(p)) n += (it.stats && it.stats[key]) || 0;
+  for (const it of gearList(p))
+    for (const pre of (it.prefixes || []))
+      if (pre.stats.indexOf(key) >= 0) n += pre.v;
   return n;
 }
-// Summed value of one modifier across the whole suit.
+// Summed percentage for one modifier: the implicit plus any suffix granting it.
 function gearMod(p, id) {
   let n = 0;
-  for (const it of gearList(p)) for (const m of (it.mods || [])) if (m.id === id) n += m.v;
+  for (const it of gearList(p)) {
+    if (it.implicit && it.implicit.mod === id) n += it.implicit.v;
+    for (const s of (it.suffixes || [])) if (s.mod === id) n += s.v;
+  }
   return n;
 }
 
-// Naive worth for the bots and nothing else: total points, a mod counts as one.
+// Naive worth for the bots and nothing else: stat points, with a percentage
+// line counted as a couple of points so a rarity is never worth less than a
+// plain one.
 function itemScore(it) {
   if (!it) return 0;
   let n = 0;
-  Object.values(it.stats || {}).forEach(v => { n += v; });
-  return n + (it.mods ? it.mods.length : 0);
+  for (const pre of (it.prefixes || [])) n += pre.v * pre.stats.length;
+  n += (it.suffixes || []).length * 2;
+  if (it.implicit) n += 1;
+  return n;
 }
 function botTakesDrop(p, it) {
   return itemScore(it) > itemScore(p && p.gear ? p.gear[it.slot] : null);
 }
 
+// ---- Display ----------------------------------------------------
+function affixLine(tier, text) { return tierName(tier) + '  ' + text; }
+function itemImplicitLine(it) {
+  if (!it || !it.implicit) return '';
+  const def = ITEM_MODS[it.implicit.mod];
+  return def ? affixLine(it.implicit.tier, def.text(it.implicit.v)) : '';
+}
+// Explicits only — the implicit is rendered in its own block above them.
 function itemAffixLines(it) {
   const out = [];
-  for (const k of ITEM_STATS)
-    if (it.stats && it.stats[k]) out.push('+' + it.stats[k] + ' ' + ITEM_STAT_NAMES[k]);
-  for (const m of (it.mods || [])) {
-    const def = ITEM_MODS[m.id];
-    if (def) out.push(def.text(m.v));
+  for (const pre of (it.prefixes || []))
+    out.push(affixLine(pre.tier,
+      pre.stats.map(s => '+' + pre.v + ' ' + ITEM_STAT_NAMES[s]).join(', ')));
+  for (const s of (it.suffixes || [])) {
+    const def = ITEM_MODS[s.mod];
+    if (def) out.push(affixLine(s.tier, def.text(s.v)));
   }
   return out;
 }
@@ -170,12 +321,14 @@ function itemLogName(it) {
   return RARITIES[it.rarity].name + ' ' + it.name + ' · LOT ' + it.lot;
 }
 
-// Gear restored from a save: only shapes the tables still recognize.
+// Gear restored from a save: only shapes the tables still recognise. An item
+// written before the affix restructure has no `prefixes` and is dropped rather
+// than half-read — the run survives, the gear does not.
 function loadGear(saved) {
   const g = emptyGear();
   if (saved) Object.keys(g).forEach(k => {
     const it = saved[k];
-    if (it && it.slot === k && RARITIES[it.rarity]) g[k] = it;
+    if (it && it.slot === k && RARITIES[it.rarity] && Array.isArray(it.prefixes)) g[k] = it;
   });
   return g;
 }
@@ -189,7 +342,8 @@ function equipItem(p, it) {
   p.gear[it.slot] = it;
   applyDerivedStats(p);
   logEvent('FITTED', null, itemLogName(it),
-    itemAffixLines(it).concat(old ? ['replaces ' + itemLogName(old)] : []));
+    [itemImplicitLine(it)].concat(itemAffixLines(it))
+      .concat(old ? ['replaces ' + itemLogName(old)] : []));
   floatText(p, 'FITTED', 'tally');
   updateHud(); renderSkills();
 }
@@ -199,7 +353,8 @@ function equipItem(p, it) {
 // the only way through — the sim answers it with botTakesDrop.
 function presentDrop(item, killedWave) {
   state.pendingDrop = { item, killedWave };
-  logEvent('RECOVERED', null, itemLogName(item), itemAffixLines(item));
+  logEvent('RECOVERED', null, itemLogName(item),
+           [itemImplicitLine(item)].concat(itemAffixLines(item)));
   if (HEADLESS.on) return;
   renderDropModal(item);
   const m = document.getElementById('drop-modal');
@@ -237,12 +392,14 @@ function itemCardHtml(it, headline) {
     + '<div class="drop-card-head">' + headline + '</div>'
     + '<div class="drop-empty">— the mount is bare —</div></div></div>';
   const s = SLOTS[it.slot];
+  const imp = itemImplicitLine(it);
   return '<div class="drop-card rar-' + it.rarity + '">'
     + (s.art ? '<img class="drop-art" src="' + s.art + '" alt="" draggable="false">' : '')
     + '<div class="drop-card-body">'
     + '<div class="drop-card-head">' + headline + '</div>'
     + '<div class="drop-rarity">' + RARITIES[it.rarity].name + '</div>'
     + '<div class="drop-name">' + it.name + ' <span class="drop-lot">LOT ' + it.lot + '</span></div>'
+    + (imp ? '<div class="drop-implicit">' + imp + '</div>' : '')
     + itemAffixLines(it).map(l => '<div class="drop-affix">' + l + '</div>').join('')
     + '</div></div>';
 }
@@ -262,18 +419,18 @@ function renderSuitPanel() {
   el.innerHTML = Object.keys(SLOTS).map(sid => {
     const s = SLOTS[sid];
     const it = p && p.gear ? p.gear[sid] : null;
-    // A bare mount still shows the piece, ghosted — what goes there is part
-    // of what the panel says.
     const thumb = s.art
       ? '<img class="suit-thumb' + (it ? '' : ' ghost') + '" src="' + s.art + '" alt="" draggable="false">'
       : '';
     if (!it) return '<div class="suit-slot empty">' + thumb
       + '<div class="suit-slot-body"><div class="suit-slot-label">' + s.label + '</div>'
       + '<div class="suit-slot-name">NOT FITTED</div></div></div>';
+    const imp = itemImplicitLine(it);
     return '<div class="suit-slot rar-' + it.rarity + '">' + thumb
       + '<div class="suit-slot-body">'
       + '<div class="suit-slot-label">' + s.label + ' · ' + RARITIES[it.rarity].name + '</div>'
       + '<div class="suit-slot-name">' + it.name + ' <span class="drop-lot">LOT ' + it.lot + '</span></div>'
+      + (imp ? '<div class="suit-affix suit-implicit">' + imp + '</div>' : '')
       + itemAffixLines(it).map(l => '<div class="suit-affix">' + l + '</div>').join('')
       + '</div></div>';
   }).join('');
