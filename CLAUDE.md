@@ -347,26 +347,24 @@ did not say.
   behind it. Measured after: gear supplies 39% of the stat sheet at wave 30
   (47% before the restructure) and 48% at wave 45, so it was re-shaped rather
   than nerfed.
-- **MODIFICATIONS are patches on BUTTONS, never numbers on the sheet**
-  (`js/mods.js`, 2026-08-03m). Levels and gear already feed the stat sheet; a
-  third source of "+15% damage" would be a third helping of the same meal, and
-  we measured what that produces — items alone took win rates 0% -> 88% without
-  making one fight more interesting. So a Modification must be describable as a
-  sentence about a PRESS, and **every one carries a cost**: a pick that is
-  strictly better is a delay before a decision, not a decision.
-  Declared as a PATCH (`skills: { <id>: {...} }`, plus `player:` overrides), so
-  it serializes as an id, re-applies onto fresh skill copies on load — retuning
-  a mod reaches runs already carrying it — and the cards re-read the patched
-  fields through fmtDesc for free. PER STRAIN, never a shared pool: a pool bio
-  and base both draw from is a pool that makes them the same class.
-  Offered after every 5th wave EXCEPT the last (`modWaves`) — the champion and
-  boss rhythm, five picks a run, and nothing handed over as the run ends.
-  FILED UNDER THE BUTTON THEY REWRITE, three per ability (48 total), so "every
-  ability has three" is a property of the table's shape rather than something
-  to count; an offer takes one from each of three DIFFERENT abilities, because
-  three ways to change the same press is not three choices. DECLINING is a real
-  option (`takeMod(null)`) — three picks that all cut against the build you are
-  assembling is a worse offer than none.
+- **`OWNER:` MODIFICATIONS are STRAIGHT UPGRADES to one button, and they
+  STACK** (`js/mods.js`, reworked 2026-08-03q). The first version gave every
+  pick a COST so no offer would be automatic. It read well and he skipped most
+  of the choices — *"alot of mods are just bad… i'd rather have plain power
+  increases"* — because a pick that takes something away is a pick you decline.
+  The system is INVESTMENT now: a Modification adds and takes nothing, and the
+  decision is WHICH BUTTON YOU KEEP FEEDING.
+  Declared as DELTAS (`add` / `mul`, with `min` / `max` clamps) against the
+  skill's current value, which is what makes a repeat worth as much as the
+  first take and what lets the whole list re-apply in order on load. Two per
+  ability (32 total) rather than three, because depth per button is where a
+  run's identity now comes from and a wider table only thins it. An offer takes
+  one from each of three DIFFERENT buttons; nothing is filtered for having been
+  taken. PER STRAIN, never shared. Still not numbers on the sheet — that is
+  what items are for; if a pick would read as "+15% damage" on the character
+  sheet it belongs in `js/items.js`.
+  Offered after every 5th wave EXCEPT the last (`modWaves`), so eleven picks a
+  run and nothing handed over as it ends. DECLINING stays (`takeMod(null)`).
 - **Cooldowns follow a grammar, discovered rather than designed** (surveyed
   2026-08-03k). `cdTurns` reads directly as "once every N of YOUR turns" — Speed
   never accelerates a rotation, only the number of turns — and the twelve

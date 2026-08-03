@@ -3075,3 +3075,6 @@ body {
 /* Tier prefix on every affix line. Monospace column so T1..T5 line up down
    the card and the eye can scan the tiers alone. */
 .drop-affix, .suit-affix { font-variant-numeric: tabular-nums; }
+
+/* How many of a Modification are stacked, beside its name. */
+.mod-held { font-style: normal; font-size: 0.85em; color: var(--muted); letter-spacing: 0; }

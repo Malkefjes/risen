@@ -1,228 +1,151 @@
 // MODIFICATIONS — what the Laboratory does to the suit between fights
 // ============================================================
-// A MODIFICATION IS A PATCH, NOT A NUMBER. Every entry rewrites what a BUTTON
-// does; none of them add stats. That line is the whole system: levels and gear
-// already feed the stat sheet, and a third source of "+15% damage" would be a
-// third helping of the same meal. A Modification has to be describable as a
-// sentence about a PRESS.
+// EVERY MODIFICATION IS A STRAIGHT UPGRADE TO ONE BUTTON, AND THEY STACK.
+// (Owner's call, 2026-08-03q, and it overturns how this file used to work.)
 //
-// AND EVERY ONE HAS A COST. A pick that is strictly better is not a decision,
-// it is a delay before a decision. Assembled, broken-feeling combos are where
-// the fun lives — but they should be assembled by the player out of visible
-// trades, never handed over.
+// The first version gave every pick a COST — a trade, so that no offer was
+// automatic. It read well and it failed the only test that matters: he skipped
+// most of the choices, because a pick that takes something away is a pick you
+// decline. What is actually wanted here is INVESTMENT.
 //
-// SHAPE. A mod names the fields it overwrites on the run's skill copies (which
-// are per-run already — see freshPlayer), plus optional player-level overrides:
+// So a Modification adds to a skill and takes nothing. The decision is no
+// longer "is this worth the cost" but "WHICH BUTTON DO I KEEP FEEDING" — and
+// because every entry is a DELTA rather than a fixed value, the same one can be
+// taken again. Eleven picks across eight upgrades per strain is a run that goes
+// DEEP on two or three buttons, and two runs of the same strain stop looking
+// alike without a single downside being written.
 //
+// STILL NOT NUMBERS ON THE SHEET. Items grant general power (js/items.js);
+// these change what a PRESS does — more stacks planted, a shorter cooldown, a
+// longer window. If a pick would read as "+15% damage" on the character sheet
+// it belongs in items, not here.
+//
+// SHAPE
 //   { id, name, text,
-//     skills: { <skillId>: { field: value, ... }, ... },
-//     player: { field: value, ... } }
+//     add: { field: delta },      additive, applied to the CURRENT value
+//     mul: { field: factor },     multiplicative
+//     min / max: { field: bound } clamps, so a stack cannot run somewhere silly
+//     player: { field: value } }  rare: a player-level override
 //
-// Declarative on purpose: a patch serializes as its id, re-applies cleanly onto
-// fresh skill copies on load, and the skill CARDS re-read the patched fields
-// through fmtDesc, so a modified button describes itself with no extra work.
+// Filed under the button they upgrade, TWO each, so "every ability has some"
+// is a property of the table's shape. Two rather than three because they stack
+// now: depth per button is where a run's identity comes from, and a wider
+// table would only thin it.
 //
-// PER STRAIN, NEVER SHARED. A pool bio and base both draw from is a pool that
+// PER STRAIN, NEVER SHARED — a pool bio and base both draw from is a pool that
 // makes them the same class.
-//
-// FILED UNDER THE BUTTON THEY REWRITE, three each, so "every ability has three"
-// is a fact about the shape of this table rather than something to go and
-// count. A mod may still touch a second skill (the COST often lives on one) —
-// the key it sits under is the button it is ABOUT. The offer takes one from
-// each of three different abilities, so a choice is never three flavours of the
-// same press.
 const MODIFICATIONS = {
   // ---- BIOLOGICAL ---------------------------------------------------------
   bio: {
     slash: [
-      { id: 'bio_sl_1', name: 'DOSAGE',
-        text: 'POISON 3, damage \u00d70.15.',
-        skills: { slash: { poison: 3, power: 0.15 } } },
-      { id: 'bio_sl_2', name: 'STERILE EDGE',
-        text: 'Damage \u00d71.50, no POISON.',
-        skills: { slash: { power: 1.5, poison: 0 } } },
-      { id: 'bio_sl_3', name: 'ABSORPTION',
-        text: 'Damage \u00d70.70, recovers 25% of damage dealt.',
-        skills: { slash: { lifesteal: 0.25, power: 0.7 } } }
+      { id: 'bio_sl_a', name: 'DOSAGE',      text: 'Slash: +1 POISON.',
+        add: { poison: 1 } },
+      { id: 'bio_sl_b', name: 'HONED EDGE',  text: 'Slash: +20% damage.',
+        mul: { power: 1.20 } }
     ],
     infest: [
-      { id: 'bio_in_1', name: 'NECROSIS',
-        text: 'Cooldown 2t, damage \u00d70.10.',
-        skills: { infest: { cdTurns: 2, power: 0.1 } } },
-      { id: 'bio_in_2', name: 'SATURATION',
-        text: 'POISON 8, cooldown 5t.',
-        skills: { infest: { poison: 8, cdTurns: 5 } } },
-      { id: 'bio_in_3', name: 'SEPSIS',
-        text: 'Applies WEAK 30% for 3t, damage \u00d70.10.',
-        skills: { infest: { power: 0.1, applies: [{ id: 'weak', power: 0.30, duration: 3 }] } } }
+      { id: 'bio_in_a', name: 'SATURATION',  text: 'Infest: +2 POISON.',
+        add: { poison: 2 } },
+      { id: 'bio_in_b', name: 'RAPID ONSET', text: 'Infest: cooldown −1 turn, to a minimum of 2.',
+        add: { cdTurns: -1 }, min: { cdTurns: 2 } }
     ],
     chitin: [
-      { id: 'bio_ch_1', name: 'THIN PLATING',
-        text: 'Duration 5t, damage taken \u221215%.',
-        skills: { chitin: { duration: 5, power: 0.15 } } },
-      { id: 'bio_ch_2', name: 'DENSE PLATING',
-        text: 'Duration 1t, damage taken \u221270%.',
-        skills: { chitin: { duration: 1, power: 0.70 } } },
-      { id: 'bio_ch_3', name: 'PURGE CYCLE',
-        text: 'Duration 2t, removes 3 POISON on cast.',
-        skills: { chitin: { duration: 2, cleanse: 3 } } }
+      { id: 'bio_ch_a', name: 'DENSE PLATING', text: 'Chitin: +8% damage blunted, to a maximum of 70%.',
+        add: { power: 0.08 }, max: { power: 0.70 } },
+      { id: 'bio_ch_b', name: 'SET CARAPACE',  text: 'Chitin: +1 turn duration, to a maximum of 4.',
+        add: { duration: 1 }, max: { duration: 4 } }
     ],
     miasma: [
-      { id: 'bio_mi_1', name: 'CONCENTRATE',
-        text: 'Duration 3t, regenerates 40% per turn.',
-        skills: { miasma: { duration: 3, power: 0.40 } } },
-      { id: 'bio_mi_2', name: 'VIRULENCE',
-        text: 'POISON carried to the next enemy 100%. No POISON cleanse.',
-        player: { modCarryFrac: 1.0 },
-        skills: { miasma: { tickCleanse: 0 } } },
-      { id: 'bio_mi_3', name: 'AEROSOL',
-        text: 'Cooldown 3t, duration 3t, regenerates 6% per turn, WEAK 25% for 6t.',
-        skills: { miasma: { cdTurns: 3, power: 0.06, duration: 3,
-                            applies: [{ id: 'weak', power: 0.25, duration: 6 }] } } }
+      { id: 'bio_mi_a', name: 'CONCENTRATE',  text: 'Miasma: +5% regeneration per turn, to a maximum of 50%.',
+        add: { power: 0.05 }, max: { power: 0.50 } },
+      { id: 'bio_mi_b', name: 'SCRUBBERS',    text: 'Miasma: +1 POISON removed per turn.',
+        add: { tickCleanse: 1 } }
     ]
   },
 
   // ---- PSYCHOLOGICAL ------------------------------------------------------
   psy: {
     hunt: [
-      { id: 'psy_hu_1', name: 'IMPRINT',
-        text: 'DREAD 2, damage \u00d70.50.',
-        skills: { hunt: { dread: 2, power: 0.5 } } },
-      { id: 'psy_hu_2', name: 'SUPPRESSED',
-        text: 'Damage \u00d71.60, no DREAD.',
-        skills: { hunt: { power: 1.6, dread: 0 } } },
-      { id: 'psy_hu_3', name: 'FEEDBACK',
-        text: 'Damage \u00d70.60, recovers 20% of damage dealt.',
-        skills: { hunt: { lifesteal: 0.20, power: 0.6 } } }
+      { id: 'psy_hu_a', name: 'IMPRINT',      text: 'Hunt: +1 DREAD.',
+        add: { dread: 1 } },
+      { id: 'psy_hu_b', name: 'CLEAN STRIKE', text: 'Hunt: +20% damage.',
+        mul: { power: 1.20 } }
     ],
     terrify: [
-      { id: 'psy_te_1', name: 'PANIC',
-        text: 'DREAD 8, cooldown 5t.',
-        skills: { terrify: { dread: 8, cdTurns: 5 } } },
-      { id: 'psy_te_2', name: 'SUSTAINED',
-        text: 'Cooldown 2t, DREAD 2.',
-        skills: { terrify: { cdTurns: 2, dread: 2 } } },
-      { id: 'psy_te_3', name: 'EXPOSURE',
-        text: 'Applies VULNERABLE 35% for 4t, damage \u00d70.10.',
-        skills: { terrify: { power: 0.1, applies: [{ id: 'vulnerable', power: 0.35, duration: 4 }] } } }
+      { id: 'psy_te_a', name: 'PANIC',        text: 'Terrify: +2 DREAD.',
+        add: { dread: 2 } },
+      { id: 'psy_te_b', name: 'SUSTAINED',    text: 'Terrify: cooldown −1 turn, to a minimum of 2.',
+        add: { cdTurns: -1 }, min: { cdTurns: 2 } }
     ],
     traumatize: [
-      { id: 'psy_tr_1', name: 'DEEP TRAUMA',
-        text: 'Stun 2t, requires 5 DREAD.',
-        skills: { traumatize: { stun: 2, dreadNeed: 5 } } },
-      { id: 'psy_tr_2', name: 'LOW THRESHOLD',
-        text: 'Requires 1 DREAD, damage \u00d70.40.',
-        skills: { traumatize: { dreadNeed: 1, power: 0.4 } } },
-      { id: 'psy_tr_3', name: 'CONCUSSION',
-        text: 'Damage \u00d71.90, no stun.',
-        skills: { traumatize: { power: 1.9, stun: 0 } } }
+      { id: 'psy_tr_a', name: 'DEEP TRAUMA',  text: 'Traumatize: +1 turn of stun, to a maximum of 3.',
+        add: { stun: 1 }, max: { stun: 3 } },
+      { id: 'psy_tr_b', name: 'LOW THRESHOLD', text: 'Traumatize: −1 DREAD required, to a minimum of 1.',
+        add: { dreadNeed: -1 }, min: { dreadNeed: 1 } }
     ],
     kill: [
-      { id: 'psy_ki_1', name: 'FULL CONSUMPTION',
-        text: 'Consumes 100% of DREAD, cooldown 4t.',
-        skills: { kill: { consumeFrac: 1.0, cdTurns: 4 } } },
-      { id: 'psy_ki_2', name: 'PARTIAL INTAKE',
-        text: 'Consumes 25% of DREAD, \u00d70.35 damage per DREAD, cooldown 3t.',
-        skills: { kill: { consumeFrac: 0.25, perDreadPower: 0.35, cdTurns: 3 } } },
-      { id: 'psy_ki_3', name: 'OVERFEED',
-        text: '\u00d71.20 damage per DREAD, base damage \u00d70.50, cooldown 6t.',
-        skills: { kill: { perDreadPower: 1.2, power: 0.5, cdTurns: 6 } } }
+      { id: 'psy_ki_a', name: 'APPETITE',     text: 'Kill: +0.15 damage per DREAD consumed.',
+        add: { perDreadPower: 0.15 } },
+      { id: 'psy_ki_b', name: 'QUICK FEED',   text: 'Kill: cooldown −1 turn, to a minimum of 3.',
+        add: { cdTurns: -1 }, min: { cdTurns: 3 } }
     ]
   },
 
   // ---- SYMBIOTIC ----------------------------------------------------------
+  // NO DURATION UPGRADE ON RAISE SPINES: it stacks by 'amplify', so a duration
+  // at or past its cooldown would let the multiplier ladder on itself forever.
   sym: {
     latch: [
-      { id: 'sym_la_1', name: 'FULL DRAW',
-        text: 'Adds 100% of THORNS, damage \u00d70.50.',
-        skills: { latch: { thornsScale: 1.0, power: 0.5 } } },
-      { id: 'sym_la_2', name: 'SEVERED',
-        text: 'Damage \u00d71.50, adds no THORNS.',
-        skills: { latch: { power: 1.5, thornsScale: 0 } } },
-      { id: 'sym_la_3', name: 'UPTAKE',
-        text: 'Damage \u00d70.70, recovers 15% of damage dealt.',
-        skills: { latch: { lifesteal: 0.15, power: 0.7 } } }
+      { id: 'sym_la_a', name: 'DEEP DRAW',    text: 'Latch: +10% of your THORNS added to the blow.',
+        add: { thornsScale: 0.10 } },
+      { id: 'sym_la_b', name: 'HARD LATCH',   text: 'Latch: +20% damage.',
+        mul: { power: 1.20 } }
     ],
     spines: [
-      { id: 'sym_sp_1', name: 'DENSE GROWTH',
-        text: 'THORNS \u00d73, duration 2t.',
-        skills: { spines: { duration: 2, power: 3 } } },
-      { id: 'sym_sp_2', name: 'REACTIVE GROWTH',
-        text: 'THORNS \u00d71.5, +5 THORNS per hit taken.',
-        skills: { spines: { power: 1.5, growBonus: 5 } } },
-      { id: 'sym_sp_3', name: 'RAPID CYCLE',
-        text: 'Cooldown 3t, duration 2t, THORNS \u00d71.5.',
-        skills: { spines: { cdTurns: 3, duration: 2, power: 1.5 } } }
+      { id: 'sym_sp_a', name: 'IRON SPINES',  text: 'Raise Spines: +0.5 to the THORNS multiplier.',
+        add: { power: 0.5 } },
+      { id: 'sym_sp_b', name: 'REACTIVE BARBS', text: 'Raise Spines: +2 THORNS per hit taken while up.',
+        add: { growBonus: 2 } }
     ],
     shed: [
-      { id: 'sym_sh_1', name: 'SEALED',
-        text: 'Heals 16%, converts no THORNS.',
-        skills: { shed: { healFrac: 0.16, shedFuel: false } } },
-      { id: 'sym_sh_2', name: 'HARVEST',
-        text: 'Heals 1%, spends up to 60% of grown THORNS.',
-        skills: { shed: { healFrac: 0.01, capFrac: 0.60 } } },
-      { id: 'sym_sh_3', name: 'RAPID SHED',
-        text: 'Cooldown 3t, heals 6%, no POISON cleanse.',
-        skills: { shed: { cdTurns: 3, cleanse: 0, healFrac: 0.06 } } }
+      { id: 'sym_sh_a', name: 'CLEAN TEAR',   text: 'Shed: +4% base heal, to a maximum of 30%.',
+        add: { healFrac: 0.04 }, max: { healFrac: 0.30 } },
+      { id: 'sym_sh_b', name: 'DEEP HARVEST', text: 'Shed: +8% of grown THORNS spendable, to a maximum of 75%.',
+        add: { capFrac: 0.08 }, max: { capFrac: 0.75 } }
     ],
     provoke: [
-      { id: 'sym_pr_1', name: 'BARBED',
-        text: 'Lash \u00d72.5 THORNS, +0 THORNS.',
-        skills: { provoke: { lashMult: 2.5, growBonus: 0 } } },
-      { id: 'sym_pr_2', name: 'BAIT',
-        text: '+8 THORNS, no lash.',
-        skills: { provoke: { growBonus: 8, lashMult: 0 } } },
-      { id: 'sym_pr_3', name: 'REPEAT CYCLE',
-        text: 'Cooldown 2t, lash \u00d70.75 THORNS, +0 THORNS.',
-        skills: { provoke: { cdTurns: 2, growBonus: 0, lashMult: 0.75 } } }
+      { id: 'sym_pr_a', name: 'BARBED HOST',  text: 'Provoke: +0.4 to the lash multiplier.',
+        add: { lashMult: 0.4 } },
+      { id: 'sym_pr_b', name: 'OPEN GUARD',   text: 'Provoke: +2 THORNS growth.',
+        add: { growBonus: 2 } }
     ]
   },
 
   // ---- UNAUGMENTED --------------------------------------------------------
   base: {
     jab: [
-      { id: 'base_ja_1', name: 'BRACED FORM',
-        text: '+2 RESOLVE, no BLEED.',
-        skills: { jab: { buildsResolve: 2, bleed: 0 } } },
-      { id: 'base_ja_2', name: 'COMMITTED',
-        text: 'Damage \u00d71.40, no RESOLVE.',
-        skills: { jab: { power: 1.4, buildsResolve: 0 } } },
-      { id: 'base_ja_3', name: 'DEFENSIVE FORM',
-        text: '+3 RESOLVE, damage \u00d70.50.',
-        skills: { jab: { buildsResolve: 3, power: 0.5 } } }
+      { id: 'base_ja_a', name: 'BRACED FORM', text: 'Strike: +1 RESOLVE.',
+        add: { buildsResolve: 1 } },
+      { id: 'base_ja_b', name: 'CLEAN FORM',  text: 'Strike: +20% damage.',
+        mul: { power: 1.20 } }
     ],
     bandage: [
-      { id: 'base_ba_1', name: 'SUTURE',
-        text: 'Heals 4%, +5% per held RESOLVE.',
-        skills: { bandage: { healFrac: 0.04, resolveHealBonus: 0.05 } } },
-      { id: 'base_ba_2', name: 'TOURNIQUET',
-        text: 'Heals 22%, cooldown 6t.',
-        skills: { bandage: { healFrac: 0.22, cdTurns: 6 } } },
-      { id: 'base_ba_3', name: 'FIELD DRESSING',
-        text: 'Cooldown 3t, heals 9%, no POISON cleanse.',
-        skills: { bandage: { cdTurns: 3, healFrac: 0.09, cleanse: 0 } } }
+      { id: 'base_ba_a', name: 'FIELD SUTURE', text: 'Bandage: +4% base heal, to a maximum of 35%.',
+        add: { healFrac: 0.04 }, max: { healFrac: 0.35 } },
+      { id: 'base_ba_b', name: 'PRESSURE',     text: 'Bandage: +1% heal per held RESOLVE, to a maximum of 8%.',
+        add: { resolveHealBonus: 0.01 }, max: { resolveHealBonus: 0.08 } }
     ],
     counter: [
-      { id: 'base_co_1', name: 'EXTENDED GUARD',
-        text: 'Duration 3t, cooldown 5t.',
-        skills: { counter: { duration: 3, cdTurns: 5 } } },
-      { id: 'base_co_2', name: 'AGGRESSIVE GUARD',
-        text: 'Damage taken \u221225%, counter \u00d72.50.',
-        skills: { counter: { power: 0.25, counterPower: 2.5 } } },
-      { id: 'base_co_3', name: 'HARD GUARD',
-        text: 'Duration 1t, damage taken \u221285%, cooldown 3t.',
-        skills: { counter: { duration: 1, power: 0.85, cdTurns: 3 } } }
+      { id: 'base_co_a', name: 'IRON GUARD',  text: 'Counterpunch: +1 turn of brace, to a maximum of 4.',
+        add: { duration: 1 }, max: { duration: 4 } },
+      { id: 'base_co_b', name: 'HEAVY RETURN', text: 'Counterpunch: +0.4 counter damage.',
+        add: { counterPower: 0.4 } }
     ],
     laststand: [
-      { id: 'base_ls_1', name: 'FULL COMMIT',
-        text: 'Spends 100% of RESOLVE, \u00d70.70 damage per RESOLVE.',
-        skills: { laststand: { consumeFrac: 1.0, perResolvePower: 0.70 } } },
-      { id: 'base_ls_2', name: 'MEASURED',
-        text: 'Spends 35% of RESOLVE, cooldown 3t.',
-        skills: { laststand: { consumeFrac: 0.35, cdTurns: 3 } } },
-      { id: 'base_ls_3', name: 'FLAT STRIKE',
-        text: 'Base damage \u00d72.50, \u00d70.15 damage per RESOLVE.',
-        skills: { laststand: { power: 2.5, perResolvePower: 0.15 } } }
+      { id: 'base_ls_a', name: 'BLOOD DEBT',  text: 'Last Stand: +0.1 damage per RESOLVE spent.',
+        add: { perResolvePower: 0.1 } },
+      { id: 'base_ls_b', name: 'SECOND WIND', text: 'Last Stand: cooldown −1 turn, to a minimum of 3.',
+        add: { cdTurns: -1 }, min: { cdTurns: 3 } }
     ]
   }
 };
@@ -239,9 +162,9 @@ function modDueAfter(wave) { return modWaves().indexOf(wave) >= 0; }
 
 const MODS_OFFERED = 3;
 
-// Flat view of a strain's whole table, each entry stamped with the button it
-// is filed under — every read below goes through this rather than knowing the
-// table is two levels deep.
+// Flat view of a strain's table, each entry stamped with the button it
+// upgrades — every read goes through this rather than knowing the table is
+// two levels deep.
 function modsFor(classId) {
   const bySkill = MODIFICATIONS[classId] || {};
   const out = [];
@@ -250,42 +173,46 @@ function modsFor(classId) {
   return out;
 }
 function modById(classId, id) { return modsFor(classId).find(m => m.id === id) || null; }
-// The display name of the button a mod is about.
 function modSkillName(classId, sid) {
   const sk = (CLASSES[classId] && CLASSES[classId].skills.find(s => s.id === sid)) || null;
   return sk ? sk.name : '';
 }
+function modCount(p, id) {
+  return ((p && p.mods) || []).filter(x => x === id).length;
+}
 
-// Applies one patch. Called on pick AND on load, always onto fresh skill copies.
+// Applies one upgrade to the run's skill copy. DELTAS ON THE CURRENT VALUE, so
+// taking the same one twice is twice the upgrade — and so re-applying the whole
+// list on load reproduces the run exactly, in order.
 function applyMod(p, mod) {
   if (!p || !mod) return;
-  if (mod.skills) {
-    for (const sid of Object.keys(mod.skills)) {
-      const sk = p.skills.find(s => s.id === sid);
-      if (sk) Object.assign(sk, mod.skills[sid]);
-    }
-  }
+  const sk = p.skills.find(s => s.id === mod.skill);
+  if (!sk) return;
+  const clamp = (key, v) => {
+    if (mod.min && mod.min[key] != null) v = Math.max(mod.min[key], v);
+    if (mod.max && mod.max[key] != null) v = Math.min(mod.max[key], v);
+    // Rounded so a long stack of fractional deltas cannot drift into float noise.
+    return +v.toFixed(4);
+  };
+  for (const k of Object.keys(mod.add || {}))
+    sk[k] = clamp(k, (Number(sk[k]) || 0) + mod.add[k]);
+  for (const k of Object.keys(mod.mul || {}))
+    sk[k] = clamp(k, (Number(sk[k]) || 0) * mod.mul[k]);
   if (mod.player) Object.assign(p, mod.player);
 }
 
-// Re-applies everything the run has taken, in the order it was taken — later
-// picks overwrite earlier ones on the same field, which is the same result the
-// live run produced.
+// Re-applies everything the run has taken, in the order it was taken.
 function applyTakenMods(p) {
   if (!p || !Array.isArray(p.mods)) return;
   for (const id of p.mods) applyMod(p, modById(p.class, id));
 }
 
-// Three from what this strain has not taken, ONE PER BUTTON — a choice between
-// three ways to change the same press is not really three choices. Rules RNG,
-// because a run's offer is part of the run: headless draws the identical three.
+// Three upgrades from three DIFFERENT buttons. Nothing is filtered out for
+// having been taken — repeats are the point, and an offer that could only ever
+// show new things would run dry and stop being a choice.
 function offerMods(p) {
-  const taken = p.mods || [];
   const bySkill = {};
-  for (const m of modsFor(p.class)) {
-    if (taken.includes(m.id)) continue;
-    (bySkill[m.skill] = bySkill[m.skill] || []).push(m);
-  }
+  for (const m of modsFor(p.class)) (bySkill[m.skill] = bySkill[m.skill] || []).push(m);
   const skills = Object.keys(bySkill);
   const picked = [];
   while (picked.length < MODS_OFFERED && skills.length) {
@@ -296,10 +223,9 @@ function offerMods(p) {
   return picked;
 }
 
-// id null (or unknown) is a DECLINE, and that is a real option: three picks
-// that all cut against the build you are assembling is a worse offer than
-// none, and being forced to take one of them would make the run worse for
-// having reached the wave.
+// id null (or unknown) declines. Kept even though every pick is now an upgrade:
+// it costs nothing to leave open, and a player who wants none of the three
+// should not be made to install one.
 function takeMod(id) {
   const st = state.pendingMods;
   if (!st) return;
@@ -314,11 +240,11 @@ function takeMod(id) {
     p.mods = (p.mods || []).concat(mod.id);
     applyMod(p, mod);
     applyDerivedStats(p);
-    logEvent('MODIFICATION', null, mod.name,
+    const n = modCount(p, mod.id);
+    logEvent('MODIFICATION', null, mod.name + (n > 1 ? ' ×' + n : ''),
              [modSkillName(p.class, mod.skill), mod.text]);
     floatText(p, mod.name, 'tally');
-    // forceRebuild: a patched card can change its own text AND the row can
-    // change shape, so the skill bar is rebuilt rather than refreshed.
+    // forceRebuild: a patched card rewrites its own text.
     updateHud(); renderSkills(true);
   } else {
     logEvent('MODIFICATION', null, 'declined');
@@ -329,61 +255,21 @@ function takeMod(id) {
   resumeAfterKill(st.killedWave);
 }
 
-// ---- The bot's hand ---------------------------------------------
-// It used to take the first offered, which is a coin toss dressed as a choice
-// — and since every Modification carries a COST, a coin toss meant the bots
-// regularly deleted their own mechanic (bio taking the mod that stops Slash
-// planting POISON) and the measurement blamed the class.
-//
-// So: a mechanical score over the fields the patch actually moves, compared
-// against the sheet the player is holding NOW (not the class default — an
-// earlier pick may already have moved the same field).
-//
-// IT IS DELIBERATELY CRUDE AND IT HAS NO OPINION ABOUT BALANCE. It knows two
-// things, both arithmetic: which direction is better for a field, and that
-// ZEROING an effect is categorically worse than reducing one. That second
-// rule is the whole value — it is what stops a bot from taking the pick that
-// removes the thing its strain is made of.
-//
-// The choice draws NO RNG. The offer is the rules draw; a second one here
-// would make a bot and a player consume different amounts of the stream.
-const MOD_LOWER_IS_BETTER = ['cdTurns', 'dreadNeed', 'consumeFrac'];
-function modScore(p, mod) {
-  let score = 0;
-  for (const sid of Object.keys(mod.skills || {})) {
-    const sk = p.skills.find(s => s.id === sid);
-    if (!sk) continue;
-    const patch = mod.skills[sid];
-    for (const key of Object.keys(patch)) {
-      const now = sk[key], next = patch[key];
-      if (key === 'applies') { score += 0.4; continue; }
-      if (typeof next === 'boolean') { score += next ? 0.5 : -1; continue; }
-      if (typeof next !== 'number') continue;
-      if (typeof now !== 'number') { score += next > 0 ? 0.3 : 0; continue; }
-      // A removed effect is not a small reduction — it is the button losing a
-      // job. Priced well below any proportional change.
-      if (next === 0 && now > 0) { score -= 1.5; continue; }
-      if (now === 0) { score += 0.5; continue; }
-      let rel = (next - now) / Math.abs(now);
-      if (MOD_LOWER_IS_BETTER.indexOf(key) >= 0) rel = -rel;
-      score += Math.max(-1, Math.min(1, rel));
-    }
-  }
-  // A player-level override is a gain with no stated cost on any button.
-  if (mod.player) score += 0.5;
-  return score;
-}
+// The bot's hand. Every pick is an upgrade now, so there is no trap to avoid —
+// what is left is which BUTTON to feed, and it feeds the one it presses most.
+// Reads state.skillUses, the same tally the result screen shows. Draws no RNG:
+// the OFFER is the rules draw, and a second one here would make a bot and a
+// player consume different amounts of the stream.
 function botTakesMod(offer, p) {
   p = p || state.player;
   if (!offer || !offer.length || !p) return null;
-  let best = null, bestScore = -Infinity;
+  const uses = state.skillUses || {};
+  let best = offer[0], bestN = -1;
   for (const m of offer) {
-    const s = modScore(p, m);
-    if (s > bestScore) { bestScore = s; best = m; }
+    const n = uses[m.skill] || 0;
+    if (n > bestN) { bestN = n; best = m; }
   }
-  // All three cut against the sheet — decline, which is a real option and the
-  // one a person would take rather than install the least-bad damage.
-  return bestScore < -0.75 ? null : (best ? best.id : null);
+  return best.id;
 }
 
 function presentMods(offer, killedWave) {
@@ -409,17 +295,19 @@ function abandonMods() {
 function renderModModal(offer) {
   const el = document.getElementById('mod-body');
   if (!el) return;
-  const cls = state.player ? state.player.class : '';
-  el.innerHTML = offer.map(m =>
-    '<button class="mod-card strain-' + cls + '" type="button" onclick="takeMod(\'' + m.id + '\')">' +
-      '<div class="mod-head">' +
-        '<span class="mod-name">' + m.name + '</span>' +
-        '<span class="mod-on">' + modSkillName(cls, m.skill) + '</span>' +
-      '</div>' +
-      '<div class="mod-text">' + highlightKeywords(m.text) + '</div>' +
-    '</button>').join('')
-    + '<button class="ui-btn is-quiet mod-skip" type="button" onclick="takeMod(null)">'
-    + 'DECLINE</button>';
+  const p = state.player;
+  const cls = p ? p.class : '';
+  el.innerHTML = offer.map(m => {
+    const held = modCount(p, m.id);
+    return '<button class="mod-card strain-' + cls + '" type="button" onclick="takeMod(\'' + m.id + '\')">'
+      + '<div class="mod-head">'
+      + '<span class="mod-name">' + m.name + (held ? ' <i class="mod-held">×' + held + ' held</i>' : '') + '</span>'
+      + '<span class="mod-on">' + modSkillName(cls, m.skill) + '</span>'
+      + '</div>'
+      + '<div class="mod-text">' + highlightKeywords(m.text) + '</div>'
+      + '</button>';
+  }).join('')
+    + '<button class="ui-btn is-quiet mod-skip" type="button" onclick="takeMod(null)">DECLINE</button>';
 }
 
 function renderModList() {
@@ -433,11 +321,17 @@ function renderModList() {
       + '<div class="suit-slot-name">NOTHING INSTALLED</div></div></div>';
     return;
   }
-  el.innerHTML = taken.map(id => {
+  // Grouped, in the order each was first taken, with the stack count — a list
+  // repeating "DOSAGE" four times says less than "DOSAGE ×4".
+  const seen = [];
+  taken.forEach(id => { if (seen.indexOf(id) < 0) seen.push(id); });
+  el.innerHTML = seen.map(id => {
     const m = modById(p.class, id);
     if (!m) return '';
+    const n = taken.filter(x => x === id).length;
     return '<div class="mod-entry">'
-      + '<div class="mod-head"><span class="mod-name">' + m.name + '</span>'
+      + '<div class="mod-head"><span class="mod-name">' + m.name
+      + (n > 1 ? ' <i class="mod-held">×' + n + '</i>' : '') + '</span>'
       + '<span class="mod-on">' + modSkillName(p.class, m.skill) + '</span></div>'
       + '<div class="mod-text">' + highlightKeywords(m.text) + '</div></div>';
   }).join('');
