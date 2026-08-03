@@ -99,6 +99,18 @@ const BRUTE_SPRITES = {
   mirror: true
 };
 
+// ---- MUTANT PEST CONTROL (zone 4) ---------------------------------------
+// The endgame roster, and the first art in the game with no strike pose —
+// spriteSrcFor falls back to `ready` for any pose a set does not define, so a
+// single image is a complete set. Mirrored like the rest of the MCP line.
+const MCP_TROOPER_SPRITES  = { ready: 'assets/sprites/enemy 1.png', mirror: true };
+const MCP_MEDIC_SPRITES    = { ready: 'assets/sprites/enemy 2.png', mirror: true };
+const MCP_DEMO_SPRITES     = { ready: 'assets/sprites/enemy 3.png', mirror: true };
+const MCP_SENTINEL_SPRITES = { ready: 'assets/sprites/enemy 4.png', mirror: true };
+// EVERY boss in zone 4 wears this, however many the zone rolls — the roster is
+// random, the thing that comes to collect you is not.
+const MCP_RECLAIMER_SPRITES = { ready: 'assets/sprites/boss enemy.png', mirror: true };
+
 // trashScale: how big this zone's rank-and-file stands relative to the player.
 // A DRAWING HAS A SIZE IT WANTS TO BE READ AT and it is not always eye-to-eye:
 // the Escaped Experiment is drawn hunched and heavy, and at 1.0 it read as a
@@ -117,7 +129,10 @@ const ZONE_SPRITES = {
   2: { trash: { enforcer: ENFORCER_SPRITES, lieutenant: LIEUTENANT_SPRITES },
        boss: CAPTAIN_SPRITES, trashScale: 1.15 },
   3: { trash: { mercenary: MERCENARY_SPRITES }, boss: BRUTE_SPRITES,
-       trashScale: 1.15 }
+       trashScale: 1.15 },
+  4: { trash: { trooper: MCP_TROOPER_SPRITES, medic: MCP_MEDIC_SPRITES,
+                demo: MCP_DEMO_SPRITES, sentinel: MCP_SENTINEL_SPRITES },
+       boss: MCP_RECLAIMER_SPRITES, trashScale: 1.15 }
 };
 
 // The scientist fights in his own coat: his portrait is the stance, and the

@@ -208,12 +208,19 @@ did not say.
 - **The player sheet is the anchor** (5/5/5/5, 25 dmg, 100 HP, 1.00 turn
   rate); enemies are fitted to it and computed by separate functions. See
   the header comment in `js/data.js` before touching balance.
-- **`OWNER:` The run is 30 waves across three ZONES of ten** (restructured
-  2026-08-03d, his design) — The Laboratory, The Laboratory: Asset Recovery,
-  City Streets. Nine fights and ONE boss per zone, wave 5 of every zone a
-  guaranteed named CHAMPION (elite chassis, rolled affix), and WINNING MEANS
-  CLEARING WAVE 30. One boss per zone instead of the same face three times:
-  the champion is the midterm, the boss the final, an exam every fifth wave.
+- **`OWNER:` The run is 60 waves: three ZONES of ten, then a 30-wave ENDGAME**
+  (restructured 2026-08-03d, endgame added 2026-08-03n, both his design) — The
+  Laboratory, The Laboratory: Asset Recovery, City Streets, then MUTANT PEST
+  CONTROL. Zones 1-3 are nine fights and ONE boss each, with wave 5 of every
+  zone a guaranteed named CHAMPION (elite chassis, rolled affix): the champion
+  is the midterm, the boss the final, an exam every fifth wave.
+  **ZONE 4 BREAKS THAT SHAPE ON PURPOSE** and is where most runs end. Its
+  roster of four is DRAWN per spawn rather than rotated (so a reload shows a
+  different face — cosmetic, and the trade the zone is named for), elites run
+  at 35-65% instead of 16-40%, and bosses are ROLLED: one guaranteed on every
+  10-wave boundary (40/50/60) plus `extraBossChance` on any other wave, about
+  6 a run, all wearing one face and rolling their VERB rather than carrying an
+  authored one. WINNING MEANS CLEARING WAVE 60.
   Read the count off `BALANCE.finalWave`, never from a literal: a hardcoded 30
   in `tools/autopsy.mjs` went on reporting a 30-wave game after the run grew.
   A level grants exactly 3 stat points (`pointsPerLevel`).

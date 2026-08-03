@@ -33,7 +33,13 @@ const RARITIES = {
 
 // Stat points per affix, banded by the zone the item dropped in. Points feed
 // the same pipe as allocation (see applyDerivedStats), so nothing else scales.
-const ITEM_STAT_BANDS = [[1, 2], [2, 4], [3, 6]];
+const ITEM_STAT_BANDS = [[1, 2], [2, 4], [3, 6], [5, 9]];
+// READ EVERY BAND THROUGH HERE, clamped to the last entry. Indexing by zone-1
+// directly meant a zone past the end of a table fell through to `|| [0]` — the
+// WEAKEST tier — so the endgame would quietly have dropped zone-1 loot.
+function zoneBand(bands, zone) {
+  return bands[Math.min(Math.max(1, zone), bands.length) - 1];
+}
 
 // Modifier affixes (REFINED only). `ranges` is per zone; `step` keeps rolls on
 // readable increments. Where each one lands in the rules:
@@ -82,7 +88,7 @@ function makeItem(wave, rarityId) {
   const slotIds = Object.keys(SLOTS);
   const slot = SLOTS[slotIds[Math.floor(Math.random() * slotIds.length)]];
   const rar = RARITIES[rarityId] || RARITIES.standard;
-  const band = ITEM_STAT_BANDS[zone - 1] || ITEM_STAT_BANDS[0];
+  const band = zoneBand(ITEM_STAT_BANDS, zone);
 
   const statPool = ITEM_STATS.slice();
   const stats = {};
@@ -99,7 +105,7 @@ function makeItem(wave, rarityId) {
     const pool = SLOT_MODS[slot.id] || [];
     const def = ITEM_MODS[pool[Math.floor(Math.random() * pool.length)]];
     if (!def) continue;
-    const r = def.ranges[zone - 1] || def.ranges[0];
+    const r = zoneBand(def.ranges, zone);
     const raw = r[0] + Math.random() * (r[1] - r[0]);
     mods.push({ id: def.id, v: +(Math.round(raw / def.step) * def.step).toFixed(4) });
   }

@@ -673,7 +673,20 @@ function makeEnemy(wave) {
   const g = Math.pow(zone.tierGrowth || E.tierGrowth, tier)
           * (1 + within*(zone.withinStep != null ? zone.withinStep : E.withinStep))
           * (zone.growthMult || 1);
-  const isBoss = wave % BALANCE.bossEvery === 0;
+  // WHICH WAVES ARE BOSSES. Zones 1-3 keep the flat rule — one boss, on the
+  // zone's tenth. A zone with `bossSegment` (the endgame) instead guarantees
+  // one on every segment boundary and lets any other wave roll an extra, so
+  // the stretch has a floor and no ceiling. The roll is the FIRST draw
+  // makeEnemy takes on those waves; both paths run this code, so the stream
+  // stays identical.
+  let isBoss;
+  if (zone.bossSegment) {
+    const inZone = wave - zone.startWave + 1;
+    isBoss = (inZone % zone.bossSegment === 0)
+          || (Math.random() < (zone.extraBossChance || 0));
+  } else {
+    isBoss = wave % BALANCE.bossEvery === 0;
+  }
   // The first boss only — see firstBossMult in BALANCE.enemy.
   const bossBump = (isBoss && wave === BALANCE.bossEvery) ? (BALANCE.enemy.firstBossMult || 1) : 1;
   const isFinal = wave === BALANCE.finalWave;
@@ -687,7 +700,10 @@ function makeEnemy(wave) {
   let elite = null;
   if (!isBoss && (champ || wave > 4)) {
     const keys = Object.keys(ELITES);
-    const chance = Math.min(E.eliteChanceCap, E.eliteBaseChance + wave*E.eliteChancePerWave);
+    // A zone may run hotter than the table's default — the endgame does.
+    const chance = Math.min(zone.eliteChanceCap != null ? zone.eliteChanceCap : E.eliteChanceCap,
+      (zone.eliteBaseChance != null ? zone.eliteBaseChance : E.eliteBaseChance)
+        + wave*E.eliteChancePerWave);
     if (champ || Math.random() < chance) {
       elite = ELITES[keys[Math.floor(Math.random()*keys.length)]];
     }
@@ -700,8 +716,11 @@ function makeEnemy(wave) {
   // exactly where an enemy changes weight class (the tier jump lands right
   // after each boss). Act-local like the tier, so every roster debuts plain
   // and earns its numerals — the Enforcer walks in as Enforcer, not as "IV".
+  // The numeral list has to outlast the longest zone: a 30-wave zone reaches
+  // rank VI, and a five-entry table printed " undefined" past V.
   const rank = tier + 1;
-  const rankTag = rank > 1 ? ' ' + ['', 'I', 'II', 'III', 'IV', 'V'][rank] : '';
+  const NUMERALS = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+  const rankTag = rank > 1 ? ' ' + (NUMERALS[rank] || rank) : '';
 
   // WHICH FACE OF THE ROSTER. Rotated by wave rather than rolled, for two
   // reasons. It touches no RNG at all, so adding a second trash type to an act
@@ -710,8 +729,12 @@ function makeEnemy(wave) {
   // standing there, where a roll would swap him for a different one.
   // Boss waves consume a slot in the rotation, which is why the cycle is not
   // perfectly even; that is cosmetic and not worth code to avoid.
+  // A zone may declare `randomRoster` and draw instead of rotate — see the
+  // endgame's note in ZONES for what that trades away.
   const pool = zone.enemies || [{ id: 'trash', name: zone.enemyName }];
-  const face = champ || pool[((w % pool.length) + pool.length) % pool.length];
+  const face = champ || (zone.randomRoster
+    ? pool[Math.floor(Math.random() * pool.length)]
+    : pool[((w % pool.length) + pool.length) % pool.length]);
   // NO RANK NUMERAL ON A CHAMPION. Rank says which weight class a face is in on
   // its second and third outing; a champion only ever appears once, so a numeral
   // would be claiming a history it does not have.
@@ -723,7 +746,12 @@ function makeEnemy(wave) {
     champion: !!champ,     // the zone's named elite — read by the drop table
     // THE FIGHT'S QUESTION (see ENEMY_VERBS): bosses carry their zone's
     // authored verb, champions roll one. Trash never carries one.
-    verb: isBoss ? (zone.bossVerb || null)
+    // A zone whose bosses are rolled rather than authored rolls their question
+    // too — the endgame's Reclaimers are one face asking a different thing.
+    verb: isBoss
+        ? (zone.rollBossVerb
+            ? CHAMPION_VERBS[Math.floor(Math.random() * CHAMPION_VERBS.length)]
+            : (zone.bossVerb || null))
         : champ ? CHAMPION_VERBS[Math.floor(Math.random() * CHAMPION_VERBS.length)]
         : null,
     zone: zone.num,        // which zone's roster (and art) this enemy belongs to

@@ -3046,3 +3046,14 @@ body {
 }
 /* Declining is a real option, and reads as the quietest thing on the card. */
 .mod-skip { width: 100%; margin-top: 4px; font-size: 0.66rem; }
+
+/* Zone 4 — the MCP compound in the rain. Darkest of the four backdrops: the
+   endgame is lit by its own warning lamps, so the vignette sits heavier and
+   the image is left cooler than the streets above it. */
+.arena-card[data-zone="4"] .arena-backdrop {
+  background:
+    radial-gradient(ellipse 130% 60% at 50% 100%, rgba(3,5,9,0.78) 0%, rgba(3,5,9,0.32) 45%, transparent 75%),
+    linear-gradient(180deg, rgba(6,9,14,0.60) 0%, rgba(6,9,14,0.24) 35%, transparent 65%),
+    url('../assets/zones/mcp-compound-1.jpg') center bottom / cover no-repeat;
+  filter: blur(1.2px) saturate(0.88) brightness(0.96);
+}

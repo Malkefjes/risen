@@ -37,7 +37,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-03m';
+const BUILD = '2026-08-03n';
 
 const BALANCE = {
   player: {
@@ -313,7 +313,10 @@ const BALANCE = {
         killBase: 46, killWave: 15, killTier: 36 },
   combo: { maxEnemyActionsPerKill: 3, xpPerStack: 0.05, maxStack: 20 },   // chain continues if the kill let the enemy act <= N times (speed-fair)
   bossEvery: 10,         // boss on every Nth wave — ONE per zone, its finale
-  finalWave: 30,         // beating this wave's boss wins the run (zone 3's finale)
+  // Beating this wave's boss wins the run. Zones 1-3 are the run proper (30
+  // waves); zone 4 is the ENDGAME and carries the last 30 on its own terms —
+  // see the note on it in ZONES.
+  finalWave: 60,
   spawnDelay: 0.16,
   // ONE DIAL FOR THE WHOLE GAME'S TEMPO: every pause between turns is a raw ms
   // figure multiplied by this. Purely how it is watched — cooldowns tick on
@@ -618,7 +621,43 @@ const ZONES = [
     bossVerb: 'enrage',
     champion: { at: 25, id: 'mercenary', name: 'Veteran Mercenary' },
     growthMult: 8.67, tierGrowth: 1.6, withinStep: 0.04,
-    windupMult: 1.6, eliteWindupMult: 1.2 }
+    windupMult: 1.6, eliteWindupMult: 1.2 },
+
+  // ---- THE ENDGAME (2026-08-03n, owner's design) --------------------------
+  // Thirty waves at Pest Control's own gate, and the zone breaks three of the
+  // rules the first three keep — deliberately, because it is the part of the
+  // run meant to end most of them.
+  //
+  //   RANDOM ROSTER     four faces drawn per spawn instead of rotated. It costs
+  //                     the property the rotation was chosen for (reload a save
+  //                     and a different soldier is standing there) — cosmetic,
+  //                     and worth it for a zone whose identity is not knowing
+  //                     what walks in.
+  //   ROLLED BOSSES     one is GUARANTEED to close every 10-wave stretch
+  //                     (40 / 50 / 60), and every other wave can roll one at
+  //                     extraBossChance — a floor with no ceiling. They all
+  //                     wear one face and ROLL their verb rather than carrying
+  //                     an authored one: six-plus bosses cannot each be a
+  //                     hand-written exam.
+  //   ELITES EVERYWHERE the base chance more than doubles, and so does the cap.
+  //
+  // SCALING IS DERIVED, NOT MEASURED, and tierGrowth is the dial: 1.22 across
+  // six tiers puts wave 60 near 53x growth against zone 3's 16x, so an ordinary
+  // boss blow lands near a full bar. The telegraph multiplier is the lowest in
+  // the game for exactly that reason — at this damage a big one is a one-shot.
+  { num: 4, name: 'Mutant Pest Control', label: 'MUTANT PEST CONTROL',
+    startWave: 31, endWave: 60,
+    enemies: [{ id: 'trooper',  name: 'MCP Trooper' },
+              { id: 'medic',    name: 'MCP Field Medic' },
+              { id: 'demo',     name: 'MCP Demolition Unit' },
+              { id: 'sentinel', name: 'MCP Sentinel' }],
+    bossName: 'MCP Reclaimer',
+    randomRoster: true,
+    rollBossVerb: true,
+    bossSegment: 10, extraBossChance: 0.12,
+    eliteBaseChance: 0.35, eliteChanceCap: 0.65,
+    growthMult: 17, tierGrowth: 1.22, withinStep: 0.04,
+    windupMult: 1.35, eliteWindupMult: 1.15 }
 ];
 function zoneForWave(wave) {
   return ZONES.find(a => wave >= a.startWave && wave <= a.endWave) || ZONES[ZONES.length - 1];

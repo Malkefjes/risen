@@ -131,8 +131,8 @@ function devSkipToZone(classId, zoneNum) {
   // Less organic than an earned sheet, but a dev tool that sometimes refuses to
   // open the door is worse than one that hands you a template. The bot failing
   // 20 straight is itself a reading, and the handover line says so out loud.
-  // Levels re-guessed for the 10-wave zones; not measured.
-  const level = z.num === 2 ? 5 : 9;
+  // Levels re-guessed per zone entry; not measured.
+  const level = z.num === 2 ? 5 : z.num === 3 ? 9 : 13;
   resetRunState(classId);
   state.saveSlot = 0;
   const p = freshPlayer(classId);
