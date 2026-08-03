@@ -26,6 +26,19 @@ enemy that can actually telegraph; it does not heal a full bar; and it does not
 cash a finisher that spends a resource with nothing banked behind it. Either
 drops straight into `simulateRun(cls, BOTS.smart)`.
 
+It also holds a finisher against a raised GUARD, read off the status rather
+than the verb's name, because a pile you cannot get back should not be spent
+into a halved blow.
+
+BOTH BOTS ALSO ANSWER THE TWO BETWEEN-FIGHT CARDS, because a run cannot
+continue past them. A drop is taken when it outscores what is fitted (stat
+points, with percentage lines priced by tier). A Modification is scored on the
+fields its patch actually moves against the sheet the bot is holding, with
+ZEROING an effect priced far below reducing one — that single rule is what
+stops a bot deleting the mechanic its strain is made of, which it did when it
+simply took the first offer. Neither choice draws RNG: the OFFER is the rules
+draw, so a second one would desync a bot from a player.
+
 Those last three came out of measuring what the bot was throwing away rather
 than from taste, and the sizes are in the comments beside them. The largest was
 base: pressing Last Stand on cooldown dumped the RESOLVE that is also its damage

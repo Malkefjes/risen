@@ -556,11 +556,12 @@ const ELITES = {
   volatile: { id:'volatile', tag:'VOLATILE', xp:1.8, deathNova:0.14 }
 };
 
-// ZONE STRUCTURE. The whole run is ACT 1; a zone is the unit that actually
-// shapes it. Three zones of TEN waves — nine fights and ONE boss each, 30 waves
-// total, with a named CHAMPION on every zone's wave 5. Each zone owns its
+// ZONE STRUCTURE. A zone is the unit that actually shapes the run: three of
+// TEN waves — nine fights and ONE boss each, with a named CHAMPION on every
+// zone's wave 5 — and then a fourth of THIRTY, the endgame, which keeps none
+// of that shape (see its own note below). 60 waves in all. Each zone owns its
 // label, its enemy roster (names here, art in sprites.js keyed by zone number),
-// its difficulty floor, its telegraph, and its boss's VERB.
+// its difficulty floor, its telegraph, and how its bosses are decided.
 //
 //   growthMult   the zone's DIFFICULTY FLOOR — enemy hp/dmg growth restarts from
 //                here, so within a zone the tier curve retraces at a higher
@@ -577,12 +578,14 @@ const ELITES = {
 //                authored verb per boss; champions roll theirs.
 //   champion     the zone's named elite: { at, id, name }. `at` is an absolute
 //                wave — the one number to move if a zone's shape changes.
+//   randomRoster / bossSegment / extraBossChance / rollBossVerb /
+//   eliteBaseChance / eliteChanceCap   the endgame's overrides. Absent on
+//                zones 1-3, which take the table's defaults.
 const ZONES = [
-  // 2026-08-03d RESTRUCTURE: three zones of TEN waves — nine fights and one
-  // boss, with wave 5 of every zone a guaranteed named CHAMPION (elite
-  // chassis, affix still rolled). One boss per zone instead of the same face
-  // three times: the champion is the zone's midterm, the boss its final, and
-  // an exam still lands every fifth wave.
+  // ZONES 1-3, restructured 2026-08-03d: nine fights and one boss each, with
+  // wave 5 a guaranteed named CHAMPION (elite chassis, affix still rolled).
+  // One boss per zone instead of the same face three times — the champion is
+  // the midterm, the boss the final, an exam every fifth wave.
   //
   // GROWTH WAS DERIVED, NOT MEASURED (owner's call — tune by play): each
   // zone's end is the old 45-wave wall scaled by the smaller sheet a 30-wave

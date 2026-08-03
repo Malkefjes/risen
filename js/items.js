@@ -30,7 +30,6 @@
 // serializable. Every roll uses Math.random — a drop is a rule, and headless
 // must roll the identical item at the identical point in the stream.
 
-const ITEM_STATS = ['str', 'instinct', 'speed', 'vit'];
 const ITEM_STAT_NAMES = { str: 'STRENGTH', instinct: 'INSTINCT', speed: 'SPEED', vit: 'VITALITY' };
 
 // `home` biases which stat a slot's prefix tends to roll (60%, first prefix
@@ -286,12 +285,15 @@ function gearMod(p, id) {
 // Naive worth for the bots and nothing else: stat points, with a percentage
 // line counted as a couple of points so a rarity is never worth less than a
 // plain one.
+// Stat points, plus percentage lines priced by TIER rather than counted — a
+// T1 suffix and a T5 suffix are not the same line, and scoring them as one
+// had the bots swapping a good item for a worse one of the same rarity.
 function itemScore(it) {
   if (!it) return 0;
   let n = 0;
   for (const pre of (it.prefixes || [])) n += pre.v * pre.stats.length;
-  n += (it.suffixes || []).length * 2;
-  if (it.implicit) n += 1;
+  for (const s of (it.suffixes || [])) n += (5 - s.tier);
+  if (it.implicit) n += (5 - it.implicit.tier) * 0.5;
   return n;
 }
 function botTakesDrop(p, it) {

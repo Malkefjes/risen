@@ -224,6 +224,11 @@ function spenderWorthIt(s, p, e) {
   const stacks = spendStacks(s, p, e);
   if (stacks < SMART.spendMin) return false;
   if (e && spenderDamage(s, p, e) >= e.hp) return true;   // it finishes — take it
+  // NOT INTO A RAISED GUARD. A finisher spends a pile it cannot get back, so
+  // cashing it while the target is braced (the GUARD verb's fortify) throws
+  // away the half the guard eats. Read off the STATUS, not the verb's name,
+  // so anything that softens incoming damage is respected for free.
+  if (e && statusMult(e, 'incomingMult', { attacker: p }) < 1) return false;
   return stacks >= SMART.spendDeep;
 }
 

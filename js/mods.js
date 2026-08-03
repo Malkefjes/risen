@@ -329,10 +329,62 @@ function takeMod(id) {
   resumeAfterKill(st.killedWave);
 }
 
-// The bot's hand: always the first offered. Deterministic on purpose — the
-// OFFER is a rules draw, the choice must not be a second one, or a bot and a
-// player would consume different amounts of the stream.
-function botTakesMod(offer) { return offer[0] ? offer[0].id : null; }
+// ---- The bot's hand ---------------------------------------------
+// It used to take the first offered, which is a coin toss dressed as a choice
+// — and since every Modification carries a COST, a coin toss meant the bots
+// regularly deleted their own mechanic (bio taking the mod that stops Slash
+// planting POISON) and the measurement blamed the class.
+//
+// So: a mechanical score over the fields the patch actually moves, compared
+// against the sheet the player is holding NOW (not the class default — an
+// earlier pick may already have moved the same field).
+//
+// IT IS DELIBERATELY CRUDE AND IT HAS NO OPINION ABOUT BALANCE. It knows two
+// things, both arithmetic: which direction is better for a field, and that
+// ZEROING an effect is categorically worse than reducing one. That second
+// rule is the whole value — it is what stops a bot from taking the pick that
+// removes the thing its strain is made of.
+//
+// The choice draws NO RNG. The offer is the rules draw; a second one here
+// would make a bot and a player consume different amounts of the stream.
+const MOD_LOWER_IS_BETTER = ['cdTurns', 'dreadNeed', 'consumeFrac'];
+function modScore(p, mod) {
+  let score = 0;
+  for (const sid of Object.keys(mod.skills || {})) {
+    const sk = p.skills.find(s => s.id === sid);
+    if (!sk) continue;
+    const patch = mod.skills[sid];
+    for (const key of Object.keys(patch)) {
+      const now = sk[key], next = patch[key];
+      if (key === 'applies') { score += 0.4; continue; }
+      if (typeof next === 'boolean') { score += next ? 0.5 : -1; continue; }
+      if (typeof next !== 'number') continue;
+      if (typeof now !== 'number') { score += next > 0 ? 0.3 : 0; continue; }
+      // A removed effect is not a small reduction — it is the button losing a
+      // job. Priced well below any proportional change.
+      if (next === 0 && now > 0) { score -= 1.5; continue; }
+      if (now === 0) { score += 0.5; continue; }
+      let rel = (next - now) / Math.abs(now);
+      if (MOD_LOWER_IS_BETTER.indexOf(key) >= 0) rel = -rel;
+      score += Math.max(-1, Math.min(1, rel));
+    }
+  }
+  // A player-level override is a gain with no stated cost on any button.
+  if (mod.player) score += 0.5;
+  return score;
+}
+function botTakesMod(offer, p) {
+  p = p || state.player;
+  if (!offer || !offer.length || !p) return null;
+  let best = null, bestScore = -Infinity;
+  for (const m of offer) {
+    const s = modScore(p, m);
+    if (s > bestScore) { bestScore = s; best = m; }
+  }
+  // All three cut against the sheet — decline, which is a real option and the
+  // one a person would take rather than install the least-bad damage.
+  return bestScore < -0.75 ? null : (best ? best.id : null);
+}
 
 function presentMods(offer, killedWave) {
   state.pendingMods = { offer, killedWave };
