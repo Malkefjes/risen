@@ -50,6 +50,9 @@ export default async function ({ page, ok }) {
   const maxSeen = new Set();
   for (let i = 0; i < 16; i++) {
     await page.evaluate(() => {
+      // A drop card pauses the run until answered; this suite is about HP
+      // agreement, so it just declines and moves on.
+      if (state.pendingDrop) { resolveDrop(false); return; }
       if (!state.awaitingInput || !state.combatActive) return;
       const p = state.player;
       if (p.points > 0) { adjustStat('vit', 1); return; }

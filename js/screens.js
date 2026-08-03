@@ -57,6 +57,8 @@ function freshPlayer(classId) {
     // confirm — the sidebar renders them by previewing a copy. See adjustStat.
     pending:{ str:0, instinct:0, speed:0, vit:0 },
     skills: cls.skills.map(s => Object.assign({cd:0}, s)),
+    // The suit's five mounts, all bare. Gear is run-scoped, like everything.
+    gear: emptyGear(),
     // thornsGrown starts at 0 for everyone and only sym ever moves it: the
     // ramp is run-scoped, so a fresh player is a fresh organism.
     statuses:[], isPlayer:true, meter:0, thornsGrown:0, _statusKey:''
@@ -74,6 +76,7 @@ function freshPlayer(classId) {
 // the per-turn repaint has to be cleared here too.
 function resetRunState(classId) {
   stopCombatLoop();              // also cancels a turn or reveal still scheduled
+  abandonDrop();                 // a drop card cannot outlive its run
   state.classId = classId;
   state.player = null;
   state.enemy = null;
@@ -339,6 +342,7 @@ function updateHud() {
   const statsTab = document.querySelector('.sidebar-tab[data-tab="stats"]');
   if (statsTab) statsTab.classList.toggle('points-alert', p.points > 0 || pendingTotal(p) > 0);
   refreshSidebarStats();
+  renderSuitPanel();
   // AND THE FIGHTER CARD, which shows the same HP this just redrew in the
   // sidebar. updateHud fires on the run-scale beats — a level, a commit, a
   // resume — and every one of them can move max HP or current HP, so leaving
@@ -505,14 +509,18 @@ function refreshSidebarStats() {
   STAT_KEYS.forEach(k => {
     const el = document.getElementById('stat-' + k);
     if (!el) return;
-    el.textContent = p[k] + pendingOf(p, k);
+    // Fitted gear shows as its own small "+N" beside the allocated value, so
+    // what you bought and what the suit grants stay readable apart.
+    const g = gearStat(p, k);
+    el.innerHTML = (p[k] + pendingOf(p, k))
+      + (g ? '<i class="gear-plus">+' + g + '</i>' : '');
     el.classList.toggle('pending', pendingOf(p, k) > 0);
   });
 
   // The build profile: each stat as a share of the biggest of the four, so a
   // lopsided sheet is visible before any number is read. Pending points are in
   // it, so a staged allocation shows what the build is about to become.
-  const spread = STAT_KEYS.map(k => p[k] + pendingOf(p, k));
+  const spread = STAT_KEYS.map(k => p[k] + pendingOf(p, k) + gearStat(p, k));
   const top = Math.max(1, ...spread);
   STAT_KEYS.forEach((k, i) => {
     const bar = document.getElementById('bar-' + k);

@@ -243,6 +243,9 @@ let state = {
   // or is loaded (continueRun); every saveRun/clearSavedRun targets it.
   saveSlot:1,
   awaitingSpawn:false, awaitingInput:false, active:null, pendingEnemyAct:false,
+  // A drop waiting on equip-or-leave; the between-fight beat holds until
+  // resolveDrop answers it (js/items.js).
+  pendingDrop:null,
   combo:0, fightTurns:0, enemyActions:0, bestCombo:0,
   runOver:false, won:false,
   // Turns taken by EITHER side this fight, purely so the log can number them.
@@ -369,12 +372,20 @@ function applyDerivedStats(p) {
   p.hpMult  = p.hpMult  || 1;
   p.apsMult = p.apsMult || 1;
 
+  // SUIT HARDWARE FEEDS THE SAME PIPE AS ALLOCATION: effective stats are
+  // allocated points plus fitted gear (js/items.js), so every derived rule
+  // below just works and item points stack with earned ones transparently.
+  const str      = p.str      + gearStat(p, 'str');
+  const instinct = p.instinct + gearStat(p, 'instinct');
+  const speed    = p.speed    + gearStat(p, 'speed');
+  const vit      = p.vit      + gearStat(p, 'vit');
+
   // ATTACK DAMAGE. One rule for every strain, Unaugmented included: Strength and
   // nothing else. Damage used to come off each strain's own primary, which meant
   // Strength was worth literally nothing to two of the four. 5 damage per point,
   // so the 5 everyone starts with is 25 Attack Damage. There is no per-strain
   // damage weight any more — dmgMult already covers earned multipliers.
-  p.atkPower = p.str * B.damagePerStr * p.dmgMult;
+  p.atkPower = str * B.damagePerStr * p.dmgMult;
 
   // TURN RATE. Speed and nothing else, the same shape as damage off Strength and
   // HP off Vitality: 5 Speed is 1.00, one point is +0.20. No per-strain base —
@@ -384,16 +395,16 @@ function applyDerivedStats(p) {
   // flattens without stopping, and apsCap applies after apsMult as a backstop
   // for that multiplier alone.
   const anchor = BALANCE.player.sheetAnchor * B.apsPerSpeed;
-  const above = Math.max(0, p.speed - BALANCE.player.sheetAnchor);
+  const above = Math.max(0, speed - BALANCE.player.sheetAnchor);
   const earned = B.apsGain * above / (above + B.apsHalfPoints);
-  p.attackSpeed = Math.min(B.apsCap, (anchor + earned) * p.apsMult);
+  p.attackSpeed = Math.min(B.apsCap, (anchor + earned) * p.apsMult * (1 + gearMod(p, 'apsBoost')));
 
   // Max HP is Vitality x 20, full stop. Symbiotic used to take a reduced rate to
   // pay for its thorns; that came out with the flat base and the per-level
   // trickle, because any of the three makes the readout stop being a straight
   // read of the stat above it. If sym needs paying for again, the place is its
   // thorns numbers, not a hidden discount on the shared rule.
-  const newMax = Math.max(1, Math.floor(p.vit * B.hpPerVit * p.hpMult));
+  const newMax = Math.max(1, Math.floor(vit * B.hpPerVit * p.hpMult));
   if (p.maxHp > 0 && p.hp != null) {
     // Raising max HP raises current HP with it: what you are MISSING stays
     // constant, so a Vitality point is felt the moment it
@@ -418,17 +429,17 @@ function applyDerivedStats(p) {
     (1 + Math.max(0, (p.level || 1) - 1) * (B.healAnchorPerLevel || 0))
   ));
 
-  p.evadeChance = Math.min(B.evadeCap, B.evadeBase + p.speed*B.evadePerSpeed);
-  p.blockChance = Math.min(B.blockCap, B.blockBase + p.vit*B.blockPerVit);
+  p.evadeChance = Math.min(B.evadeCap, B.evadeBase + speed*B.evadePerSpeed + gearMod(p, 'evade'));
+  p.blockChance = Math.min(B.blockCap, B.blockBase + vit*B.blockPerVit + gearMod(p, 'block'));
   p.blockReduction = B.blockReduction;
-  p.critChance = Math.min(B.critCap, B.critBase + p.instinct*B.critPerInstinct);
+  p.critChance = Math.min(B.critCap, B.critBase + instinct*B.critPerInstinct + gearMod(p, 'critCh'));
   // CRIT DAMAGE CLIMBS WITH THE SAME POINTS, from point one rather than as an
   // overflow past the chance cap. Both terms rising at once is what makes
   // Instinct quadratic and what lets it reach Strength at all — the balance
   // header carries the arithmetic. No cap of its own and it needs none: Instinct
   // is the only source, the chance it multiplies is capped, and points past that
   // cap keep landing here, so overinvestment bends instead of hitting a wall.
-  p.critMult = B.critMultBase + p.instinct * (B.critMultPerInstinct || 0);
+  p.critMult = B.critMultBase + instinct * (B.critMultPerInstinct || 0) + gearMod(p, 'critDmg');
 
   // A fifth of Attack Damage and a twentieth of max HP — both already carry
   // dmgMult / hpMult through those two, so neither is applied again here.
@@ -469,7 +480,7 @@ function bleedStacks(p) {
   if (!p) return 1;
   const B = P();
   const per = B.bleedPerStr || 5;
-  return Math.max(1, (B.bleedBase || 2) + Math.floor((p.str || 0) / per));
+  return Math.max(1, (B.bleedBase || 2) + Math.floor(((p.str || 0) + gearStat(p, 'str')) / per));
 }
 
 function bleedDepth(p) {
@@ -503,7 +514,8 @@ function attackDamage(p) {
 function healAnchorFor(unit) {
   if (!unit) return 1;
   if (!unit.isPlayer) return unit.maxHp;
-  return Math.max(1, unit.healAnchor || unit.maxHp);
+  // A fitted healBoost mod lands here, the one read every anchored heal makes.
+  return Math.max(1, Math.floor((unit.healAnchor || unit.maxHp) * (1 + gearMod(unit, 'healBoost'))));
 }
 
 // Rolls a heal crit and returns the MULTIPLIER, so a caller can price the whole
@@ -684,6 +696,7 @@ function makeEnemy(wave) {
   const e = {
     id: 'enemy-' + wave + '-' + Math.floor(Math.random()*99999),
     name, class:'enemy', isPlayer:false, isBoss, isFinal, elite, rank,
+    champion: !!champ,     // the zone's named elite — read by the drop table
     zone: zone.num,        // which zone's roster (and art) this enemy belongs to
     rosterId: face.id,     // which face of that roster — art only, never a rule
     windupEvery: isBoss ? (isFinal ? E.finalWindupEvery : E.windupEvery) : (elite ? E.eliteWindupEvery : 0),

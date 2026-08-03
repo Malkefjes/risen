@@ -194,6 +194,7 @@
       <aside class="sidebar">
         <div class="sidebar-tabs">
           <button class="sidebar-tab active" data-tab="stats" onclick="switchTab('stats')">STATS</button>
+          <button class="sidebar-tab" data-tab="suit" onclick="switchTab('suit')">SUIT</button>
           <button class="sidebar-tab" data-tab="menu" onclick="switchTab('menu')">MENU</button>
         </div>
         <div class="sidebar-body">
@@ -304,6 +305,10 @@
               </div>
             </div>
           </div>
+          <!-- The five mounts and what is fitted in them (renderSuitPanel). -->
+          <div class="sidebar-panel" id="tab-suit">
+            <div class="suit-list" id="suit-list"></div>
+          </div>
           <div class="sidebar-panel" id="tab-menu">
             <div class="menu-panel">
               <div class="menu-panel-note">Your run saves automatically.</div>
@@ -319,6 +324,19 @@
   <!-- RESULT -->
   <div id="result-screen" class="screen">
     <div class="result-stats" id="result-stats"></div>
+  </div>
+
+  <!-- FIELD RECOVERY — the drop card. Only ever up between fights: combat is
+       already waiting on the spawn, and resolveDrop is the only way on. -->
+  <div class="modal-overlay" id="drop-modal">
+    <div class="modal drop-modal">
+      <h3>FIELD RECOVERY</h3>
+      <div id="drop-body"></div>
+      <div class="modal-actions drop-actions">
+        <button class="ui-btn is-primary" onclick="resolveDrop(true)">FIT TO SUIT</button>
+        <button class="ui-btn is-quiet" onclick="resolveDrop(false)">LEAVE IT</button>
+      </div>
+    </div>
   </div>
 
   <!-- SETTINGS -->
@@ -345,6 +363,7 @@
 </div>
 
 <script src="js/data.js"></script>
+<script src="js/items.js"></script>
 <script src="js/stats.js"></script>
 <script src="js/screens.js"></script>
 <script src="js/sim.js"></script>

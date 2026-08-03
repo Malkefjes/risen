@@ -318,6 +318,13 @@ function simulateRun(classId, opts) {
       pumpSteps();
       if (state.runOver) break;
       if (opts.stopWhen && opts.stopWhen(state)) break;
+      // A drop waits on the player exactly like a turn does. The bot answers
+      // it the naive way — take it if it outscores what is fitted — and the
+      // decision draws no RNG, so both bots share it.
+      if (state.pendingDrop) {
+        resolveDrop(botTakesDrop(state.player, state.pendingDrop.item));
+        continue;
+      }
       if (!state.awaitingInput) {
         if (!_pendingStep) break;                // nothing queued, nobody to ask
         continue;

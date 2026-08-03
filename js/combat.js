@@ -8,6 +8,7 @@ function startCombatLoop() {
   stopCombatLoop();
   state.combatActive = true;
   updateTurnInfo();
+  if (state.pendingDrop) return;                         // waiting on the drop card
   if (state.awaitingInput) { renderSkills(); return; }   // waiting on the player
   if (state.pendingEnemyAct) { scheduleTurn(enemyAct, turnDelay(380)); return; }
   if (state.awaitingSpawn)   { scheduleTurn(doSpawn, turnDelay(220)); return; }
@@ -275,6 +276,7 @@ function enemyAct() {
 
 function doSpawn() {
   if (!state.combatActive) return;
+  if (state.pendingDrop) return;         // resolveDrop resumes the spawn
   spawnEnemy();
   if (!state.player || state.player.hp <= 0) return;
   if (state.enemy && state.enemy._defeated) return;        // overflow killed it too
@@ -511,6 +513,14 @@ function applyEnemyDamage(e, p, mult, opts) {
   if (Math.random() < e.critChance) { dmg = Math.floor(dmg * e.critMult); notes.push('CRIT ×' + e.critMult.toFixed(1)); }
   notes.push(...statusNotes(p, 'incomingMult', { attacker: e }));
   dmg = Math.floor(dmg * statusMult(p, 'incomingMult', { attacker: e }));
+  // Fitted plating that blunts telegraphed heavies alone (heavyDR, js/items.js).
+  if (mult > 1) {
+    const hdr = Math.min(0.9, gearMod(p, 'heavyDR'));
+    if (hdr > 0) {
+      dmg = Math.floor(dmg * (1 - hdr));
+      notes.push('PLATING −' + Math.round(hdr * 100) + '%');
+    }
+  }
   let blocked = false;
   if (Math.random() < p.blockChance) {
     blocked = true;
@@ -972,11 +982,13 @@ function onEnemyDefeated() {
 
   const tier = Math.floor((state.wave-1)/5);
   const comboBonus = 1 + Math.min(BALANCE.combo.maxStack, state.combo) * BALANCE.combo.xpPerStack;
+  const gearXp = 1 + gearMod(p, 'xpBoost');
   const xp = Math.floor((BALANCE.xp.killBase + state.wave*BALANCE.xp.killWave + tier*BALANCE.xp.killTier)
-    * e.xpMult * comboBonus);
+    * e.xpMult * comboBonus * gearXp);
   logEvent('XP', null, '+' + logNum(xp), [
     e.xpMult !== 1 ? 'enemy ×' + e.xpMult.toFixed(1) : null,
-    comboBonus > 1 ? 'chain ×' + comboBonus.toFixed(2) : null
+    comboBonus > 1 ? 'chain ×' + comboBonus.toFixed(2) : null,
+    gearXp > 1 ? 'suit ×' + gearXp.toFixed(2) : null
   ]);
 
   killFlash(e);
@@ -1003,6 +1015,16 @@ function onEnemyDefeated() {
   saveRun();
   updateTurnInfo(); renderSkills();
 
+  // LOOT. Rolled here, on the rules stream, in both paths — headless rolls the
+  // identical item. The card pauses the between-fight beat: resolveDrop is the
+  // only way on to the spawn (the sim answers it with botTakesDrop).
+  const drop = rollDrop(e, killedWave);
+  if (drop) { presentDrop(drop, killedWave); return; }
+  proceedAfterKill(killedWave);
+}
+
+// The between-fight beat after a kill (and after any drop card is answered).
+function proceedAfterKill(killedWave) {
   // A BOSS EARNS A BEAT. Wave-to-wave the next enemy is already walking in by
   // design, but dropping straight from a boss into the next grunt gives the
   // kill nowhere to land — so a scene, if one belongs here, gets a full second
@@ -1197,6 +1219,13 @@ function runReport() {
          + '  ->  ' + N(attackDamage(p)) + ' dmg · ' + N(p.maxHp) + ' HP · '
          + p.attackSpeed.toFixed(2) + 'x rate');
   L.push('Peak ' + (STRAIN_LABEL[p.class] || 'strain') + ': ' + N(state.peakStrain || 0));
+  const worn = gearList(p);
+  if (worn.length) {
+    L.push('');
+    L.push('Suit');
+    worn.forEach(it => L.push('  ' + pad(SLOTS[it.slot].label, 11)
+      + itemLogName(it) + ' — ' + itemAffixLines(it).join(' · ')));
+  }
   L.push('');
   L.push('Turns ' + N(state.runTurns || 0)
          + ' · Kills ' + N(state.kills)

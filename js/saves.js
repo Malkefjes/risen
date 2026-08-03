@@ -79,6 +79,9 @@ function openDevTools() { showScreen('dev-screen'); }
 // Shared handover: the run in `state` goes on-screen, mid-run style.
 function devEnterCombat(handoverLine) {
   state.saveSlot = 0;
+  // The bot may have stopped mid-drop; answer it its own way before handover,
+  // or the pendingDrop gate would hold a card that was never drawn on screen.
+  if (state.pendingDrop) resolveDrop(botTakesDrop(state.player, state.pendingDrop.item));
   const zn = document.getElementById('zone-name');
   if (zn) zn.textContent = getZoneName(state.wave);
   const ac = document.getElementById('arena-card');
@@ -154,6 +157,7 @@ function runClean() {
 
 function goToMenu() {
   leaveMenuTab(); closeSettings();
+  abandonDrop();
   stopCombatLoop();
   showScreen('title-screen');
   refreshContinueButton();
@@ -211,6 +215,9 @@ function serializeRun() {
       // from it on load (see applyDerivedStats), so losing it would silently
       // hand back a wave-20 sym with a wave-1 body.
       thornsGrown:p.thornsGrown||0,
+      // The suit. Items are plain data; an unresolved drop card is NOT saved —
+      // leaving mid-decision forfeits the item.
+      gear:p.gear||null,
       // Only the statuses marked to persist — the same set that survives into
       // the next fight, so a reload lands you in the shape a kill left you in.
       statuses:survivingStatuses(p),
@@ -350,6 +357,7 @@ function continueRun(slot){
     points:sp.points||0, str:sp.str, instinct:sp.instinct, speed:sp.speed, vit:sp.vit,
     dmgMult:sp.dmgMult||1, hpMult:sp.hpMult||1, apsMult:sp.apsMult||1,
     thornsGrown:sp.thornsGrown||0 });
+  p.gear = loadGear(sp.gear);
   state.player=p;
   // Saves written before statuses were persisted simply have none; anything
   // whose definition has since been removed is dropped rather than trusted.

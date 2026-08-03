@@ -385,7 +385,9 @@ function clearLog(){ if (HEADLESS.on) HEADLESS.log.length = 0; }
 // restarted the fight underneath him. Leaving it alone is the whole fix; the
 // click it is waiting for is just as valid two minutes later.
 document.addEventListener('visibilitychange', () => {
-  if (state.inScene) return;
+  // A drop card is a scene in this one respect: it waits on a click, not on a
+  // clock, and resolveDrop is what resumes the run — not startCombatLoop.
+  if (state.inScene || state.pendingDrop) return;
   if (document.hidden) { if (state.combatActive) stopCombatLoop(); }
   else if (state.player && state.player.hp > 0 && document.getElementById('combat-screen').classList.contains('active')) {
     startCombatLoop();

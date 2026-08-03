@@ -102,6 +102,10 @@ export default async function ({ page, ok }) {
         // walks on, and a step that asks something is answered by its buttons.
         const btn = document.querySelector('#scene-choices button');
         if (btn) btn.click(); else onScenePanelClick();
+      } else if (state.pendingDrop) {
+        // The same hand the sim uses on a drop card, so both sides make the
+        // identical equip-or-leave call. The decision draws no RNG.
+        resolveDrop(botTakesDrop(state.player, state.pendingDrop.item));
       } else if (state.awaitingInput && state.combatActive) {
         const p = state.player;
         if (p.points > 0) adjustStat('vit', 1);
