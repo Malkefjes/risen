@@ -102,7 +102,7 @@ function resetRunState(classId) {
   state.runTurns = 0;
   state.damageTaken = 0;
   state.critsLanded = 0;
-  state.dodges = 0;
+  state.damagePrevented = 0;
   // THE RUN LEDGER, for the result screen and its COPY block. Four things a
   // total cannot say: where the damage came from, which buttons were actually
   // pressed, how big the strain number ever got, and what finally did it.
@@ -274,7 +274,6 @@ function spawnEnemy() {
   log('WAVE ' + state.wave + ' · ' + e.name + (tags.length ? ' · ' + tags.join(' ') : ''));
   log('HP ' + logNum(e.maxHp) + ' · DMG ' + logNum(e.damage)
     + ' · RATE ' + e.attackSpeed.toFixed(2) + '×'
-    + (e.evadeChance ? ' · EVADE ' + Math.round(e.evadeChance*100) + '%' : '')
     + (e.windupEvery ? ' · WINDUP every ' + e.windupEvery + ' (×' + windupMultFor(e) + ')' : '')
     + (e.xpMult !== 1 ? ' · XP ×' + e.xpMult.toFixed(1) : ''));
   // The fight's question, stated in the transcript the way the plate states

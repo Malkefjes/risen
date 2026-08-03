@@ -199,7 +199,7 @@ function serializeRun() {
     // The result card's run-lifetime counters. Additive fields: a save written
     // before they existed loads them as 0, counted from the reload on.
     runTurns:state.runTurns||0, damageTaken:state.damageTaken||0,
-    critsLanded:state.critsLanded||0, dodges:state.dodges||0,
+    critsLanded:state.critsLanded||0, damagePrevented:state.damagePrevented||0,
     // The run ledger rides along, or a reloaded run's result screen would
     // report a breakdown that starts from the moment you pressed CONTINUE.
     dmgBySource:state.dmgBySource||{}, skillUses:state.skillUses||{},
@@ -402,7 +402,7 @@ function continueRun(slot){
   state.rescued=!!d.rescued;
   state.damageDealt=d.damageDealt||0;
   state.runTurns=d.runTurns||0; state.damageTaken=d.damageTaken||0;
-  state.critsLanded=d.critsLanded||0; state.dodges=d.dodges||0;
+  state.critsLanded=d.critsLanded||0; state.damagePrevented=d.damagePrevented||0;
   state.dmgBySource=d.dmgBySource||{}; state.skillUses=d.skillUses||{};
   state.peakStrain=d.peakStrain||0;
   state.runStart=d.runStart||Date.now();

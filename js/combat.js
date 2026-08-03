@@ -203,6 +203,17 @@ function tickTurnStart(unit) {
     // the top of your turn, which is the moment the readout shows.
     const sn = strainNumberNow(unit);
     if (sn > (state.peakStrain || 0)) state.peakStrain = sn;
+    // VITALITY'S FAUCET. A share of the anchor per turn, from points above the
+    // starting sheet — silent at full HP, a floater and a line when it works,
+    // the same shape REGEN follows.
+    if (unit.regen > 0 && unit.hp < unit.maxHp) {
+      const heal = Math.max(1, Math.floor(healAnchorFor(unit) * unit.regen));
+      const before = unit.hp;
+      unit.hp = Math.min(unit.maxHp, unit.hp + heal);
+      floatText(unit, unit.hp - before, 'heal');
+      logHeal('RECOVERY', unit, unit.hp - before,
+              [Math.round(unit.regen * 100) + '% of ' + logNum(healAnchorFor(unit)) + ' per turn']);
+    }
     // THE SIPHON — psy feeds on fear while it sits on the enemy: each DREAD
     // stack drips a share of max HP at the start of your turn. Ticks on YOUR
     // turns so it scales with the turn advantage the slow already bought.
@@ -554,34 +565,27 @@ function applyEnemyDamage(e, p, mult, opts) {
     : 'Attack';
   notes.push(...statusNotes(e, 'outgoingMult', { target: p }));
   let dmg = Math.max(1, Math.floor(e.damage * (mult || 1) * statusMult(e, 'outgoingMult', { target: p })));
-  // A provoked swing skips the evade roll entirely rather than rolling and
-  // discarding: you do not dodge a hit you invited, and a wasted roll would
-  // shift every rules draw after it.
   if (opts && opts.unevadable) notes.push('GUARD BARED');
-  else if (Math.random() < p.evadeChance) {
-    state.dodges = (state.dodges || 0) + 1;
-    logMiss(label, p, 'EVADED (' + Math.round(p.evadeChance * 100) + '%)');
-    // A dodge used to plant DREAD for psy — the second mouth of the mechanic,
-    // beside crits. Both went when Hunt started planting on hit: fear should
-    // come from the button, not from two rolls the player does not make.
-    floatText(p, 'EVADE', 'note'); playAttackAnim(e, p, false); return 0;
-  }
   if (Math.random() < e.critChance) { dmg = Math.floor(dmg * e.critMult); notes.push('CRIT ×' + e.critMult.toFixed(1)); }
   notes.push(...statusNotes(p, 'incomingMult', { attacker: e }));
   dmg = Math.floor(dmg * statusMult(p, 'incomingMult', { attacker: e }));
-  // Fitted plating that blunts telegraphed heavies alone (heavyDR, js/items.js).
-  if (mult > 1) {
-    const hdr = Math.min(0.9, gearMod(p, 'heavyDR'));
-    if (hdr > 0) {
-      dmg = Math.floor(dmg * (1 - hdr));
-      notes.push('PLATING −' + Math.round(hdr * 100) + '%');
-    }
+  // THE DEFENSIVE LAYERS, multiplied. ARMOR answers every hit; the second
+  // layer depends on what is coming — a telegraphed heavy is answered by the
+  // READ (Instinct: you saw it), an ordinary swing by EVASION (Speed). That
+  // split is what makes the right defence depend on what is killing you.
+  const heavy = (mult || 1) > 1;
+  const layers = [['ARMOR', p.armor || 0]];
+  layers.push(heavy ? ['READ', p.read || 0] : ['EVASION', p.evasion || 0]);
+  let kept = 1;
+  for (const [name, r] of layers) {
+    if (!(r > 0)) continue;
+    kept *= (1 - r);
+    notes.push(name + ' −' + Math.round(r * 100) + '%');
   }
-  let blocked = false;
-  if (Math.random() < p.blockChance) {
-    blocked = true;
-    dmg = Math.floor(dmg * (1 - p.blockReduction));
-    notes.push('BLOCK −' + Math.round(p.blockReduction * 100) + '%');
+  if (kept < 1) {
+    const before = dmg;
+    dmg = Math.floor(dmg * kept);
+    state.damagePrevented = (state.damagePrevented || 0) + (before - dmg);
   }
   // Unaugmented: held Resolve is flat mitigation and Counterpunch braces on top
   // of it. The two are summed under one cap on purpose — see the note on the
@@ -629,7 +633,6 @@ function applyEnemyDamage(e, p, mult, opts) {
   // growth, Brace punching back — fires here, in one place, for any status.
   statusEach(p, 'onHitTaken', { attacker: e, damage: dmg });
   floatText(p, dmg, 'damage');
-  if (blocked) floatText(p, 'BLOCK', 'note');
 
   let thorns = getThornsDamage(p);
   const tNotes = [];
@@ -1322,7 +1325,7 @@ function runReport() {
          + ' · Kills ' + N(state.kills)
          + ' · Best chain ' + (state.bestCombo || 0) + 'x'
          + ' · Crits ' + N(state.critsLanded || 0)
-         + ' · Dodges ' + N(state.dodges || 0));
+         + ' · Prevented ' + N(state.damagePrevented || 0));
   L.push('Damage dealt ' + N(Math.floor(state.damageDealt))
          + ' · taken ' + N(Math.floor(state.damageTaken || 0)));
 
@@ -1465,7 +1468,7 @@ function showResultScreen() {
             stat('Damage dealt', formatNum(Math.floor(state.damageDealt))) +
             stat('Damage taken', formatNum(Math.floor(state.damageTaken || 0))) +
             stat('Crits landed', formatNum(state.critsLanded || 0)) +
-            stat('Dodges', formatNum(state.dodges || 0)) +
+            stat('Damage prevented', formatNum(state.damagePrevented || 0)) +
           '</div>' +
         '</section>' +
 

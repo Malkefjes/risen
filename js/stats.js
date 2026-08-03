@@ -433,9 +433,16 @@ function applyDerivedStats(p) {
     (1 + Math.max(0, (p.level || 1) - 1) * (B.healAnchorPerLevel || 0))
   ));
 
-  p.evadeChance = Math.min(B.evadeCap, B.evadeBase + speed*B.evadePerSpeed + gearMod(p, 'evade'));
-  p.blockChance = Math.min(B.blockCap, B.blockBase + vit*B.blockPerVit + gearMod(p, 'block'));
-  p.blockReduction = B.blockReduction;
+  // THE THREE DEFENSIVE LAYERS, one curve, one K — see the block above
+  // defenseK. Gear adds to the reduction directly and the cap is a backstop.
+  const K = B.defenseK || 45, cap = B.defenseCap || 0.90;
+  const layer = (pts, mod) => Math.min(cap, pts / (pts + K) + gearMod(p, mod));
+  p.armor   = layer(str, 'armor');        // every hit
+  p.evasion = layer(speed, 'evasion');    // ordinary swings
+  p.read    = layer(instinct, 'read');    // telegraphed heavies
+  // Vitality's faucet: a share of the anchor per turn, from points above the
+  // starting sheet only.
+  p.regen = Math.max(0, vit - BALANCE.player.sheetAnchor) * (B.regenPerVit || 0);
   p.critChance = Math.min(B.critCap, B.critBase + instinct*B.critPerInstinct + gearMod(p, 'critCh'));
   // CRIT DAMAGE CLIMBS WITH THE SAME POINTS, from point one rather than as an
   // overflow past the chance cap. Both terms rising at once is what makes
@@ -620,9 +627,11 @@ function readouts(p) {
     // anyway — showing "122 / 160" put a live value under a preview that meant
     // the ceiling. What you have right now is on the bar over the sprite.
     { id:'hp',    text: formatNum(Math.floor(p.maxHp)), num: Math.floor(p.maxHp) },
-    pct('evade', p.evadeChance),
-    { id:'block', text: Math.round(p.blockChance*100) + '% (\u2212' + Math.round(p.blockReduction*100) + '%)',
-      num: p.blockChance*100, unit:'%' }
+    pct('armor', p.armor),
+    pct('evasion', p.evasion),
+    pct('read', p.read),
+    { id:'regen', text: p.regen > 0 ? formatNum(Math.floor(healAnchorFor(p) * p.regen)) + '/turn' : '\u2014',
+      num: Math.floor(healAnchorFor(p) * p.regen), unit:'/turn' }
   );
   const g = guardReadout(p); if (g) rows.push(g);
   return rows;

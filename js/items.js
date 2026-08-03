@@ -12,8 +12,8 @@
 //              what makes a mount feel like itself before any affix lands.
 //   PREFIXES   STAT POINTS. +STR / +INS / +SPD / +VIT, and hybrids that grant
 //              two at a lower value each.
-//   SUFFIXES   PERCENTAGES. Crit, evade, block, tempo, healing, XP, telegraph
-//              resistance.
+//   SUFFIXES   PERCENTAGES. Crit, the three defensive layers, tempo,
+//              healing, XP.
 //
 // The split is already latent in the game — points feed the same pipe as
 // allocation, percentages feed the derived sheet — so formalising it costs
@@ -111,16 +111,16 @@ const ITEM_PREFIXES = [
 
 // ---- Suffixes: percentages --------------------------------------
 // Where each lands in the rules:
-//   critCh / critDmg / evade / block / apsBoost / dmgMult   applyDerivedStats
-//   heavyDR                       applyEnemyDamage, telegraphed hits only
+//   critCh / critDmg / evasion / armor / read / apsBoost / dmgMult
+//                                 applyDerivedStats, folded into the layers
 //   healBoost                     healAnchorFor — every anchored heal
 //   xpBoost                       the kill XP in onEnemyDefeated
 const ITEM_MODS = {
   critCh:    { id: 'critCh',    step: 0.01, text: v => '+' + Math.round(v * 100) + '% crit chance' },
   critDmg:   { id: 'critDmg',   step: 0.05, text: v => '+' + v.toFixed(2) + '× crit damage' },
-  evade:     { id: 'evade',     step: 0.01, text: v => '+' + Math.round(v * 100) + '% evade' },
-  block:     { id: 'block',     step: 0.01, text: v => '+' + Math.round(v * 100) + '% block' },
-  heavyDR:   { id: 'heavyDR',   step: 0.02, text: v => '−' + Math.round(v * 100) + '% from telegraphed heavies' },
+  evasion:   { id: 'evasion',   step: 0.01, text: v => '+' + Math.round(v * 100) + '% evasion' },
+  armor:     { id: 'armor',     step: 0.01, text: v => '+' + Math.round(v * 100) + '% armor' },
+  read:      { id: 'read',      step: 0.02, text: v => '+' + Math.round(v * 100) + '% read (telegraphs)' },
   healBoost: { id: 'healBoost', step: 0.02, text: v => '+' + Math.round(v * 100) + '% healing' },
   xpBoost:   { id: 'xpBoost',   step: 0.01, text: v => '+' + Math.round(v * 100) + '% XP' },
   apsBoost:  { id: 'apsBoost',  step: 0.01, text: v => '+' + Math.round(v * 100) + '% turn rate' },
@@ -132,11 +132,11 @@ const ITEM_SUFFIXES = [
     tiers: [[0.09, 0.12], [0.07, 0.09], [0.05, 0.07], [0.03, 0.05], [0.02, 0.03]] },
   { id: 's_critDmg',   mod: 'critDmg',   groups: ['critDmg'],
     tiers: [[0.70, 0.95], [0.50, 0.70], [0.35, 0.50], [0.22, 0.35], [0.15, 0.22]] },
-  { id: 's_evade',     mod: 'evade',     groups: ['evade'],
+  { id: 's_evasion',   mod: 'evasion',   groups: ['evasion'],
     tiers: [[0.08, 0.10], [0.06, 0.08], [0.04, 0.06], [0.03, 0.04], [0.02, 0.03]] },
-  { id: 's_block',     mod: 'block',     groups: ['block'],
+  { id: 's_armor',     mod: 'armor',     groups: ['armor'],
     tiers: [[0.10, 0.13], [0.07, 0.10], [0.05, 0.07], [0.03, 0.05], [0.02, 0.03]] },
-  { id: 's_heavyDR',   mod: 'heavyDR',   groups: ['heavyDR'],
+  { id: 's_read',      mod: 'read',      groups: ['read'],
     tiers: [[0.30, 0.38], [0.24, 0.30], [0.18, 0.24], [0.12, 0.18], [0.08, 0.12]] },
   { id: 's_healBoost', mod: 'healBoost', groups: ['healBoost'],
     tiers: [[0.38, 0.50], [0.28, 0.38], [0.20, 0.28], [0.14, 0.20], [0.08, 0.14]] },
@@ -152,9 +152,9 @@ const ITEM_SUFFIXES = [
 const SLOT_SUFFIXES = {
   optics:    ['s_critCh', 's_critDmg', 's_xpBoost'],
   gauntlets: ['s_dmgMult', 's_critDmg', 's_critCh'],
-  armor:     ['s_block', 's_heavyDR', 's_healBoost'],
-  repair:    ['s_healBoost', 's_heavyDR', 's_xpBoost'],
-  boots:     ['s_apsBoost', 's_evade', 's_critCh']
+  armor:     ['s_armor', 's_read', 's_healBoost'],
+  repair:    ['s_healBoost', 's_read', 's_xpBoost'],
+  boots:     ['s_apsBoost', 's_evasion', 's_critCh']
 };
 
 // The slot's own line, always present, roughly half a suffix roll — identity
@@ -162,7 +162,7 @@ const SLOT_SUFFIXES = {
 const SLOT_IMPLICIT = {
   optics:    { mod: 'critCh',    tiers: [[0.06, 0.08], [0.05, 0.06], [0.04, 0.05], [0.03, 0.04], [0.02, 0.03]] },
   gauntlets: { mod: 'dmgMult',   tiers: [[0.14, 0.20], [0.11, 0.14], [0.08, 0.11], [0.06, 0.08], [0.04, 0.06]] },
-  armor:     { mod: 'block',     tiers: [[0.06, 0.09], [0.05, 0.06], [0.04, 0.05], [0.03, 0.04], [0.02, 0.03]] },
+  armor:     { mod: 'armor',     tiers: [[0.06, 0.09], [0.05, 0.06], [0.04, 0.05], [0.03, 0.04], [0.02, 0.03]] },
   repair:    { mod: 'healBoost', tiers: [[0.20, 0.28], [0.16, 0.20], [0.12, 0.16], [0.09, 0.12], [0.06, 0.09]] },
   boots:     { mod: 'apsBoost',  tiers: [[0.08, 0.11], [0.06, 0.08], [0.05, 0.06], [0.04, 0.05], [0.02, 0.04]] }
 };
@@ -207,7 +207,7 @@ function makeItem(wave, rarityId) {
   // THE IMPLICIT CLAIMS ITS GROUP TOO, which is a deliberate divergence from
   // the spec this was built off — PoE lets an implicit and an explicit grant
   // the same thing. Here the drop card is a three-second read with no
-  // inventory behind it, and "+3% block / +5% block" spends two of its four
+  // inventory behind it, and "+3% armor / +5% armor" spends two of its four
   // lines saying one thing. Every item now shows two different percentages.
   const used = [impDef.mod];
   const free = a => a.groups.every(g => used.indexOf(g) < 0);

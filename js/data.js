@@ -37,7 +37,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-03r';
+const BUILD = '2026-08-03s';
 
 const BALANCE = {
   player: {
@@ -62,8 +62,30 @@ const BALANCE = {
     pointsPerLevel: 3,
     // Set so a starting sheet reads 10 / 10 / 10 at 5 in every stat. Evade and
     // block look odd alone because each is "10% minus the starting 5 points".
-    evadeBase: 0.075, evadePerSpeed: 0.005, evadeCap: 0.40,
-    blockBase: 0.065, blockPerVit: 0.007, blockCap: 0.35, blockReduction: 0.5,
+    // ---- DEFENCE: EVERY STAT BUYS A LAYER ---------------------------------
+    // Block and evade were CHANCE, and chance does not scale: both capped
+    // (40% / 35%), so past ~41 Vitality a point bought no defence at all, and
+    // a coin flip is worth less the bigger a hit gets — you live until two
+    // land in a row. Replaced with three reductions on one curve:
+    //
+    //   ARMOR    (Strength)  every hit
+    //   EVASION  (Speed)     ordinary swings only
+    //   READ     (Instinct)  telegraphed heavies only
+    //
+    // X / (X + defenseK): no cap, always worth another point, never immunity —
+    // which is what makes "how far do I push this before switching layers" a
+    // real question. One shared K so the three are directly comparable, and 5
+    // points reads 10% exactly like the old pair did.
+    //
+    // THEY MULTIPLY, so two layers at 50% is 4x effective HP, not 2x — and
+    // because Instinct answers the telegraph and Speed answers attrition, the
+    // right pair depends on what is actually killing you.
+    defenseK: 45,
+    defenseCap: 0.90,        // per layer, after gear — a backstop, not a target
+    // Vitality's second job. Zero at the starting sheet (it reads points ABOVE
+    // the anchor), so it rewards investment rather than handing every build a
+    // free faucet. A share of the heal anchor per turn.
+    regenPerVit: 0.002,
     // ---- INSTINCT ---------------------------------------------------------
     // Buys crit CHANCE and crit DAMAGE from the same points, so it is quadratic
     // in its own points. It has to be: crit chance against a FIXED multiplier is
@@ -189,7 +211,15 @@ const BALANCE = {
     // because an unbounded slow is a stun nobody paid for.
     dreadSlowPerStack: 0.05, // each stack: −5% enemy turn rate
     dreadSlowFloor: 0.55,    // ...but never below this share of its rate: the slow saturates, the count does not
+    // PSY'S DAMAGE PIPE IS INSTINCT, and it is the one strain whose potency
+    // does not read Attack Damage. Every ramp in the game priced its per-unit
+    // value as a share of attack damage, which meant all four strains scaled
+    // damage through Strength underneath and the flavour was cosmetic. Fear's
+    // bite is perception, so the guard it opens widens with Instinct: each
+    // stack's vulnerability grows by dreadVulnPerIns for every point above the
+    // starting sheet.
     dreadVulnPerStack: 0.04, // each stack: +4% damage the enemy takes — terror opens the guard, uncapped
+    dreadVulnPerIns: 0.03,   // ...and that 4% grows by this share per Instinct above the anchor
     dreadLossPerHit: 1,      // an enemy that lands a hit on psy steadies: sheds this many stacks
     // PSY'S FAUCET IS DEVOUR. HP carries across fights, so a class without a
     // faucet does not lose fights, it loses RUNS to arithmetic. Whenever DREAD
@@ -670,7 +700,11 @@ const ZONES = [
     //            from — 87-96% of deaths all session have been ordinary hits
     //   hpExp    while pools grow slower than the rest of the game's 0.75, so
     //            the wall is SHARP rather than long
-    dmgMult: 1.18, apsMult: 1.25, hpExp: 0.70,
+    // Re-fitted 2026-08-03s, after the defensive rework roughly TRIPLED
+    // effective HP (three stacking layers where there had been two capped
+    // coin flips). At the old 1.18/1.25 every strain cleared 88-100% of
+    // runs; these put the best build back near a quarter.
+    dmgMult: 2.6, apsMult: 1.45, hpExp: 0.70,
     windupMult: 1.35, eliteWindupMult: 1.15 }
 ];
 function zoneForWave(wave) {
@@ -898,7 +932,16 @@ const STATUSES = {
     // marked, including the Kill that consumes the stacks (consumption happens
     // after the damage resolves). This half is psy's offense; the slow is its
     // skin.
-    incomingMult: (u, st) => 1 + (st.stacks||0) * P().dreadVulnPerStack
+    // Widened by the hunter's Instinct — see dreadVulnPerIns. Read off the
+    // live player rather than snapshotted, so a point taken mid-fight is felt
+    // on the next blow.
+    incomingMult(u, st) {
+      const p = state.player;
+      const ins = (p && p.class === 'psy')
+        ? Math.max(0, (p.instinct + gearStat(p, 'instinct')) - BALANCE.player.sheetAnchor) : 0;
+      const per = P().dreadVulnPerStack * (1 + ins * (P().dreadVulnPerIns || 0));
+      return 1 + (st.stacks || 0) * per;
+    }
   },
 
   // --- Enemy verbs (see ENEMY_VERBS) ---------------------------------------
