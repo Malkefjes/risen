@@ -247,14 +247,18 @@ did not say.
   rather than handing every build a free stack. Measured at 100 runs a cell
   with base as the control (noise floor ±8): STR+VIT bio 1% -> 10%, psy
   1% -> 14%, sym unmoved. Real, and modest.
-  **What would ACTUALLY fix it is ENEMY HP, not damage.** A wave-30 boss takes
-  ~106 basic attacks, so no damage build shortens a fight enough for offence
-  to become defence. Cut `hpBase` 60% (47 attacks) and STR+VIT base goes
-  20% -> 92% and BEATS SPD+VIT; psy's gap closes 57 -> 27. Bio is the
-  exception and the reason to be careful: its ramp is a RATE, so it wants long
-  fights and shorter ones help its Speed build instead. Cutting pools is a
-  large global difficulty change — the owner's call, not a fix to apply
-  quietly.
+  **What moved it was ENEMY HP, not damage** — and that became `hpExp`
+  (2026-08-03j, owner's call to try it). LENGTH AND DANGER ARE NOW SEPARATE
+  DIALS: pools grow sublinearly in the growth factor (`hpExp` 0.75) while the
+  threat still grows linearly (`dmgExp` 1.00), so late fights got shorter
+  without getting safer. Measured, basic attacks to drop the wave-30 boss:
+  90 -> 49, with wave 1 untouched at 7 (an exponent, not a smaller `hpBase`,
+  because g is 1.00 at wave 1 — a flat cut would have made zone 1 die in two
+  hits). The STR gap closed for sym (46 -> 24) and base (54 -> 30) and did NOT
+  close for bio or psy, whose ramps need TURNS to pay out — shortening a fight
+  helps their Speed builds instead. If difficulty needs to come back, reach
+  for enemy DAMAGE or RATE, never pools: those restore threat without
+  restoring tedium.
 
 - **Enemy VERBS (2026-08-03g): the six named fights each ask a question.**
   Bosses carry one AUTHORED verb (`ZONES.bossVerb`: REGROW / GUARD / ENRAGE);

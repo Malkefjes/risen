@@ -37,7 +37,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-03i';
+const BUILD = '2026-08-03j';
 
 const BALANCE = {
   player: {
@@ -214,6 +214,24 @@ const BALANCE = {
     // HP AND DAMAGE ARE DIFFERENT JOBS: HP when a fight should have ROOM, damage
     // and rate when it should have TEETH.
     hpBase: 160, tierGrowth: 1.85, withinStep: 0.06,
+    // ---- HOW LONG A FIGHT IS, AS OPPOSED TO HOW DANGEROUS ------------------
+    // hpExp is dmgExp's twin and the two are deliberately DIFFERENT: pools
+    // grow sublinearly in the growth factor while the threat grows linearly,
+    // so late fights get SHORTER without getting SAFER.
+    //
+    // Measured 2026-08-03i: at hpExp 1.00 a wave-30 boss took ~106 basic
+    // attacks, which is long enough that no damage build can shorten a fight
+    // enough for offence to become defence — kill speed stopped converting
+    // into survival, which is why Strength could not compete at any damage
+    // number (see the STRENGTH note in CLAUDE.md). Shrinking pools was the
+    // one lever that moved it: STR+VIT base 20% -> 92%.
+    //
+    // AN EXPONENT, NOT A SMALLER hpBase, because the problem is late and not
+    // early: g is 1.00 at wave 1, so this leaves the opening fights exactly as
+    // they were (6-7 hits) and takes ~25% off wave 10 and ~50% off wave 30,
+    // where the tedium actually lives. A flat cut would have made zone 1 trash
+    // die in two hits.
+    hpExp: 0.75,
     // dmgExp 1.00: damage tracks the growth factor exactly. Below 1 it grows
     // SUBLINEARLY while player HP grows linearly in allocated points.
     dmgBase: 8, dmgExp: 1.00,
