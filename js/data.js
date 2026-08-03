@@ -37,7 +37,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-03j';
+const BUILD = '2026-08-03k';
 
 const BALANCE = {
   player: {
@@ -356,7 +356,12 @@ const CLASSES = {
       // would contradict the hit as soon as a point landed.
       { id:'slash', name:'Slash', desc:'Deal {power!} damage. +{poisonStacks} POISON', type:'attack', power:1.0, poison:1, poisonStacks:(p,s) => poisonStacks(p,s), target:'enemy', basic:true },
       { id:'infest', name:'Infest', desc:'Deal {power!} damage. +{poisonStacks} POISON', type:'attack', power:0.50, poison:4, poisonStacks:(p,s) => poisonStacks(p,s), target:'enemy', cdTurns:3 },
-      { id:'chitin', name:'Chitin', desc:'For {duration#turn}: take −{power%} damage. POISON on the enemy ticks twice per turn', type:'buff', buff:'chitin', duration:3, power:0.40, target:'self', cdTurns:5 },
+      // CHITIN IS ON THE SAME CLOCK AS EVERY OTHER TELEGRAPH ANSWER (5 -> 4,
+      // 2026-08-03k). Traumatize, Provoke and Counterpunch are all 4; bio's
+      // was the only answer on a 5, and it is also the only one doing TWO jobs
+      // — the mitigation and the class's damage doubler — so bio paid the
+      // longest wait for a card it has to spend two ways.
+      { id:'chitin', name:'Chitin', desc:'For {duration#turn}: take −{power%} damage. POISON on the enemy ticks twice per turn', type:'buff', buff:'chitin', duration:3, power:0.40, target:'self', cdTurns:4 },
       // MIASMA IS BIO'S ONLY FAUCET. At 10% x 4 turns on a 5-turn cooldown it
       // handed back 40% of a bar and still lost to attrition past the first
       // boss; 13% is the same shape, paying 52% of a bar per cast.
@@ -438,7 +443,10 @@ const CLASSES = {
       // gets read back on your OWN turns, carrying the share Bloom used to.
       { id:'latch', name:'Latch', desc:'Deal {power!} damage + {thornsScale%} of your THORNS.', type:'attack', power:1.0, thornsScale:0.55, target:'enemy', basic:true },
       { id:'spines', name:'Raise Spines', desc:'THORNS ×{power} and pain reflect doubled for {duration#turn}. Every hit taken grows +{growBonus} extra THORNS.', type:'buff', buff:'spines', duration:3, power:2, growBonus:BALANCE.player.thornsSpinesGrow, target:'self', cdTurns:4 },
-      { id:'shed', name:'Shed', desc:'Heal {healFrac+}, then tear off THORNS to heal {hpPerThorn+} more each — they regrow by the next fight. Takes only as many as the wound needs, up to {capFrac%} of what you have grown. Sheds {cleanse} POISON.', type:'heal', healFrac:0.08, shedFuel:true, cleanse:2, hpPerThorn:BALANCE.player.shedHpPerThorn, capFrac:BALANCE.player.shedCapFrac, target:'self', cdTurns:3 },
+      // 3 -> 4 (2026-08-03k): sym healed every third turn where bio heals every
+      // fifth and base every fourth — the most frequent sustain in the game,
+      // on the strain that measured strongest, and its cost regrows now too.
+      { id:'shed', name:'Shed', desc:'Heal {healFrac+}, then tear off THORNS to heal {hpPerThorn+} more each — they regrow by the next fight. Takes only as many as the wound needs, up to {capFrac%} of what you have grown. Sheds {cleanse} POISON.', type:'heal', healFrac:0.08, shedFuel:true, cleanse:2, hpPerThorn:BALANCE.player.shedHpPerThorn, capFrac:BALANCE.player.shedCapFrac, target:'self', cdTurns:4 },
       { id:'provoke', name:'Provoke', desc:'Bare your guard: the enemy strikes at once and cannot miss — then every spine answers: ×{lashMult} THORNS as damage. +{growBonus} THORNS, and a charged telegraph comes out now, ordinary or half-strength.', type:'provoke', growBonus:3, lashMult:1.5, target:'enemy', cdTurns:4 }
     ]
   },

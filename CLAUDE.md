@@ -313,6 +313,18 @@ did not say.
   mashed. That gap IS the class working: for the one strain whose identity is
   reading a telegraph, mashing should fail. Nothing asserts a floor under it;
   `tools/bot-bracket.mjs` prints both columns if you want to see it still holds.
+- **Cooldowns follow a grammar, discovered rather than designed** (surveyed
+  2026-08-03k). `cdTurns` reads directly as "once every N of YOUR turns" — Speed
+  never accelerates a rotation, only the number of turns — and the twelve
+  cooldown cards sort into **3 = the ramp feeder** (Infest, Terrify), **4 = the
+  answer or the buff** (Traumatize, Provoke, Spines, Counterpunch, Bandage,
+  now Chitin and Shed), **5 = the payoff or the faucet** (Miasma, Kill, Last
+  Stand). A second axis holds in the buffs: uptime falls as mitigation rises —
+  Miasma 5/5, Spines 3/4, Chitin 3/4, Brace 2/4. Only Miasma's (deliberate
+  100% uptime) and Spines' (duration must stay under the cooldown or an
+  amplifying buff ladders on itself) were ever written down; the rest was
+  taste that happened to be consistent. Put a new card on the clock its ROLE
+  implies, or say why not.
 - **A skill can declare how it wants to be played**, and the bot reads it off
   the card rather than learning classes by name. What the smart bot looks for,
   to decide a skill answers a telegraph: `stun` (plus `dreadNeed`, so it never
