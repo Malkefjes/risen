@@ -37,7 +37,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-03x';
+const BUILD = '2026-08-03y';
 
 const BALANCE = {
   player: {
@@ -210,7 +210,13 @@ const BALANCE = {
     // offensive costume. The count is uncapped; the slow saturates at a floor,
     // because an unbounded slow is a stun nobody paid for.
     dreadSlowPerStack: 0.05, // each stack: −5% enemy turn rate
-    dreadSlowFloor: 0.55,    // ...but never below this share of its rate: the slow saturates, the count does not
+    // FLOOR 0.55 -> 0.75 (2026-08-03y, owner's call on feel). Measured before:
+    // the slow saturates at 9 stacks and psy's median PEAK is 30-44 on EVERY
+    // allocation, so a permanent -45% on enemy tempo arrived free and regardless
+    // of build. Multiplied against psy's own rate that put it at 3.8 turns to
+    // the enemy's 1 at wave 20 — at which point three of every four presses
+    // answer nothing, and the read-and-answer loop has no enemy turn to read.
+    dreadSlowFloor: 0.75,    // ...but never below this share of its rate: the slow saturates, the count does not
     // PSY'S DAMAGE PIPE IS INSTINCT, and it is the one strain whose potency
     // does not read Attack Damage. Every ramp in the game priced its per-unit
     // value as a share of attack damage, which meant all four strains scaled

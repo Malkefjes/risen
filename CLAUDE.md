@@ -329,7 +329,16 @@ did not say.
 - Psy was reworked around DREAD (a mark on the enemy: Hunt plants it on hit,
   stacks slow the enemy and open its guard, and fear feeds psy — a SIPHON
   drip per stack each player turn, a DEVOUR burst when stacks are consumed by
-  Kill or death) — the numbers are early and owner-tuned by play. Kill takes
+  Kill or death) — the numbers are early and owner-tuned by play.
+  **`OWNER:` `dreadSlowFloor` 0.55 -> 0.75 on 2026-08-03y**, his call on feel:
+  *"i dont know if it feels good taking 4 turns to enemies 1 either, its not
+  very engaging gameplay."* Measured: the slow saturates at 9 stacks and psy's
+  median PEAK is 30-44 on EVERY allocation, so a free permanent -45% on enemy
+  tempo arrived regardless of build — multiplied against psy's own rate that
+  was 3.8 turns to the enemy's 1 at wave 20. Player speed was never the cause:
+  it asymptotes at x3.00 from points and runs top out near x2.8. Measured
+  after: psy 68 -> 27 wins per 100, median 61 -> 49, and its best plan moved
+  from STR+VIT (which had bought the slow for free) to SPD+VIT. Kill takes
   HALF the fear rather than all of it: spending the pile cost the slow, the
   guard opening and the drip at once, so holding was correct at every count and
   the finisher was a card you never pressed.
