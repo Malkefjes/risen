@@ -225,6 +225,9 @@ function serializeRun() {
       // a reload lands in anyway — so this only bites where it should: a
       // reload inside the run's first fight keeps the cost.
       thornsShedded:p.thornsShedded||0,
+      // Bio's carry lives BETWEEN fights, so a reload mid-run would otherwise
+      // drop the pile the last kill earned.
+      poisonCarry:p.poisonCarry||0,
       // The suit. Items are plain data; an unresolved drop card is NOT saved —
       // leaving mid-decision forfeits the item.
       gear:p.gear||null,
@@ -366,7 +369,8 @@ function continueRun(slot){
   Object.assign(p,{ level:sp.level||1, xp:sp.xp||0, xpNext:sp.xpNext||xpForLevel(sp.level||1),
     points:sp.points||0, str:sp.str, instinct:sp.instinct, speed:sp.speed, vit:sp.vit,
     dmgMult:sp.dmgMult||1, hpMult:sp.hpMult||1, apsMult:sp.apsMult||1,
-    thornsGrown:sp.thornsGrown||0, thornsShedded:sp.thornsShedded||0 });
+    thornsGrown:sp.thornsGrown||0, thornsShedded:sp.thornsShedded||0,
+    poisonCarry:sp.poisonCarry||0 });
   p.gear = loadGear(sp.gear);
   state.player=p;
   // Saves written before statuses were persisted simply have none; anything

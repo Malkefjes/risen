@@ -270,6 +270,16 @@ did not say.
   stack by roll; a hand-authored compound is allowed (the finale's ENRAGE
   rides its every-2 windup). All numbers derived, none measured.
 
+- **Bio's distinct verb is THE ROT OUTLIVES ITS HOST** (2026-08-03l): half the
+  POISON on a corpse moves to the next spawn (`poisonCarryFrac`). It exists
+  because bio was the one strain with no press only it makes — Chitin-on-
+  telegraph is Counterpunch-on-telegraph — and because every measurement this
+  week said the same thing: its ramp reset each fight and rebuilt too slowly,
+  which is why `hpExp` helped every strain but this one. Nothing else in the
+  game crosses the fight boundary on the ENEMY's side, and it makes the END of
+  a fight a decision (finish, or stack once more for the pile you carry).
+  Self-limiting rather than a snowball: S = S/2 + G solves to S = 2G, so it
+  doubles the working stack count and holds. Derived, unmeasured.
 - Psy was reworked around DREAD (a mark on the enemy: Hunt plants it on hit,
   stacks slow the enemy and open its guard, and fear feeds psy — a SIPHON
   drip per stack each player turn, a DEVOUR burst when stacks are consumed by

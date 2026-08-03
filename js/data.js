@@ -37,7 +37,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-03k';
+const BUILD = '2026-08-03l';
 
 const BALANCE = {
   player: {
@@ -90,6 +90,23 @@ const BALANCE = {
     thornsFrac: 0.05,
     // POISON (bio) is permanent and UNCAPPED — the stack count is bio's ramp,
     // and the ramp is the class: no burst, the enemy's remaining life is a clock.
+    // ---- THE ROT OUTLIVES ITS HOST (2026-08-03l) ---------------------------
+    // BIO'S ONE DISTINCT VERB, and the answer to the thing every measurement
+    // this week said about it: its ramp reset to zero every fight and rebuilt
+    // too slowly to matter, which is why shortening fights (hpExp) helped every
+    // strain but this one. Half the stacks on a corpse move to whatever comes
+    // in next.
+    //
+    // Distinct because nothing else crosses the fight boundary on the ENEMY's
+    // side — sym's ramp is run-permanent but worn by the player, psy's fear
+    // dies with its host, base's wound closes. And it makes the END of a fight
+    // a decision for the first time: finish it now, or spend one more turn on
+    // Infest so the pile you carry is bigger.
+    //
+    // SELF-LIMITING, not a snowball: carrying half converges at roughly twice
+    // what one fight accumulates (S = S/2 + G solves to S = 2G), so it doubles
+    // bio's working stack count and then holds there.
+    poisonCarryFrac: 0.5,
     // ---- STRENGTH'S SECOND TERM (2026-08-03i) ------------------------------
     // STRENGTH DRIVES MORE OF THE MARK IN. Measured: every strain's damage is
     // 57-80% its ramp, and a ramp's size is STACKS (bought with turns and with
@@ -355,7 +372,10 @@ const CLASSES = {
       // live sheet — Strength moves it (see poisonPerStr), so a stated "+1"
       // would contradict the hit as soon as a point landed.
       { id:'slash', name:'Slash', desc:'Deal {power!} damage. +{poisonStacks} POISON', type:'attack', power:1.0, poison:1, poisonStacks:(p,s) => poisonStacks(p,s), target:'enemy', basic:true },
-      { id:'infest', name:'Infest', desc:'Deal {power!} damage. +{poisonStacks} POISON', type:'attack', power:0.50, poison:4, poisonStacks:(p,s) => poisonStacks(p,s), target:'enemy', cdTurns:3 },
+      // The carry is a property of the ROT rather than of any one button, but
+      // it is named on this card because Infest is where the pile comes from —
+      // the player has to know that stacking before a kill is worth something.
+      { id:'infest', name:'Infest', desc:'Deal {power!} damage. +{poisonStacks} POISON. When they die, {carry%} of the rot moves to whatever comes next.', type:'attack', power:0.50, poison:4, poisonStacks:(p,s) => poisonStacks(p,s), carry:BALANCE.player.poisonCarryFrac, target:'enemy', cdTurns:3 },
       // CHITIN IS ON THE SAME CLOCK AS EVERY OTHER TELEGRAPH ANSWER (5 -> 4,
       // 2026-08-03k). Traumatize, Provoke and Counterpunch are all 4; bio's
       // was the only answer on a 5, and it is also the only one doing TWO jobs

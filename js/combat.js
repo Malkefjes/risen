@@ -1027,6 +1027,19 @@ function onEnemyDefeated() {
   // stacks as burst, or finish with Hunt and drink them off the corpse.
   devour(p, statusStacks(e, 'dread'), 'drunk from the dying');
 
+  // THE ROT OUTLIVES ITS HOST — bio's carry, taken off the corpse here and
+  // planted on the next spawn (spawnEnemy). Read BEFORE the wave advances so
+  // it is the stacks this fight actually ended with. Replaces rather than
+  // accumulates: it is half of what is on THIS body, not a running total.
+  if (p && p.class === 'bio') {
+    const left = statusStacks(e, 'poison');
+    const carry = Math.floor(left * (P().poisonCarryFrac || 0));
+    p.poisonCarry = carry;
+    if (carry > 0)
+      logEvent('THE ROT HOLDS', null, '×' + carry + ' POISON',
+               ['half of ×' + left + ' on the body', 'moves to the next host']);
+  }
+
   if (e.elite && e.elite.deathNova) {
     const nova = Math.max(1, Math.floor(p.maxHp * e.elite.deathNova));
     p.hp = Math.max(0, p.hp - nova);

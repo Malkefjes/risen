@@ -61,7 +61,8 @@ function freshPlayer(classId) {
     gear: emptyGear(),
     // thornsGrown starts at 0 for everyone and only sym ever moves it: the
     // ramp is run-scoped, so a fresh player is a fresh organism.
-    statuses:[], isPlayer:true, meter:0, thornsGrown:0, thornsShedded:0, _statusKey:''
+    statuses:[], isPlayer:true, meter:0, thornsGrown:0, thornsShedded:0,
+    poisonCarry:0, _statusKey:''
   };
   p.basicSkill = p.skills.find(s => s.basic) || p.skills[0];
   return p;
@@ -307,6 +308,18 @@ function spawnEnemy() {
       applyDerivedStats(p);
       logEvent('THORNS regrown', null, '+' + back + ' (' + formatNum(p.thorns) + ')', ['shed last fight']);
     }
+  }
+
+  // Bio: the rot carried off the last corpse takes hold in the new one. After
+  // the between-fight housekeeping so it lands on a fight that has begun, and
+  // priced at the CURRENT sheet — carried stacks are as strong as the hands
+  // that plant them now, not as the ones that grew them.
+  if (p.class === 'bio' && p.poisonCarry > 0) {
+    const n = p.poisonCarry;
+    p.poisonCarry = 0;
+    applyStatus(state.enemy, 'poison', { stacks: n, perStack: p.poisonPerStack });
+    floatText(state.enemy, '+' + n + ' POISON', 'tally');
+    logEvent('THE ROT SPREADS', state.enemy, '×' + n + ' POISON', ['carried from the last host']);
   }
 
   // THE PLAYER ALWAYS OPENS. Both gauges used to start empty, so any enemy
