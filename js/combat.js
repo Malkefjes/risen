@@ -431,7 +431,11 @@ function thornsGrowthFor(p, damage) {
   // beat the wave-35 boss. Reading the share of the bar is what makes eating a
   // telegraph on purpose still pay at wave 40.
   const share = Math.max(0, damage) / Math.max(1, p.maxHp);
-  return Math.max(B.thornsPerHit, Math.round(B.thornsPerHit + share * B.thornsPerBar));
+  // Strength's second term for sym: a stronger frame drives the spines deeper
+  // on every hit it eats. See poisonPerStr in BALANCE for why the stat needed
+  // one at all.
+  const str = strBonusStacks(p, B.thornsPerStr);
+  return Math.max(B.thornsPerHit, Math.round(B.thornsPerHit + share * B.thornsPerBar)) + str;
 }
 
 // SHED — sym's sustain, and the one place a run-permanent ramp can be spent.
@@ -794,7 +798,9 @@ function applyPlayerDamage(p, e, skill) {
   if (skill.buildsResolve) gainResolve(p, skill.buildsResolve, skill.name);
 
   if (skill.poison && p.class === 'bio')
-    applyStatus(e, 'poison', { stacks: skill.poison, perStack: p.poisonPerStack });
+    // The count comes off the sheet so Strength reaches it — skill.poison is
+    // the card's base, not the whole application. Same shape as bleed.
+    applyStatus(e, 'poison', { stacks: poisonStacks(p, skill), perStack: p.poisonPerStack });
   // Unaugmented opens a wound. On-hit like the rot, so an evade costs the cut as
   // well as the damage — and the depth is read HERE, at the moment of the
   // swing, off the Resolve standing behind it. gainResolve fires earlier in
@@ -807,7 +813,7 @@ function applyPlayerDamage(p, e, skill) {
   // Terrify's burst of fear, the planted counterpart of Slash's poison. On-hit
   // rather than on-use, so the enemy dodging costs the fear along with the
   if (skill.dread && e.hp > 0)
-    applyStatus(e, 'dread', { stacks: skill.dread });
+    applyStatus(e, 'dread', { stacks: dreadStacks(p, skill) });
 
   applySkillStatuses(p, skill, e);
 

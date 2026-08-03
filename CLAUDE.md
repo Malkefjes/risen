@@ -232,6 +232,30 @@ did not say.
 
 ## Known soft spots (context, not a to-do list)
 
+- **STRENGTH IS THE WEAKEST STAT, and it is not a tuning problem** (measured
+  2026-08-03i). Every strain's damage is 57-80% its RAMP, and a ramp's size is
+  STACKS — bought with turns and with staying alive — while attack damage only
+  sets what one stack is worth. So Strength multiplied the smallest term and
+  bought nothing that keeps you alive. Pure STR won 3% of runs; TRIPLING
+  `damagePerStr` left it at 3% while SPD+VIT went 63% -> 78%, because every
+  stat gives 20% of its own starting value per point, so scaling the number
+  moves the base and the margin together. It is a global difficulty dial, not
+  a stat-balance one.
+  **Strength now has a SECOND term** (`poisonPerStr` / `dreadPerStr` /
+  `thornsPerStr`, mirroring the `bleedPerStr` base always had): an extra stack
+  per N Strength, worth nothing at the starting sheet so it rewards investment
+  rather than handing every build a free stack. Measured at 100 runs a cell
+  with base as the control (noise floor ±8): STR+VIT bio 1% -> 10%, psy
+  1% -> 14%, sym unmoved. Real, and modest.
+  **What would ACTUALLY fix it is ENEMY HP, not damage.** A wave-30 boss takes
+  ~106 basic attacks, so no damage build shortens a fight enough for offence
+  to become defence. Cut `hpBase` 60% (47 attacks) and STR+VIT base goes
+  20% -> 92% and BEATS SPD+VIT; psy's gap closes 57 -> 27. Bio is the
+  exception and the reason to be careful: its ramp is a RATE, so it wants long
+  fights and shorter ones help its Speed build instead. Cutting pools is a
+  large global difficulty change — the owner's call, not a fix to apply
+  quietly.
+
 - **Enemy VERBS (2026-08-03g): the six named fights each ask a question.**
   Bosses carry one AUTHORED verb (`ZONES.bossVerb`: REGROW / GUARD / ENRAGE);
   champions ROLL one of four (`CHAMPION_VERBS`, includes FLURRY) beside their

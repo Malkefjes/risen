@@ -37,7 +37,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-03h';
+const BUILD = '2026-08-03i';
 
 const BALANCE = {
   player: {
@@ -90,6 +90,29 @@ const BALANCE = {
     thornsFrac: 0.05,
     // POISON (bio) is permanent and UNCAPPED — the stack count is bio's ramp,
     // and the ramp is the class: no burst, the enemy's remaining life is a clock.
+    // ---- STRENGTH'S SECOND TERM (2026-08-03i) ------------------------------
+    // STRENGTH DRIVES MORE OF THE MARK IN. Measured: every strain's damage is
+    // 57-80% its ramp, and a ramp's size is STACKS (bought with turns and with
+    // staying alive) while attack damage only sets what one stack is WORTH. So
+    // Strength multiplied the smallest term in the equation and bought nothing
+    // that keeps you alive — at 32 runs a cell it won 3% of runs, and TRIPLING
+    // damagePerStr left it at 3% while SPD+VIT went 63% -> 78%. Not a tuning
+    // problem: a stat with one linear term in a game decided by attrition.
+    //
+    // The answer is the one Instinct already got — a SECOND term, so the stat
+    // is quadratic in its own points: more stacks AND a bigger stack. base has
+    // worked this way all along (bleedPerStr), which is the precedent.
+    //
+    // Each is "one extra stack per N Strength" and DELIBERATELY GIVES NOTHING
+    // AT THE STARTING SHEET (floor(5/N) = 0 for N > 5): this must reward
+    // INVESTMENT, not hand every build a free stack it never bought.
+    poisonPerStr: 8,           // bio: extra POISON per application, per this much Strength
+    // PSY PAYS THE MOST PER STACK, so it buys them at the worst rate: a DREAD
+    // stack slows, opens the guard, feeds the siphon AND prices Kill, where a
+    // POISON stack only ticks. At a shared 8 psy ran away with it (measured:
+    // STR+VIT 3% -> 57% wins, spread 10% -> 55%).
+    dreadPerStr: 14,           // psy: extra DREAD planted, per this much Strength
+    thornsPerStr: 10,          // sym: extra THORNS per hit taken, per this much Strength
     // ---- BLEED (Unaugmented) ------------------------------------------------
     // Base's second number. IT MUST NOT BECOME BIO IN RED, and three differences
     // keep them apart: a wound ticks on EVERY turn, both sides, and eats a stack
@@ -310,8 +333,11 @@ const CLASSES = {
     name: 'Biological', color: 'bio',
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
-      { id:'slash', name:'Slash', desc:'Deal {power!} damage. +{poison} POISON', type:'attack', power:1.0, poison:1, target:'enemy', basic:true },
-      { id:'infest', name:'Infest', desc:'Deal {power!} damage. +{poison} POISON', type:'attack', power:0.50, poison:4, target:'enemy', cdTurns:3 },
+      // The card prints what the next application will actually plant, off the
+      // live sheet — Strength moves it (see poisonPerStr), so a stated "+1"
+      // would contradict the hit as soon as a point landed.
+      { id:'slash', name:'Slash', desc:'Deal {power!} damage. +{poisonStacks} POISON', type:'attack', power:1.0, poison:1, poisonStacks:(p,s) => poisonStacks(p,s), target:'enemy', basic:true },
+      { id:'infest', name:'Infest', desc:'Deal {power!} damage. +{poisonStacks} POISON', type:'attack', power:0.50, poison:4, poisonStacks:(p,s) => poisonStacks(p,s), target:'enemy', cdTurns:3 },
       { id:'chitin', name:'Chitin', desc:'For {duration#turn}: take −{power%} damage. POISON on the enemy ticks twice per turn', type:'buff', buff:'chitin', duration:3, power:0.40, target:'self', cdTurns:5 },
       // MIASMA IS BIO'S ONLY FAUCET. At 10% x 4 turns on a 5-turn cooldown it
       // handed back 40% of a bar and still lost to attrition past the first
@@ -342,10 +368,10 @@ const CLASSES = {
       // Strike, a basic in this game is the mechanic's trickle, every turn, for
       // free. It used to plant only on crits and dodges: a CLASS mechanic parked
       // on a button that had no part in it.
-      { id:'hunt', name:'Hunt', desc:'Deal {power!} damage. +{dread} DREAD', type:'attack', power:1.0, dread:1, target:'enemy', basic:true },
+      { id:'hunt', name:'Hunt', desc:'Deal {power!} damage. +{dreadStacks} DREAD', type:'attack', power:1.0, dread:1, dreadStacks:(p,s) => dreadStacks(p,s), target:'enemy', basic:true },
       // Plants 4, one MORE than Traumatize needs, so the advertised combo
       // survives one steadying hit.
-      { id:'terrify', name:'Terrify', desc:'Deal {power!} damage and plant +{dread} DREAD. Every stack slows the enemy and opens its guard.', type:'attack', power:0.50, dread:4, target:'enemy', cdTurns:3 },
+      { id:'terrify', name:'Terrify', desc:'Deal {power!} damage and plant +{dreadStacks} DREAD. Every stack slows the enemy and opens its guard.', type:'attack', power:0.50, dread:4, dreadStacks:(p,s) => dreadStacks(p,s), target:'enemy', cdTurns:3 },
       { id:'traumatize', name:'Traumatize', desc:'Deal {power!} damage. Against {dreadNeed}+ DREAD the mind breaks: stunned for {stun#turn}.', type:'attack', power:0.95, stun:1, dreadNeed:3, target:'enemy', cdTurns:4 },
       // KILL TAKES HALF THE FEAR, NOT ALL OF IT. Every stack is doing three
       // things while it sits there — slowing their turn, opening their guard,

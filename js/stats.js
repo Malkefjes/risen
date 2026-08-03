@@ -486,6 +486,25 @@ function bleedStacks(p) {
   return Math.max(1, (B.bleedBase || 2) + Math.floor(((p.str || 0) + gearStat(p, 'str')) / per));
 }
 
+// STRENGTH'S SECOND TERM, the same shape for every strain: one extra stack per
+// N Strength on top of whatever the card plants. See the block above
+// poisonPerStr in BALANCE for the measurement that forced it. Gear Strength
+// counts, exactly as it does for bleedStacks.
+function strBonusStacks(p, per) {
+  if (!p || !(per > 0)) return 0;
+  return Math.floor(((p.str || 0) + gearStat(p, 'str')) / per);
+}
+// bio: what one application of a POISON skill actually plants.
+function poisonStacks(p, skill) {
+  const base = (skill && skill.poison) || 1;
+  return Math.max(1, base + strBonusStacks(p, P().poisonPerStr));
+}
+// psy: what one application of a DREAD skill actually plants.
+function dreadStacks(p, skill) {
+  const base = (skill && skill.dread) || 1;
+  return Math.max(1, base + strBonusStacks(p, P().dreadPerStr));
+}
+
 function bleedDepth(p) {
   if (!p) return 1;
   const B = P();
