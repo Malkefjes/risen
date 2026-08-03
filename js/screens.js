@@ -61,6 +61,9 @@ function freshPlayer(classId) {
     gear: emptyGear(),
     // thornsGrown starts at 0 for everyone and only sym ever moves it: the
     // ramp is run-scoped, so a fresh player is a fresh organism.
+    // Modification ids, in the order taken. The patches themselves are
+    // re-applied from these on load (applyTakenMods).
+    mods: [],
     statuses:[], isPlayer:true, meter:0, thornsGrown:0, thornsShedded:0,
     poisonCarry:0, _statusKey:''
   };
@@ -77,7 +80,7 @@ function freshPlayer(classId) {
 // the per-turn repaint has to be cleared here too.
 function resetRunState(classId) {
   stopCombatLoop();              // also cancels a turn or reveal still scheduled
-  abandonDrop();                 // a drop card cannot outlive its run
+  abandonDrop(); abandonMods();  // a between-fight card cannot outlive its run
   state.classId = classId;
   state.player = null;
   state.enemy = null;
@@ -373,6 +376,7 @@ function updateHud() {
   if (statsTab) statsTab.classList.toggle('points-alert', p.points > 0 || pendingTotal(p) > 0);
   refreshSidebarStats();
   renderSuitPanel();
+  renderModList();
   // AND THE FIGHTER CARD, which shows the same HP this just redrew in the
   // sidebar. updateHud fires on the run-scale beats — a level, a commit, a
   // resume — and every one of them can move max HP or current HP, so leaving

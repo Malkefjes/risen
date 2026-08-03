@@ -175,7 +175,7 @@ did not say.
 
 - `index.html` + `css/` + `js/` + `assets/` — the game. No build step. The
   js files are ordinary scripts sharing one global scope, loaded in order
-  (data → items → stats → screens → sim → combat → saves → render → sprites); they
+  (data → items → mods → stats → screens → sim → combat → saves → render → sprites); they
   are chapters of one program, not modules. Keep new code in the chapter
   where it belongs; keep load order in mind for top-level statements.
 - `tests/` — playwright suites driving the real game (`npm test`). One
@@ -323,6 +323,22 @@ did not say.
   mashed. That gap IS the class working: for the one strain whose identity is
   reading a telegraph, mashing should fail. Nothing asserts a floor under it;
   `tools/bot-bracket.mjs` prints both columns if you want to see it still holds.
+- **MODIFICATIONS are patches on BUTTONS, never numbers on the sheet**
+  (`js/mods.js`, 2026-08-03m). Levels and gear already feed the stat sheet; a
+  third source of "+15% damage" would be a third helping of the same meal, and
+  we measured what that produces — items alone took win rates 0% -> 88% without
+  making one fight more interesting. So a Modification must be describable as a
+  sentence about a PRESS, and **every one carries a cost**: a pick that is
+  strictly better is a delay before a decision, not a decision.
+  Declared as a PATCH (`skills: { <id>: {...} }`, plus `player:` overrides), so
+  it serializes as an id, re-applies onto fresh skill copies on load — retuning
+  a mod reaches runs already carrying it — and the cards re-read the patched
+  fields through fmtDesc for free. PER STRAIN, never a shared pool: a pool bio
+  and base both draw from is a pool that makes them the same class.
+  Offered after every 5th wave EXCEPT the last (`modWaves`) — the champion and
+  boss rhythm, five picks a run, and nothing handed over as the run ends. Only
+  3 per strain are written, so a run currently exhausts the pool at 3; the
+  content is the part worth growing.
 - **Cooldowns follow a grammar, discovered rather than designed** (surveyed
   2026-08-03k). `cdTurns` reads directly as "once every N of YOUR turns" — Speed
   never accelerates a rotation, only the number of turns — and the twelve

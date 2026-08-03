@@ -8,7 +8,7 @@ function startCombatLoop() {
   stopCombatLoop();
   state.combatActive = true;
   updateTurnInfo();
-  if (state.pendingDrop) return;                         // waiting on the drop card
+  if (state.pendingDrop || state.pendingMods) return;    // waiting on a between-fight card
   if (state.awaitingInput) { renderSkills(); return; }   // waiting on the player
   if (state.pendingEnemyAct) { scheduleTurn(enemyAct, turnDelay(380)); return; }
   if (state.awaitingSpawn)   { scheduleTurn(doSpawn, turnDelay(220)); return; }
@@ -303,7 +303,7 @@ function enemyAct() {
 
 function doSpawn() {
   if (!state.combatActive) return;
-  if (state.pendingDrop) return;         // resolveDrop resumes the spawn
+  if (state.pendingDrop || state.pendingMods) return;   // a card resumes the spawn
   spawnEnemy();
   if (!state.player || state.player.hp <= 0) return;
   if (state.enemy && state.enemy._defeated) return;        // overflow killed it too
@@ -1033,7 +1033,9 @@ function onEnemyDefeated() {
   // accumulates: it is half of what is on THIS body, not a running total.
   if (p && p.class === 'bio') {
     const left = statusStacks(e, 'poison');
-    const carry = Math.floor(left * (P().poisonCarryFrac || 0));
+    // modCarryFrac is a Modification's override (VIRULENT CULTURE).
+    const frac = p.modCarryFrac != null ? p.modCarryFrac : (P().poisonCarryFrac || 0);
+    const carry = Math.floor(left * frac);
     p.poisonCarry = carry;
     if (carry > 0)
       logEvent('THE ROT HOLDS', null, '×' + carry + ' POISON',
@@ -1100,7 +1102,19 @@ function onEnemyDefeated() {
 }
 
 // The between-fight beat after a kill (and after any drop card is answered).
+// THE ORDER OF THE PUNCTUATION IS: loot, then the Laboratory's offer, then a
+// scene, then the next wave — each one gated, each one resuming the next.
+// takeMod resumes at resumeAfterKill rather than here, which is what keeps a
+// pick from re-offering itself forever.
 function proceedAfterKill(killedWave) {
+  if (modDueAfter(killedWave) && state.player) {
+    const offer = offerMods(state.player);
+    if (offer.length) { presentMods(offer, killedWave); return; }
+  }
+  resumeAfterKill(killedWave);
+}
+
+function resumeAfterKill(killedWave) {
   // A BOSS EARNS A BEAT. Wave-to-wave the next enemy is already walking in by
   // design, but dropping straight from a boss into the next grunt gives the
   // kill nowhere to land — so a scene, if one belongs here, gets a full second

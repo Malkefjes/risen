@@ -82,6 +82,7 @@ function devEnterCombat(handoverLine) {
   // The bot may have stopped mid-drop; answer it its own way before handover,
   // or the pendingDrop gate would hold a card that was never drawn on screen.
   if (state.pendingDrop) resolveDrop(botTakesDrop(state.player, state.pendingDrop.item));
+  if (state.pendingMods) takeMod(botTakesMod(state.pendingMods.offer));
   const zn = document.getElementById('zone-name');
   if (zn) zn.textContent = getZoneName(state.wave);
   const ac = document.getElementById('arena-card');
@@ -161,7 +162,7 @@ function runClean() {
 
 function goToMenu() {
   leaveMenuTab(); closeSettings();
-  abandonDrop();
+  abandonDrop(); abandonMods();
   stopCombatLoop();
   showScreen('title-screen');
   refreshContinueButton();
@@ -228,6 +229,10 @@ function serializeRun() {
       // Bio's carry lives BETWEEN fights, so a reload mid-run would otherwise
       // drop the pile the last kill earned.
       poisonCarry:p.poisonCarry||0,
+      // Modifications ride as IDS, never as the patched skills — the patch is
+      // re-applied onto fresh copies on load, so retuning a mod reaches runs
+      // already carrying it instead of freezing at the version it was taken on.
+      mods:Array.isArray(p.mods)?p.mods.slice():[],
       // The suit. Items are plain data; an unresolved drop card is NOT saved —
       // leaving mid-decision forfeits the item.
       gear:p.gear||null,
@@ -372,6 +377,10 @@ function continueRun(slot){
     thornsGrown:sp.thornsGrown||0, thornsShedded:sp.thornsShedded||0,
     poisonCarry:sp.poisonCarry||0 });
   p.gear = loadGear(sp.gear);
+  // Only ids the tables still recognise; a deleted Modification drops out
+  // rather than being trusted, exactly as a deleted status does.
+  p.mods = Array.isArray(sp.mods) ? sp.mods.filter(id => modById(d.classId, id)) : [];
+  applyTakenMods(p);
   state.player=p;
   // Saves written before statuses were persisted simply have none; anything
   // whose definition has since been removed is dropped rather than trusted.

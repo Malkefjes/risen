@@ -325,6 +325,13 @@ function simulateRun(classId, opts) {
         resolveDrop(botTakesDrop(state.player, state.pendingDrop.item));
         continue;
       }
+      // A Modification offer waits on the player the same way. The OFFER is a
+      // rules draw; the choice must not be a second one, so the bot always
+      // takes the first — see botTakesMod.
+      if (state.pendingMods) {
+        takeMod(botTakesMod(state.pendingMods.offer));
+        continue;
+      }
       if (!state.awaitingInput) {
         if (!_pendingStep) break;                // nothing queued, nobody to ask
         continue;

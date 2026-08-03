@@ -246,6 +246,8 @@ let state = {
   // A drop waiting on equip-or-leave; the between-fight beat holds until
   // resolveDrop answers it (js/items.js).
   pendingDrop:null,
+  // A Modification offer waiting on a pick; same gate, same resume path.
+  pendingMods:null,
   combo:0, fightTurns:0, enemyActions:0, bestCombo:0,
   runOver:false, won:false,
   // Turns taken by EITHER side this fight, purely so the log can number them.

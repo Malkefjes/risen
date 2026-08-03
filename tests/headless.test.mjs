@@ -106,6 +106,8 @@ export default async function ({ page, ok }) {
         // The same hand the sim uses on a drop card, so both sides make the
         // identical equip-or-leave call. The decision draws no RNG.
         resolveDrop(botTakesDrop(state.player, state.pendingDrop.item));
+      } else if (state.pendingMods) {
+        takeMod(botTakesMod(state.pendingMods.offer));
       } else if (state.awaitingInput && state.combatActive) {
         const p = state.player;
         if (p.points > 0) adjustStat('vit', 1);

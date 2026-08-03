@@ -2980,3 +2980,56 @@ body {
   flex-shrink: 0;
 }
 .suit-thumb.ghost { opacity: 0.22; filter: grayscale(1); }
+
+/* ---- Modifications -------------------------------------------------------
+   The Laboratory's offer. Three cards, one press, no decline — so they are
+   buttons, sized to be read rather than skimmed. The run's strain tints the
+   edge, because a Modification belongs to the extraction it rewrites. */
+.mod-modal { max-width: 560px; }
+.mod-lead {
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-align: center;
+  margin: -14px 0 20px;
+}
+#mod-body { display: flex; flex-direction: column; gap: 12px; }
+.mod-card {
+  --edge: var(--base-rgb);
+  text-align: left;
+  background: rgba(6, 11, 10, 0.52);
+  border: 1px solid rgba(var(--edge), 0.42);
+  border-radius: 6px;
+  padding: 14px 16px;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--text);
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.12s ease;
+}
+.mod-card.strain-bio  { --edge: 125, 255, 160; }
+.mod-card.strain-psy  { --edge: 192, 132, 252; }
+.mod-card.strain-sym  { --edge: 251, 146, 60; }
+.mod-card.strain-base { --edge: var(--base-rgb); }
+.mod-card:hover {
+  border-color: rgba(var(--edge), 0.95);
+  background: rgba(var(--edge), 0.08);
+  transform: translateY(-1px);
+}
+.mod-card:focus-visible { outline: 2px solid rgba(var(--edge), 0.9); outline-offset: 3px; }
+.mod-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: rgb(var(--edge));
+  margin-bottom: 6px;
+}
+.mod-text { font-size: 0.8rem; line-height: 1.65; color: rgba(238, 242, 255, 0.86); }
+
+/* The SUIT tab's list of what is already installed. */
+.mod-list { display: flex; flex-direction: column; gap: 8px; }
+.mod-entry {
+  border-left: 2px solid rgba(var(--base-rgb), 0.4);
+  padding: 4px 0 4px 10px;
+}
+.mod-entry .mod-name { font-size: 0.62rem; color: var(--text); margin-bottom: 3px; }
+.mod-entry .mod-text { font-size: 0.72rem; line-height: 1.5; color: var(--muted); }
