@@ -293,6 +293,17 @@ did not say.
   rather than handing every build a free stack. Measured at 100 runs a cell
   with base as the control (noise floor ±8): STR+VIT bio 1% -> 10%, psy
   1% -> 14%, sym unmoved. Real, and modest.
+  **`OWNER:` POOLS WENT UP 1.5x ON 2026-08-03ab** (`hpBase` 160 -> 240) with
+  boss pools raised on top (`bossHp` 3.6 -> 5.0, so a boss is 5.1x the trash
+  beside it against 3.7x before). His ask, in his words: *"i need bigger bars to
+  sink that scaling dmg into."* This deliberately walks back part of the note
+  below — length and danger are still separate dials, the length dial just moved
+  up. Measured at 100 runs a row: wins bio 39 -> 22, psy 24 -> 13, sym 10 -> 1,
+  base 62 -> 36. IT IS NOT A UNIFORM NERF: bio barely cares because POISON is
+  permanent and ticks every turn, so a longer fight is strictly more of its
+  damage, while base's BLEED eats a stack per tick and psy's payout is ON THE
+  KILL — both run dry in a bigger pool. Bio overtook base at 50 median against
+  its 54. Wave 1 trash went 7 basic attacks to 10.
   **What moved it was ENEMY HP, not damage** — and that became `hpExp`
   (2026-08-03j, owner's call to try it). LENGTH AND DANGER ARE NOW SEPARATE
   DIALS: pools grow sublinearly in the growth factor (`hpExp` 0.75) while the

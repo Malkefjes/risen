@@ -37,7 +37,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-03aa';
+const BUILD = '2026-08-03ab';
 
 const BALANCE = {
   player: {
@@ -279,7 +279,11 @@ const BALANCE = {
     //
     // HP AND DAMAGE ARE DIFFERENT JOBS: HP when a fight should have ROOM, damage
     // and rate when it should have TEETH.
-    hpBase: 160, tierGrowth: 1.85, withinStep: 0.06,
+    // hpBase 160 -> 240 (2026-08-03ab, owner's call): *"i need bigger bars to
+    // sink that scaling dmg into."* A flat multiplier on every pool at every
+    // wave — hpExp rides the growth factor, not the base — so wave 1 trash
+    // goes from 7 basic attacks to 10 and wave 60 scales with it.
+    hpBase: 240, tierGrowth: 1.85, withinStep: 0.06,
     // ---- HOW LONG A FIGHT IS, AS OPPOSED TO HOW DANGEROUS ------------------
     // hpExp is dmgExp's twin and the two are deliberately DIFFERENT: pools
     // grow sublinearly in the growth factor while the threat grows linearly,
@@ -317,13 +321,15 @@ const BALANCE = {
     // are the old brute chassis, folded in when archetypes were removed.
     // bossXp 3.0 -> 5.0 with the 30-wave restructure: a zone has ONE boss now
     // where it had three, so the one kill carries the weight the three shared.
-    // bossAps 0.72 -> 1.00 and bossHp 4.5 -> 3.6 (2026-08-03x). Measured
-    // before: a boss traded so much rate for pool that it was the SAFEST fight
-    // in its zone — 227 DPS at wave 30 against 235-387 for the trash beside it,
-    // so the exam was the breather. A boss now acts as often as its trash and
-    // hits 26% harder for it; the pool comes down so the fight got tenser
-    // rather than simply longer.
-    bossHp: 3.6, bossDmg: 1.82, bossAps: 1.00, bossXp: 5.0,
+    // bossAps 0.72 -> 1.00 on 2026-08-03x: a boss traded so much rate for pool
+    // that it was the SAFEST fight in its zone — 227 DPS at wave 30 against
+    // 235-387 for the trash beside it, so the exam was the breather. It acts as
+    // often as its trash now and hits 26% harder for it.
+    // bossHp 4.5 -> 3.6 came with that, and went back UP to 5.0 on 2026-08-03ab
+    // (owner's call, same ask as hpBase): a boss pool is 5.1x the trash standing
+    // beside it, measured at waves 30 and 60. It was already 3.7x, so this is
+    // the difference between tanky and a wall worth building into.
+    bossHp: 5.0, bossDmg: 1.82, bossAps: 1.00, bossXp: 5.0,
     // THE FIRST BOSS IS MEANT TO KILL YOU. It is the one fight in the run with
     // a scripted answer to losing — the scientist pulls you out — so it hits
     // above an ordinary boss at its wave. Was 2 when the first boss stood at
