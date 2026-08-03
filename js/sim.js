@@ -314,10 +314,6 @@ function simulateRun(classId, opts) {
   _pendingStep = null;
   try {
     startGame(true, classId);
-    // A bot that was handed an allocation plan banks its points and spends
-    // them itself; auto-allocation is the player's convenience, and leaving
-    // it on would make every `allocate` option in tools/ silently dead.
-    if (opts.allocate && state.player) state.player.weights = null;
     let steps = 0;
     // ADVANCE FIRST, THEN ACT. The bot only touches anything while the game is
     // waiting on the player, because that is the only moment a human can. An

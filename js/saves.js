@@ -382,7 +382,7 @@ function continueRun(slot){
     dmgMult:sp.dmgMult||1, hpMult:sp.hpMult||1, apsMult:sp.apsMult||1,
     thornsGrown:sp.thornsGrown||0, thornsShedded:sp.thornsShedded||0,
     poisonCarry:sp.poisonCarry||0,
-    weights:sp.weights||{ str:25, instinct:25, speed:25, vit:25 },
+    weights:sp.weights||{ str:0, instinct:0, speed:0, vit:0 },
     allocCarry:sp.allocCarry||{ str:0, instinct:0, speed:0, vit:0 } });
   p.gear = loadGear(sp.gear);
   // Only ids the tables still recognise; a deleted Modification drops out

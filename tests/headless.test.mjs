@@ -81,12 +81,7 @@ export default async function ({ page, ok }) {
   // sides really would be playing different games.
   const head = await page.evaluate((s) => {
     eval('(' + s + ')()');
-    // NO allocate plan on either side: an explicit plan switches the sim to
-    // the manual pool (simulateRun nulls weights for it), and the on-screen run
-    // auto-allocates by weight. Naming a plan here would make the two sides
-    // spend points by different rules and fail for something that is not a
-    // headless difference at all.
-    const r = simulateRun('bio', { policy: BOTS.smart.policy });
+    const r = simulateRun('bio', { policy: BOTS.smart.policy, allocate: () => 'vit' });
     return { wave: r.wave, level: r.level, kills: r.kills, dmg: r.damageDealt,
              won: r.won, turns: r.turns, stats: r.stats, derived: r.derived };
   }, SEED);
@@ -115,7 +110,11 @@ export default async function ({ page, ok }) {
         takeMod(botTakesMod(nextModOffer()));
       } else if (state.awaitingInput && state.combatActive) {
         const p = state.player;
-        playerAct(BOTS.smart.policy(p));      // same hand on the controls
+        // A run starts on MANUAL allocation (every weight at zero), so both
+        // sides place their own points — same stat, same order.
+        if (p.points > 0) adjustStat('vit', 1);
+        else if (pendingTotal(p) > 0) commitStats();
+        else playerAct(BOTS.smart.policy(p));   // same hand on the controls
       }
       await new Promise(r => setTimeout(r, 0));
     }

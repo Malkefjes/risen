@@ -64,12 +64,13 @@ function freshPlayer(classId) {
     // Modification ids, in the order taken. The patches themselves are
     // re-applied from these on load (applyTakenMods).
     mods: [],
-    // AUTO-ALLOCATION. Relative parts, not percentages that must sum — the
-    // sidebar shows each as its share of the total, so a player can set STR 100
-    // and VIT 100 and mean half each. Every point a level grants is spread by
-    // these (autoAllocate). A bot with its own plan sets this to null and banks
-    // points the old way instead.
-    weights: { str: 25, instinct: 25, speed: 25, vit: 25 },
+    // AUTO-ALLOCATION, OFF UNTIL ASKED FOR. All four at zero is MANUAL: points
+    // bank and the +/- place them by hand, which is where a run starts (owner,
+    // 2026-08-03u). Turning any bar up switches the run to automatic and every
+    // point a level grants is spread by these shares instead (autoAllocate).
+    // Relative parts, not percentages that must sum — STR 100 and VIT 100 means
+    // half each.
+    weights: { str: 0, instinct: 0, speed: 0, vit: 0 },
     allocCarry: { str: 0, instinct: 0, speed: 0, vit: 0 },
     statuses:[], isPlayer:true, meter:0, thornsGrown:0, thornsShedded:0,
     poisonCarry:0, _statusKey:''
@@ -428,7 +429,7 @@ function gainXP(amount, bonus) {
     // log line, so the number the player is told is the number they get.
     const grant = P().pointsPerLevel;
     p.xp -= p.xpNext; p.level++; p.xpNext = xpForLevel(p.level);
-    if (p.weights) autoAllocate(p, grant); else p.points += grant;
+    if (autoMode(p)) autoAllocate(p, grant); else p.points += grant;
     recalcPlayerStats();
     // recalcPlayerStats above has already moved the anchor to the NEW level, so
     // the level-up heal pays at the size the level you just earned is worth.
@@ -571,24 +572,28 @@ function refreshSidebarStats() {
     el.innerHTML = (p[k] + pendingOf(p, k))
       + (g ? '<i class="gear-plus">+' + g + '</i>' : '');
     el.classList.toggle('pending', pendingOf(p, k) > 0);
-    // The bar is the WEIGHT, and the number on it is that weight's share.
+    // The bar is the WEIGHT: this stat's share of every point the run earns.
     const bar = document.getElementById('bar-' + k);
-    const pctEl = document.getElementById('wpct-' + k);
-    const share = p.weights ? weightShare(p, k) : 0;
-    if (bar) bar.style.width = Math.round(share * 100) + '%';
-    if (pctEl) pctEl.textContent = p.weights ? Math.round(share * 100) + '%' : '';
+    if (bar) bar.style.width = Math.round(weightShare(p, k) * 100) + '%';
   });
 
-  // The buttons nudge the WEIGHT now, so they are live whenever weights are —
-  // there is no pool to run dry and nothing to confirm. A stat already at 0 or
-  // 100 has no nudge left in that direction.
+  // MANUALLY the plus places a point and becomes the confirm when the pool runs
+  // dry; AUTOMATICALLY it nudges the share and the minus is replaced by the
+  // percentage, because in that mode there is nothing to take back.
+  const auto = autoMode(p);
   document.querySelectorAll('.side-stat-controls .stat-btn.plus').forEach(b => {
-    b.disabled = p.weights ? (p.weights[b.dataset.stat] || 0) >= 100 : (p.points <= 0 && !confirming);
-    b.textContent = !p.weights && confirming ? 'V' : '+';
-    b.classList.toggle('confirm', !p.weights && confirming);
+    b.disabled = auto ? (p.weights[b.dataset.stat] || 0) >= 100 : (p.points <= 0 && !confirming);
+    b.textContent = !auto && confirming ? 'V' : '+';
+    b.classList.toggle('confirm', !auto && confirming);
+    b.title = !auto && confirming ? 'Confirm allocation — this cannot be undone' : '';
   });
   document.querySelectorAll('.side-stat-controls .stat-btn.minus').forEach(b => {
-    b.disabled = p.weights ? (p.weights[b.dataset.stat] || 0) <= 0 : pendingOf(p, b.dataset.stat) <= 0;
+    b.style.display = auto ? 'none' : '';
+    b.disabled = pendingOf(p, b.dataset.stat) <= 0;
+  });
+  document.querySelectorAll('.side-stat-controls .weight-pct').forEach(s => {
+    s.style.display = auto ? '' : 'none';
+    if (auto) s.textContent = Math.round(weightShare(p, s.dataset.stat) * 100) + '%';
   });
 
   // Values stay on the COMMITTED sheet. A staged allocation shows up as a
@@ -628,9 +633,12 @@ const WEIGHT_STEP = 5;
 function weightTotal(p) {
   return STAT_KEYS.reduce((n, k) => n + Math.max(0, (p.weights && p.weights[k]) || 0), 0);
 }
+// All four at zero is the manual sheet; anything above it is automatic. One
+// predicate, so the buttons, the level-up and the save all agree on which.
+function autoMode(p) { return !!p && !!p.weights && weightTotal(p) > 0; }
 function weightShare(p, stat) {
   const t = weightTotal(p);
-  if (!t) return 0.25;                       // all zero reads as an even split
+  if (!t) return 0;
   return Math.max(0, p.weights[stat] || 0) / t;
 }
 function autoAllocate(p, points) {
@@ -654,21 +662,84 @@ function autoAllocate(p, points) {
            STAT_KEYS.filter(k => given[k]).map(k => k.toUpperCase() + ' +' + given[k]));
 }
 
-// The bars under each stat ARE the control: click one to set its weight, or
-// nudge with the buttons beside it.
+// The bars under each stat ARE the control: drag one to set its weight, or
+// nudge with the plus beside it.
+// Turning the first bar up is the switch to automatic, so whatever is banked or
+// staged lands NOW by the shares just set — otherwise the pool would sit behind
+// a plus that had stopped being an allocate button. Keyed off whether the run
+// was manual when the gesture STARTED, not when it ended: a drag begins at the
+// left edge, which is still zero, and reading the flag then would miss it.
+function flushPoolOnSwitch(p, wasManual) {
+  if (!wasManual || weightTotal(p) === 0) return;
+  const pool = p.points + pendingTotal(p);
+  STAT_KEYS.forEach(k => { p.pending[k] = 0; });
+  p.points = 0;
+  if (pool > 0) { autoAllocate(p, pool); recalcPlayerStats(); }
+}
+function clampWeight(p, stat, value) {
+  p.weights[stat] = Math.max(0, Math.min(100, Math.round(value)));
+}
+function setWeight(stat, value) {
+  const p = state.player;
+  if (!p || !p.weights) return;
+  const wasManual = weightTotal(p) === 0;
+  clampWeight(p, stat, value);
+  flushPoolOnSwitch(p, wasManual);
+  updateHud(); saveRun();
+}
 function adjustWeight(stat, delta) {
   const p = state.player;
   if (!p || !p.weights) return;
-  p.weights[stat] = Math.max(0, Math.min(100, (p.weights[stat] || 0) + delta));
+  setWeight(stat, (p.weights[stat] || 0) + delta);
+}
+
+// DRAGGING, not clicking at points. Pointer capture, so the bar keeps following
+// the mouse once it leaves the 3px track — which it does immediately, and which
+// made the first version feel like four click targets rather than four sliders.
+let _dragStat = null, _dragWasManual = false;
+function weightAtPointer(ev, el) {
+  const box = el.getBoundingClientRect();
+  const raw = ((ev.clientX - box.left) / Math.max(1, box.width)) * 100;
+  return Math.round(raw / WEIGHT_STEP) * WEIGHT_STEP;
+}
+function startWeightDrag(ev, stat) {
+  const p = state.player;
+  if (!p || !p.weights || ev.button > 0) return;
+  ev.preventDefault();
+  const el = ev.currentTarget;
+  _dragStat = stat;
+  _dragWasManual = weightTotal(p) === 0;
+  if (el.setPointerCapture) el.setPointerCapture(ev.pointerId);
+  clampWeight(p, stat, weightAtPointer(ev, el));
+  refreshSidebarStats();
+}
+// Only the bar redraws per move — no saveRun and no full HUD pass, since a drag
+// is dozens of moves and the release writes the one that counts.
+function dragWeight(ev) {
+  const p = state.player;
+  if (_dragStat === null || !p || !p.weights) return;
+  clampWeight(p, _dragStat, weightAtPointer(ev, ev.currentTarget));
+  refreshSidebarStats();
+}
+function endWeightDrag() {
+  if (_dragStat === null) return;
+  _dragStat = null;
+  const p = state.player; if (!p) return;
+  flushPoolOnSwitch(p, _dragWasManual);
+  _dragWasManual = false;
   updateHud(); saveRun();
 }
-function setWeightFromClick(ev, stat) {
-  const p = state.player;
-  if (!p || !p.weights) return;
-  const box = ev.currentTarget.getBoundingClientRect();
-  const pct = Math.round(((ev.clientX - box.left) / Math.max(1, box.width)) * 100 / WEIGHT_STEP) * WEIGHT_STEP;
-  p.weights[stat] = Math.max(0, Math.min(100, pct));
-  updateHud(); saveRun();
+
+// The two buttons beside each stat mean different things in the two modes:
+// manually they place and take back a point, automatically the plus nudges the
+// share and the minus is gone — its slot is where the percentage reads.
+function statPlus(stat) {
+  const p = state.player; if (!p) return;
+  if (autoMode(p)) adjustWeight(stat, WEIGHT_STEP); else adjustStat(stat, 1);
+}
+function statMinus(stat) {
+  const p = state.player; if (!p) return;
+  if (autoMode(p)) adjustWeight(stat, -WEIGHT_STEP); else adjustStat(stat, -1);
 }
 
 // Hovering a plus adds its point on top of whatever is already staged, so the

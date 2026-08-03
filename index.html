@@ -243,12 +243,14 @@
                 <div class="stat-preview" id="preview-str"></div>
               </div>
               <div class="side-stat-controls">
-                <button class="stat-btn minus" data-stat="str" onclick="adjustWeight('str', -5)">−</button>
+                <button class="stat-btn minus" data-stat="str" onclick="statMinus('str')">−</button>
+                <span class="weight-pct" data-stat="str" id="wpct-str"></span>
                 <div class="side-stat-value" id="stat-str" data-stat="str">10</div>
-                <button class="stat-btn plus" data-stat="str" onclick="adjustWeight('str', 5)">+</button>
+                <button class="stat-btn plus" data-stat="str" onclick="statPlus('str')">+</button>
               </div>
-              <div class="side-stat-bar weight-bar" title="Share of each level's points"
-                   onclick="setWeightFromClick(event, 'str')"><i id="bar-str"></i><span class="weight-pct" id="wpct-str"></span></div>
+              <div class="side-stat-bar weight-bar" title="Drag to set this stat's share of every point"
+                   onpointerdown="startWeightDrag(event, 'str')" onpointermove="dragWeight(event)"
+                   onpointerup="endWeightDrag(event)" onpointercancel="endWeightDrag(event)"><i id="bar-str"></i></div>
             </div>
             <div class="side-stat-row" data-stat="instinct">
               <div class="side-stat-info" title="Crit chance · crit damage · read (telegraphs)">
@@ -256,12 +258,14 @@
                 <div class="stat-preview" id="preview-instinct"></div>
               </div>
               <div class="side-stat-controls">
-                <button class="stat-btn minus" data-stat="instinct" onclick="adjustWeight('instinct', -5)">−</button>
+                <button class="stat-btn minus" data-stat="instinct" onclick="statMinus('instinct')">−</button>
+                <span class="weight-pct" data-stat="instinct" id="wpct-instinct"></span>
                 <div class="side-stat-value" id="stat-instinct" data-stat="instinct">10</div>
-                <button class="stat-btn plus" data-stat="instinct" onclick="adjustWeight('instinct', 5)">+</button>
+                <button class="stat-btn plus" data-stat="instinct" onclick="statPlus('instinct')">+</button>
               </div>
-              <div class="side-stat-bar weight-bar" title="Share of each level's points"
-                   onclick="setWeightFromClick(event, 'instinct')"><i id="bar-instinct"></i><span class="weight-pct" id="wpct-instinct"></span></div>
+              <div class="side-stat-bar weight-bar" title="Drag to set this stat's share of every point"
+                   onpointerdown="startWeightDrag(event, 'instinct')" onpointermove="dragWeight(event)"
+                   onpointerup="endWeightDrag(event)" onpointercancel="endWeightDrag(event)"><i id="bar-instinct"></i></div>
             </div>
             <div class="side-stat-row" data-stat="speed">
               <div class="side-stat-info" title="Turn rate · evasion">
@@ -269,12 +273,14 @@
                 <div class="stat-preview" id="preview-speed"></div>
               </div>
               <div class="side-stat-controls">
-                <button class="stat-btn minus" data-stat="speed" onclick="adjustWeight('speed', -5)">−</button>
+                <button class="stat-btn minus" data-stat="speed" onclick="statMinus('speed')">−</button>
+                <span class="weight-pct" data-stat="speed" id="wpct-speed"></span>
                 <div class="side-stat-value" id="stat-speed" data-stat="speed">10</div>
-                <button class="stat-btn plus" data-stat="speed" onclick="adjustWeight('speed', 5)">+</button>
+                <button class="stat-btn plus" data-stat="speed" onclick="statPlus('speed')">+</button>
               </div>
-              <div class="side-stat-bar weight-bar" title="Share of each level's points"
-                   onclick="setWeightFromClick(event, 'speed')"><i id="bar-speed"></i><span class="weight-pct" id="wpct-speed"></span></div>
+              <div class="side-stat-bar weight-bar" title="Drag to set this stat's share of every point"
+                   onpointerdown="startWeightDrag(event, 'speed')" onpointermove="dragWeight(event)"
+                   onpointerup="endWeightDrag(event)" onpointercancel="endWeightDrag(event)"><i id="bar-speed"></i></div>
             </div>
             <div class="side-stat-row" data-stat="vit">
               <div class="side-stat-info" title="Health · recovery · thorns (Symbiotic)">
@@ -282,12 +288,14 @@
                 <div class="stat-preview" id="preview-vit"></div>
               </div>
               <div class="side-stat-controls">
-                <button class="stat-btn minus" data-stat="vit" onclick="adjustWeight('vit', -5)">−</button>
+                <button class="stat-btn minus" data-stat="vit" onclick="statMinus('vit')">−</button>
+                <span class="weight-pct" data-stat="vit" id="wpct-vit"></span>
                 <div class="side-stat-value" id="stat-vit" data-stat="vit">10</div>
-                <button class="stat-btn plus" data-stat="vit" onclick="adjustWeight('vit', 5)">+</button>
+                <button class="stat-btn plus" data-stat="vit" onclick="statPlus('vit')">+</button>
               </div>
-              <div class="side-stat-bar weight-bar" title="Share of each level's points"
-                   onclick="setWeightFromClick(event, 'vit')"><i id="bar-vit"></i><span class="weight-pct" id="wpct-vit"></span></div>
+              <div class="side-stat-bar weight-bar" title="Drag to set this stat's share of every point"
+                   onpointerdown="startWeightDrag(event, 'vit')" onpointermove="dragWeight(event)"
+                   onpointerup="endWeightDrag(event)" onpointercancel="endWeightDrag(event)"><i id="bar-vit"></i></div>
             </div>
             <!-- Exact values only. Every row is a number the fight actually
                  uses, and carries a .delta the hover preview fills in with the
