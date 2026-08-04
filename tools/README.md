@@ -28,6 +28,11 @@ statistic, not a target.
 5. CHOICE LIVELINESS. Every toll must be pickable by someone, every unique
    wearable by some build, every trade-off buyable in some situation. A
    dead option is an imbalance even if no number looks wrong.
+6. THE POWER ARC. Becoming powerful requires having been weak. Enemies must
+   cost real effort before the build comes together, and the campaign must
+   hold pressure the whole way — effort per enemy starts real and falls as
+   the build assembles; danger visits every band. A wave-1 one-tap and a
+   life that never sees half HP are both failures the ceiling cannot see.
 
 ## Explicitly not balanced, not targeted
 
@@ -58,6 +63,10 @@ cards at player-turn boundaries and take the first toll offered.
                                      which buttons never get pressed
     node tools/builds.mjs [runs]     the divergence matrix: every allocation
                                      plan x every class, first-death reach
+    node tools/arc.mjs [runs]        the power arc: player turns per kill,
+                                     damage pressure and lowest HP touched,
+                                     per wave band — where danger lives and
+                                     where effort collapses into one-taps
     node tools/uniques.mjs [runs]    equip-lift per unique: reach with it
                                      granted vs without, per class
     node tools/tolls.mjs [runs]      hazard economics: depth reach and level
