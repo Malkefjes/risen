@@ -574,7 +574,6 @@ body {
               0 0 30px rgba(var(--class-rgb), 0.24);
   transform: translateY(-3px);
 }
-.class-card.selected .class-info { color: rgba(226, 236, 230, 0.74); }
 
 .class-card.selected::after {
   content: 'SELECTED';
@@ -624,12 +623,6 @@ body {
   color: var(--class-color);
   letter-spacing: 1.8px;
   margin-bottom: 14px;
-}
-
-.class-info {
-  font-size: 0.78rem;
-  color: var(--muted);
-  line-height: 1.6;
 }
 
 .class-actions {

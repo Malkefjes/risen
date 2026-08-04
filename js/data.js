@@ -1,4 +1,4 @@
-const BUILD = '2026-08-04pm14';
+const BUILD = '2026-08-04pm15';
 
 const BALANCE = {
   player: {
@@ -169,7 +169,7 @@ const CLASSES = {
   },
 
   psy: {
-    name: 'Siren', color: 'psy',
+    name: 'Void', color: 'psy',
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
 
