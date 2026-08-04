@@ -2,8 +2,10 @@ export default async function ({ page, ok }) {
 
   await page.evaluate(() => { localStorage.clear(); startGame(true, 'bio'); SETTINGS.fastTurns = true; });
   await page.waitForFunction(() => state.player && state.combatActive);
-  await page.evaluate(() => openScene('scientist', () => {}));
-  await page.waitForFunction(() => !document.getElementById('scene-panel').hidden, null, { timeout: 15000 });
+  await page.evaluate(() => {
+    const q = document.getElementById('mod-offer'); if (q) q.classList.add('on');
+    const cm = document.getElementById('combo-meter'); if (cm) cm.style.display = 'block';
+  });
 
   await page.evaluate(() => { goToMenu(); startGame(true, 'psy'); });
   await page.waitForFunction(() => state.player && state.combatActive);
@@ -17,11 +19,8 @@ export default async function ({ page, ok }) {
     return {
       wave: state.wave, level: p.level, cls: p.class, full: p.hp === p.maxHp,
       leftovers: [
-        state.inScene && 'state.inScene',
-        vis(document.getElementById('scene-layer')) && 'scene-layer',
-        vis(document.getElementById('scene-panel')) && 'scene-panel',
-        document.getElementById('combat-screen').classList.contains('scene-on') && 'scene-on',
-        document.getElementById('arena-card').classList.contains('scene') && 'the lab backdrop'
+        (document.getElementById('mod-offer') || {}).classList?.contains('on') && 'a mod offer',
+        (document.getElementById('combo-meter') || {}).style?.display === 'block' && 'the combo meter'
       ].filter(Boolean),
       fighters: document.querySelectorAll('#arena-card .fighter').length,
       playable: lit('.arena-side') && shown('.skills') && shown('.turn-info')
@@ -41,7 +40,7 @@ export default async function ({ page, ok }) {
       if (typeof v === 'string') { if (v.startsWith('assets/')) urls.add(v); }
       else if (v && typeof v === 'object') Object.values(v).forEach(walk);
     };
-    [ZONE_SPRITES, POSE_SPRITES, PLAYER_SPRITES, SCIENTIST_SPRITES, SCENES, SLOTS].forEach(walk);
+    [ZONE_SPRITES, POSE_SPRITES, PLAYER_SPRITES, SLOTS].forEach(walk);
     const cssText = [...document.styleSheets]
       .flatMap(sh => { try { return [...sh.cssRules].map(r => r.cssText); } catch { return []; } }).join('\n');
 

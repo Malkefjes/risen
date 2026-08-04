@@ -91,10 +91,6 @@ const ZONE_SPRITES = {
        boss: MCP_RECLAIMER_SPRITES, trashScale: 1.15 }
 };
 
-const SCIENTIST_SPRITES = {
-  ready:  'assets/sprites/rogue lab scientist.png',
-  strike: 'assets/sprites/rogue lab scientist attack.png'
-};
 
 const ENEMY_SPRITE = ENFORCER_SPRITES.ready;
 

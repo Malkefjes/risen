@@ -1,4 +1,4 @@
-const BUILD = '2026-08-03ak';
+const BUILD = '2026-08-03al';
 
 const BALANCE = {
   player: {
@@ -86,7 +86,6 @@ const BALANCE = {
 
     dreadSiphonFrac: 0.005,
 
-    rescueHpFrac: 0.5,
     resolveDR: 0.03,
     resolvePerHit: 3,
     reloadHpFloor: 0.15

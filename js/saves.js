@@ -79,7 +79,6 @@ function devSkipToFirstBoss() {
     simulateRun(classId, Object.assign({}, BOTS.smart, { stopWhen: s => s.wave > gate }));
     if (state.runOver || state.wave <= gate) continue;
 
-    state.rescued = false;
     devEnterCombat('DEV · the bot played waves 1-' + gate + ' (cleared on try ' + attempt
       + ') · handed over at the first boss · level ' + state.player.level);
     return;
@@ -165,7 +164,6 @@ function serializeRun() {
     dmgBySource:state.dmgBySource||{}, skillUses:state.skillUses||{},
     peakStrain:state.peakStrain||0,
 
-    rescued:!!state.rescued,
 
     dropQueue:(state.dropQueue||[]).slice(),
     modQueue:(state.modQueue||[]).map(o => o.map(m => m.id)),
@@ -313,7 +311,6 @@ function continueRun(slot){
 
   state.wave=d.wave||1;
 
-  state.rescued=!!d.rescued;
   state.dropQueue=loadDropQueue(d.dropQueue);
 
   state.modQueue=(Array.isArray(d.modQueue)?d.modQueue:[])

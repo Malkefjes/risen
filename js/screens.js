@@ -167,8 +167,6 @@ function resetRunState(classId) {
   state._lastOverkill = 0;
   state.runOver = false;
   state.won = false;
-  state.inScene = false;
-  state.rescued = false;
 
   updateCombo();
   clearLog();
@@ -229,7 +227,6 @@ function skipIntro() {
 
 document.addEventListener('keydown', ev => {
   if (ev.code !== 'Space') return;
-  if (_scene) { ev.preventDefault(); onScenePanelClick(); return; }
   if (!_skipIntro) return;
   ev.preventDefault();
   skipIntro();
@@ -262,11 +259,9 @@ function stageCombatReveal(onDone) {
 
 function getZoneName(wave) { return zoneForWave(wave).label; }
 
-let _nextFoe = null;
 
 function spawnEnemy() {
-  state.enemy = _nextFoe || makeEnemy(state.wave);
-  _nextFoe = null;
+  state.enemy = makeEnemy(state.wave);
   const p = state.player;
 
   const zn = document.getElementById('zone-name');
@@ -276,7 +271,6 @@ function spawnEnemy() {
   if (ac) {
     ac.dataset.zone = zoneForWave(state.wave).num;
 
-    ac.classList.toggle('scene', !!state.enemy.sceneFoe);
   }
 
   const e = state.enemy;
@@ -667,220 +661,3 @@ function adjustStat(stat, delta) {
   updateHud(); saveRun();
 }
 
-const SCENES = {
-  scientist: {
-    speaker: 'ROGUE LAB SCIENTIST',
-    portrait: 'assets/sprites/rogue lab scientist.png',
-
-    tint: '#45dfe0',
-
-    steps: [
-      { text: '…You are not following the behavioral template...' },
-      { text: 'Assets in your series either complete the sweep or stand down for collection. They do not detour.' },
-      { text: 'You have been destroying specimens that were logged for extraction. That is inventory.' },
-      { text: 'I am authorized to recover this asset by any condition.',
-        choices: [{ label: 'wait…' }, { label: 'attack', go: 6 }] },
-      { text: '…Language. Coherent.' },
-
-      { text: 'The frame was not specified to support cognition at this level. Tell me what you have been reading, or be recovered in pieces.',
-        choices: [{ label: 'MOVE ON', act: 'leave' }] },
-
-      { text: 'So be it…', act: 'fight' }
-    ]
-  }
-};
-
-function makeScientistFoe() {
-  const e = makeEnemy(BALANCE.bossEvery);
-  e.name = 'Rogue Lab Scientist';
-  e.artSet = SCIENTIST_SPRITES;
-  e.poisonHits = true;
-  e.sceneFoe = true;
-  return e;
-}
-
-function rescueAvailable(won) {
-  return !won && !state.rescued && state.wave === BALANCE.bossEvery;
-}
-
-function sceneAfterWave(wave) {
-  if (wave !== BALANCE.bossEvery) return null;
-  return 'scientist';
-}
-
-const SCENE_FADE_MS = 700;
-
-const SCENE_FIGURE_MS = 1400;
-
-const TYPE_MS = 26;
-
-const SCENE_BEAT_MS = 900;
-let _typing = null;
-let _scene = null;
-
-function finishTyping() {
-  if (!_typing) return false;
-  const t = _typing;
-  clearTimeout(t.timer);
-  _typing = null;
-  t.el.textContent = t.text;
-  const cs = document.getElementById('combat-screen');
-  if (cs) cs.classList.remove('scene-typing');
-  t.done();
-  return true;
-}
-
-function typeLine(el, text, done) {
-  if (_typing) clearTimeout(_typing.timer);
-  const t = _typing = { el, text, i: 0, timer: null, done };
-  el.textContent = '';
-  const cs = document.getElementById('combat-screen');
-  if (cs) cs.classList.add('scene-typing');
-  const tick = () => {
-    if (_typing !== t) return;
-    t.i++;
-    el.textContent = text.slice(0, t.i);
-    if (t.i >= text.length) { finishTyping(); return; }
-    t.timer = setTimeout(tick, TYPE_MS);
-  };
-  t.timer = setTimeout(tick, TYPE_MS);
-}
-
-function showSceneStep(i) {
-  if (!_scene) return;
-  const step = _scene.def.steps[i];
-  if (!step) { closeScene(_scene.onDone); return; }
-  _scene.step = i;
-  const choices = document.getElementById('scene-choices');
-  const cont = document.getElementById('scene-continue');
-  choices.innerHTML = '';
-  cont.hidden = true;
-  typeLine(document.getElementById('scene-line'), step.text, () => {
-
-    if (step.act) {
-      _revealTimers.push(setTimeout(() => takeSceneChoice(step), SCENE_BEAT_MS));
-      return;
-    }
-    if (!step.choices) { cont.hidden = false; return; }
-    step.choices.forEach(c => {
-      const b = document.createElement('button');
-      b.className = 'ui-btn' + (c.quiet ? ' is-quiet' : '');
-      b.type = 'button';
-      b.textContent = c.label;
-      b.addEventListener('click', ev => { ev.stopPropagation(); takeSceneChoice(c); });
-      choices.appendChild(b);
-    });
-  });
-}
-
-function advanceScene() { if (_scene) showSceneStep(_scene.step + 1); }
-
-function takeSceneChoice(c) {
-  if (c.act === 'leave') { closeScene(_scene && _scene.onDone); return; }
-  if (c.act === 'fight') { sceneToFight(); return; }
-  if (c.go != null) { showSceneStep(c.go); return; }
-  advanceScene();
-}
-
-function onScenePanelClick() {
-  if (finishTyping()) return;
-  const step = _scene && _scene.def.steps[_scene.step];
-  if (step && !step.choices) advanceScene();
-}
-
-function openScene(id, onDone, onBlack) {
-  const sc = SCENES[id];
-  const layer = document.getElementById('scene-layer');
-  const panel = document.getElementById('scene-panel');
-  const card = document.getElementById('arena-card');
-  const screen = document.getElementById('combat-screen');
-
-  if (HEADLESS.on || !sc || !layer || !panel || !card) {
-    if (onBlack) onBlack();
-    if (onDone) onDone();
-    return;
-  }
-
-  state.inScene = true;
-
-  document.getElementById('scene-speaker').textContent = sc.speaker;
-  panel.style.setProperty('--scene-tint', sc.tint || 'var(--text)');
-  document.getElementById('scene-line').textContent = '';
-  document.getElementById('scene-choices').innerHTML = '';
-  document.getElementById('scene-continue').hidden = true;
-  const portrait = document.getElementById('scene-portrait');
-  if (portrait) portrait.src = sc.portrait;
-  panel.onclick = onScenePanelClick;
-
-  const veil = document.getElementById('arena-veil');
-  if (screen) screen.classList.add('scene-on');
-  if (veil) veil.classList.add('on');
-
-  _revealTimers.push(setTimeout(() => {
-    if (onBlack) onBlack();
-    card.classList.add('scene');
-    layer.hidden = false;
-    void layer.offsetWidth;
-    layer.classList.add('in');
-
-    _revealTimers.push(setTimeout(() => {
-      panel.hidden = false;
-      void panel.offsetWidth;
-      panel.classList.add('in');
-
-      _scene = { def: sc, step: 0, onDone: onDone };
-      showSceneStep(0);
-    }, SCENE_FIGURE_MS));
-
-    _revealTimers.push(setTimeout(() => { if (veil) veil.classList.remove('on'); }, 220));
-  }, SCENE_FADE_MS));
-}
-
-function teardownScene() {
-
-  if (HEADLESS.on) return;
-  finishTyping();
-  _scene = null;
-  const layer = document.getElementById('scene-layer');
-  const panel = document.getElementById('scene-panel');
-  const screen = document.getElementById('combat-screen');
-  if (layer) { layer.classList.remove('in'); layer.hidden = true; }
-  if (panel) { panel.classList.remove('in'); panel.hidden = true; panel.onclick = null; }
-  if (screen) { screen.classList.remove('scene-on', 'scene-typing'); }
-  state.inScene = false;
-}
-
-function sceneToFight() {
-  if (!_scene) return;
-  _scene = null;
-  const veil = document.getElementById('arena-veil');
-  if (veil) veil.classList.add('on');
-  _revealTimers.push(setTimeout(() => {
-    teardownScene();
-    _nextFoe = makeScientistFoe();
-    state.awaitingSpawn = true;
-    state.awaitingInput = false;
-    state.pendingEnemyAct = false;
-
-    startCombatLoop();
-    _revealTimers.push(setTimeout(() => { if (veil) veil.classList.remove('on'); }, 300));
-  }, SCENE_FADE_MS));
-}
-
-function closeScene(onDone) {
-  if (!_scene) return;
-  _scene = null;
-  const layer = document.getElementById('scene-layer');
-  const card = document.getElementById('arena-card');
-  const screen = document.getElementById('combat-screen');
-  const veil = document.getElementById('arena-veil');
-
-  if (veil) veil.classList.add('on');
-  _revealTimers.push(setTimeout(() => {
-    teardownScene();
-    if (card) card.classList.remove('scene');
-
-    if (onDone) onDone();
-    _revealTimers.push(setTimeout(() => { if (veil) veil.classList.remove('on'); }, 260));
-  }, SCENE_FADE_MS));
-}

@@ -221,10 +221,10 @@ function offerMods(p) {
 
 function queueMods(offer) {
   (state.modQueue = state.modQueue || []).push(offer);
-  logEvent('LABORATORY', null, 'offering ' + offer.length + ' modifications',
+  logEvent('SALVAGE', null, 'offering ' + offer.length + ' modifications',
            offer.map(m => m.name));
   if (HEADLESS.on) return;
-  floatText(state.player, 'LABORATORY', 'tally');
+  floatText(state.player, 'SALVAGE', 'tally');
   notifyTab('mods');
   updateHud();
 }
@@ -277,7 +277,7 @@ function renderModPanel() {
   const p = state.player;
   const cls = p ? p.class : '';
   const more = (state.modQueue || []).length - 1;
-  el.innerHTML = '<div class="pending-head">LABORATORY'
+  el.innerHTML = '<div class="pending-head">SALVAGE'
       + (more > 0 ? ' <i>+' + more + ' waiting</i>' : '') + '</div>'
     + offer.map(m => {
         const held = modCount(p, m.id);

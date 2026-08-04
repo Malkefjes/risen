@@ -298,7 +298,6 @@ function clearLog(){ if (HEADLESS.on) HEADLESS.log.length = 0; }
 
 document.addEventListener('visibilitychange', () => {
 
-  if (state.inScene) return;
   if (document.hidden) { if (state.combatActive) stopCombatLoop(); }
   else if (state.player && state.player.hp > 0 && document.getElementById('combat-screen').classList.contains('active')) {
     startCombatLoop();

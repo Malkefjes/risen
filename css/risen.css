@@ -2269,109 +2269,42 @@ body {
   .level-badge.level-up { transform: none; }
 }
 
-#combat-screen.scene-on .arena-side { opacity: 0; pointer-events: none; transition: opacity 0.45s ease; }
 
-#combat-screen.scene-on .combo-meter { visibility: hidden; }
 
-#combat-screen.scene-on .skills,
-#combat-screen.scene-on .turn-info { visibility: hidden; }
+
+
 .action-panel { position: relative; }
-.scene-panel {
-  position: absolute;
-  inset: 16px 18px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 2px;
-}
-.scene-panel[hidden] { display: none; }
 
-.scene-panel { opacity: 0; transition: opacity 500ms ease; }
-.scene-panel.in { opacity: 1; }
 
-.arena-card.scene .arena-backdrop {
-  background:
-    radial-gradient(ellipse 130% 60% at 50% 100%, rgba(4,6,10,0.62) 0%, rgba(4,6,10,0.22) 45%, transparent 75%),
-    linear-gradient(180deg, rgba(7,10,16,0.5) 0%, rgba(7,10,16,0.18) 35%, transparent 65%),
-    url('../assets/zones/rogue%20scientist%20lab.jpg') center bottom / cover no-repeat;
-  filter: blur(1.1px) saturate(1) brightness(1.05);
-}
 
-.arena-veil {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  background: #05070c;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 700ms ease;
-}
-.arena-veil.on { opacity: 1; }
 
-.scene-layer {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  opacity: 0;
-  transition: opacity 1400ms ease;
-  pointer-events: none;
-}
-.scene-layer[hidden] { display: none; }
-.scene-layer.in { opacity: 1; }
 
-.scene-figure {
-  position: absolute;
-  left: 50%;
-  bottom: 4%;
-  height: 61%;
-  transform: translateX(-50%);
-}
-.scene-figure img {
-  height: 100%;
-  width: auto;
-  filter: drop-shadow(0 14px 30px rgba(0,0,0,0.7));
-}
 
-.scene-speaker {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.12rem;
-  color: var(--scene-tint, var(--text));
-  text-shadow: 0 0 16px currentColor;
-  margin-bottom: 7px;
-}
-.scene-line {
-  font-size: 0.9rem;
-  line-height: 1.65;
-  color: var(--text);
-}
-.scene-choices {
-  display: flex;
-  gap: 10px;
-  margin-top: 16px;
-}
-.scene-choices:empty { display: none; }
 
-.scene-continue {
-  margin-top: 16px;
-  align-self: flex-start;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 0.6rem;
-  letter-spacing: 0.14rem;
-  text-transform: uppercase;
-  color: var(--muted);
-  opacity: 0.65;
-  cursor: pointer;
-  transition: color 0.15s ease, opacity 0.15s ease;
-}
-.scene-continue[hidden] { display: none; }
-.scene-continue:hover { color: var(--scene-tint, var(--text)); opacity: 1; }
-.scene-continue::after { content: ' \203A\203A'; }
 
-.scene-line { min-height: 3.3em; }
 
-#combat-screen.scene-typing .scene-panel { cursor: pointer; }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 .rar-standard { --rar: #aab6c9; --rar-rgb: 170, 182, 201; }
 .rar-refined  { --rar: #45dfe0; --rar-rgb: 69, 223, 224; }

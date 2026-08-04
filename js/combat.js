@@ -11,8 +11,6 @@ function stopCombatLoop() {
   state.combatActive = false;
   _pendingStep = null;
   clearRevealTimers();
-
-  teardownScene();
   if (state.turnTimer) { clearTimeout(state.turnTimer); state.turnTimer = null; }
 }
 
@@ -877,54 +875,14 @@ function onEnemyDefeated() {
     const offer = offerMods(p);
     if (offer.length) queueMods(offer);
   }
-  resumeAfterKill(killedWave);
+  resumeAfterKill();
 }
 
-function resumeAfterKill(killedWave) {
+function resumeAfterKill() {
 
-  const scene = HEADLESS.on ? null : sceneAfterWave(killedWave);
-  if (scene) {
-    scheduleTurn(() => openScene(scene, doSpawn), turnDelay(SCENE_HOLD_MS));
-    return;
-  }
   scheduleTurn(doSpawn, turnDelay(BALANCE.spawnDelay * 1000 + 320));
 }
 
-const SCENE_HOLD_MS = 2200;
-const RESCUE_HOLD_MS = 2000;
-
-function applyRescue() {
-  const p = state.player;
-  state.wave++;
-  if (p) {
-    p.hp = Math.max(1, Math.floor(p.maxHp * (P().rescueHpFrac || 0.5)));
-    logEvent('RESCUED', p, null, ['the first boss is behind you', logNum(p.hp) + '/' + logNum(p.maxHp)]);
-  }
-
-  state.awaitingSpawn = true;
-  state.awaitingInput = false;
-  state.pendingEnemyAct = false;
-  state._defeatLock = false;
-  saveRun();
-  updateHud(); renderSkills();
-  if (p) updateUnitCard(p);
-}
-
-function rescueRun() {
-  state.rescued = true;
-  stopCombatLoop();
-
-  if (HEADLESS.on) { applyRescue(); startCombatLoop(); return; }
-
-  const cs = document.getElementById('combat-screen');
-  if (cs) cs.classList.add('defeat-beat');
-  if (state.player) updateUnitCard(state.player);
-  _revealTimers.push(setTimeout(() => {
-    if (cs) cs.classList.remove('defeat-beat');
-
-    openScene('scientist', startCombatLoop, applyRescue);
-  }, RESCUE_HOLD_MS));
-}
 
 function creditDamage(source, amount) {
   if (!(amount > 0)) return;
@@ -948,7 +906,6 @@ function endRun(won) {
 
   if (state.runOver) return;
 
-  if (rescueAvailable(won)) { rescueRun(); return; }
   state.runOver = true;
   state.won = !!won;
   stopCombatLoop();
