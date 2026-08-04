@@ -78,12 +78,13 @@ make a run green.
   costs the replay from the last boss, never the character.
 - **Simple beats clever.** A mechanic he cannot hold in his head is worse than
   a shallower one he can.
-- **Base-rarity items are stat sticks; UNCATALOGUED uniques bend exactly one
-  rule each,** declared in the `UNIQUES` table and read through `hasRule` or a
-  skill patch. Prototypes can carry one trade-off pair — a big upside welded to
-  a real cost. If a scalar can rank two items, it is not loot yet.
-  Modifications are straight upgrades to one button and they stack — no costs,
-  no downsides — and keep coming in the Depths, every tenth wave.
+- **An item gives attributes and nothing else; UNCATALOGUED uniques bend
+  exactly one rule each,** declared in the `UNIQUES` table and read through
+  `hasRule` or a skill patch. Rarity is how many attribute lines a piece
+  carries, and the rarity a boss can pay opens up by zone — white, then blue,
+  then yellow with a chance at uncatalogued. Modifications are straight
+  upgrades to one button and they stack — no costs, no downsides — and keep
+  coming in the Depths, every tenth wave.
 - **Defence is reduction, not chance.** ARMOR (Strength) and EVASION (Speed) on
   one curve, `X / (X + defenseK)`. They multiply. Instinct is offence alone.
 - **Each strain scales best with one stat:** bio STRENGTH, psy SPEED, sym

@@ -171,7 +171,14 @@ const SLOT_IMPLICIT = {
   boots:     { stats: ['speed'],    tiers: IMPLICIT_TIERS }
 };
 
-const BOSS_HAUL = { min: 2, max: 3, weights: [0, 50, 50], unique: 0.15 };
+const BOSS_HAUL = { min: 2, max: 3 };
+
+const HAUL_BANDS = [
+  { until: 10,       weights: [85, 15,   0], unique: 0    },
+  { until: 20,       weights: [ 0, 85,  15], unique: 0    },
+  { until: Infinity, weights: [ 0,  0, 100], unique: 0.12 }
+];
+function haulBand(wave) { return HAUL_BANDS.find(b => wave <= b.until); }
 
 function uniquePool(wave) {
   const p = state.player;
@@ -231,8 +238,8 @@ function makeItem(wave, rarityId) {
 }
 
 function rollBossHaul(wave) {
-  const d = BOSS_HAUL;
-  const n = d.min + Math.floor(Math.random() * (d.max - d.min + 1));
+  const d = haulBand(wave);
+  const n = BOSS_HAUL.min + Math.floor(Math.random() * (BOSS_HAUL.max - BOSS_HAUL.min + 1));
   const rarities = ['standard', 'refined', 'prototype'];
   const out = [];
   for (let i = 0; i < n; i++) {
