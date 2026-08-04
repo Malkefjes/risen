@@ -1,4 +1,4 @@
-const BUILD = '2026-08-04pm7';
+const BUILD = '2026-08-04pm8';
 
 const BALANCE = {
   player: {
@@ -313,6 +313,29 @@ const ZONES = [
 function zoneForWave(wave) {
   return ZONES.find(a => wave >= a.startWave && wave <= a.endWave) || ZONES[ZONES.length - 1];
 }
+
+const DEPTH_ROSTER = [
+  { id: 'experiment', name: 'FAUNA-01 Skitter', artZone: 1 },
+  { id: 'enforcer',   name: 'FAUNA-12 Husk',    artZone: 2 },
+  { id: 'mercenary',  name: 'Survey Remnant',   artZone: 3 },
+  { id: 'trooper',    name: 'Source Vessel',    artZone: 4 },
+  { id: 'medic',      name: 'Source Mender',    artZone: 4 },
+  { id: 'demo',       name: 'Source Breaker',   artZone: 4 },
+  { id: 'sentinel',   name: 'Source Sentinel',  artZone: 4 }
+];
+
+const DEPTH_CHAMPIONS = [
+  { id: 'experiment', name: 'FAUNA-01 Apex',  artZone: 1 },
+  { id: 'lieutenant', name: 'FAUNA-12 Warden', artZone: 2 },
+  { id: 'mercenary',  name: 'Survey Veteran',  artZone: 3 }
+];
+
+const DEPTH_BOSSES = [
+  { name: 'Sporemother',  artZone: 1 },
+  { name: 'Bulwark',      artZone: 2 },
+  { name: 'Survey Chief', artZone: 3 },
+  { name: 'Reclaimer',    artZone: 4 }
+];
 
 const STATUSES = {
 

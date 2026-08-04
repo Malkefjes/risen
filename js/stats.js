@@ -487,7 +487,9 @@ function rollWaveKind(wave) {
   } else {
     isBoss = wave % BALANCE.bossEvery === 0;
   }
-  const champ = (!isBoss && zone.champion && zone.champion.at === wave) ? zone.champion : null;
+  let champ = (!isBoss && zone.champion && zone.champion.at === wave) ? zone.champion : null;
+  if (!isBoss && !champ && wave > BALANCE.finalWave && (wave - BALANCE.finalWave) % 10 === 5)
+    champ = DEPTH_CHAMPIONS[Math.floor(Math.random() * DEPTH_CHAMPIONS.length)];
   return { isBoss, champ };
 }
 
@@ -558,12 +560,17 @@ function makeEnemy(wave, ctx) {
   const NUMERALS = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
   const rankTag = rank > 1 ? ' ' + (NUMERALS[rank] || rank) : '';
 
-  const pool = zone.enemies || [{ id: 'trash', name: zone.enemyName }];
+  const inDepths = wave > BALANCE.finalWave;
+  const pool = inDepths ? DEPTH_ROSTER : (zone.enemies || [{ id: 'trash', name: zone.enemyName }]);
   const face = champ || (zone.randomRoster
     ? pool[Math.floor(Math.random() * pool.length)]
     : pool[((w % pool.length) + pool.length) % pool.length]);
 
-  const name = champ ? champ.name : (isBoss ? zone.bossName : face.name) + rankTag;
+  const depthBoss = (isBoss && inDepths)
+    ? DEPTH_BOSSES[Math.floor(Math.random() * DEPTH_BOSSES.length)] : null;
+
+  const name = champ ? champ.name + (inDepths ? rankTag : '')
+    : (isBoss ? (depthBoss ? depthBoss.name : zone.bossName) : face.name) + rankTag;
 
   const e = {
     id: 'enemy-' + wave + '-' + ((ctx && ctx.index) || 0) + '-' + Math.floor(Math.random()*99999),
@@ -577,6 +584,7 @@ function makeEnemy(wave, ctx) {
         : champ ? CHAMPION_VERBS[Math.floor(Math.random() * CHAMPION_VERBS.length)]
         : null,
     zone: zone.num,
+    artZone: depthBoss ? depthBoss.artZone : (champ && champ.artZone) || face.artZone || zone.num,
     waveNo: wave,
     rosterId: face.id,
     windupEvery: isBoss ? (isFinal ? E.finalWindupEvery : E.windupEvery) : (elite ? E.eliteWindupEvery : 0),

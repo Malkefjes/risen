@@ -97,7 +97,7 @@ const ENEMY_SPRITE = ENFORCER_SPRITES.ready;
 function enemyArtSet(unit) {
 
   if (unit && unit.artSet) return unit.artSet;
-  const zone = ZONE_SPRITES[unit && unit.zone];
+  const zone = ZONE_SPRITES[unit && (unit.artZone || unit.zone)];
   if (!zone) return ENFORCER_SPRITES;
   if (unit.isBoss) return zone.boss || CAPTAIN_SPRITES;
   const pool = zone.trash || {};
@@ -112,7 +112,7 @@ function artMirrored(unit) {
 
 function foeArtScale(unit) {
   if (!unit || unit.isPlayer || unit.isBoss) return 1;
-  const roster = ZONE_SPRITES[unit.zone];
+  const roster = ZONE_SPRITES[unit.artZone || unit.zone];
   return (roster && roster.trashScale) || 1;
 }
 
