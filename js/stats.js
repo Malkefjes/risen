@@ -182,7 +182,7 @@ function survivingStatuses(unit) {
 }
 
 let state = {
-  classId:null, player:null, enemy:null, wave:1,
+  classId:null, player:null, enemy:null, enemies:[], wave:1,
   kills:0,
   combatActive:false, turnTimer:null,
 
@@ -476,7 +476,40 @@ function renderDeltas(view) {
   return changed;
 }
 
-function makeEnemy(wave) {
+function rollWaveKind(wave) {
+  const zone = zoneForWave(wave);
+  let isBoss;
+  if (zone.bossSegment) {
+    const inZone = wave - zone.startWave + 1;
+    isBoss = (inZone % zone.bossSegment === 0)
+          || (Math.random() < (zone.extraBossChance || 0));
+  } else {
+    isBoss = wave % BALANCE.bossEvery === 0;
+  }
+  const champ = (!isBoss && zone.champion && zone.champion.at === wave) ? zone.champion : null;
+  return { isBoss, champ };
+}
+
+function makeWave(wave) {
+  const zone = zoneForWave(wave);
+  const kind = rollWaveKind(wave);
+
+  let size = 1;
+  if (!kind.isBoss && !kind.champ && wave > (zone.soloUntil || 0) && zone.packWeights)
+    size = pickWeighted(zone.packWeights) + 1;
+
+  const members = [];
+  let eliteTaken = false;
+  for (let i = 0; i < size; i++) {
+    const e = makeEnemy(wave, { isBoss: kind.isBoss, champ: kind.champ,
+                                size, index: i, noElite: eliteTaken });
+    if (e.elite) eliteTaken = true;
+    members.push(e);
+  }
+  return members;
+}
+
+function makeEnemy(wave, ctx) {
   const E = BALANCE.enemy;
   const zone = zoneForWave(wave);
 
@@ -497,21 +530,19 @@ function makeEnemy(wave) {
   const dmgMult = rampMult(zone.dmgMult, zone.dmgMultEnd);
   const apsMult = rampMult(zone.apsMult, zone.apsMultEnd);
 
-  let isBoss;
-  if (zone.bossSegment) {
-    const inZone = wave - zone.startWave + 1;
-    isBoss = (inZone % zone.bossSegment === 0)
-          || (Math.random() < (zone.extraBossChance || 0));
-  } else {
-    isBoss = wave % BALANCE.bossEvery === 0;
-  }
+  const kind = ctx || rollWaveKind(wave);
+  const isBoss = kind.isBoss;
+  const champ = kind.champ || null;
+  const size = (ctx && ctx.size) || 1;
+  const hpShare  = size > 1 ? (E.packHp[size]  || 1) : 1;
+  const dmgShare = size > 1 ? (E.packDmg[size] || 1) : 1;
+  const xpShare  = size > 1 ? 1 / size : 1;
 
   const bossBump = (isBoss && wave === BALANCE.bossEvery) ? (BALANCE.enemy.firstBossMult || 1) : 1;
   const isFinal = wave === BALANCE.finalWave;
 
-  const champ = (!isBoss && zone.champion && zone.champion.at === wave) ? zone.champion : null;
   let elite = null;
-  if (!isBoss && (champ || wave > 4)) {
+  if (!isBoss && (champ || wave > 4) && !(ctx && ctx.noElite)) {
     const keys = Object.keys(ELITES);
 
     const chance = Math.min(zone.eliteChanceCap != null ? zone.eliteChanceCap : E.eliteChanceCap,
@@ -534,7 +565,7 @@ function makeEnemy(wave) {
   const name = champ ? champ.name : (isBoss ? zone.bossName : face.name) + rankTag;
 
   const e = {
-    id: 'enemy-' + wave + '-' + Math.floor(Math.random()*99999),
+    id: 'enemy-' + wave + '-' + ((ctx && ctx.index) || 0) + '-' + Math.floor(Math.random()*99999),
     name, class:'enemy', isPlayer:false, isBoss, isFinal, elite, rank,
     champion: !!champ,
 
@@ -550,14 +581,16 @@ function makeEnemy(wave) {
 
     maxHp: Math.max(1, Math.round(E.hpBase
       * Math.pow(g, zone.hpExp != null ? zone.hpExp : (E.hpExp != null ? E.hpExp : 1))
+      * hpShare
       * (isBoss?E.bossHp:1) * bossBump * (elite&&elite.hpMult?elite.hpMult:1))),
     damage: Math.max(1, Math.round(E.dmgBase * Math.pow(g, E.dmgExp)
-      * dmgMult * (isBoss?E.bossDmg:E.trashDmgMult) * bossBump)),
+      * dmgMult * dmgShare * (isBoss?E.bossDmg:E.trashDmgMult) * bossBump)),
     attackSpeed: Math.min(E.apsCap, (E.apsBase + rateTier*E.apsPerTier)
       * apsMult * (isBoss?E.bossAps:1) * (elite&&elite.apsMult?elite.apsMult:1)),
     evadeChance: 0,
     critChance: E.crit, critMult: E.critMult,
-    xpMult: (isBoss?E.bossXp:1) * (elite?elite.xp:1),
+    xpMult: (isBoss?E.bossXp:1) * (elite?elite.xp:1) * xpShare,
+    dropMult: (size > 1 && !elite) ? 1 / size : 1,
     hp:0, statuses:[], meter:0, stunImmune:false,
     actionCount:0, windup:false,
     _defeated:false, _statusKey:''

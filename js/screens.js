@@ -140,6 +140,7 @@ function resetRunState(classId) {
   state.classId = classId;
   state.player = null;
   state.enemy = null;
+  state.enemies = [];
   state.wave = 1;
   state.kills = 0;
   state.awaitingSpawn = false;
@@ -150,6 +151,7 @@ function resetRunState(classId) {
   state.bestCombo = 0;
   state.fightTurns = 0;
   state.enemyActions = 0;
+  state.actionsSinceKill = 0;
   state.turnNo = 0;
   state.damageDealt = 0;
 
@@ -261,7 +263,8 @@ function getZoneName(wave) { return zoneForWave(wave).label; }
 
 
 function spawnEnemy() {
-  state.enemy = makeEnemy(state.wave);
+  state.enemies = makeWave(state.wave);
+  state.enemy = state.enemies[0];
   const p = state.player;
 
   const zn = document.getElementById('zone-name');
@@ -273,19 +276,22 @@ function spawnEnemy() {
 
   }
 
-  const e = state.enemy;
-  const tags = enemyTags(e);
-  log('WAVE ' + state.wave + ' · ' + e.name + (tags.length ? ' · ' + tags.join(' ') : ''));
-  log('HP ' + logNum(e.maxHp) + ' · DMG ' + logNum(e.damage)
-    + ' · RATE ' + e.attackSpeed.toFixed(2) + '×'
-    + (e.windupEvery ? ' · WINDUP every ' + e.windupEvery + ' (×' + windupMultFor(e) + ')' : '')
-    + (e.xpMult !== 1 ? ' · XP ×' + e.xpMult.toFixed(1) : ''));
+  const pack = state.enemies;
+  log('WAVE ' + state.wave + (pack.length > 1 ? ' · PACK ×' + pack.length : ''));
+  pack.forEach(e => {
+    const tags = enemyTags(e);
+    log(e.name + (tags.length ? ' · ' + tags.join(' ') : '')
+      + ' · HP ' + logNum(e.maxHp) + ' · DMG ' + logNum(e.damage)
+      + ' · RATE ' + e.attackSpeed.toFixed(2) + '×'
+      + (e.windupEvery ? ' · WINDUP every ' + e.windupEvery + ' (×' + windupMultFor(e) + ')' : '')
+      + (e.xpMult !== 1 ? ' · XP ×' + e.xpMult.toFixed(1) : ''));
 
-  if (e.verb && ENEMY_VERBS[e.verb]) {
-    log('TRAIT · ' + ENEMY_VERBS[e.verb].tag + ' — ' + ENEMY_VERBS[e.verb].blurb);
-    if (e.verb === 'regrow')
-      applyStatus(e, 'regrow', { below: ENEMY_VERBS.regrow.below, power: ENEMY_VERBS.regrow.power });
-  }
+    if (e.verb && ENEMY_VERBS[e.verb]) {
+      log('TRAIT · ' + ENEMY_VERBS[e.verb].tag + ' — ' + ENEMY_VERBS[e.verb].blurb);
+      if (e.verb === 'regrow')
+        applyStatus(e, 'regrow', { below: ENEMY_VERBS.regrow.below, power: ENEMY_VERBS.regrow.power });
+    }
+  });
 
   if (state.wave > 1) {
     const before = p.hp;
@@ -314,19 +320,19 @@ function spawnEnemy() {
   }
 
   state.player.meter = 0;
-  state.enemy.meter = 0;
+  pack.forEach(e => { e.meter = 0; });
 
-  const tp = 1 / effectiveAps(state.player), te = 1 / effectiveAps(state.enemy);
+  const tp = 1 / effectiveAps(state.player);
+  const te = Math.min.apply(null, pack.map(e => 1 / effectiveAps(e)));
   if (te < tp - 1e-9) state.player.meter = 1;
   state.fightTurns = 0;
   state.enemyActions = 0;
+  state.actionsSinceKill = 0;
   state.turnNo = 0;
   state.awaitingSpawn = false;
   state.awaitingInput = false;
   state.pendingEnemyAct = false;
   updateHud(); renderCombat(true); renderSkills(); updateTurnInfo();
-
-  if (state.enemy.hp <= 0 && !state.enemy._defeated) onEnemyDefeated();
 }
 
 function updateHud() {

@@ -51,13 +51,16 @@ function answerConnects(s, p, e) {
     return true;
   }
   if (s.type === 'provoke') {
-    const incoming = e.stunImmune
-      ? (e.damage || 0) * windupMultFor(e) * (BALANCE.enemy.windupSpoilFrac || 1)
-      : (e.damage || 0);
+    let incoming = 0;
+    for (const f of livingEnemies())
+      incoming += f.windup && f.stunImmune
+        ? (f.damage || 0) * windupMultFor(f) * (BALANCE.enemy.windupSpoilFrac || 1)
+        : (f.damage || 0);
     return incoming * 1.5 < p.hp;
   }
 
-  return forecastTurns(1)[0] === 'foe';
+  const next = forecastTurns(1)[0];
+  return !!next && !next.isPlayer;
 }
 
 const SMART = {
@@ -107,17 +110,30 @@ function worthPressing(s, p, e) {
 }
 
 function smartPolicy(p) {
-  const e = state.enemy;
+  const foes = livingEnemies();
   const ready = p.skills.filter(s => !s.basic && s.cd <= 0);
   const basic = p.skills.find(s => s.basic) || p.skills[0];
+  if (!foes.length) return basic;
 
-  if (e && e.windup) {
-    const answer = ready.filter(isAnswer).find(s => answerConnects(s, p, e));
+  const winding = foes.filter(f => f.windup);
+  if (winding.length) {
+    const heavy = winding.reduce((a, b) => ((b.damage || 0) > (a.damage || 0) ? b : a));
+    setTarget(heavy);
+    const answer = ready.filter(isAnswer).find(s => answerConnects(s, p, heavy));
     if (answer) return answer;
   }
 
-  const neverTelegraphs = !e || !(e.windupEvery > 0);
+  const focus = foes.reduce((a, b) => (b.hp < a.hp ? b : a));
+  setTarget(focus);
+  const e = state.enemy;
+
+  const neverTelegraphs = !foes.some(f => f.windupEvery > 0);
   const pool = neverTelegraphs ? ready : ready.filter(s => !isAnswer(s));
+
+  if (foes.length > 1) {
+    const aoe = pool.find(s => s.shape === 'all' && worthPressing(s, p, e));
+    if (aoe) return aoe;
+  }
 
   return pool.find(s => worthPressing(s, p, e)) || basic;
 }

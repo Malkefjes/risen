@@ -14,10 +14,33 @@ function stopCombatLoop() {
   if (state.turnTimer) { clearTimeout(state.turnTimer); state.turnTimer = null; }
 }
 
+function livingEnemies() {
+  return (state.enemies || []).filter(e => e && e.hp > 0 && !e._defeated);
+}
+
+function setTarget(e) {
+  if (state.enemy === e) return;
+  state.enemy = e || null;
+  if (HEADLESS.on) return;
+  document.querySelectorAll('#enemy-slot .fighter').forEach(f =>
+    f.classList.toggle('targeted', !!e && f.dataset.unitId === e.id));
+  renderSkills();
+  refreshReadoutValues();
+}
+
+function retarget() {
+  const t = state.enemy;
+  if (t && t.hp > 0 && !t._defeated) return t;
+  const next = livingEnemies()[0] || null;
+  setTarget(next);
+  return next;
+}
+
 const turnDelay = ms => Math.round(ms * BALANCE.turnPace);
 function scheduleTurn(fn, ms) {
 
   if (HEADLESS.on) { _pendingStep = fn; return; }
+  if (SETTINGS.fastTurns) ms = 0;
   if (state.turnTimer) clearTimeout(state.turnTimer);
   state.turnTimer = setTimeout(() => { state.turnTimer = null; fn(); }, ms);
 }
@@ -30,7 +53,13 @@ function updateTurnInfo() {
   if (!state.combatActive) return plain('STANDING BY');
   if (state.awaitingSpawn) return plain('INCOMING');
 
-  const foeWord = (state.enemy && state.enemy.isBoss) ? 'BOSS' : 'ENEMY';
+  const packSize = (state.enemies || []).length;
+  const unitWord = u => {
+    if (!u || u.isPlayer) return 'YOU';
+    const word = u.isBoss ? 'BOSS' : 'ENEMY';
+    if (packSize < 2) return word;
+    return word + '·' + ((state.enemies || []).indexOf(u) + 1);
+  };
   const add = (text, cls) => {
     const s = document.createElement('span');
     if (cls) s.className = cls;
@@ -43,7 +72,7 @@ function updateTurnInfo() {
   ti.textContent = '';
 
   if (state.active && !state.active.isPlayer) {
-    side(foeWord + ' TURN', 'foe').classList.add('turn-now');
+    side(unitWord(state.active) + ' TURN', 'foe').classList.add('turn-now');
   } else {
     side('YOUR TURN', 'you').classList.add('turn-now');
   }
@@ -52,29 +81,35 @@ function updateTurnInfo() {
   if (!fc.length) return;
   add('·', 'turn-sep');
   add('UPCOMING:', 'turn-upcoming');
-  fc.forEach((who, i) => {
+  fc.forEach((u, i) => {
     if (i) add('→', 'turn-arrow');
-    side(who === 'you' ? 'YOU' : foeWord, who);
+    side(unitWord(u), u.isPlayer ? 'you' : 'foe');
   });
 }
 
 function forecastTurns(n) {
-  const p = state.player, e = state.enemy;
-  if (!p || !e || e._defeated || e.hp <= 0 || p.hp <= 0) return [];
-  let pm = p.meter || 0, em = e.meter || 0;
-  const ps = effectiveAps(p), es = effectiveAps(e);
+  const p = state.player;
+  const foes = livingEnemies();
+  if (!p || p.hp <= 0 || !foes.length) return [];
+  const rows = [p].concat(foes).map(u => ({ u, m: u.meter || 0, s: effectiveAps(u) }));
 
   const out = [];
   for (let i = 0; i < n; i++) {
-    const tp = (1 - pm) / ps, te = (1 - em) / es;
-    if (tp <= te + 1e-9) { out.push('you'); em += tp * es; pm = 0; }
-    else { out.push('foe'); pm += te * ps; em = 0; }
+    let best = null, bestT = Infinity;
+    for (const r of rows) {
+      const t = (1 - r.m) / r.s;
+      if (t < bestT - 1e-9) { bestT = t; best = r; }
+      else if (Math.abs(t - bestT) < 1e-9 && r.u.isPlayer) best = r;
+    }
+    for (const r of rows) r.m += bestT * r.s;
+    best.m -= 1;
+    out.push(best.u);
   }
   return out;
 }
 
 function advanceToNextActor() {
-  const units = [state.player, state.enemy].filter(u => u && u.hp > 0 && !u._defeated);
+  const units = [state.player].concat(livingEnemies()).filter(u => u && u.hp > 0 && !u._defeated);
   if (!units.length) return null;
   let best = null, bestT = Infinity;
   for (const u of units) {
@@ -92,8 +127,7 @@ function nextTurn() {
   const p = state.player;
   if (!p || p.hp <= 0) { stopCombatLoop(); endRun(); return; }
   if (state.awaitingSpawn) { scheduleTurn(doSpawn, turnDelay(BALANCE.spawnDelay * 1000)); return; }
-  const e = state.enemy;
-  if (!e || e._defeated) return;
+  if (!livingEnemies().length) return;
 
   const actor = advanceToNextActor();
   if (!actor) return;
@@ -119,6 +153,7 @@ function nextTurn() {
   if (actor.isPlayer) {
     state.awaitingInput = true;
     state.pendingEnemyAct = false;
+    retarget();
     setCharPose(actor, 'ready');
   } else {
     state.awaitingInput = false;
@@ -131,16 +166,26 @@ function nextTurn() {
 
 function tickTurnStart(unit) {
   if (tickStatuses(unit)) {
-    if (!unit.isPlayer) onEnemyDefeated();
-    else { stopCombatLoop(); endRun(); }
+    if (!unit.isPlayer) {
+      onEnemyDefeated(unit);
+      if (livingEnemies().length) scheduleTurn(nextTurn, turnDelay(200));
+      return true;
+    }
+    stopCombatLoop(); endRun();
     return true;
   }
 
-  const foe = unit.isPlayer ? state.enemy : state.player;
-  if (foe && foe.hp > 0 && !foe._defeated && tickStatuses(foe, 'inflicted')) {
-    if (!foe.isPlayer) onEnemyDefeated();
-    else { stopCombatLoop(); endRun(); }
-    return true;
+  if (unit.isPlayer) {
+    for (const e of livingEnemies().slice())
+      if (tickStatuses(e, 'inflicted')) onEnemyDefeated(e);
+    if (unit.hp <= 0) { stopCombatLoop(); endRun(); return true; }
+    if (!livingEnemies().length) return true;
+  } else if (unit === livingEnemies()[0]) {
+    const p = state.player;
+    if (p && p.hp > 0 && tickStatuses(p, 'inflicted')) {
+      stopCombatLoop(); endRun();
+      return true;
+    }
   }
 
   if (!unit.isPlayer && unit.verb === 'enrage') {
@@ -169,9 +214,8 @@ function tickTurnStart(unit) {
               [Math.round(unit.regen * 100) + '% of ' + logNum(healAnchorFor(unit)) + ' per turn']);
     }
 
-    const foe = state.enemy;
-    if (unit.class === 'psy' && unit.hp < unit.maxHp && foe && foe.hp > 0 && !foe._defeated) {
-      const stacks = statusStacks(foe, 'dread');
+    if (unit.class === 'psy' && unit.hp < unit.maxHp) {
+      const stacks = livingEnemies().reduce((n, e) => n + statusStacks(e, 'dread'), 0);
       if (stacks > 0) {
         const heal = Math.max(1, Math.floor(healAnchorFor(unit) * (P().dreadSiphonFrac || 0) * stacks));
         const before = unit.hp;
@@ -221,7 +265,7 @@ function playerAct(skill) {
   if (!p || p.hp <= 0 || !skill) return;
   if (!skill.basic && skill.cd > 0) return;
   const needsEnemy = skill.target !== 'self';
-  if (needsEnemy && (!state.enemy || state.enemy.hp <= 0 || state.enemy._defeated)) return;
+  if (needsEnemy && !retarget()) return;
 
   state.awaitingInput = false;
 
@@ -231,16 +275,16 @@ function playerAct(skill) {
   updateTurnInfo(); renderSkills();
 
   if (p.hp <= 0) return;
-  if (!state.enemy || state.enemy._defeated) return;
+  if (state.awaitingSpawn || !livingEnemies().length) return;
   scheduleTurn(nextTurn, turnDelay(480));
 }
 
 function enemyAct() {
   if (!state.combatActive) return;
   state.pendingEnemyAct = false;
-  const e = state.enemy, p = state.player;
+  const e = state.active, p = state.player;
   if (!p || p.hp <= 0) { stopCombatLoop(); endRun(); return; }
-  if (!e || e._defeated) { scheduleTurn(nextTurn, turnDelay(200)); return; }
+  if (!e || e.isPlayer || e.hp <= 0 || e._defeated) { scheduleTurn(nextTurn, turnDelay(200)); return; }
 
   if (e.windupEvery > 0 && !e.windup) {
     e.actionCount = (e.actionCount || 0) + 1;
@@ -272,7 +316,7 @@ function enemyAct() {
   updateTurnInfo(); renderSkills();
 
   if (p.hp <= 0) return;
-  if (e._defeated) return;
+  if (state.awaitingSpawn) return;
   scheduleTurn(nextTurn, turnDelay(480));
 }
 
@@ -280,7 +324,7 @@ function doSpawn() {
   if (!state.combatActive) return;
   spawnEnemy();
   if (!state.player || state.player.hp <= 0) return;
-  if (state.enemy && state.enemy._defeated) return;
+  if (!livingEnemies().length) return;
   scheduleTurn(nextTurn, turnDelay(260));
 }
 
@@ -296,6 +340,7 @@ function enemySwing(e, opts) {
   const p = state.player;
   if (!p || p.hp <= 0) return;
   state.enemyActions = (state.enemyActions || 0) + 1;
+  state.actionsSinceKill = (state.actionsSinceKill || 0) + 1;
   let mult = 1;
   let spoiled = false;
   if (e.windup && !(opts && opts.ordinary)) {
@@ -321,7 +366,7 @@ function enemySwing(e, opts) {
 
   updateUnitCard(p); updateUnitCard(e);
   if (p.hp <= 0) { stopCombatLoop(); endRun(); return; }
-  if (e.hp <= 0 && !e._defeated) onEnemyDefeated();
+  if (e.hp <= 0 && !e._defeated) onEnemyDefeated(e);
 }
 
 function getPoisonDamage(e) {
@@ -419,7 +464,6 @@ function provokeSwing(p, e, skill) {
              ['resist consumed', '×' + BALANCE.enemy.windupSpoilFrac + ' of the telegraph']);
   }
 
-  growThorns(p, skill.growBonus || 0, skill.name);
   enemySwing(e, { unevadable: true, ordinary });
 
   if (skill.lashMult && p.hp > 0 && e.hp > 0 && !e._defeated) {
@@ -543,7 +587,7 @@ function devour(p, stacks, why) {
   updateUnitCard(p);
 }
 
-function applyPlayerDamage(p, e, skill) {
+function applyPlayerDamage(p, e, skill, opts) {
   let dmg = p.atkPower * (skill.power || 1);
 
   const notes = [];
@@ -619,13 +663,15 @@ function applyPlayerDamage(p, e, skill) {
 
   floatText(e, dmg, 'damage', isCrit);
 
-  if (skill.consumesResolve && resolveSpent > 0)
-    shedStacks(p, 'resolve', resolveSpent, 'spent by ' + skill.name);
-  if (pressureHeld > 0) {
-    removeStatus(p, 'pressure', 'vented');
-    applyDerivedStats(p);
+  if (!opts || !opts.holdConsume) {
+    if (skill.consumesResolve && resolveSpent > 0)
+      shedStacks(p, 'resolve', resolveSpent, 'spent by ' + skill.name);
+    if (pressureHeld > 0) {
+      removeStatus(p, 'pressure', 'vented');
+      applyDerivedStats(p);
+    }
+    if (skill.consumesSpines) removeStatus(p, 'spines', 'consumed by ' + skill.name);
   }
-  if (skill.consumesSpines) removeStatus(p, 'spines', 'consumed by ' + skill.name);
 
   if (skill.consumesDread && dreadSpent > 0) {
     shedStacks(e, 'dread', dreadSpent, 'torn away by ' + skill.name);
@@ -698,10 +744,27 @@ function applySkillStatuses(caster, skill, foe) {
   for (const a of skill.applies) {
     const def = statusDef(a.id);
     if (!def) continue;
-    const unit = def.kind === 'buff' ? caster : (foe || state.enemy);
-    if (!unit || unit.hp <= 0) continue;
-    applyStatus(unit, a.id, { power: a.power, duration: a.duration });
+    if (def.kind === 'buff') {
+      if (caster.hp > 0) applyStatus(caster, a.id, { power: a.power, duration: a.duration });
+      continue;
+    }
+    const foes = caster.isPlayer ? (foe ? [foe] : livingEnemies()) : [state.player];
+    for (const u of foes)
+      if (u && u.hp > 0) applyStatus(u, a.id, { power: a.power, duration: a.duration });
   }
+}
+
+function spendHeldPiles(p, skill) {
+  if (skill.consumesPressure && statusStacks(p, 'pressure') > 0) {
+    removeStatus(p, 'pressure', 'vented');
+    applyDerivedStats(p);
+  }
+  if (skill.consumesResolve) {
+    const held = statusStacks(p, 'resolve');
+    const spent = Math.ceil(held * (skill.consumeFrac || 1));
+    if (spent > 0) shedStacks(p, 'resolve', spent, 'spent by ' + skill.name);
+  }
+  if (skill.consumesSpines) removeStatus(p, 'spines', 'consumed by ' + skill.name);
 }
 
 function fireSkill(caster, skill, target) {
@@ -747,7 +810,11 @@ function fireSkill(caster, skill, target) {
 
     logEvent(skill.name, null, 'guard bared');
     playCastAnim(caster, skill);
-    provokeSwing(caster, target, skill);
+    growThorns(caster, skill.growBonus || 0, skill.name);
+    for (const foe of livingEnemies().slice()) {
+      if (caster.hp <= 0) break;
+      provokeSwing(caster, foe, skill);
+    }
   } else if (skill.type === 'buff') {
 
     logEvent(skill.name, null, 'cast');
@@ -757,21 +824,32 @@ function fireSkill(caster, skill, target) {
     if (skill.pressure) gainPressure(caster, skill.pressure);
     playCastAnim(caster, skill);
   } else {
-    const dealt = applyPlayerDamage(caster, target, skill);
-    bankLanded = !!dealt;
-    if (dealt) {
-      playAttackAnim(caster, target, true, skill);
-      if (skill.lifesteal) {
+    const targets = (skill.shape === 'all' && caster.isPlayer)
+      ? livingEnemies().slice() : [target];
+    const hold = targets.length > 1;
+    let landed = false;
+    for (const t of targets) {
+      if (!t || t.hp <= 0 || t._defeated) continue;
+      const dealt = applyPlayerDamage(caster, t, skill, hold ? { holdConsume: true } : null);
+      if (dealt) {
+        landed = true;
+        playAttackAnim(caster, t, true, skill);
+        if (skill.lifesteal) {
 
-        const heal = Math.max(1, Math.floor(dealt * skill.lifesteal));
-        const before = caster.hp;
-        caster.hp = Math.min(caster.maxHp, caster.hp + heal);
-        floatText(caster, heal, 'heal');
-        logHeal('LIFESTEAL', caster, caster.hp - before,
-                [Math.round(skill.lifesteal * 100) + '% of ' + logNum(dealt) + ' dealt',
-                 logNum(caster.hp) + '/' + logNum(caster.maxHp)]);
+          const heal = Math.max(1, Math.floor(dealt * skill.lifesteal));
+          const before = caster.hp;
+          caster.hp = Math.min(caster.maxHp, caster.hp + heal);
+          floatText(caster, heal, 'heal');
+          logHeal('LIFESTEAL', caster, caster.hp - before,
+                  [Math.round(skill.lifesteal * 100) + '% of ' + logNum(dealt) + ' dealt',
+                   logNum(caster.hp) + '/' + logNum(caster.maxHp)]);
+        }
       }
-    } else if (fullCd) {
+      if (caster.hp <= 0) break;
+    }
+    if (hold && landed) spendHeldPiles(caster, skill);
+    bankLanded = landed;
+    if (!landed && fullCd) {
 
       skill.cd = 1;
       logEvent(skill.name, null, 'cooldown reduced to 1t', ['attack missed']);
@@ -781,15 +859,15 @@ function fireSkill(caster, skill, target) {
   if (skill.cleanse) cleansePoison(caster, skill.cleanse, skill.name);
 
   updateUnitCard(caster); updateUnitCard(target); renderSkills();
-  if (state.enemy && state.enemy.hp <= 0 && !state.enemy._defeated) onEnemyDefeated();
+  for (const e2 of (state.enemies || []))
+    if (e2 && e2.hp <= 0 && !e2._defeated) onEnemyDefeated(e2);
 }
 
 function selectSkill(skill) { playerAct(skill); }
 
-function onEnemyDefeated() {
-  const e = state.enemy;
-  if (!e || e._defeated || state._defeatLock) return;
-  state._defeatLock = true;
+function onEnemyDefeated(e) {
+  e = e || state.enemy;
+  if (!e || e._defeated) return;
   e._defeated = true;
 
   const p = state.player;
@@ -798,7 +876,8 @@ function onEnemyDefeated() {
 
   state.kills++;
 
-  const chained = (state.enemyActions || 0) <= BALANCE.combo.maxEnemyActionsPerKill;
+  const chained = (state.actionsSinceKill || 0) <= BALANCE.combo.maxEnemyActionsPerKill;
+  state.actionsSinceKill = 0;
   if (chained) state.combo++;
   else state.combo = 1;
   if (state.combo > state.bestCombo) state.bestCombo = state.combo;
@@ -819,10 +898,18 @@ function onEnemyDefeated() {
 
     const frac = p.modCarryFrac != null ? p.modCarryFrac : (P().poisonCarryFrac || 0);
     const carry = Math.floor(left * frac);
-    p.poisonCarry = carry;
-    if (carry > 0)
-      logEvent('THE ROT HOLDS', null, '×' + carry + ' POISON',
-               ['half of ×' + left + ' on the body', 'moves to the next host']);
+    const host = livingEnemies()[0] || null;
+    if (carry > 0 && host) {
+      applyStatus(host, 'poison', { stacks: carry, perStack: p.poisonPerStack });
+      floatText(host, '+' + carry + ' POISON', 'tally');
+      logEvent('THE ROT JUMPS', host, '×' + carry + ' POISON',
+               ['half of ×' + left + ' on the dying host']);
+    } else {
+      p.poisonCarry = carry;
+      if (carry > 0)
+        logEvent('THE ROT HOLDS', null, '×' + carry + ' POISON',
+                 ['half of ×' + left + ' on the body', 'moves to the next host']);
+    }
   }
 
   if (e.elite && e.elite.deathNova) {
@@ -849,14 +936,24 @@ function onEnemyDefeated() {
 
   killFlash(e);
   const killedWave = state.wave;
-  state.wave++;
 
   gainXP(xp, e.xpMult !== 1 || comboBonus > 1);
 
-  if (p.hp <= 0) { state._defeatLock = false; stopCombatLoop(); endRun(); return; }
+  if (p.hp <= 0) { stopCombatLoop(); endRun(); return; }
+
+  const drop = rollDrop(e, killedWave);
+  if (drop) queueDrop(drop);
+
+  if (livingEnemies().length) {
+    if (state.enemy === e) retarget();
+    saveRun();
+    updateTurnInfo(); renderSkills();
+    return;
+  }
+
+  state.wave++;
 
   if (killedWave >= BALANCE.finalWave) {
-    state._defeatLock = false;
     stopCombatLoop();
     endRun(true);
     return;
@@ -865,12 +962,9 @@ function onEnemyDefeated() {
   state.awaitingSpawn = true;
   state.awaitingInput = false;
   state.pendingEnemyAct = false;
-  state._defeatLock = false;
   saveRun();
   updateTurnInfo(); renderSkills();
 
-  const drop = rollDrop(e, killedWave);
-  if (drop) queueDrop(drop);
   if (modDueAfter(killedWave) && p) {
     const offer = offerMods(p);
     if (offer.length) queueMods(offer);
@@ -893,12 +987,11 @@ function creditDamage(source, amount) {
 
 function strainNumberNow(p) {
   if (!p) return 0;
-  const e = state.enemy, live = e && e.hp > 0 && !e._defeated;
   if (p.class === 'sym')  return p.thorns || 0;
   if (p.class === 'base') return statusStacks(p, 'resolve');
-  if (p.class === 'psy')  return live ? statusStacks(e, 'dread') : 0;
   if (p.class === 'hyd')  return statusStacks(p, 'pressure');
-  if (p.class === 'bio')  return live ? statusStacks(e, 'poison') : 0;
+  if (p.class === 'psy')  return livingEnemies().reduce((n, e) => n + statusStacks(e, 'dread'), 0);
+  if (p.class === 'bio')  return livingEnemies().reduce((n, e) => n + statusStacks(e, 'poison'), 0);
   return 0;
 }
 

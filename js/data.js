@@ -1,4 +1,4 @@
-const BUILD = '2026-08-03am';
+const BUILD = '2026-08-04am';
 
 const BALANCE = {
   player: {
@@ -116,7 +116,10 @@ const BALANCE = {
     eliteWindupMult: 3.0,
 
     windupSpoilFrac: 0.5,
-    eliteBaseChance: 0.16, eliteChancePerWave: 0.006, eliteChanceCap: 0.40
+    eliteBaseChance: 0.16, eliteChancePerWave: 0.006, eliteChanceCap: 0.40,
+
+    packHp:  { 2: 0.58, 3: 0.42 },
+    packDmg: { 2: 0.55, 3: 0.40 }
   },
 
   xp: { firstCost: 58, base: 485, pow: 2, powScale: 35,
@@ -157,11 +160,11 @@ const CLASSES = {
 
       { id:'slash', name:'Slash', desc:'Deal {power!} damage + {poisonScale%} of what the rot is ticking for. +{poisonStacks} POISON', type:'attack', power:1.0, poison:1, poisonScale:1.0, poisonStacks:(p,s) => poisonStacks(p,s), target:'enemy', basic:true },
 
-      { id:'infest', name:'Inoculate', desc:'Deal {power!} damage. +{poisonStacks} POISON. When they die, {carry%} of the rot moves to whatever comes next.', type:'attack', power:0.50, poison:4, poisonStacks:(p,s) => poisonStacks(p,s), carry:BALANCE.player.poisonCarryFrac, target:'enemy', cdTurns:3 },
+      { id:'infest', name:'Inoculate', desc:'Deal {power!} damage to EVERY enemy. +{poisonStacks} POISON each. When a host dies, {carry%} of its rot jumps to a living one.', type:'attack', shape:'all', power:0.50, poison:4, poisonStacks:(p,s) => poisonStacks(p,s), carry:BALANCE.player.poisonCarryFrac, target:'enemy', cdTurns:3 },
 
       { id:'chitin', name:'Biofilm', desc:'For {duration#turn}: take −{power%} damage. POISON on the enemy ticks twice per turn', type:'buff', buff:'chitin', duration:3, power:0.40, target:'self', cdTurns:4 },
 
-      { id:'miasma', name:'Incubate', desc:'For {duration#turn}: regenerate {power+} and shed {tickCleanse} POISON each turn. The enemy is WEAK for {weak.duration#turn}', type:'buff', buff:'regen', duration:5, power:0.20, tickCleanse:1, applies:[{ id:'weak', power:0.25, duration:3 }], target:'self', cdTurns:5 }
+      { id:'miasma', name:'Incubate', desc:'For {duration#turn}: regenerate {power+} and shed {tickCleanse} POISON each turn. Every enemy is WEAK for {weak.duration#turn}', type:'buff', buff:'regen', duration:5, power:0.20, tickCleanse:1, applies:[{ id:'weak', power:0.25, duration:3 }], target:'self', cdTurns:5 }
     ]
   },
 
@@ -172,7 +175,7 @@ const CLASSES = {
 
       { id:'hunt', name:'Hunt', desc:'Deal {power!} damage. +{dreadStacks} DREAD', type:'attack', power:1.0, dread:1, dreadStacks:(p,s) => dreadStacks(p,s), target:'enemy', basic:true },
 
-      { id:'terrify', name:'Terrify', desc:'Deal {power!} damage and plant +{dreadStacks} DREAD. Every stack slows the enemy and opens its guard.', type:'attack', power:0.50, dread:4, dreadStacks:(p,s) => dreadStacks(p,s), target:'enemy', cdTurns:3 },
+      { id:'terrify', name:'Terrify', desc:'Deal {power!} damage to EVERY enemy and plant +{dreadStacks} DREAD in each. Every stack slows them and opens their guard.', type:'attack', shape:'all', power:0.50, dread:4, dreadStacks:(p,s) => dreadStacks(p,s), target:'enemy', cdTurns:3 },
       { id:'traumatize', name:'Traumatize', desc:'Deal {power!} damage. Against {dreadNeed}+ DREAD the mind breaks: stunned for {stun#turn}.', type:'attack', power:0.95, stun:1, dreadNeed:3, target:'enemy', cdTurns:4 },
 
       { id:'kill', name:'Kill', desc:'Deal {killTotal} damage. Tears away HALF the enemy’s DREAD — +{perDreadPower!} damage and {feedPerDread+} healed for each. Sheds {cleanse} POISON.', type:'attack', power:2.00, perDreadPower:0.60, consumesDread:true, consumeFrac:0.5, feedPerDread:BALANCE.player.dreadFeedFrac, cleanse:2, target:'enemy', cdTurns:5,
@@ -196,7 +199,7 @@ const CLASSES = {
 
       { id:'dampen', name:'Dampen', desc:'For {duration#turn}: take \u2212{power%} damage and regenerate {regen.power+} each turn.', type:'buff', buff:'dampen', duration:3, power:0.45, applies:[{ id:'regen', power:0.25, duration:3 }], target:'self', cdTurns:4 },
 
-      { id:'rupture', name:'Rupture', desc:'Vent everything: {power!} damage +{perPressurePower!} per PRESSURE spent. Always CRITS.', type:'attack', power:1.4, alwaysCrit:true, consumesPressure:true, perPressurePower:0.16, target:'enemy', cdTurns:5 }
+      { id:'rupture', name:'Rupture', desc:'Vent everything into EVERY enemy: {power!} damage +{perPressurePower!} per PRESSURE spent. Always CRITS.', type:'attack', shape:'all', power:1.4, alwaysCrit:true, consumesPressure:true, perPressurePower:0.16, target:'enemy', cdTurns:5 }
     ]
   },
 
@@ -209,7 +212,7 @@ const CLASSES = {
       { id:'spines', name:'Raise Spines', desc:'THORNS ×{power} and pain reflect doubled for {duration#turn}. Every hit taken grows +{growBonus} extra THORNS.', type:'buff', buff:'spines', duration:3, power:2, growBonus:BALANCE.player.thornsSpinesGrow, target:'self', cdTurns:4 },
 
       { id:'shed', name:'Shed', desc:'Heal {healFrac+}, then tear off THORNS to heal {hpPerThorn+} more each — they regrow by the next fight. Takes only as many as the wound needs, up to {capFrac%} of what you have grown. Sheds {cleanse} POISON.', type:'heal', healFrac:0.08, shedFuel:true, cleanse:2, hpPerThorn:BALANCE.player.shedHpPerThorn, capFrac:BALANCE.player.shedCapFrac, target:'self', cdTurns:4 },
-      { id:'provoke', name:'Provoke', desc:'Bare your guard: the enemy strikes at once and cannot miss — then every spine answers: ×{lashMult} THORNS as damage. +{growBonus} THORNS, and a charged telegraph comes out now, ordinary or half-strength.', type:'provoke', growBonus:3, lashMult:1.5, target:'enemy', cdTurns:4 },
+      { id:'provoke', name:'Provoke', desc:'Bare your guard: EVERY enemy strikes at once and cannot miss — then every spine answers each: ×{lashMult} THORNS as damage. +{growBonus} THORNS, and charged telegraphs come out now, ordinary or half-strength.', type:'provoke', growBonus:3, lashMult:1.5, target:'enemy', cdTurns:4 },
 
       { id:'harden', name:'Harden', desc:'For {duration#turn}: take −{power%} damage.', type:'buff', buff:'harden', duration:2, power:0.45, target:'self', cdTurns:4 },
       { id:'impale', name:'Impale', desc:'Deal {power!} damage + ×{thornsBurst} your THORNS. Spends nothing.', type:'attack', power:1.2, thornsBurst:1.2, target:'enemy', cdTurns:5 },
@@ -265,6 +268,7 @@ const ZONES = [
     bossName: 'Sporemother',
     bossVerb: 'regrow',
     champion: { at: 5, id: 'experiment', name: 'FAUNA-01 Apex' },
+    soloUntil: 4, packWeights: [55, 45, 0],
     growthMult: 1, tierGrowth: 2.4, withinStep: 0.08 },
 
   { num: 2, name: 'The Bloom', label: 'THE BLOOM',
@@ -273,6 +277,7 @@ const ZONES = [
     bossName: 'Bulwark',
     bossVerb: 'guard',
     champion: { at: 15, id: 'lieutenant', name: 'FAUNA-12 Warden' },
+    packWeights: [30, 45, 25],
     growthMult: 3.33, tierGrowth: 2.6, withinStep: 0.06,
     windupMult: 2.5, eliteWindupMult: 2.0 },
 
@@ -283,6 +288,7 @@ const ZONES = [
 
     bossVerb: 'enrage',
     champion: { at: 25, id: 'mercenary', name: 'Survey Veteran' },
+    packWeights: [25, 45, 30],
     growthMult: 11.3, tierGrowth: 2.1, withinStep: 0.04,
     windupMult: 1.6, eliteWindupMult: 1.2 },
 
@@ -296,6 +302,7 @@ const ZONES = [
     randomRoster: true,
     rollBossVerb: true,
     bossSegment: 10, extraBossChance: 0.12,
+    packWeights: [15, 45, 40],
     eliteBaseChance: 0.35, eliteChanceCap: 0.65,
     growthMult: 28.9, tierGrowth: 1.22, withinStep: 0.04,
 

@@ -177,7 +177,7 @@ function rollDrop(e, wave) {
   if (!e) return null;
   const kind = e.isBoss ? 'boss' : e.champion ? 'champion' : e.elite ? 'elite' : 'trash';
   const d = DROPS[kind];
-  if (!d || Math.random() >= d.chance) return null;
+  if (!d || Math.random() >= d.chance * (e.dropMult || 1)) return null;
   const rarities = ['standard', 'refined', 'prototype'];
   return makeItem(wave, rarities[pickWeighted(d.weights)]);
 }

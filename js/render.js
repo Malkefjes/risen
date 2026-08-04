@@ -2,13 +2,19 @@ function renderCombat(forceFull) {
   if (HEADLESS.on) return;
   const ps=document.getElementById('player-slot'), es=document.getElementById('enemy-slot');
   if(!ps||!es||!state.player) return;
-  const pPanel=ps.querySelector('.fighter'), ePanel=es.querySelector('.fighter');
+  const pPanel=ps.querySelector('.fighter');
   if (forceFull || !pPanel) { ps.innerHTML=''; ps.appendChild(createFighterPanel(state.player)); }
   else updateUnitCard(state.player);
-  if (!state.enemy) es.innerHTML='';
-  else if (forceFull || !ePanel || ePanel.dataset.unitId !== state.enemy.id) {
-    es.innerHTML=''; es.appendChild(createFighterPanel(state.enemy));
-  } else updateUnitCard(state.enemy);
+
+  const foes = state.enemies || [];
+  const side = document.getElementById('enemy-side');
+  if (side) side.dataset.pack = foes.length;
+  const have = Array.from(es.querySelectorAll('.fighter'));
+  const same = !forceFull && have.length === foes.length
+    && foes.every((e, i) => have[i].dataset.unitId === e.id);
+  if (!foes.length) es.innerHTML='';
+  else if (same) foes.forEach(e => updateUnitCard(e));
+  else { es.innerHTML=''; foes.forEach(e => es.appendChild(createFighterPanel(e))); }
 }
 
 function enemyIntent(e) {
@@ -108,7 +114,7 @@ function updateUnitCard(unit) {
     if (badge) { const ib = intentBadge(unit); if (badge.className !== ib.cls || badge.innerHTML !== ib.html) { badge.className = ib.cls; badge.innerHTML = ib.html; } }
   }
   const side = unit.isPlayer ? document.getElementById('player-side') : document.getElementById('enemy-side');
-  if (side) side.classList.toggle('dead', unit.hp <= 0);
+  if (side) side.classList.toggle('dead', unit.isPlayer ? unit.hp <= 0 : !livingEnemies().length);
 }
 
 function createFighterPanel(unit) {
@@ -117,6 +123,12 @@ function createFighterPanel(unit) {
     + (!unit.isBoss && unit.elite ? ' elite' : '');
   div.dataset.unitId = unit.id;
   unit._statusKey = '';
+  if (!unit.isPlayer) {
+    div.classList.toggle('targeted', state.enemy === unit);
+    div.addEventListener('click', () => {
+      if (unit.hp > 0 && !unit._defeated) setTarget(unit);
+    });
+  }
   const colorClass = unit.isPlayer ? unit.class : 'enemy';
   const type = unit.isBoss ? 'boss' : (unit.isPlayer ? 'player' : 'enemy');
   const pct = Math.max(0, (unit.hp/Math.max(1,unit.maxHp))*100);
