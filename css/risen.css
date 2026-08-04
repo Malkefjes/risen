@@ -2504,6 +2504,10 @@ body {
 }
 
 .rar-prototype { --rar: #fbbf24; --rar-rgb: 251, 191, 36; }
+.rar-unique    { --rar: #ff2d6a; --rar-rgb: 255, 45, 106; }
+
+.rar-unique .drop-affix:last-child,
+.rar-unique .suit-affix:last-child { color: var(--rar); }
 
 .drop-implicit, .suit-implicit {
   color: rgba(238, 242, 255, 0.66);

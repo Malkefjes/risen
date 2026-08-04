@@ -16,8 +16,100 @@ const SLOTS = {
 const RARITIES = {
   standard:  { id: 'standard',  name: 'STANDARD ISSUE', prefixes: 1, suffixes: 0 },
   refined:   { id: 'refined',   name: 'REFINED',        prefixes: 1, suffixes: 1 },
-  prototype: { id: 'prototype', name: 'PROTOTYPE',      prefixes: 2, suffixes: 1 }
+  prototype: { id: 'prototype', name: 'PROTOTYPE',      prefixes: 2, suffixes: 1 },
+  unique:    { id: 'unique',    name: 'UNCATALOGUED',   prefixes: 0, suffixes: 0 }
 };
+
+const UNIQUES = {
+  apexlens: {
+    id: 'apexlens', slot: 'optics', name: 'Apex Lens', minWave: 5,
+    stats: { instinct: 4 }, rule: 'firstCrit',
+    ruleText: 'Your first landed strike each fight is always a CRIT.' },
+  culling: {
+    id: 'culling', slot: 'optics', name: 'Culling Optics', minWave: 21,
+    stats: { instinct: 7 }, rule: 'cullCrit', ruleVal: 0.15,
+    ruleText: '+15% crit chance against enemies below half HP.' },
+  fieldbreaker: {
+    id: 'fieldbreaker', slot: 'gauntlets', name: 'Fieldbreaker Gauntlets', minWave: 11,
+    stats: { str: 6 }, patch: { basic: true, set: { shape: 'all' }, mul: { power: 0.65 } },
+    ruleText: 'Your basic attack strikes EVERY enemy, at 65% power.' },
+  momentum: {
+    id: 'momentum', slot: 'gauntlets', name: 'Momentum Gauntlets', minWave: 8,
+    stats: { str: 4 }, rule: 'overspill',
+    ruleText: 'Overkill damage on a killing blow spills onto the next enemy.' },
+  huskplate: {
+    id: 'huskplate', slot: 'armor', name: 'Husk Plate', minWave: 11,
+    stats: { vit: 6 }, rule: 'reflect10', ruleVal: 0.10,
+    ruleText: 'Reflects 10% of damage taken back at the attacker.' },
+  bulwark: {
+    id: 'bulwark', slot: 'armor', name: 'Bulwark Plate', minWave: 20,
+    stats: { vit: 8 }, rule: 'bigHitHalve', ruleVal: 0.25,
+    ruleText: 'Once per fight: the first hit that would take a quarter of your HP is halved.' },
+  autosuture: {
+    id: 'autosuture', slot: 'repair', name: 'Autosuture Module', minWave: 6,
+    mods: { healBoost: 0.15 }, rule: 'autosuture', ruleVal: 0.20,
+    ruleText: 'Once per fight: falling below 35% HP triggers an instant heal.' },
+  bivouac: {
+    id: 'bivouac', slot: 'repair', name: 'Bivouac Module', minWave: 15,
+    stats: { vit: 5 }, rule: 'bivouac',
+    ruleText: 'Recover twice as much HP between fights.' },
+  skitter: {
+    id: 'skitter', slot: 'boots', name: 'Skitter Greaves', minWave: 9,
+    stats: { speed: 5 }, rule: 'hasteKill',
+    ruleText: 'Every kill grants HASTE for 2 turns.' },
+  redline: {
+    id: 'redline', slot: 'boots', name: 'Redline Servos', minWave: 31,
+    mods: { apsBoost: 0.25 }, rule: 'redline', ruleVal: 0.10,
+    ruleText: '+25% turn rate — but you take 10% more damage.' }
+};
+
+function uniqueDef(it) {
+  return (it && it.uniqueId && UNIQUES[it.uniqueId]) || null;
+}
+
+function hasRule(p, rule) {
+  for (const it of gearList(p)) {
+    const u = uniqueDef(it);
+    if (u && u.rule === rule) return true;
+  }
+  return false;
+}
+
+function ruleVal(p, rule, fallback) {
+  for (const it of gearList(p)) {
+    const u = uniqueDef(it);
+    if (u && u.rule === rule) return u.ruleVal != null ? u.ruleVal : fallback;
+  }
+  return fallback;
+}
+
+function applyUniquePatch(p, it) {
+  const u = uniqueDef(it);
+  if (!u || !u.patch) return;
+  const sk = u.patch.basic ? p.skills.find(s => s.basic) : p.skills.find(s => s.id === u.patch.skill);
+  if (!sk) return;
+  if (u.patch.set) Object.assign(sk, u.patch.set);
+  for (const k of Object.keys(u.patch.mul || {})) sk[k] = +((Number(sk[k]) || 0) * u.patch.mul[k]).toFixed(4);
+  for (const k of Object.keys(u.patch.add || {})) sk[k] = +((Number(sk[k]) || 0) + u.patch.add[k]).toFixed(4);
+}
+
+function applyGearPatches(p) {
+  for (const it of gearList(p)) applyUniquePatch(p, it);
+}
+
+function makeUniqueItem(id, wave) {
+  const u = UNIQUES[id];
+  if (!u) return null;
+  const slot = SLOTS[u.slot];
+  const impDef = SLOT_IMPLICIT[slot.id];
+  const impTier = rollTier(wave);
+  const implicit = impDef.stats
+    ? { stats: impDef.stats.slice(), tier: impTier, v: rollRange(impDef.tiers[impTier], 1) }
+    : { mod: impDef.mod, tier: impTier,
+        v: rollRange(impDef.tiers[impTier], ITEM_MODS[impDef.mod].step) };
+  return { slot: slot.id, rarity: 'unique', uniqueId: id, wave, name: u.name,
+           lot: wave + '-' + slot.lot, implicit, prefixes: [], suffixes: [] };
+}
 
 const TIER_MIN_WAVE = [46, 31, 21, 11, 1];
 
@@ -107,11 +199,19 @@ const SLOT_IMPLICIT = {
 };
 
 const DROPS = {
-  trash:    { chance: 0.08, weights: [75, 25, 0] },
-  elite:    { chance: 0.40, weights: [40, 50, 10] },
-  champion: { chance: 1.00, weights: [0, 70, 30] },
-  boss:     { chance: 1.00, weights: [0, 50, 50] }
+  trash:    { chance: 0.08, weights: [75, 25, 0], unique: 0 },
+  elite:    { chance: 0.40, weights: [40, 50, 10], unique: 0.03 },
+  champion: { chance: 1.00, weights: [0, 70, 30], unique: 0.10 },
+  boss:     { chance: 1.00, weights: [0, 50, 50], unique: 0.15 }
 };
+
+function uniquePool(wave) {
+  const p = state.player;
+  const worn = new Set(gearList(p).map(it => it.uniqueId).filter(Boolean));
+  const seen = new Set(state.uniqueSeen || []);
+  return Object.keys(UNIQUES).filter(id =>
+    UNIQUES[id].minWave <= wave && !worn.has(id) && !seen.has(id));
+}
 
 function rollRange(range, step) {
   const raw = range[0] + Math.random() * (range[1] - range[0]);
@@ -177,7 +277,16 @@ function rollDrop(e, wave) {
   if (!e) return null;
   const kind = e.isBoss ? 'boss' : e.champion ? 'champion' : e.elite ? 'elite' : 'trash';
   const d = DROPS[kind];
-  if (!d || Math.random() >= d.chance * (e.dropMult || 1)) return null;
+  if (!d) return null;
+  if (d.unique > 0 && Math.random() < d.unique) {
+    const pool = uniquePool(wave);
+    if (pool.length) {
+      const id = pool[Math.floor(Math.random() * pool.length)];
+      (state.uniqueSeen = state.uniqueSeen || []).push(id);
+      return makeUniqueItem(id, wave);
+    }
+  }
+  if (Math.random() >= d.chance * (e.dropMult || 1)) return null;
   const rarities = ['standard', 'refined', 'prototype'];
   return makeItem(wave, rarities[pickWeighted(d.weights)]);
 }
@@ -197,9 +306,12 @@ function gearStat(p, key) {
     for (const pre of (it.prefixes || []))
       if (pre.stats.indexOf(key) >= 0) n += pre.v;
 
-  for (const it of gearList(p))
+  for (const it of gearList(p)) {
     if (it.implicit && it.implicit.stats && it.implicit.stats.indexOf(key) >= 0)
       n += it.implicit.v;
+    const u = uniqueDef(it);
+    if (u && u.stats && u.stats[key]) n += u.stats[key];
+  }
   return n;
 }
 
@@ -208,6 +320,8 @@ function gearMod(p, id) {
   for (const it of gearList(p)) {
     if (it.implicit && it.implicit.mod === id) n += it.implicit.v;
     for (const s of (it.suffixes || [])) if (s.mod === id) n += s.v;
+    const u = uniqueDef(it);
+    if (u && u.mods && u.mods[id]) n += u.mods[id];
   }
   return n;
 }
@@ -221,6 +335,11 @@ function itemScore(it) {
   if (it.implicit) n += it.implicit.stats
     ? it.implicit.v * it.implicit.stats.length
     : (5 - it.implicit.tier) * 0.5;
+  const u = uniqueDef(it);
+  if (u) {
+    n += 8;
+    for (const k of Object.keys(u.stats || {})) n += u.stats[k];
+  }
   return n;
 }
 function botTakesDrop(p, it) {
@@ -245,6 +364,15 @@ function itemAffixLines(it) {
   for (const s of (it.suffixes || [])) {
     const def = ITEM_MODS[s.mod];
     if (def) out.push(affixLine(s.tier, def.text(s.v)));
+  }
+  const u = uniqueDef(it);
+  if (u) {
+    for (const k of Object.keys(u.stats || {})) out.push('+' + u.stats[k] + ' ' + ITEM_STAT_NAMES[k]);
+    for (const k of Object.keys(u.mods || {})) {
+      const def = ITEM_MODS[k];
+      if (def) out.push(def.text(u.mods[k]));
+    }
+    out.push('◆ ' + u.ruleText);
   }
   return out;
 }
@@ -271,12 +399,13 @@ function equipItem(p, it) {
   if (!p.gear) p.gear = emptyGear();
   const old = p.gear[it.slot];
   p.gear[it.slot] = it;
+  rebuildSkills(p);
   applyDerivedStats(p);
   logEvent('FITTED', null, itemLogName(it),
     [itemImplicitLine(it)].concat(itemAffixLines(it))
       .concat(old ? ['replaces ' + itemLogName(old)] : []));
   floatText(p, 'FITTED', 'tally');
-  updateHud(); renderSkills();
+  updateHud(); renderSkills(true);
 }
 
 function queueDrop(item) {

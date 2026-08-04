@@ -175,6 +175,7 @@ function simulateRun(classId, opts) {
       pumpSteps();
       if (state.runOver) break;
       if (opts.stopWhen && opts.stopWhen(state)) break;
+      if (nextDrop() || nextModOffer()) continue;
       if (!state.awaitingInput) {
         if (!_pendingStep) break;
         continue;

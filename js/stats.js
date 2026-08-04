@@ -576,6 +576,7 @@ function makeEnemy(wave, ctx) {
         : champ ? CHAMPION_VERBS[Math.floor(Math.random() * CHAMPION_VERBS.length)]
         : null,
     zone: zone.num,
+    waveNo: wave,
     rosterId: face.id,
     windupEvery: isBoss ? (isFinal ? E.finalWindupEvery : E.windupEvery) : (elite ? E.eliteWindupEvery : 0),
 

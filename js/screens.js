@@ -134,6 +134,19 @@ function freshPlayer(classId, kit) {
   return p;
 }
 
+function rebuildSkills(p) {
+  if (!p || !CLASSES[p.class]) return;
+  const kit = p.skills.filter(s => !s.basic).map(s => s.id);
+  const cds = {};
+  p.skills.forEach(s => { cds[s.id] = s.cd || 0; });
+  p.skills = CLASSES[p.class].skills
+    .filter(s => s.basic || kit.includes(s.id))
+    .map(s => Object.assign({ cd: cds[s.id] || 0 }, s));
+  p.basicSkill = p.skills.find(s => s.basic) || p.skills[0];
+  applyTakenMods(p);
+  applyGearPatches(p);
+}
+
 function resetRunState(classId) {
   stopCombatLoop();
   abandonDrop(); abandonMods();
@@ -163,6 +176,9 @@ function resetRunState(classId) {
   state.dmgBySource = {};
   state.skillUses = {};
   state.peakStrain = 0;
+  state.uniqueSeen = [];
+  state._fightFlags = {};
+  state._waveCleared = false;
   state.killedBy = null;
   state.runStart = Date.now();
   state._defeatLock = false;
@@ -295,9 +311,11 @@ function spawnEnemy() {
 
   if (state.wave > 1) {
     const before = p.hp;
-    p.hp = Math.min(p.maxHp, p.hp + Math.floor(healAnchorFor(p) * P().recoverHpFrac));
+    const recover = P().recoverHpFrac * (hasRule(p, 'bivouac') ? 2 : 1);
+    p.hp = Math.min(p.maxHp, p.hp + Math.floor(healAnchorFor(p) * recover));
     if (p.hp > before) logHeal('RECOVER', p, p.hp - before,
-      [Math.round(P().recoverHpFrac*100) + '% of ' + logNum(healAnchorFor(p)) + ' between fights']);
+      [Math.round(recover*100) + '% of ' + logNum(healAnchorFor(p)) + ' between fights'
+       + (hasRule(p, 'bivouac') ? ' (BIVOUAC ×2)' : '')]);
 
     const lost = p.statuses.filter(s => { const dd = STATUSES[s.type]; return !(dd && dd.persists); });
     p.statuses = survivingStatuses(p);
@@ -329,6 +347,8 @@ function spawnEnemy() {
   state.enemyActions = 0;
   state.actionsSinceKill = 0;
   state.turnNo = 0;
+  state._fightFlags = {};
+  state._waveCleared = false;
   state.awaitingSpawn = false;
   state.awaitingInput = false;
   state.pendingEnemyAct = false;

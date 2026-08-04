@@ -167,6 +167,7 @@ function serializeRun() {
 
     dropQueue:(state.dropQueue||[]).slice(),
     modQueue:(state.modQueue||[]).map(o => o.map(m => m.id)),
+    uniqueSeen:(state.uniqueSeen||[]).slice(),
 
     player:{ level:p.level, xp:p.xp, xpNext:p.xpNext, points:p.points + pendingTotal(p),
       str:p.str, instinct:p.instinct, speed:p.speed, vit:p.vit,
@@ -300,6 +301,7 @@ function continueRun(slot){
 
   p.mods = Array.isArray(sp.mods) ? sp.mods.filter(id => modById(d.classId, id)) : [];
   applyTakenMods(p);
+  applyGearPatches(p);
   state.player=p;
 
   if (Array.isArray(sp.statuses))
@@ -316,6 +318,7 @@ function continueRun(slot){
   state.modQueue=(Array.isArray(d.modQueue)?d.modQueue:[])
     .map(o => (Array.isArray(o)?o:[]).map(id => modById(d.classId, id)).filter(Boolean))
     .filter(o => o.length);
+  state.uniqueSeen=Array.isArray(d.uniqueSeen)?d.uniqueSeen.filter(id => UNIQUES[id]):[];
   state.damageDealt=d.damageDealt||0;
   state.runTurns=d.runTurns||0; state.damageTaken=d.damageTaken||0;
   state.critsLanded=d.critsLanded||0; state.damagePrevented=d.damagePrevented||0;

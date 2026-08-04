@@ -124,6 +124,7 @@ function advanceToNextActor() {
 
 function nextTurn() {
   if (!state.combatActive) return;
+  if (nextDrop() || nextModOffer()) { scheduleTurn(nextTurn, turnDelay(240)); return; }
   const p = state.player;
   if (!p || p.hp <= 0) { stopCombatLoop(); endRun(); return; }
   if (state.awaitingSpawn) { scheduleTurn(doSpawn, turnDelay(BALANCE.spawnDelay * 1000)); return; }
@@ -322,6 +323,7 @@ function enemyAct() {
 
 function doSpawn() {
   if (!state.combatActive) return;
+  if (nextDrop() || nextModOffer()) { scheduleTurn(doSpawn, turnDelay(240)); return; }
   spawnEnemy();
   if (!state.player || state.player.hp <= 0) return;
   if (!livingEnemies().length) return;
@@ -498,6 +500,11 @@ function applyEnemyDamage(e, p, mult, opts) {
   notes.push(...statusNotes(p, 'incomingMult', { attacker: e }));
   dmg = Math.floor(dmg * statusMult(p, 'incomingMult', { attacker: e }));
 
+  if (hasRule(p, 'redline')) {
+    dmg = Math.floor(dmg * (1 + ruleVal(p, 'redline', 0.10)));
+    notes.push('REDLINE +' + Math.round(ruleVal(p, 'redline', 0.10) * 100) + '%');
+  }
+
   const layers = [['ARMOR', p.armor || 0], ['EVASION', p.evasion || 0]];
 
   const ward = thornsWard(p);
@@ -526,11 +533,29 @@ function applyEnemyDamage(e, p, mult, opts) {
     }
   }
   dmg = Math.max(1, dmg);
+
+  const ff = (state._fightFlags = state._fightFlags || {});
+  if (!ff.bulwark && dmg >= p.maxHp * ruleVal(p, 'bigHitHalve', 0.25) && hasRule(p, 'bigHitHalve')) {
+    const blunted = dmg;
+    dmg = Math.max(1, Math.floor(dmg / 2));
+    ff.bulwark = true;
+    state.damagePrevented = (state.damagePrevented || 0) + (blunted - dmg);
+    notes.push('BULWARK PLATE −50%');
+  }
   p.hp = Math.max(0, p.hp - dmg);
   state.damageTaken = (state.damageTaken || 0) + dmg;
 
   if (p.hp <= 0) state.killedBy = { name: e ? e.name : 'unknown', heavy: mult > 1, dmg };
   logDamage(label, p, dmg, notes.concat([logNum(p.hp) + '/' + logNum(p.maxHp) + ' left']));
+
+  if (p.hp > 0 && p.hp < p.maxHp * 0.35 && !ff.autosuture && hasRule(p, 'autosuture')) {
+    ff.autosuture = true;
+    const heal = Math.max(1, Math.floor(healAnchorFor(p) * ruleVal(p, 'autosuture', 0.20)));
+    const hb = p.hp;
+    p.hp = Math.min(p.maxHp, p.hp + heal);
+    floatText(p, p.hp - hb, 'heal');
+    logHeal('AUTOSUTURE', p, p.hp - hb, ['once per fight', logNum(p.hp) + '/' + logNum(p.maxHp)]);
+  }
 
   if (p.class === 'psy' && e && e.hp > 0)
     shedStacks(e, 'dread', P().dreadLossPerHit, 'nerve steadied — its blow landed');
@@ -547,6 +572,12 @@ function applyEnemyDamage(e, p, mult, opts) {
   let thorns = getThornsDamage(p);
   const tNotes = [];
   if (thorns > 0) tNotes.push('thorns ' + logNum(thorns));
+
+  if (dmg > 0 && hasRule(p, 'reflect10')) {
+    const r = Math.max(1, Math.floor(dmg * ruleVal(p, 'reflect10', 0.10)));
+    thorns += r;
+    tNotes.push('husk plate ' + logNum(r));
+  }
 
   if (p.class === 'sym' && dmg > 0) {
     const spined = hasStatus(p, 'spines');
@@ -644,8 +675,17 @@ function applyPlayerDamage(p, e, skill, opts) {
     return false;
   }
 
-  const rolled = Math.random() < p.critChance;
+  const cullBonus = (e.maxHp && e.hp < e.maxHp * 0.5 && hasRule(p, 'cullCrit'))
+    ? ruleVal(p, 'cullCrit', 0.15) : 0;
+  const rolled = Math.random() < p.critChance + cullBonus;
   let isCrit = rolled || !!skill.alwaysCrit;
+
+  const ff = (state._fightFlags = state._fightFlags || {});
+  if (!ff.firstCrit && hasRule(p, 'firstCrit')) {
+    if (!isCrit) notes.push('APEX LENS: first strike');
+    isCrit = true;
+  }
+  ff.firstCrit = true;
 
   if (isCrit) {
     dmg *= p.critMult;
@@ -658,6 +698,21 @@ function applyPlayerDamage(p, e, skill, opts) {
   e.hp = Math.max(0, e.hp - dmg);
   creditDamage(skill.name, dmg);
   if (e.hp <= 0 && before > 0) state._lastOverkill = Math.max(0, dmg - before);
+
+  if (e.hp <= 0 && hasRule(p, 'overspill')) {
+    const spill = Math.max(0, dmg - before);
+    const next = livingEnemies().find(x => x !== e);
+    if (spill > 0 && next) {
+      const nb = next.hp;
+      next.hp = Math.max(0, next.hp - spill);
+      creditDamage('Momentum', spill);
+      if (next.hp <= 0) state._lastOverkill = Math.max(0, spill - nb);
+      floatText(next, spill, 'damage');
+      logDamage('OVERSPILL', next, spill,
+        ['MOMENTUM GAUNTLETS', logNum(next.hp) + '/' + logNum(next.maxHp) + ' left']);
+      updateUnitCard(next);
+    }
+  }
 
   logDamage(skill.name, e, dmg, notes.concat([logNum(e.hp) + '/' + logNum(e.maxHp) + ' left']));
 
@@ -870,6 +925,7 @@ function onEnemyDefeated(e) {
   if (!e || e._defeated) return;
   e._defeated = true;
 
+  const killedWave = e.waveNo || state.wave;
   const p = state.player;
   const overkill = state._lastOverkill || 0;
   state._lastOverkill = 0;
@@ -892,6 +948,9 @@ function onEnemyDefeated(e) {
   ]);
 
   devour(p, statusStacks(e, 'dread'), 'drunk from the dying');
+
+  if (p && p.hp > 0 && hasRule(p, 'hasteKill'))
+    applyStatus(p, 'haste', { duration: 2, power: 0.30 });
 
   if (p && p.class === 'bio') {
     const left = statusStacks(e, 'poison');
@@ -923,10 +982,10 @@ function onEnemyDefeated(e) {
     ]);
   }
 
-  const tier = Math.floor((state.wave-1)/5);
+  const tier = Math.floor((killedWave-1)/5);
   const comboBonus = 1 + Math.min(BALANCE.combo.maxStack, state.combo) * BALANCE.combo.xpPerStack;
   const gearXp = 1 + gearMod(p, 'xpBoost');
-  const xp = Math.floor((BALANCE.xp.killBase + state.wave*BALANCE.xp.killWave + tier*BALANCE.xp.killTier)
+  const xp = Math.floor((BALANCE.xp.killBase + killedWave*BALANCE.xp.killWave + tier*BALANCE.xp.killTier)
     * e.xpMult * comboBonus * gearXp);
   logEvent('XP', null, '+' + logNum(xp), [
     e.xpMult !== 1 ? 'enemy ×' + e.xpMult.toFixed(1) : null,
@@ -935,7 +994,6 @@ function onEnemyDefeated(e) {
   ]);
 
   killFlash(e);
-  const killedWave = state.wave;
 
   gainXP(xp, e.xpMult !== 1 || comboBonus > 1);
 
@@ -951,7 +1009,9 @@ function onEnemyDefeated(e) {
     return;
   }
 
-  state.wave++;
+  if (state._waveCleared) return;
+  state._waveCleared = true;
+  state.wave = killedWave + 1;
 
   if (killedWave >= BALANCE.finalWave) {
     stopCombatLoop();
