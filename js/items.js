@@ -231,12 +231,7 @@ const SLOT_IMPLICIT = {
   boots:     { stats: ['speed'], tiers: [[9, 13], [7, 10], [6, 8], [4, 6], [2, 4]] }
 };
 
-const DROPS = {
-  trash:    { chance: 0.08, weights: [75, 25, 0], unique: 0 },
-  elite:    { chance: 0.40, weights: [40, 50, 10], unique: 0.03 },
-  champion: { chance: 1.00, weights: [0, 70, 30], unique: 0.10 },
-  boss:     { chance: 1.00, weights: [0, 50, 50], unique: 0.15 }
-};
+const BOSS_HAUL = { min: 2, max: 3, weights: [0, 50, 50], unique: 0.15 };
 
 function uniquePool(wave) {
   const p = state.player;
@@ -328,23 +323,25 @@ function makeItem(wave, rarityId) {
            lot: wave + '-' + slot.lot, implicit, prefixes, suffixes };
 }
 
-function rollDrop(e, wave) {
-  if (!e) return null;
-  const kind = e.isBoss ? 'boss' : e.champion ? 'champion' : e.elite ? 'elite' : 'trash';
-  const d = DROPS[kind];
-  if (!d) return null;
-  if (d.unique > 0 && Math.random() < d.unique * (hazardFor(wave) ? 2 : 1)) {
-    const pool = uniquePool(wave);
-    if (pool.length) {
-      const id = pool[Math.floor(Math.random() * pool.length)];
-      state.uniqueSeen = state.uniqueSeen || [];
-      if (state.uniqueSeen.indexOf(id) < 0) state.uniqueSeen.push(id);
-      return makeUniqueItem(id, wave);
-    }
-  }
-  if (Math.random() >= d.chance * (e.dropMult || 1)) return null;
+function rollBossHaul(wave) {
+  const d = BOSS_HAUL;
+  const n = d.min + Math.floor(Math.random() * (d.max - d.min + 1));
   const rarities = ['standard', 'refined', 'prototype'];
-  return makeItem(wave, rarities[pickWeighted(d.weights)]);
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    if (Math.random() < d.unique * (hazardFor(wave) ? 2 : 1)) {
+      const pool = uniquePool(wave);
+      if (pool.length) {
+        const id = pool[Math.floor(Math.random() * pool.length)];
+        state.uniqueSeen = state.uniqueSeen || [];
+        if (state.uniqueSeen.indexOf(id) < 0) state.uniqueSeen.push(id);
+        out.push(makeUniqueItem(id, wave));
+        continue;
+      }
+    }
+    out.push(makeItem(wave, rarities[pickWeighted(d.weights)]));
+  }
+  return out;
 }
 
 function emptyGear() {
@@ -475,36 +472,24 @@ function equipItem(p, it) {
   updateHud(); renderSkills(true);
 }
 
-function isDecisionFree(it) {
-  return it.rarity !== 'unique' && !(it.suffixes || []).some(s => s.trade);
-}
-
 function queueDrop(item) {
-  const p = state.player;
-  if (p && p.gear && !p.gear[item.slot] && isDecisionFree(item)) {
-    logEvent('RECOVERED', null, itemLogName(item), ['bare mount — fitted on the spot']);
-    equipItem(p, item);
-    saveRun();
-    return;
-  }
   (state.dropQueue = state.dropQueue || []).push(item);
   logEvent('RECOVERED', null, itemLogName(item),
            [itemImplicitLine(item)].concat(itemAffixLines(item)));
-  if (HEADLESS.on) return;
-  floatText(state.player, 'SALVAGE', 'tally');
-  updateHud();
 }
 function nextDrop() { return (state.dropQueue && state.dropQueue[0]) || null; }
 
-function resolveDrop(take) {
+function resolveDropAt(i, take) {
   const q = state.dropQueue || [];
-  const item = q.shift();
-  if (!item) return;
+  if (i < 0 || i >= q.length) return;
+  const item = q.splice(i, 1)[0];
   if (take) equipItem(state.player, item);
   else logEvent('LEFT BEHIND', null, itemLogName(item));
   saveRun();
-  updateHud();
+  if (!HEADLESS.on) { renderCampPanel(); updateHud(); }
 }
+
+function resolveDrop(take) { resolveDropAt(0, take); }
 
 function abandonDrop() { state.dropQueue = []; }
 
@@ -557,34 +542,32 @@ function itemDeltas(it) {
   return out;
 }
 
-function renderPendingDrop() {
-  if (HEADLESS.on) return;
-  const el = document.getElementById('drop-pending');
-  if (!el) return;
-  const it = nextDrop();
-  if (!it) { el.innerHTML = ''; el.classList.remove('on'); return; }
-  el.classList.add('on');
+function dropHaulHtml() {
+  const q = state.dropQueue || [];
+  if (!q.length) return '';
   const p = state.player;
-  const worn = p && p.gear ? p.gear[it.slot] : null;
-  const more = (state.dropQueue || []).length - 1;
-  const deltas = itemDeltas(it);
-  el.innerHTML = '<div class="pending-head">FIELD RECOVERY'
-      + (more > 0 ? ' <i>+' + more + ' waiting</i>' : '') + '</div>'
-    + itemCardHtml(it, SLOTS[it.slot].label + ' · RECOVERED')
-    + (deltas.length
-        ? '<div class="drop-deltas">' + deltas.map(d =>
-            '<span class="' + (d.up ? 'up' : 'down') + '">' + d.text + '</span>').join('') + '</div>'
-        : '')
-    + itemCardHtml(worn, 'CURRENTLY FITTED')
-    + '<div class="pending-actions">'
-    + '<button class="ui-btn" type="button" onclick="resolveDrop(true)">FIT</button>'
-    + '<button class="ui-btn is-quiet" type="button" onclick="resolveDrop(false)">LEAVE</button>'
-    + '</div>';
+  return '<div class="camp-panel-head">RECOVERED · ' + q.length + ' TO SORT</div>'
+    + '<div class="haul-list">' + q.map((it, i) => {
+        const worn = p && p.gear ? p.gear[it.slot] : null;
+        const deltas = itemDeltas(it);
+        return '<div class="haul-row">'
+          + itemCardHtml(it, SLOTS[it.slot].label + ' · RECOVERED')
+          + (deltas.length
+              ? '<div class="drop-deltas">' + deltas.map(d =>
+                  '<span class="' + (d.up ? 'up' : 'down') + '">' + d.text + '</span>').join('') + '</div>'
+              : '')
+          + '<div class="haul-worn">' + (worn
+              ? 'replaces ' + RARITIES[worn.rarity].name + ' ' + worn.name + ' · LOT ' + worn.lot
+              : 'the mount is bare') + '</div>'
+          + '<div class="pending-actions">'
+          + '<button class="ui-btn" type="button" onclick="resolveDropAt(' + i + ', true)">FIT</button>'
+          + '<button class="ui-btn is-quiet" type="button" onclick="resolveDropAt(' + i + ', false)">LEAVE</button>'
+          + '</div></div>';
+      }).join('') + '</div>';
 }
 
 function renderSuitPanel() {
   if (HEADLESS.on) return;
-  renderPendingDrop();
   const el = document.getElementById('suit-list');
   if (!el) return;
   const p = state.player;

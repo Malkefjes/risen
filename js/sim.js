@@ -170,18 +170,15 @@ function simulateRun(classId, opts) {
       if (state.runOver) break;
       if (opts.each) opts.each(state);
       if (opts.stopWhen && opts.stopWhen(state)) break;
-      if (state.hazardOffer) { pickHazard(state.hazardOffer[0]); continue; }
-      if (state.atCamp) { moveOut(); continue; }
+      if (state.atCamp) {
+        if (nextDrop()) { resolveDrop(botTakesDrop(state.player, nextDrop())); continue; }
+        if (nextModOffer()) { takeMod(botTakesMod(nextModOffer())); continue; }
+        if (state.hazardOffer) { pickHazard(state.hazardOffer[0]); continue; }
+        moveOut();
+        continue;
+      }
       if (!state.awaitingInput) {
         if (!_pendingStep) break;
-        continue;
-      }
-      if (nextDrop()) {
-        resolveDrop(botTakesDrop(state.player, nextDrop()));
-        continue;
-      }
-      if (nextModOffer()) {
-        takeMod(botTakesMod(nextModOffer()));
         continue;
       }
       const p = state.player;

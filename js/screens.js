@@ -196,6 +196,10 @@ function resetRunState(classId) {
   updateCombo();
   clearLog();
   clearFloaters();
+  if (!HEADLESS.on) {
+    const cp = document.getElementById('camp-panel');
+    if (cp) { cp.classList.remove('on', 'log-open'); cp.innerHTML = ''; }
+  }
 
   log('RISEN · build ' + BUILD);
 }
@@ -413,21 +417,15 @@ function showCamp() {
   showScreen('camp-screen');
 }
 
-function renderCampPanel() {
-  if (HEADLESS.on) return;
-  const el = document.getElementById('camp-panel');
-  const move = document.getElementById('camp-move');
-  if (!el) return;
+function campBusy() {
+  return !!(state.hazardOffer || nextDrop() || nextModOffer());
+}
+
+function hazardOfferHtml() {
   const offer = state.hazardOffer;
-  if (!offer) {
-    el.classList.remove('on');
-    el.innerHTML = '';
-    if (move) { move.disabled = false; move.textContent = 'MOVE OUT'; }
-    return;
-  }
+  if (!offer) return '';
   const depth = Math.floor((state.wave - BALANCE.finalWave - 1) / 10) + 1;
-  el.classList.add('on');
-  el.innerHTML = '<div class="camp-panel-head">DEPTH ' + depth + ' · CHOOSE THE TOLL</div>'
+  return '<div class="camp-panel-head">DEPTH ' + depth + ' · CHOOSE THE TOLL</div>'
     + '<div class="hazard-list">'
     + offer.map(id => {
         const h = HAZARDS[id];
@@ -439,7 +437,28 @@ function renderCampPanel() {
       }).join('')
     + '</div>'
     + '<div class="hazard-foot">Any toll doubles UNCATALOGUED drops for this Depth.</div>';
-  if (move) { move.disabled = true; move.textContent = 'CHOOSE A TOLL'; }
+}
+
+function renderCampPanel() {
+  if (HEADLESS.on) return;
+  const el = document.getElementById('camp-panel');
+  const move = document.getElementById('camp-move');
+  if (!el) return;
+  if (el.classList.contains('log-open')) return;
+
+  const parts = [dropHaulHtml(), modOfferHtml(), hazardOfferHtml()].filter(Boolean);
+  if (!parts.length) {
+    el.classList.remove('on');
+    el.innerHTML = '';
+    if (move) { move.disabled = false; move.textContent = 'MOVE OUT'; }
+    return;
+  }
+  el.classList.add('on');
+  el.innerHTML = parts.join('<div class="camp-rule"></div>');
+  if (move) {
+    move.disabled = true;
+    move.textContent = state.hazardOffer && parts.length === 1 ? 'CHOOSE A TOLL' : 'SORT THE HAUL';
+  }
 }
 
 function talkToScientist() {
@@ -486,7 +505,7 @@ function enterCamp() {
 }
 
 function moveOut() {
-  if (!state.atCamp || state.hazardOffer) return;
+  if (!state.atCamp || campBusy()) return;
   state.atCamp = false;
   saveRun();
   if (HEADLESS.on) { scheduleTurn(doSpawn, 0); return; }
@@ -517,13 +536,6 @@ function updateHud() {
   refreshSidebarStats();
   renderSuitPanel();
   renderModPanel();
-
-  const mark = (tab, on) => {
-    const t = document.querySelector('.sidebar-tab[data-tab="' + tab + '"]');
-    if (t) t.classList.toggle('tab-alert', !!on);
-  };
-  mark('suit', !!nextDrop());
-  mark('mods', !!nextModOffer());
 
   updateUnitCard(p);
 }

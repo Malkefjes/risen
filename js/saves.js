@@ -330,6 +330,7 @@ function continueRun(slot){
   state.hazardOffer=Array.isArray(d.hazardOffer)?d.hazardOffer.filter(id => HAZARDS[id]):null;
   if (state.hazardOffer && !state.hazardOffer.length) state.hazardOffer=null;
   state.atCamp=!!d.atCamp;
+  if (!state.atCamp) { state.dropQueue=[]; state.modQueue=[]; }
   state.damageDealt=d.damageDealt||0;
   state.runTurns=d.runTurns||0; state.damageTaken=d.damageTaken||0;
   state.critsLanded=d.critsLanded||0; state.damagePrevented=d.damagePrevented||0;

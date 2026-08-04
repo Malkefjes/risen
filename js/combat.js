@@ -1019,8 +1019,7 @@ function onEnemyDefeated(e) {
 
   if (p.hp <= 0) { playerDown(); return; }
 
-  const drop = rollDrop(e, killedWave);
-  if (drop) queueDrop(drop);
+  if (e.isBoss) rollBossHaul(killedWave).forEach(queueDrop);
 
   if (livingEnemies().length) {
     if (state.enemy === e) retarget();
@@ -1055,7 +1054,7 @@ function onEnemyDefeated(e) {
   saveRun();
   updateTurnInfo(); renderSkills();
 
-  if (modDueAfter(killedWave) && p) {
+  if (e.isBoss && p) {
     const offer = offerMods(p);
     if (offer.length) queueMods(offer);
   }

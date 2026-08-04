@@ -1813,6 +1813,39 @@ body {
 .camp-log-row span { color: var(--muted); }
 .camp-log-close { margin-top: 12px; }
 
+.camp-rule {
+  height: 1px;
+  margin: 14px 0;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.haul-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+.haul-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.haul-row .drop-card { margin: 0; flex: 1; }
+.haul-worn {
+  font-size: 0.74rem;
+  color: var(--muted);
+  letter-spacing: 0.3px;
+}
+.haul-row .pending-actions { display: flex; gap: 8px; }
+.haul-row .pending-actions .ui-btn { flex: 1; padding: 6px 10px; font-size: 0.72rem; }
+
+.mod-offer-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+.camp-panel .mod-skip { margin-top: 10px; }
+
 .camp-actions { margin-top: auto; display: flex; justify-content: center; }
 .camp-actions .ui-btn { min-width: 240px; }
 

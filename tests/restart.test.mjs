@@ -3,7 +3,7 @@ export default async function ({ page, ok }) {
   await page.evaluate(() => { localStorage.clear(); startGame(true, 'bio'); SETTINGS.fastTurns = true; });
   await page.waitForFunction(() => state.player && state.combatActive);
   await page.evaluate(() => {
-    const q = document.getElementById('mod-offer'); if (q) q.classList.add('on');
+    const q = document.getElementById('camp-panel'); if (q) q.classList.add('on');
     const cm = document.getElementById('combo-meter'); if (cm) cm.style.display = 'block';
   });
 
@@ -19,7 +19,7 @@ export default async function ({ page, ok }) {
     return {
       wave: state.wave, level: p.level, cls: p.class, full: p.hp === p.maxHp,
       leftovers: [
-        (document.getElementById('mod-offer') || {}).classList?.contains('on') && 'a mod offer',
+        (document.getElementById('camp-panel') || {}).classList?.contains('on') && 'an open camp panel',
         (document.getElementById('combo-meter') || {}).style?.display === 'block' && 'the combo meter'
       ].filter(Boolean),
       fighters: document.querySelectorAll('#arena-card .fighter').length,

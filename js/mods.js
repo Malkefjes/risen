@@ -155,11 +155,6 @@ const MODIFICATIONS = {
   }
 };
 
-function modDueAfter(wave) {
-  if (wave < 5) return false;
-  if (wave < BALANCE.finalWave) return wave % 5 === 0;
-  return wave % 10 === 0;
-}
 
 const MODS_OFFERED = 3;
 
@@ -222,9 +217,6 @@ function queueMods(offer) {
   (state.modQueue = state.modQueue || []).push(offer);
   logEvent('SALVAGE', null, 'offering ' + offer.length + ' modifications',
            offer.map(m => m.name));
-  if (HEADLESS.on) return;
-  floatText(state.player, 'SALVAGE', 'tally');
-  updateHud();
 }
 function nextModOffer() { return (state.modQueue && state.modQueue[0]) || null; }
 
@@ -232,6 +224,7 @@ function takeMod(id) {
   const q = state.modQueue || [];
   const offer = q.shift();
   if (!offer) return;
+  if (id && !offer.some(m => m.id === id)) { q.unshift(offer); return; }
   const p = state.player;
   const mod = id ? modById(p.class, id) : null;
   if (mod) {
@@ -247,7 +240,7 @@ function takeMod(id) {
     logEvent('MODIFICATION', null, 'declined');
   }
   saveRun();
-  updateHud();
+  if (!HEADLESS.on) { renderCampPanel(); updateHud(); }
 }
 
 function botTakesMod(offer, p) {
@@ -264,19 +257,13 @@ function botTakesMod(offer, p) {
 
 function abandonMods() { state.modQueue = []; }
 
-function renderModPanel() {
-  if (HEADLESS.on) return;
-  renderModList();
-  const el = document.getElementById('mod-offer');
-  if (!el) return;
+function modOfferHtml() {
   const offer = nextModOffer();
-  if (!offer) { el.innerHTML = ''; el.classList.remove('on'); return; }
-  el.classList.add('on');
+  if (!offer) return '';
   const p = state.player;
   const cls = p ? p.class : '';
-  const more = (state.modQueue || []).length - 1;
-  el.innerHTML = '<div class="pending-head">SALVAGE'
-      + (more > 0 ? ' <i>+' + more + ' waiting</i>' : '') + '</div>'
+  return '<div class="camp-panel-head">SALVAGE · ONE MODIFICATION</div>'
+    + '<div class="mod-offer-row">'
     + offer.map(m => {
         const held = modCount(p, m.id);
         return '<button class="mod-card strain-' + cls + '" type="button" onclick="takeMod(\'' + m.id + '\')">'
@@ -285,7 +272,13 @@ function renderModPanel() {
           + '<span class="mod-on">' + modSkillName(cls, m.skill) + '</span></div>'
           + '<div class="mod-text">' + highlightKeywords(m.text) + '</div></button>';
       }).join('')
+    + '</div>'
     + '<button class="ui-btn is-quiet mod-skip" type="button" onclick="takeMod(null)">DECLINE</button>';
+}
+
+function renderModPanel() {
+  if (HEADLESS.on) return;
+  renderModList();
 }
 
 function renderModList() {
