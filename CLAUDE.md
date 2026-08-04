@@ -324,11 +324,33 @@ did not say.
   while keeping the mitigation on `buff` so the bot still reads it as an answer.
   (3) A roughly 2x damage buff moved its median from 20 to 20 — damage was never
   the binding constraint, it was entering fights already low.
-  **WHERE IT STANDS: median wave 30 on SPD+VIT, 2 wins per 100, last of five.**
-  And INSTINCT IS NOT YET ITS BEST STAT (INS+VIT 20 against SPD+VIT 30), which
-  is the whole point of the class and is unfinished. Speed still wins because it
-  is a global multiplier — more turns is more presses, more PRESSURE and more
-  Ruptures — so crit has to out-scale turns before the identity lands.
+  **REWORKED 2026-08-03ah, and three things were wrong at once.**
+  (1) A BUG, not balance: Rupture vented the pile and recomputed the sheet
+  BEFORE `dmg *= p.critMult`, so the always-crit payoff blow landed at the base
+  multiplier with none of the crit damage the pile had spent the fight building.
+  RESOLVE and DREAD both shed after the hit resolves; pressure was the odd one
+  out. (2) THE FAUCET WAS WELDED TO THE BRACE — Dampen was both, so the bot
+  correctly held it for telegraphs and hyd went through every exam fight with no
+  sustain at all. Measured: 43-45% of its deaths were telegraphs, against 3-25%
+  for everyone else. PRESSURE now bleeds off a capped share of the anchor per
+  turn (`pressureSiphonFrac`, the shape psy's SIPHON already uses), so holding
+  the pile is what keeps you alive and Rupture spends that too. Telegraph deaths
+  fell to 19-25%. (3) INSTINCT ONLY TILTED THE PILE — a flat `pressurePerHit`
+  meant every build got the same lines off the same presses, so STR won every
+  row (it multiplies 100% of an attack class's output AND buys armor). The rate
+  now reads Instinct on the (5 + points) / 5 rule every other stat follows;
+  measured piles went 30 held / 93 peak on a STR sheet against 55 / 262 on an
+  INS one. Per-line values were rebased flat against those piles — Instinct
+  scales the PILE, so anything scaling per line would count the stat twice.
+  **WHERE IT STANDS, 100 runs a cell: 8 wins per 100 -> 54, last of five to
+  third.** Best row is INS+VIT (54, against STR+VIT 51 and SPD+VIT 50) — the
+  identity lands on `tools/double-stat.mjs`. **IT DOES NOT LAND ON THE SMART
+  BOT**, which reads SPD+VIT 64 / STR+VIT 56 / INS+VIT 48 on the same build: all
+  three viable, Instinct third. The two instruments disagree and the disagreement
+  is the finding, not a number to tune away — the smart bot vents on a fixed
+  `spendDeep` of 15, which an Instinct sheet now clears in a single press.
+  **AND EVERY INSTRUMENT WAS BLIND TO THIS CLASS FOR TWO BUILDS** — all four
+  hardcoded a four-strain roster. They read `Object.keys(CLASSES)` now.
 
 - **`OWNER:` GEAR CARRIES THE BASELINE SO THE BARS CAN BE A CHOICE**
   (2026-08-03af, his design). The armor slot's implicit is +VITALITY and the

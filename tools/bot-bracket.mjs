@@ -36,7 +36,7 @@ await page.waitForFunction(() => typeof window.startGame === 'function');
 const FINAL = await page.evaluate(() => BALANCE.finalWave);
 const out = await page.evaluate((RUNS) => {
   const res = {};
-  for (const cls of ['bio', 'psy', 'sym', 'base']) {
+  for (const cls of Object.keys(CLASSES)) {
     res[cls] = {};
     for (const bot of ['dumb', 'smart']) {
       let wins = 0;

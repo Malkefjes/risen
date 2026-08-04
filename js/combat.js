@@ -232,6 +232,22 @@ function tickTurnStart(unit) {
         ]);
       }
     }
+    // THE BLEED-OFF — hyd's faucet, and the reason holding the pile is a
+    // decision. Same shape as the siphon above, read off what you are carrying.
+    if (unit.class === 'hyd' && unit.hp < unit.maxHp) {
+      const held = statusStacks(unit, 'pressure');
+      if (held > 0) {
+        const frac = Math.min(P().pressureSiphonCap || 0, held * (P().pressureSiphonFrac || 0));
+        const heal = Math.max(1, Math.floor(healAnchorFor(unit) * frac));
+        const before = unit.hp;
+        unit.hp = Math.min(unit.maxHp, unit.hp + heal);
+        floatText(unit, unit.hp - before, 'heal');
+        logHeal('BLEED-OFF', unit, unit.hp - before, [
+          'PRESSURE ×' + held,
+          logNum(unit.hp) + '/' + logNum(unit.maxHp)
+        ]);
+      }
+    }
   }
   updateUnitCard(unit);
   return false;
@@ -430,6 +446,7 @@ function cleansePoison(unit, n, why) {
 // the sheet is recomputed because crit damage rides the pile.
 function gainPressure(p, amount) {
   if (!p || p.class !== 'hyd' || !(amount > 0) || p.hp <= 0) return 0;
+  amount = Math.max(1, Math.round(amount * pressureRate(p)));
   applyStatus(p, 'pressure', { stacks: amount });
   applyDerivedStats(p);
   floatText(p, '+' + amount + ' PRESSURE', 'tally');
@@ -742,12 +759,13 @@ function applyPlayerDamage(p, e, skill) {
   // tried in the same sweep and made it WORSE, so it is not here.
   // RUPTURE vents the whole pile. Unlike Last Stand there is no fraction: the
   // cost of spending is that the bracing goes with it, which is the decision.
+  // VENTED AFTER THE BLOW LANDS, not here \u2014 the pile is what inflates critMult,
+  // and clearing it mid-calculation meant Rupture always-crit at the BASE
+  // multiplier with none of the crit damage it had spent the fight building.
   const pressureHeld = skill.consumesPressure ? statusStacks(p, 'pressure') : 0;
   if (pressureHeld > 0) {
     dmg += p.atkPower * (skill.perPressurePower || 0) * pressureHeld;
     notes.push('PRESSURE \u00d7' + pressureHeld + ' vented');
-    removeStatus(p, 'pressure', 'vented');
-    applyDerivedStats(p);
   }
   const resolveHeld = skill.consumesResolve ? statusStacks(p, 'resolve') : 0;
   const resolveSpent = Math.ceil(resolveHeld * (skill.consumeFrac || 1));
@@ -823,6 +841,10 @@ function applyPlayerDamage(p, e, skill) {
 
   if (skill.consumesResolve && resolveSpent > 0)
     shedStacks(p, 'resolve', resolveSpent, 'spent by ' + skill.name);
+  if (pressureHeld > 0) {
+    removeStatus(p, 'pressure', 'vented');
+    applyDerivedStats(p);
+  }
   if (skill.consumesSpines) removeStatus(p, 'spines', 'consumed by ' + skill.name);
   // DREAD spent is DREAD gone: the enemy's fear breaks with the blow and its
   // turn rate recovers with it. After logDamage, so the hit line reports the

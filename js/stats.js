@@ -617,6 +617,15 @@ function pressureWard(p) {
   return Math.min(P().pressureWardCap || 0, held * (P().pressureWardPerPoint || 0));
 }
 
+// How hard a blow packs the lines in: Instinct against the starting sheet, the
+// same (5 + points) / 5 shape damage takes off Strength.
+function pressureRate(p) {
+  if (!p || p.class !== 'hyd') return 1;
+  const ins = (p.instinct || 0) + gearStat(p, 'instinct');
+  return Math.max(1, ins / BALANCE.player.sheetAnchor);
+}
+
+
 function thornsWard(p) {
   if (!p || p.class !== 'sym' || !(p.thorns > 0)) return 0;
   return Math.min(P().thornsWardCap || 0, p.thorns * (P().thornsWardPerPoint || 0));

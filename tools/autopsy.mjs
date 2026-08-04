@@ -45,7 +45,9 @@ const page = await (await browser.newContext()).newPage();
 await page.goto(server.url, { waitUntil: 'load' });
 await page.waitForFunction(() => typeof window.startGame === 'function');
 
-const CLS = ['bio', 'psy', 'sym', 'base'];
+// Read off the game, never listed here: a literal roster went on reporting a
+// four-strain game for two builds after HYDRAULIC was added.
+const CLS = await page.evaluate(() => Object.keys(CLASSES));
 
 const out = await page.evaluate(({ RUNS, CLS }) => {
   const STATS = ['str', 'instinct', 'speed', 'vit'];

@@ -37,7 +37,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-03ag';
+const BUILD = '2026-08-03ah';
 
 const BALANCE = {
   player: {
@@ -234,16 +234,32 @@ const BALANCE = {
     // strain number: the lines drive the servos harder (crit DAMAGE, which is
     // the uncapped half of crit) and they brace the frame (reduction, bounded).
     // Uncapped count, bounded effect.
-    pressurePerHit: 4,             // every landed attack packs this much in
-    critPerPressure: 0.10,         // each point of it: +0.06x crit damage
-    // ...and crit CHANCE, which is what makes Instinct hyd's stat rather than
-    // a late-game luxury. Chance starts at 0 and Instinct buys 2% a point, so
-    // without this a young hyd crits a tenth of the time and its identity is
-    // theoretical until an investment it dies before reaching. Pressure supplies
-    // the frequency, Instinct the size; they multiply.
-    critChancePerPressure: 0.012,
-    pressureWardPerPoint: 0.010,   // ...and this much off what lands
-    pressureWardCap: 0.25,         // saturating at 50, past a typical fight's peak
+    // What a blow packs in AT THE STARTING SHEET. INSTINCT DECIDES HOW MUCH,
+    // on the (5 + points) / 5 rule every other stat already follows — measured
+    // 2026-08-03ag, a flat rate meant every build got the same pile off the same
+    // presses and Instinct could only ever tilt it, so STR (which multiplies all
+    // of an attack class's output, and buys armor besides) won every row.
+    pressurePerHit: 4,
+    // THE PER-LINE VALUES ARE FLAT, and stay that way: Instinct scales the PILE,
+    // so anything that also scaled per line would count the stat twice. Rebased
+    // 2026-08-03ag against the piles the new rate actually produces — measured at
+    // 55 held / 262 peak on an INS build, 30 / 93 on a STR one.
+    critPerPressure: 0.06,         // each line of it: +0.06x crit damage
+    critChancePerPressure: 0.006,  // ...and this much crit chance
+    // Both wards saturate just past where the INS pile lives, so most of a fight
+    // is spent under them and another line still pays. DREAD's slow saturating at
+    // 9 against a peak of 30-44 is the mistake this is avoiding.
+    pressureWardPerPoint: 0.005,   // ...and this much off what lands
+    pressureWardCap: 0.35,
+    // THE FRAME BLEEDS OFF HEAT. Hyd's only faucet was welded to Dampen, which
+    // is also its only brace — so the bot correctly held it for telegraphs and
+    // the class went through every exam fight with no sustain at all: measured
+    // 43-45% of deaths to telegraphs, against 3-25% for everyone else. Ticks on
+    // your turn per line held, the shape psy's SIPHON already uses, and Rupture
+    // vents it with everything else: holding the pile is what keeps you alive.
+    // Capped for the same reason the ward is — the pile has no ceiling.
+    pressureSiphonFrac: 0.002,     // heal per PRESSURE held, per player turn, as a share of the heal anchor
+    pressureSiphonCap: 0.12,       // ...never more than this share of the anchor in one turn
     levelUpHealFrac: 0.15, recoverHpFrac: 0.08,
     // ---- THE HEAL ANCHOR --------------------------------------------------
     // EVERY HEAL FRACTION IN THE GAME IS A SHARE OF THE ANCHOR, NOT OF MAX HP.
@@ -460,6 +476,12 @@ const BALANCE = {
   saveSlots: 4
 };
 
+// What a hyd card prints for the lines it packs in: the skill's own figure
+// (mods add to it) at the sheet's rate. Reads through pressureRate in js/stats.js.
+function pressureGain(p, def) {
+  return Math.max(1, Math.round((def.pressure || 0) * pressureRate(p)));
+}
+
 // Each strain: linear damage off Strength scaled by its own `power`, its own
 // base attack rate, and one signature mechanic that is NOT a hidden damage
 // multiplier.
@@ -571,7 +593,9 @@ const CLASSES = {
     name: 'Hydraulic', color: 'hyd',
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
-      { id:'piston', name:'Piston', desc:'Deal {power!} damage. +{pressure} PRESSURE', type:'attack', power:1.25, pressure:BALANCE.player.pressurePerHit, target:'enemy', basic:true },
+      // {gain}, not {pressure}: the rate reads Instinct, so the card has to
+      // print what the blow actually packs in rather than the starting figure.
+      { id:'piston', name:'Piston', desc:'Deal {power!} damage. +{gain} PRESSURE', type:'attack', power:1.25, pressure:BALANCE.player.pressurePerHit, gain:pressureGain, target:'enemy', basic:true },
       // The feeder AND the setup: pressure to spend later, and the next blow
       // lands as a crit whatever the dice say. Cooldown 3, the ramp feeder's
       // clock (see the cooldown grammar in CLAUDE.md).
@@ -579,7 +603,7 @@ const CLASSES = {
       // buff, hyd spent 58% of its turns not dealing damage — survivable for
       // bio, whose rot ticks anyway, and fatal for a strain whose whole output
       // is attacks. It died at wave 4.
-      { id:'surge', name:'Surge', desc:'Deal {power!} damage. +{pressure} PRESSURE', type:'attack', power:1.7, pressure:10, target:'enemy', cdTurns:3 },
+      { id:'surge', name:'Surge', desc:'Deal {power!} damage. +{gain} PRESSURE', type:'attack', power:1.7, pressure:10, gain:pressureGain, target:'enemy', cdTurns:3 },
       // The telegraph answer. It softens incoming rather than baiting or
       // stunning, which is the shape the bot reads off the card by itself.
       // HYD'S ONLY FAUCET as well as its telegraph answer, and it has to be
@@ -593,7 +617,7 @@ const CLASSES = {
       // ALWAYS CRITS, which is where the class's fantasy actually lives: the one
       // blow that cashes the pile is never left to the dice, and it multiplies
       // by a crit number PRESSURE has been inflating all fight.
-      { id:'rupture', name:'Rupture', desc:'Vent everything: {power!} damage +{perPressurePower!} per PRESSURE spent. Always CRITS.', type:'attack', power:1.4, alwaysCrit:true, consumesPressure:true, perPressurePower:0.18, target:'enemy', cdTurns:5 }
+      { id:'rupture', name:'Rupture', desc:'Vent everything: {power!} damage +{perPressurePower!} per PRESSURE spent. Always CRITS.', type:'attack', power:1.4, alwaysCrit:true, consumesPressure:true, perPressurePower:0.16, target:'enemy', cdTurns:5 }
     ]
   },
 
