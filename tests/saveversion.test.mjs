@@ -32,7 +32,7 @@ export default async function ({ page, ctx, ok }) {
   await page.click('#title-screen button:has-text("NEW GAME")');
   ok('NEW GAME goes straight to the intro, no picker',
      await page.evaluate(()=>document.querySelector('.screen.active')?.id)==='intro-screen');
-  await page.click('#intro-screen button:has-text("AUGMENT")');
+  await page.click('#intro-screen .intro-choice.is-primary');   // by role, not by copy
   await page.click('.class-card.bio');
   await page.click('#start-btn');
   // EVOLVE plays a transition beat before the run. SKIP jumps to a playable

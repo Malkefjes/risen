@@ -154,10 +154,10 @@ function devSkipToZone(classId, zoneNum) {
     + 'on waves 1-' + gate + ' — worth knowing) · wave ' + state.wave + ' · level ' + p.level);
 }
 
-// RUN CLEAN: a quiet transition beat, then drop into the run as base
+// DROP CLEAN: a quiet transition beat, then drop into the run as base
 // Sonny. 'base' is named outright rather than leaning on a stored choice.
 function runClean() {
-  playStrainIntro('base', 'You have chosen to go out in the suit as issued…');
+  playStrainIntro('base', 'You go down in the rig as issued…');
 }
 
 function goToMenu() {

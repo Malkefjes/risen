@@ -1358,7 +1358,7 @@ function runReport() {
   const pad = (s, n) => String(s) + ' '.repeat(Math.max(0, n - String(s).length));
 
   L.push('RISEN run report — build ' + BUILD);
-  L.push((won ? 'RISEN (won)' : 'DEFEATED') + ' · Wave ' + waveReached() + '/' + BALANCE.finalWave
+  L.push((won ? 'EXTRACTED (won)' : 'LOST') + ' · Wave ' + waveReached() + '/' + BALANCE.finalWave
          + ' · Zone ' + zone.num + ': ' + zone.name);
   L.push(CLASSES[p.class].name + ' · Level ' + p.level + ' · ~' + mins + ' min');
   L.push('');
@@ -1452,7 +1452,7 @@ function showResultScreen() {
   // heavy you did not answer" are different readings, and the second one is the
   // one that says what to do about it.
   const story = won
-    ? 'All ' + BALANCE.finalWave + ' waves cleared. You rose.'
+    ? 'All ' + BALANCE.finalWave + ' waves cleared. You reached the source.'
     : 'Fell on wave ' + state.wave + ' in ' + esc(getZoneName(state.wave))
       + (state.killedBy
           ? ' — ' + (state.killedBy.heavy
@@ -1496,7 +1496,7 @@ function showResultScreen() {
   document.getElementById('result-stats').innerHTML =
     '<div class="rs-card ' + p.class + '">' +
       '<div class="rs-verdict ' + (won ? 'win' : 'lose') + '">' +
-        (won ? 'RISEN' : 'DEFEATED') + '</div>' +
+        (won ? 'EXTRACTED' : 'LOST') + '</div>' +
       '<div class="rs-head">' +
         '<span class="rs-class">' + esc(CLASSES[p.class].name) + '</span>' +
         '<span class="rs-story">' + story + '</span>' +

@@ -162,7 +162,7 @@ function playStrainIntro(classId, line) {
 }
 
 function startGameFromSelect() {
-  playStrainIntro(claimPendingClass(), 'The extraction takes hold…');
+  playStrainIntro(claimPendingClass(), 'The package comes online…');
 }
 
 function startGame(skipReveal, classId) {

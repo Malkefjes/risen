@@ -37,7 +37,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-03ah';
+const BUILD = '2026-08-03ai';
 
 const BALANCE = {
   player: {
@@ -492,7 +492,7 @@ function pressureGain(p, def) {
 // retuned. The card fits roughly two to four lines.
 const CLASSES = {
   bio: {
-    name: 'Biological', color: 'bio',
+    name: 'Vector', color: 'bio',
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
       // The card prints what the next application will actually plant, off the
@@ -509,13 +509,13 @@ const CLASSES = {
       // The carry is a property of the ROT rather than of any one button, but
       // it is named on this card because Infest is where the pile comes from —
       // the player has to know that stacking before a kill is worth something.
-      { id:'infest', name:'Infest', desc:'Deal {power!} damage. +{poisonStacks} POISON. When they die, {carry%} of the rot moves to whatever comes next.', type:'attack', power:0.50, poison:4, poisonStacks:(p,s) => poisonStacks(p,s), carry:BALANCE.player.poisonCarryFrac, target:'enemy', cdTurns:3 },
+      { id:'infest', name:'Inoculate', desc:'Deal {power!} damage. +{poisonStacks} POISON. When they die, {carry%} of the rot moves to whatever comes next.', type:'attack', power:0.50, poison:4, poisonStacks:(p,s) => poisonStacks(p,s), carry:BALANCE.player.poisonCarryFrac, target:'enemy', cdTurns:3 },
       // CHITIN IS ON THE SAME CLOCK AS EVERY OTHER TELEGRAPH ANSWER (5 -> 4,
       // 2026-08-03k). Traumatize, Provoke and Counterpunch are all 4; bio's
       // was the only answer on a 5, and it is also the only one doing TWO jobs
       // — the mitigation and the class's damage doubler — so bio paid the
       // longest wait for a card it has to spend two ways.
-      { id:'chitin', name:'Chitin', desc:'For {duration#turn}: take −{power%} damage. POISON on the enemy ticks twice per turn', type:'buff', buff:'chitin', duration:3, power:0.40, target:'self', cdTurns:4 },
+      { id:'chitin', name:'Biofilm', desc:'For {duration#turn}: take −{power%} damage. POISON on the enemy ticks twice per turn', type:'buff', buff:'chitin', duration:3, power:0.40, target:'self', cdTurns:4 },
       // MIASMA IS BIO'S ONLY FAUCET. At 10% x 4 turns on a 5-turn cooldown it
       // handed back 40% of a bar and still lost to attrition past the first
       // boss; 13% is the same shape, paying 52% of a bar per cast.
@@ -524,10 +524,10 @@ const CLASSES = {
       // attrition — 20% x 5 pays roughly a bar per cast on a 5-turn cooldown,
       // which is near-continuous uptime by design. The tick also scrubs 1 POISON,
       // making bio the best answer to venom in the game.
-      { id:'miasma', name:'Miasma', desc:'For {duration#turn}: regenerate {power+} and shed {tickCleanse} POISON each turn. The enemy is WEAK for {weak.duration#turn}', type:'buff', buff:'regen', duration:5, power:0.20, tickCleanse:1, applies:[{ id:'weak', power:0.25, duration:3 }], target:'self', cdTurns:5 }
+      { id:'miasma', name:'Incubate', desc:'For {duration#turn}: regenerate {power+} and shed {tickCleanse} POISON each turn. The enemy is WEAK for {weak.duration#turn}', type:'buff', buff:'regen', duration:5, power:0.20, tickCleanse:1, applies:[{ id:'weak', power:0.25, duration:3 }], target:'self', cdTurns:5 }
     ]
   },
-  // THE TERROR EXTRACTION. Psy's mechanic is DREAD, a mark stacked ON THE ENEMY —
+  // SIREN'S NUMBER is DREAD, a mark stacked ON THE ENEMY —
   // see the DREAD block in BALANCE. Four verbs in order: Hunt (land a hit, plant
   // fear), Terrify (a burst of stacks), Traumatize (at 3+ the mind breaks:
   // stun), Kill (cash stacks in as damage — and with the fear spent the enemy
@@ -538,7 +538,7 @@ const CLASSES = {
   // get. Sustain is DEVOUR, never a bandage, and the failure state bites: an
   // enemy that steadies itself sheds fear without feeding you.
   psy: {
-    name: 'Psychological', color: 'psy',
+    name: 'Siren', color: 'psy',
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
       // HUNT PLANTS FEAR BY LANDING, full stop — like bio's Slash and base's
@@ -590,7 +590,7 @@ const CLASSES = {
   // enemy swings, and swings are food. The only stat in the game with a real cost
   // attached, landed on the strain whose allocation had nothing to say.
   hyd: {
-    name: 'Hydraulic', color: 'hyd',
+    name: 'Kinetic', color: 'hyd',
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
       // {gain}, not {pressure}: the rate reads Instinct, so the card has to
@@ -622,7 +622,7 @@ const CLASSES = {
   },
 
   sym: {
-    name: 'Symbiotic', color: 'sym',
+    name: 'Graft', color: 'sym',
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
       // 0.35 -> 0.55: with THORNS as the ramp, the basic is where the number
@@ -636,14 +636,14 @@ const CLASSES = {
       { id:'provoke', name:'Provoke', desc:'Bare your guard: the enemy strikes at once and cannot miss — then every spine answers: ×{lashMult} THORNS as damage. +{growBonus} THORNS, and a charged telegraph comes out now, ordinary or half-strength.', type:'provoke', growBonus:3, lashMult:1.5, target:'enemy', cdTurns:4 }
     ]
   },
-  // Base Sonny, reached via RUN CLEAN. The suit as issued, no extraction in the
-  // lining, so he has no strain mechanic — and is THE ONLY STRAIN WITH TWO NUMBERS instead.
+  // Base Sonny, reached via DROP CLEAN. The rig as issued, no package fitted,
+  // so he has no strain mechanic — and is THE ONLY STRAIN WITH TWO NUMBERS instead.
   // RESOLVE on himself, BLEED on them: not two mechanics but two halves of one
   // exchange, since Resolve is bought by landing hits AND taking them, and the
   // cut is only as deep as the Resolve behind it. Endure, then everything at
   // once — except the enduring is doing damage the whole time.
   base: {
-    name: 'Unaugmented', color: 'base',
+    name: 'Baseline', color: 'base',
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
       // The card prints what the next Strike will actually open, and it moves as
@@ -759,38 +759,42 @@ const ZONES = [
   // THE TELEGRAPH MULTIPLIERS CARRY OVER from the 45-wave fit (4.0 / 2.5 /
   // 1.6) — a flat multiplier crosses the bar eventually, so each zone prices
   // its own. Re-judge by play.
-  { num: 1, name: 'The Laboratory', label: 'THE LABORATORY',
+  // NAMING: Survey issues a FAUNA-nn designation to things it catalogued, and
+  // nothing to the people it left behind — which is why zones 1-2 carry numbers
+  // and 3-4 do not. It also keeps the humanoid art honest: the things wearing a
+  // human shape down there are wearing Survey rigs.
+  { num: 1, name: 'The Drop', label: 'THE DROP',
     startWave: 1, endWave: 10,
     // enemies: the zone's trash ROSTER — an id (the key its art is filed under
     // in sprites.js) and the name that appears on the card.
-    enemies: [{ id: 'experiment', name: 'Escaped Experiment' }],
-    bossName: 'Prime Symbiote',
+    enemies: [{ id: 'experiment', name: 'FAUNA-01 Skitter' }],
+    bossName: 'Sporemother',
     bossVerb: 'regrow',      // the one that won't stay down
-    champion: { at: 5, id: 'experiment', name: 'Apex Specimen' },
+    champion: { at: 5, id: 'experiment', name: 'FAUNA-01 Apex' },
     growthMult: 1, tierGrowth: 2.4, withinStep: 0.08 },
 
-  { num: 2, name: 'The Laboratory: Asset Recovery', label: 'THE LABORATORY: ASSET RECOVERY',
+  { num: 2, name: 'The Bloom', label: 'THE BLOOM',
     startWave: 11, endWave: 20,
-    enemies: [{ id: 'enforcer', name: 'MCP Enforcer' }],
-    bossName: 'MCP Captain',
+    enemies: [{ id: 'enforcer', name: 'FAUNA-12 Husk' }],
+    bossName: 'Bulwark',
     bossVerb: 'guard',       // shield discipline: answers cost more here
-    champion: { at: 15, id: 'lieutenant', name: 'MCP Lieutenant' },
+    champion: { at: 15, id: 'lieutenant', name: 'FAUNA-12 Warden' },
     growthMult: 3.33, tierGrowth: 2.6, withinStep: 0.06,
     windupMult: 2.5, eliteWindupMult: 2.0 },
 
-  { num: 3, name: 'City Streets', label: 'CITY STREETS',
+  { num: 3, name: 'Survey Camp One', label: 'SURVEY CAMP ONE',
     startWave: 21, endWave: 30,
-    enemies: [{ id: 'mercenary', name: 'Mercenary' }],
-    bossName: 'Mercenary Brute',
+    enemies: [{ id: 'mercenary', name: 'Survey Remnant' }],
+    bossName: 'Survey Chief',
     // ENRAGE on the finale compounds with its every-2 windup cadence: the
     // hand-checked two-mechanic exam, authored rather than rolled.
     bossVerb: 'enrage',
-    champion: { at: 25, id: 'mercenary', name: 'Veteran Mercenary' },
+    champion: { at: 25, id: 'mercenary', name: 'Survey Veteran' },
     growthMult: 11.3, tierGrowth: 2.1, withinStep: 0.04,
     windupMult: 1.6, eliteWindupMult: 1.2 },
 
   // ---- THE ENDGAME (2026-08-03n, owner's design) --------------------------
-  // Thirty waves at Pest Control's own gate, and the zone breaks three of the
+  // Thirty waves at the source itself, and the zone breaks three of the
   // rules the first three keep — deliberately, because it is the part of the
   // run meant to end most of them.
   //
@@ -811,13 +815,13 @@ const ZONES = [
   // six tiers puts wave 60 near 53x growth against zone 3's 16x, so an ordinary
   // boss blow lands near a full bar. The telegraph multiplier is the lowest in
   // the game for exactly that reason — at this damage a big one is a one-shot.
-  { num: 4, name: 'Mutant Pest Control', label: 'MUTANT PEST CONTROL',
+  { num: 4, name: 'The Source', label: 'THE SOURCE',
     startWave: 31, endWave: 60,
-    enemies: [{ id: 'trooper',  name: 'MCP Trooper' },
-              { id: 'medic',    name: 'MCP Field Medic' },
-              { id: 'demo',     name: 'MCP Demolition Unit' },
-              { id: 'sentinel', name: 'MCP Sentinel' }],
-    bossName: 'MCP Reclaimer',
+    enemies: [{ id: 'trooper',  name: 'Source Vessel' },
+              { id: 'medic',    name: 'Source Mender' },
+              { id: 'demo',     name: 'Source Breaker' },
+              { id: 'sentinel', name: 'Source Sentinel' }],
+    bossName: 'Reclaimer',
     randomRoster: true,
     rollBossVerb: true,
     bossSegment: 10, extraBossChance: 0.12,
@@ -942,7 +946,7 @@ const STATUSES = {
   // one decision. Its own entry so poison can ask "is the player hardened" by
   // name and the badge reads CHITIN.
   chitin: {
-    id:'chitin', name:'CHITIN', tone:'buff', kind:'buff',
+    id:'chitin', name:'BIOFILM', tone:'buff', kind:'buff',
     stacking:'longest', defaults:{ duration:3, power:0.40 },
     label: st => 'CHITIN ' + Math.ceil(st.duration) + 't',
     incomingMult: (u, st) => 1 - (st.power || 0)

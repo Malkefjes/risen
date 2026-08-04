@@ -31,7 +31,7 @@
     <div class="title-body">
       <header class="title-mark">
         <h1 class="title-logo">RISEN</h1>
-        <p class="title-sub">Nothing is wasted</p>
+        <p class="title-sub">Nothing comes back up</p>
       </header>
 
       <nav class="title-menu">
@@ -51,19 +51,19 @@
   <div id="dev-screen" class="screen">
     <h2>DEV TOOLS</h2>
     <div class="dev-stack">
-      <button class="ui-btn" onclick="devSkipToZone('bio', 2)">SKIP TO ZONE 2 &middot; BIOLOGICAL</button>
-      <button class="ui-btn" onclick="devSkipToZone('psy', 2)">SKIP TO ZONE 2 &middot; PSYCHOLOGICAL</button>
-      <button class="ui-btn" onclick="devSkipToZone('sym', 2)">SKIP TO ZONE 2 &middot; SYMBIOTIC</button>
-      <button class="ui-btn" onclick="devSkipToZone('base', 2)">SKIP TO ZONE 2 &middot; UNAUGMENTED</button>
-      <button class="ui-btn" onclick="devSkipToZone('bio', 3)">SKIP TO ZONE 3 &middot; BIOLOGICAL</button>
-      <button class="ui-btn" onclick="devSkipToZone('psy', 3)">SKIP TO ZONE 3 &middot; PSYCHOLOGICAL</button>
-      <button class="ui-btn" onclick="devSkipToZone('sym', 3)">SKIP TO ZONE 3 &middot; SYMBIOTIC</button>
-      <button class="ui-btn" onclick="devSkipToZone('base', 3)">SKIP TO ZONE 3 &middot; UNAUGMENTED</button>
-      <button class="ui-btn" onclick="devSkipToZone('bio', 4)">SKIP TO ZONE 4 &middot; BIOLOGICAL</button>
-      <button class="ui-btn" onclick="devSkipToZone('psy', 4)">SKIP TO ZONE 4 &middot; PSYCHOLOGICAL</button>
-      <button class="ui-btn" onclick="devSkipToZone('sym', 4)">SKIP TO ZONE 4 &middot; SYMBIOTIC</button>
-      <button class="ui-btn" onclick="devSkipToZone('base', 4)">SKIP TO ZONE 4 &middot; UNAUGMENTED</button>
-      <button class="ui-btn" onclick="devSkipToFirstBoss()">SKIP TO FIRST BOSS &middot; PSYCHOLOGICAL</button>
+      <button class="ui-btn" onclick="devSkipToZone('bio', 2)">SKIP TO ZONE 2 &middot; VECTOR</button>
+      <button class="ui-btn" onclick="devSkipToZone('psy', 2)">SKIP TO ZONE 2 &middot; SIREN</button>
+      <button class="ui-btn" onclick="devSkipToZone('sym', 2)">SKIP TO ZONE 2 &middot; GRAFT</button>
+      <button class="ui-btn" onclick="devSkipToZone('base', 2)">SKIP TO ZONE 2 &middot; BASELINE</button>
+      <button class="ui-btn" onclick="devSkipToZone('bio', 3)">SKIP TO ZONE 3 &middot; VECTOR</button>
+      <button class="ui-btn" onclick="devSkipToZone('psy', 3)">SKIP TO ZONE 3 &middot; SIREN</button>
+      <button class="ui-btn" onclick="devSkipToZone('sym', 3)">SKIP TO ZONE 3 &middot; GRAFT</button>
+      <button class="ui-btn" onclick="devSkipToZone('base', 3)">SKIP TO ZONE 3 &middot; BASELINE</button>
+      <button class="ui-btn" onclick="devSkipToZone('bio', 4)">SKIP TO ZONE 4 &middot; VECTOR</button>
+      <button class="ui-btn" onclick="devSkipToZone('psy', 4)">SKIP TO ZONE 4 &middot; SIREN</button>
+      <button class="ui-btn" onclick="devSkipToZone('sym', 4)">SKIP TO ZONE 4 &middot; GRAFT</button>
+      <button class="ui-btn" onclick="devSkipToZone('base', 4)">SKIP TO ZONE 4 &middot; BASELINE</button>
+      <button class="ui-btn" onclick="devSkipToFirstBoss()">SKIP TO FIRST BOSS &middot; SIREN</button>
     </div>
     <div class="dev-actions">
       <button class="ui-btn is-quiet" onclick="goToMenu()">BACK</button>
@@ -81,22 +81,22 @@
 
   <!-- INTRO / STORY (shown once on NEW GAME, before strain select) -->
   <!-- INTRO. The story sits in a glass card so it is legible anywhere in the
-       room, and the fork below it is TWO EQUAL CHOICES — mutate or refuse —
+       room, and the fork below it is TWO EQUAL CHOICES — fit a package or refuse —
        with BACK demoted out of that row entirely. -->
   <div id="intro-screen" class="screen">
     <div class="intro-card">
       <p class="intro-lead">You are Sonny.</p>
       <div class="intro-body">
-        <p>The suit was issued, not chosen. Mutant Pest Control needed something that could walk into the wings their people don't come back from, and they put a man inside it because a man still makes decisions.</p>
-        <p>It gets stronger the way everything in this building gets stronger. The Laboratory takes what it needs from its subjects — the ones that mutated, and the ones that were people first — and refines it into something the suit can hold. On the paperwork it is called extraction.</p>
-        <p>You have been very good at your job. That turned out to be the problem. Pest Control does not decommission an asset that has started asking what it is made of.</p>
+        <p>Outward Survey put the <i>Meridian</i> in orbit eleven days ago and you in a pod this morning. The world underneath has no name yet — only a designation, and a signal that has not stopped since the first team stopped answering.</p>
+        <p>The rig is standard issue. What goes on top of it is not: the <i>Meridian</i> carries five packages in the hold, and the bay will fit exactly one of them to you before the drop. Survey calls this a loadout decision. It is also the only decision anybody up there is going to let you make.</p>
+        <p>The pod goes down. Nothing comes back up until you reach the source. Your file is marked RECOVERABLE, and you have read enough of them to know that refers to the site.</p>
       </div>
-      <p class="intro-final">Evolve… or die.</p>
+      <p class="intro-final">Go down… or go quiet.</p>
     </div>
 
     <div class="intro-fork">
-      <button class="ui-btn is-primary intro-choice" onclick="openClassSelect()">AUGMENT</button>
-      <button class="ui-btn is-quiet intro-choice" onclick="runClean()">RUN CLEAN</button>
+      <button class="ui-btn is-primary intro-choice" onclick="openClassSelect()">FIT PACKAGE</button>
+      <button class="ui-btn is-quiet intro-choice" onclick="runClean()">DROP CLEAN</button>
     </div>
     <div class="intro-back">
       <button class="ui-btn is-quiet" onclick="goToMenu()">BACK</button>
@@ -104,7 +104,7 @@
   </div>
 
   <!-- The beat between choosing and playing: one line on black that fades in
-       and out, then the run assembles. INSTALL and RUN CLEAN both come
+       and out, then the run assembles. DROP and DROP CLEAN both come
        through here and differ only in the sentence — playStrainIntro sets it. -->
   <div id="resist-screen" class="screen">
     <p class="resist-line"></p>
@@ -114,36 +114,36 @@
        card IS a .ui-btn variant in everything but name — one shape, one size,
        and only the border and the glow change per strain. -->
   <div id="class-screen" class="screen">
-    <h2>SELECT EXTRACTION</h2>
+    <h2>SELECT LOADOUT</h2>
     <div class="classes">
       <div class="class-card bio" onclick="selectClass('bio')">
         <div class="class-preview" id="preview-bio"></div>
-        <div class="class-name">BIOLOGICAL</div>
+        <div class="class-name">VECTOR</div>
         <div class="class-role">STRENGTH · POISON</div>
-        <div class="class-info">Refined from specimens that kept killing handlers hours after they should have been dead. The suit carries their density in its frame and routes their toxin through the gauntlets. You hit past what the chassis is rated for, and what you open does not close.</div>
+        <div class="class-info">A self-replicating agent, cultured off the one sample the first team managed to send up. It does not stop when the host does — it goes looking for the next one. Survey has it filed as a specimen rather than a weapon, for reasons that are entirely about paperwork.</div>
       </div>
       <div class="class-card psy" onclick="selectClass('psy')">
         <div class="class-preview" id="preview-psy"></div>
-        <div class="class-name">PSYCHOLOGICAL</div>
+        <div class="class-name">SIREN</div>
         <div class="class-role">SPEED · DREAD</div>
-        <div class="class-info">Drawn from subjects that emptied a room before anyone saw them move. The suit reads the signal they gave off and broadcasts it louder than they ever could. Nothing you hunt gets to be calm about it.</div>
+        <div class="class-info">An emitter tuned to the frequency the local fauna use to tell each other to run. They panic, they slow, they forget to guard — and the rig drinks the spike straight out of the air while they do it.</div>
       </div>
       <div class="class-card hyd" onclick="selectClass('hyd')">
         <div class="class-preview" id="preview-hyd"></div>
-        <div class="class-name">HYDRAULIC</div>
+        <div class="class-name">KINETIC</div>
         <div class="class-role">INSTINCT · PRESSURE</div>
-        <div class="class-info">A closed loop of pressurised fluid threaded through the frame, drawn off equipment rather than off a subject. It holds what you put into it until you decide to let go. Maintenance advises against running it near the redline.</div>
+        <div class="class-info">A closed accumulator threaded through the frame — the only package in the hold that came off a shelf rather than out of a sample jar. Every blow you land packs it tighter, and it braces you while it holds. Maintenance advises against running it near the redline. Maintenance is in orbit.</div>
       </div>
       <div class="class-card sym" onclick="selectClass('sym')">
         <div class="class-preview" id="preview-sym"></div>
-        <div class="class-name">SYMBIOTIC</div>
+        <div class="class-name">GRAFT</div>
         <div class="class-role">VITALITY · THORNS</div>
-        <div class="class-info">A live culture, kept breathing in the lining because it dies if it is stored. It feeds on what gets through your plating and pays you back in spines. The only extraction that is still technically a subject.</div>
+        <div class="class-info">A live organism fused to the plating, because it dies if it is stored. It feeds on whatever gets through and pays you back in barbs, and it keeps everything it grows for the whole descent. The only loadout that is also cargo.</div>
       </div>
     </div>
     <div class="class-actions">
       <button class="ui-btn is-quiet" onclick="goToMenu()">BACK</button>
-      <button class="ui-btn is-primary" id="start-btn" onclick="startGameFromSelect()" disabled>INSTALL</button>
+      <button class="ui-btn is-primary" id="start-btn" onclick="startGameFromSelect()" disabled>DROP</button>
     </div>
   </div>
 
@@ -153,7 +153,7 @@
       <!-- The header is a grid row of its own, over the main column only, so the
            sidebar can start level with the arena instead of reaching above it. -->
       <div class="combat-header">
-        <div class="zone-name" id="zone-name">THE ABYSS</div>
+        <div class="zone-name" id="zone-name">THE DROP</div>
       </div>
 
       <div class="combat-main">

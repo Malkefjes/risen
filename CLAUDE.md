@@ -107,16 +107,27 @@ did not say.
   want a fun game."* A mechanic he cannot hold in his head is worse than a
   shallower one he can. If explaining a design takes more than a breath, that
   is the design's problem.
-- **`OWNER:` The premise, as of `2026-08-02an`.** Sonny is a MAN IN A CYBERNETIC
-  SUIT — not infected, not a mutant. Mutant Pest Control built the suit to clear
-  its own laboratory, and the Laboratory keeps it strong with EXTRACTIONS refined
-  from its subjects: the ones that mutated, and the ones that were people first.
-  He has started asking what he is made of, which is why MCP now wants him back.
-  The three strains are extraction types; UNAUGMENTED is the suit as issued, with
-  nothing in the lining. Write copy in that voice — clinical, and the horror is
-  in the euphemism ("inventory", "recovered in pieces"). The word *strain* is
-  kept everywhere internal (CSS, save format, `strainNumberNow`) and reads fine
-  as a strain of extracted material; only player-facing text says EXTRACTION.
+- **`OWNER:` The premise, as of `2026-08-03ai`** (his rewrite; it replaced the
+  lab/mutant premise outright). Sonny is a SCOUT for OUTWARD SURVEY, dropped from
+  the survey vessel *Meridian* onto an unnamed alien world. The first team stopped
+  answering and a signal did not. He goes DOWN, and nothing comes back up until he
+  reaches the source — which is the permadeath, the no-retreat and wave 60 in one
+  sentence. The rig is standard issue; the five strains are PACKAGES the ship fits
+  on top of it, exactly one per drop, which is why the select screen is a LOADOUT.
+  Write copy in the same voice the old premise earned — clinical, and the horror
+  is in the euphemism (a lost scout is "recoverable", and that refers to the site).
+  Survey issues a `FAUNA-nn` designation to what it catalogued and nothing to the
+  people it left behind, which is why zones 1-2 carry numbers and 3-4 do not — and
+  it keeps the humanoid art honest, since what wears a human shape down there is
+  wearing a Survey rig. The word *strain* stays everywhere internal (CSS, save
+  format, `strainNumberNow`) and the class keys are untouched (`bio` `psy` `sym`
+  `hyd` `base`); only player-facing text says LOADOUT or PACKAGE.
+  **The fiction was chosen to make the planned systems describe themselves:**
+  skill selection is *configure your kit before the drop*, build-defining
+  Modifications are *salvage off the site*, and a post-60 endgame is *deeper, or
+  another site*. Nothing mechanical changed in the pass — two mechanics are now
+  better explained than they were (VECTOR's rot spreading from a corpse to the
+  next host, GRAFT's plating growing across the whole descent).
 - **Design by feel, not by plan.** There is deliberately no roadmap. Don't
   create planning documents; don't accumulate TODO lists in the repo. The
   owner decides what's next by playing.
@@ -305,7 +316,8 @@ did not say.
   multiplier uncapped) finally lands on something. Do not "fix Instinct"
   globally without re-reading this.
 
-- **HYDRAULIC, added 2026-08-03ae, and it is NOT BALANCED YET.** Fifth strain,
+- **KINETIC (`hyd`, player-facing name as of `2026-08-03ai`; HYDRAULIC before
+  that), added 2026-08-03ae.** Fifth strain,
   Instinct's class, built to the owner's brief: *"big crits, big single hits as
   opposed to ramping dots."* PRESSURE is the number — every landed attack packs
   it in, and it does two jobs like every other strain number: crit CHANCE and
