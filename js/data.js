@@ -1,4 +1,4 @@
-const BUILD = '2026-08-04pm16';
+const BUILD = '2026-08-04pm17';
 
 const BALANCE = {
   player: {
@@ -158,13 +158,13 @@ const CLASSES = {
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
 
-      { id:'slash', name:'Slash', desc:'Deal {power!} damage + {poisonScale%} of what the rot is ticking for. +{poisonStacks} POISON', type:'attack', power:1.0, poison:1, poisonScale:1.0, poisonStacks:(p,s) => poisonStacks(p,s), target:'enemy', basic:true },
+      { id:'slash', name:'Inject', desc:'Deal {power!} damage + {poisonScale%} of what the rot is ticking for. +{poisonStacks} POISON', type:'attack', power:1.0, poison:1, poisonScale:1.0, poisonStacks:(p,s) => poisonStacks(p,s), target:'enemy', basic:true },
 
-      { id:'infest', name:'Inoculate', desc:'Deal {power!} damage to EVERY enemy. +{poisonStacks} POISON each. When a host dies, {carry%} of its rot jumps to a living one.', type:'attack', shape:'all', power:0.50, poison:4, poisonStacks:(p,s) => poisonStacks(p,s), carry:BALANCE.player.poisonCarryFrac, target:'enemy', cdTurns:3 },
+      { id:'infest', name:'Distribute', desc:'Deal {power!} damage to EVERY enemy. +{poisonStacks} POISON each. When a host dies, {carry%} of its rot jumps to a living one.', type:'attack', shape:'all', power:0.50, poison:4, poisonStacks:(p,s) => poisonStacks(p,s), carry:BALANCE.player.poisonCarryFrac, target:'enemy', cdTurns:3 },
 
       { id:'chitin', name:'Biofilm', desc:'For {duration#turn}: take −{power%} damage. POISON on the enemy ticks twice per turn', type:'buff', buff:'chitin', duration:3, power:0.40, target:'self', cdTurns:4 },
 
-      { id:'miasma', name:'Incubate', desc:'For {duration#turn}: regenerate {power+} and shed {tickCleanse} POISON each turn. Every enemy is WEAK for {weak.duration#turn}', type:'buff', buff:'regen', duration:5, power:0.20, tickCleanse:1, applies:[{ id:'weak', power:0.25, duration:3 }], target:'self', cdTurns:5 }
+      { id:'miasma', name:'Regenerate', desc:'For {duration#turn}: regenerate {power+} and shed {tickCleanse} POISON each turn. Every enemy is WEAK for {weak.duration#turn}', type:'buff', buff:'regen', duration:5, power:0.20, tickCleanse:1, applies:[{ id:'weak', power:0.25, duration:3 }], target:'self', cdTurns:5 }
     ]
   },
 
