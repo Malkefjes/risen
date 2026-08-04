@@ -325,12 +325,10 @@ function spawnEnemy() {
 
   if (state.wave > 1) {
     const before = p.hp;
-    const recover = P().recoverHpFrac * (hasRule(p, 'bivouac') ? 2 : 1)
-      * (haz && haz.id === 'relentless' ? 0.5 : 1);
+    const recover = P().recoverHpFrac * (haz && haz.id === 'relentless' ? 0.5 : 1);
     p.hp = Math.min(p.maxHp, p.hp + Math.floor(healAnchorFor(p) * recover));
     if (p.hp > before) logHeal('RECOVER', p, p.hp - before,
-      [Math.round(recover*100) + '% of ' + logNum(healAnchorFor(p)) + ' between fights'
-       + (hasRule(p, 'bivouac') ? ' (BIVOUAC ×2)' : '')]);
+      [Math.round(recover*100) + '% of ' + logNum(healAnchorFor(p)) + ' between fights']);
 
     const lost = p.statuses.filter(s => { const dd = STATUSES[s.type]; return !(dd && dd.persists); });
     p.statuses = survivingStatuses(p);

@@ -7,8 +7,6 @@ const SLOTS = {
                art: 'assets/sprites/mcp gauntlets.png' },
   armor:     { id: 'armor',     name: 'Body Armor',    label: 'ARMOR',     home: 'vit',
                art: 'assets/sprites/mcp body armor.png' },
-  repair:    { id: 'repair',    name: 'Repair Module', label: 'REPAIR',    home: null,
-               art: 'assets/sprites/mcp repair module.png' },
   boots:     { id: 'boots',     name: 'Boots',         label: 'BOOTS',     home: 'speed',
                art: 'assets/sprites/mcp boots.png' }
 };
@@ -45,14 +43,6 @@ const UNIQUES = {
     id: 'bulwark', slot: 'armor', name: 'Bulwark Plate', minWave: 20,
     stats: { vit: 8 }, rule: 'bigHitHalve', ruleVal: 0.25,
     ruleText: 'Once per fight: the first hit that would take a quarter of your HP is halved.' },
-  autosuture: {
-    id: 'autosuture', slot: 'repair', name: 'Autosuture Module', minWave: 6,
-    mods: { healBoost: 0.15 }, rule: 'autosuture', ruleVal: 0.20,
-    ruleText: 'Once per fight: falling below 35% HP triggers an instant heal.' },
-  bivouac: {
-    id: 'bivouac', slot: 'repair', name: 'Bivouac Module', minWave: 15,
-    stats: { vit: 5 }, rule: 'bivouac',
-    ruleText: 'Recover twice as much HP between fights.' },
   skitter: {
     id: 'skitter', slot: 'boots', name: 'Skitter Greaves', minWave: 9,
     stats: { speed: 5 }, rule: 'hasteKill',
@@ -178,7 +168,6 @@ const SLOT_IMPLICIT = {
   optics:    { stats: ['instinct'], tiers: IMPLICIT_TIERS },
   gauntlets: { stats: ['str'],      tiers: IMPLICIT_TIERS },
   armor:     { stats: ['vit'],      tiers: IMPLICIT_TIERS },
-  repair:    { stats: ['vit'],      tiers: IMPLICIT_TIERS },
   boots:     { stats: ['speed'],    tiers: IMPLICIT_TIERS }
 };
 

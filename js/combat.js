@@ -563,15 +563,6 @@ function applyEnemyDamage(e, p, mult, opts) {
   if (p.hp <= 0) state.killedBy = { name: e ? e.name : 'unknown', heavy: mult > 1, dmg };
   logDamage(label, p, dmg, notes.concat([logNum(p.hp) + '/' + logNum(p.maxHp) + ' left']));
 
-  if (p.hp > 0 && p.hp < p.maxHp * 0.35 && !ff.autosuture && hasRule(p, 'autosuture')) {
-    ff.autosuture = true;
-    const heal = Math.max(1, Math.floor(healAnchorFor(p) * ruleVal(p, 'autosuture', 0.20)));
-    const hb = p.hp;
-    p.hp = Math.min(p.maxHp, p.hp + heal);
-    floatText(p, p.hp - hb, 'heal');
-    logHeal('AUTOSUTURE', p, p.hp - hb, ['once per fight', logNum(p.hp) + '/' + logNum(p.maxHp)]);
-  }
-
   if (p.class === 'psy' && e && e.hp > 0)
     shedStacks(e, 'dread', P().dreadLossPerHit, 'nerve steadied — its blow landed');
 
