@@ -2828,8 +2828,11 @@ body {
 
 .mod-held { font-style: normal; font-size: 0.85em; color: var(--muted); letter-spacing: 0; }
 
-.kit-picker { width: 100%; margin-top: clamp(16px, 2.4vh, 26px); display: none; }
-.kit-picker.on { display: block; }
+.kit-picker {
+  width: 100%;
+  margin-top: clamp(16px, 2.4vh, 26px);
+  min-height: 13.5rem;
+}
 
 .kit-head {
   display: flex; align-items: baseline; justify-content: center; gap: 10px;
@@ -2847,6 +2850,8 @@ body {
 .kit-card {
   --edge: var(--base-rgb);
   width: min(232px, 88vw);
+  height: 11.5rem;
+  overflow: hidden;
   text-align: left;
   background: rgba(6, 11, 10, 0.52);
   border: 1px solid rgba(var(--edge), 0.22);

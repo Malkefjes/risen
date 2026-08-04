@@ -1,4 +1,4 @@
-const BUILD = '2026-08-04pm15';
+const BUILD = '2026-08-04pm16';
 
 const BALANCE = {
   player: {
@@ -204,19 +204,15 @@ const CLASSES = {
   },
 
   sym: {
-    name: 'Graft', color: 'sym',
+    name: 'Bastion', color: 'sym',
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
 
       { id:'latch', name:'Latch', desc:'Deal {power!} damage + {thornsScale%} of your THORNS.', type:'attack', power:1.0, thornsScale:0.55, target:'enemy', basic:true },
       { id:'spines', name:'Raise Spines', desc:'THORNS ×{power} and pain reflect doubled for {duration#turn}. Every hit taken grows +{growBonus} extra THORNS.', type:'buff', buff:'spines', duration:3, power:2, growBonus:BALANCE.player.thornsSpinesGrow, target:'self', cdTurns:4 },
 
-      { id:'shed', name:'Shed', desc:'Heal {healFrac+}, then tear off THORNS to heal {hpPerThorn+} more each — they regrow by the next fight. Takes only as many as the wound needs, up to {capFrac%} of what you have grown. Sheds {cleanse} POISON.', type:'heal', healFrac:0.08, shedFuel:true, cleanse:2, hpPerThorn:BALANCE.player.shedHpPerThorn, capFrac:BALANCE.player.shedCapFrac, target:'self', cdTurns:4 },
-      { id:'provoke', name:'Provoke', desc:'Bare your guard: EVERY enemy strikes at once and cannot miss — then every spine answers each: ×{lashMult} THORNS as damage. +{growBonus} THORNS, and charged telegraphs come out now, ordinary or half-strength.', type:'provoke', growBonus:3, lashMult:1.5, target:'enemy', cdTurns:4 },
-
-      { id:'harden', name:'Harden', desc:'For {duration#turn}: take −{power%} damage.', type:'buff', buff:'harden', duration:2, power:0.45, target:'self', cdTurns:4 },
-      { id:'impale', name:'Impale', desc:'Deal {power!} damage + ×{thornsBurst} your THORNS. Spends nothing.', type:'attack', power:1.2, thornsBurst:1.2, target:'enemy', cdTurns:5 },
-      { id:'bristle', name:'Bristle', desc:'Deal {power!} damage. +{growBonus} THORNS without being hit for them.', type:'attack', power:0.6, growBonus:6, target:'enemy', cdTurns:3 }
+      { id:'shed', name:'Shed', desc:'Heal {healFrac+}, then tear off up to {capFrac%} of your grown THORNS for {hpPerThorn+} each — only as many as the wound needs. They regrow next fight. Sheds {cleanse} POISON.', type:'heal', healFrac:0.08, shedFuel:true, cleanse:2, hpPerThorn:BALANCE.player.shedHpPerThorn, capFrac:BALANCE.player.shedCapFrac, target:'self', cdTurns:4 },
+      { id:'provoke', name:'Provoke', desc:'Bare your guard: EVERY enemy strikes at once and cannot miss. Every spine answers — ×{lashMult} THORNS each. +{growBonus} THORNS, and charged telegraphs spend themselves now.', type:'provoke', growBonus:3, lashMult:1.5, target:'enemy', cdTurns:4 }
     ]
   },
 

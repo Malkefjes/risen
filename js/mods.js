@@ -105,25 +105,6 @@ const MODIFICATIONS = {
         add: { lashMult: 0.4 } },
       { id: 'sym_pr_b', name: 'OPEN GUARD',   text: '+2 THORNS growth.',
         add: { growBonus: 2 } }
-    ],
-
-    harden: [
-      { id: 'sym_ha_a', name: 'PLATE STACK',  text: '+8% reduction, to a maximum of 75%.',
-        add: { power: 0.08 }, max: { power: 0.75 } },
-      { id: 'sym_ha_b', name: 'SLOW SET',     text: '+1 turn.',
-        add: { duration: 1 } }
-    ],
-    impale: [
-      { id: 'sym_im_a', name: 'BARBED POINT', text: '+0.3 to the THORNS multiplier.',
-        add: { thornsBurst: 0.3 } },
-      { id: 'sym_im_b', name: 'DRIVEN HOME',  text: '+25% damage.',
-        mul: { power: 1.25 } }
-    ],
-    bristle: [
-      { id: 'sym_br_a', name: 'QUICK GROWTH', text: '+3 THORNS.',
-        add: { growBonus: 3 } },
-      { id: 'sym_br_b', name: 'SHARP EDGE',   text: '+30% damage.',
-        mul: { power: 1.30 } }
     ]
   },
 

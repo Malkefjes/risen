@@ -75,12 +75,11 @@ cards at player-turn boundaries and take the first toll offered.
     node tools/loot.mjs [runs]       drop cadence: recovered / fitted / left
                                      by wave band, uniques per life, how
                                      deep loot stays live
-    node tools/kit-bracket.mjs [runs] [cls]  every kit combination's reach,
-                                     for classes whose catalogue outgrows
-                                     the bar
     node tools/transcript.mjs [cls]  dump one life's combat log
 
 Superseded and deleted: autopsy (split into ceiling + builds), bot-bracket
 (its piloting question lives in ceiling), single-stat and double-stat
-(subsumed by builds). Their old numbers in commit messages predate softcore
-and the Depths and are not comparable to anything these print.
+(subsumed by builds), kit-bracket (every class now fields one fixed bar, so
+there are no kit combinations left to price). Their old numbers in commit
+messages predate softcore and the Depths and are not comparable to anything
+these print.

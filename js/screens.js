@@ -68,23 +68,21 @@ function renderKitPicker(classId) {
   const pool = kitPool(classId), kit = _pendingKit || [];
   const choosing = pool.length > KIT_SLOTS;
   const basic = CLASSES[classId].skills.find(s => s.basic);
+  const card = (s, tag, on) => {
+    const body = '<div class="kit-name">' + s.name + (tag ? '<i>' + tag + '</i>' : '') + '</div>'
+      + '<div class="kit-desc">' + fmtDesc(s) + '</div>';
+    if (!choosing) return '<div class="kit-card locked strain-' + classId + '">' + body + '</div>';
+    return '<button type="button" class="kit-card strain-' + classId + (on ? ' fitted' : '')
+      + '" onclick="toggleKitSkill(\'' + s.id + '\')">' + body + '</button>';
+  };
   el.classList.add('on');
   el.innerHTML =
-    '<div class="kit-head"><b>KIT</b><span>' +
-      (choosing ? 'FIT ' + KIT_SLOTS + ' — ' + kit.length + '/' + KIT_SLOTS + ' fitted'
-                : 'fixed for this package') + '</span></div>' +
+    '<div class="kit-head"><b>ABILITIES</b>' +
+      (choosing ? '<span>FIT ' + KIT_SLOTS + ' — ' + kit.length + '/' + KIT_SLOTS + ' fitted</span>' : '') +
+    '</div>' +
     '<div class="kit-cards">' +
-      (basic ? '<div class="kit-card locked strain-' + classId + '">' +
-        '<div class="kit-name">' + basic.name + '<i>ALWAYS</i></div>' +
-        '<div class="kit-desc">' + fmtDesc(basic) + '</div></div>' : '') +
-      pool.map(s => {
-        const on = kit.includes(s.id);
-        return '<button type="button" class="kit-card strain-' + classId
-          + (on ? ' fitted' : '') + (choosing ? '' : ' locked')
-          + '" onclick="toggleKitSkill(\'' + s.id + '\')">'
-          + '<div class="kit-name">' + s.name + (on ? '<i>FITTED</i>' : '') + '</div>'
-          + '<div class="kit-desc">' + fmtDesc(s) + '</div></button>';
-      }).join('') +
+      (basic ? card(basic, choosing ? 'ALWAYS' : '', false) : '') +
+      pool.map(s => card(s, choosing && kit.includes(s.id) ? 'FITTED' : '', kit.includes(s.id))).join('') +
     '</div>';
 }
 function recalcPlayerStats(){ if (state.player) applyDerivedStats(state.player); }
