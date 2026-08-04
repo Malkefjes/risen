@@ -93,7 +93,7 @@ function spenderDamage(s, p, e) {
     mult += (s.perDreadPower || 0) * Math.ceil(spendStacks(s, p, e) * (s.consumeFrac || 1));
   if (s.consumesResolve) mult += (s.perResolvePower || 0) * spendStacks(s, p, e);
   if (s.consumesPressure) mult += (s.perPressurePower || 0) * spendStacks(s, p, e);
-  return p.atkPower * mult;
+  return p.atkPower * mult * (s.alwaysCrit ? (p.critMult || 1) : 1);
 }
 function spenderWorthIt(s, p, e) {
   if (!s.consumesDread && !s.consumesResolve && !s.consumesPressure) return true;
