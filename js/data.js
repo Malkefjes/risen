@@ -1,4 +1,4 @@
-const BUILD = '2026-08-03al';
+const BUILD = '2026-08-03am';
 
 const BALANCE = {
   player: {
@@ -106,7 +106,7 @@ const BALANCE = {
 
     bossHp: 5.0, bossDmg: 1.82, bossAps: 1.00, bossXp: 5.0,
 
-    firstBossMult: 1.5,
+    firstBossMult: 1.0,
     trashDmgMult: 1.45,
 
     windupEvery: 3, windupMult: 4.0,
