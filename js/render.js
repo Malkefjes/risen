@@ -163,7 +163,40 @@ function killFlash(unit) {
   const panel = getFighterPanel(unit);
   if (!panel) return;
   panel.classList.add('killed');
+  hitStop(90);
+}
 
+let _hitStopTimer = null;
+function hitStop(ms) {
+  if (HEADLESS.on || !(ms > 0)) return;
+  const arena = document.getElementById('arena-card');
+  if (!arena) return;
+  arena.classList.add('hitstop');
+  if (_hitStopTimer) clearTimeout(_hitStopTimer);
+  _hitStopTimer = setTimeout(() => arena.classList.remove('hitstop'), ms);
+}
+
+function shakeArena() {
+  if (HEADLESS.on) return;
+  const arena = document.getElementById('arena-card');
+  if (!arena) return;
+  arena.classList.remove('shake');
+  void arena.offsetWidth;
+  arena.classList.add('shake');
+}
+
+function impactHit(target, dmg, isCrit) {
+  if (HEADLESS.on || !target || !(dmg > 0)) return;
+  const share = dmg / Math.max(1, target.maxHp);
+  if (isCrit || share >= 0.25) hitStop(90);
+  else if (share >= 0.10) hitStop(50);
+}
+
+function impactTaken(p, dmg, heavy) {
+  if (HEADLESS.on || !(dmg > 0)) return;
+  const share = dmg / Math.max(1, p.maxHp);
+  if (heavy || share >= 0.20) { shakeArena(); hitStop(80); }
+  else if (share >= 0.10) hitStop(45);
 }
 function getFigureForUnit(unit){ const p=getFighterPanel(unit); return p?p.querySelector('.char-figure'):null; }
 
@@ -234,34 +267,53 @@ function cosmeticRandom() {
 let _floaters = 0;
 function floatText(unit, value, type, isCrit) {
   if (HEADLESS.on) return;
-  if (_floaters > 26) return;
   const card = getFighterPanel(unit); if (!card) return;
+
+  const numeric = typeof value !== 'string';
+  const share = numeric && unit.maxHp ? Math.abs(value) / unit.maxHp : 0;
+  let tier;
+  if (type === 'tally' || type === 'note') tier = 0;
+  else if (type === 'xp-bonus') tier = 3;
+  else if (type === 'xp') tier = 1;
+  else if (!numeric) tier = 1;
+  else tier = share >= 0.22 ? 3 : share >= 0.08 ? 2 : share >= 0.02 ? 1 : 0;
+  if (isCrit && tier < 2) tier = 2;
+
+  if (_floaters > 40) {
+    if (tier === 0) return;
+    const old = document.querySelector('.float-dmg.sz-0') || document.querySelector('.float-dmg.sz-1');
+    if (old) { old.remove(); _floaters = Math.max(0, _floaters - 1); }
+    else if (tier < 3) return;
+  }
+
   const el = document.createElement('div');
-  let cls = 'float-dmg ' + type + (isCrit?' crit':'');
+  let cls = 'float-dmg ' + type + ' sz-' + tier + (isCrit?' crit':'');
 
   if (type === 'damage' && unit && !unit.isPlayer) cls += ' dealt';
   el.className = cls;
-  if (typeof value === 'string') el.textContent = value;
+  if (!numeric) el.textContent = value;
   else {
     const n = formatNum(value);
     const isXp = type === 'xp' || type === 'xp-bonus';
     el.textContent = (type==='heal'||isXp) ? '+'+n+(isXp?' XP':'') : '-'+n;
 
-    if (isCrit) {
+    if (isCrit && tier >= 3) {
       const tag = document.createElement('span');
       tag.className = 'crit-tag';
       tag.textContent = 'CRIT';
       el.appendChild(tag);
     }
   }
-  el.style.left = (18 + cosmeticRandom()*46) + '%';
+  el.style.left = (16 + cosmeticRandom()*48) + '%';
 
   const active = card.querySelectorAll('.float-dmg').length;
-  el.style.bottom = (98 + (active % 4) * 26) + 'px';
+  el.style.bottom = (96 + (active % 5) * 22) + 'px';
+  const life = [620, 850, 950, 1050][tier];
+  el.style.animationDuration = life + 'ms';
   card.appendChild(el);
   _floaters++;
 
-  setTimeout(()=>{ el.remove(); _floaters = Math.max(0, _floaters - 1); }, 1300);
+  setTimeout(()=>{ el.remove(); _floaters = Math.max(0, _floaters - 1); }, life);
 }
 
 function clearFloaters() {

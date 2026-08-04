@@ -1,4 +1,4 @@
-const BUILD = '2026-08-04pm4';
+const BUILD = '2026-08-04pm5';
 
 const BALANCE = {
   player: {
@@ -130,7 +130,7 @@ const BALANCE = {
   finalWave: 60,
   spawnDelay: 0.16,
 
-  turnPace: 0.75,
+  turnPace: 1,
 
   saveKey: 'risen_run_v13',
 

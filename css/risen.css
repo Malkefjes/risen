@@ -1212,9 +1212,9 @@ body {
   position: absolute;
   font-family: 'Orbitron', sans-serif;
   font-weight: 700;
-  font-size: 1.45rem;
+  font-size: 1.2rem;
   pointer-events: none;
-  animation: floatUp 1.3s ease forwards;
+  animation: floatUp 0.85s ease forwards;
   z-index: 20;
   text-shadow: 0 2px 8px rgba(0,0,0,0.85);
 }
@@ -1223,32 +1223,61 @@ body {
 .float-dmg.damage.dealt { color: #f2f6ff; }
 .float-dmg.heal { color: #7dffa0; }
 .float-dmg.poison { color: #7dffa0; }
-.float-dmg.xp { color: var(--xp); font-size: 1.05rem; }
+.float-dmg.xp { color: var(--xp); }
 
 .float-dmg.xp-bonus {
-  color: var(--xp); font-size: 1.7rem; font-weight: 900;
+  color: var(--xp); font-weight: 900;
   text-shadow: 0 2px 8px rgba(0,0,0,0.9), 0 0 16px currentColor;
-  animation: floatUpCrit 1.3s ease forwards;
+  animation-name: floatUpCrit;
 }
 
-.float-dmg.tally { color: #eaf2ff; font-size: 0.95rem; letter-spacing: 0.5px; }
+.float-dmg.tally { color: #eaf2ff; letter-spacing: 0.5px; }
 
 .float-dmg.note {
-  color: #93a3ba; font-size: 0.9rem; font-weight: 600;
+  color: #93a3ba; font-weight: 600;
   letter-spacing: 2px; font-style: italic;
 }
 
+.float-dmg.sz-0 { font-size: 0.82rem; font-weight: 600; opacity: 0.92; }
+.float-dmg.sz-1 { font-size: 1.2rem; }
+.float-dmg.sz-2 { font-size: 1.62rem; font-weight: 800; animation-name: floatUpBig; }
+.float-dmg.sz-3 {
+  font-size: 2.15rem; font-weight: 900;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.9), 0 0 18px currentColor;
+  animation-name: floatUpCrit;
+}
+
 @keyframes floatUp {
-  0% { opacity: 1; transform: translateY(0) scale(0.9); }
-  20% { transform: translateY(-10px) scale(1.18); }
-  100% { opacity: 0; transform: translateY(-52px) scale(1); }
+  0% { opacity: 1; transform: translateY(0) scale(0.92); }
+  18% { transform: translateY(-12px) scale(1.12); }
+  100% { opacity: 0; transform: translateY(-58px) scale(1); }
+}
+
+@keyframes floatUpBig {
+  0% { opacity: 1; transform: translateY(0) scale(0.7); }
+  14% { transform: translateY(-8px) scale(1.28); }
+  28% { transform: translateY(-14px) scale(1.05); }
+  100% { opacity: 0; transform: translateY(-64px) scale(1); }
 }
 
 @keyframes floatUpCrit {
-  0% { opacity: 1; transform: translateY(0) scale(0.6); }
-  16% { transform: translateY(-8px) scale(1.4); }
-  30% { transform: translateY(-14px) scale(1.08); }
-  100% { opacity: 0; transform: translateY(-56px) scale(1.02); }
+  0% { opacity: 1; transform: translateY(0) scale(0.55); }
+  14% { transform: translateY(-8px) scale(1.45); }
+  28% { transform: translateY(-15px) scale(1.06); }
+  100% { opacity: 0; transform: translateY(-68px) scale(1.02); }
+}
+
+#arena-card.hitstop .char-svg,
+#arena-card.hitstop .float-dmg,
+#arena-card.hitstop .char-figure { animation-play-state: paused; }
+
+#arena-card.shake { animation: arenaShake 0.18s ease-out; }
+@keyframes arenaShake {
+  0%   { transform: translate(0, 0); }
+  25%  { transform: translate(-4px, 2px); }
+  50%  { transform: translate(3px, -2px); }
+  75%  { transform: translate(-2px, 1px); }
+  100% { transform: translate(0, 0); }
 }
 
 .sidebar,
@@ -1306,6 +1335,21 @@ body {
 }
 
 .skill-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.skill-btn.queued {
+  border-color: rgba(var(--base-rgb), 0.85);
+  box-shadow: 0 0 0 1px rgba(var(--base-rgb), 0.45), 0 0 16px rgba(var(--base-rgb), 0.22);
+  animation: queuedPulse 0.9s ease-in-out infinite;
+}
+@keyframes queuedPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.72; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #arena-card.shake { animation: none; }
+  .skill-btn.queued { animation: none; }
+}
 
 .skill-btn.basic {
   opacity: 1;
@@ -2252,18 +2296,19 @@ body {
   animation: killFade 0.4s ease forwards;
 }
 @keyframes killFade { from { opacity: 1; } to { opacity: 0; } }
-.fighter.killed .char-figure { animation: killCollapse 0.3s ease forwards; }
+.fighter.killed .char-figure { animation: killCollapse 0.34s ease forwards; }
 @keyframes killCollapse {
-  from { opacity: 1; transform: scale(1); }
-  to   { opacity: 0; transform: scale(0.82) translateY(6px); }
+  0%   { opacity: 1; transform: scale(1); filter: brightness(1); }
+  22%  { opacity: 1; transform: scale(1.12); filter: brightness(1.9); }
+  100% { opacity: 0; transform: scale(0.8) translateY(6px); filter: brightness(1); }
 }
 
 .float-dmg.crit {
-  font-size: 1.95rem; font-weight: 900;
+  font-weight: 900;
 
   color: var(--xp);
   text-shadow: 0 2px 8px rgba(0,0,0,0.9), 0 0 14px currentColor;
-  animation: floatUpCrit 1.3s ease forwards;
+  animation-name: floatUpCrit;
 }
 
 .float-dmg.crit.heal { color: #7dffa0; }

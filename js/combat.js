@@ -3,8 +3,8 @@ function startCombatLoop() {
   state.combatActive = true;
   updateTurnInfo();
   if (state.awaitingInput) { renderSkills(); return; }
-  if (state.pendingEnemyAct) { scheduleTurn(enemyAct, turnDelay(380)); return; }
-  if (state.awaitingSpawn)   { scheduleTurn(doSpawn, turnDelay(220)); return; }
+  if (state.pendingEnemyAct) { scheduleTurn(enemyAct, turnDelay(200)); return; }
+  if (state.awaitingSpawn)   { scheduleTurn(doSpawn, turnDelay(160)); return; }
   scheduleTurn(nextTurn, 30);
 }
 function stopCombatLoop() {
@@ -124,7 +124,7 @@ function advanceToNextActor() {
 
 function nextTurn() {
   if (!state.combatActive) return;
-  if (nextDrop() || nextModOffer()) { scheduleTurn(nextTurn, turnDelay(240)); return; }
+  if (nextDrop() || nextModOffer()) { scheduleTurn(nextTurn, turnDelay(200)); return; }
   const p = state.player;
   if (!p || p.hp <= 0) { playerDown(); return; }
   if (state.awaitingSpawn) { scheduleTurn(doSpawn, turnDelay(BALANCE.spawnDelay * 1000)); return; }
@@ -147,7 +147,7 @@ function nextTurn() {
              [stun.duration > 0 ? Math.ceil(stun.duration) + 't left' : 'last turn']);
     if (stun.duration <= 0) removeStatus(actor, 'stun', 'duration spent');
     updateUnitCard(actor); updateTurnInfo(); renderSkills();
-    scheduleTurn(nextTurn, turnDelay(480));
+    scheduleTurn(nextTurn, turnDelay(260));
     return;
   }
 
@@ -156,11 +156,19 @@ function nextTurn() {
     state.pendingEnemyAct = false;
     retarget();
     setCharPose(actor, 'ready');
+    const qid = state.queuedSkillId;
+    state.queuedSkillId = null;
+    if (qid && !HEADLESS.on) {
+      const q = actor.skills.find(s => s.id === qid);
+      if (q) scheduleTurn(() => {
+        if (state.combatActive && state.awaitingInput) playerAct(q);
+      }, 70);
+    }
   } else {
     state.awaitingInput = false;
     state.pendingEnemyAct = true;
     setCharPose(state.player, 'ready');
-    scheduleTurn(enemyAct, turnDelay(480));
+    scheduleTurn(enemyAct, turnDelay(150));
   }
   updateTurnInfo(); renderSkills();
 }
@@ -169,7 +177,7 @@ function tickTurnStart(unit) {
   if (tickStatuses(unit)) {
     if (!unit.isPlayer) {
       onEnemyDefeated(unit);
-      if (livingEnemies().length) scheduleTurn(nextTurn, turnDelay(200));
+      if (livingEnemies().length) scheduleTurn(nextTurn, turnDelay(150));
       return true;
     }
     playerDown();
@@ -262,8 +270,16 @@ function tickTurnStart(unit) {
 
 function playerAct(skill) {
   const p = state.player;
-  if (!state.combatActive || !state.awaitingInput) return;
+  if (!state.combatActive) return;
+  if (!state.awaitingInput) {
+    if (p && p.hp > 0 && skill && (skill.basic || skill.cd <= 0) && livingEnemies().length) {
+      state.queuedSkillId = skill.id;
+      renderSkills();
+    }
+    return;
+  }
   if (!p || p.hp <= 0 || !skill) return;
+  state.queuedSkillId = null;
   if (!skill.basic && skill.cd > 0) return;
   const needsEnemy = skill.target !== 'self';
   if (needsEnemy && !retarget()) return;
@@ -277,7 +293,7 @@ function playerAct(skill) {
 
   if (p.hp <= 0) return;
   if (state.awaitingSpawn || !livingEnemies().length) return;
-  scheduleTurn(nextTurn, turnDelay(480));
+  scheduleTurn(nextTurn, turnDelay(100));
 }
 
 function enemyAct() {
@@ -285,7 +301,7 @@ function enemyAct() {
   state.pendingEnemyAct = false;
   const e = state.active, p = state.player;
   if (!p || p.hp <= 0) { playerDown(); return; }
-  if (!e || e.isPlayer || e.hp <= 0 || e._defeated) { scheduleTurn(nextTurn, turnDelay(200)); return; }
+  if (!e || e.isPlayer || e.hp <= 0 || e._defeated) { scheduleTurn(nextTurn, turnDelay(120)); return; }
 
   if (e.windupEvery > 0 && !e.windup) {
     e.actionCount = (e.actionCount || 0) + 1;
@@ -318,16 +334,16 @@ function enemyAct() {
 
   if (p.hp <= 0) return;
   if (state.awaitingSpawn) return;
-  scheduleTurn(nextTurn, turnDelay(480));
+  scheduleTurn(nextTurn, turnDelay(120));
 }
 
 function doSpawn() {
   if (!state.combatActive) return;
-  if (nextDrop() || nextModOffer()) { scheduleTurn(doSpawn, turnDelay(240)); return; }
+  if (nextDrop() || nextModOffer()) { scheduleTurn(doSpawn, turnDelay(200)); return; }
   spawnEnemy();
   if (!state.player || state.player.hp <= 0) return;
   if (!livingEnemies().length) return;
-  scheduleTurn(nextTurn, turnDelay(260));
+  scheduleTurn(nextTurn, turnDelay(160));
 }
 
 function windupMultFor(e) {
@@ -568,6 +584,7 @@ function applyEnemyDamage(e, p, mult, opts) {
 
   statusEach(p, 'onHitTaken', { attacker: e, damage: dmg });
   floatText(p, dmg, 'damage');
+  impactTaken(p, dmg, mult > 1);
 
   let thorns = getThornsDamage(p);
   const tNotes = [];
@@ -717,6 +734,7 @@ function applyPlayerDamage(p, e, skill, opts) {
   logDamage(skill.name, e, dmg, notes.concat([logNum(e.hp) + '/' + logNum(e.maxHp) + ' left']));
 
   floatText(e, dmg, 'damage', isCrit);
+  impactHit(e, dmg, isCrit);
 
   if (!opts || !opts.holdConsume) {
     if (skill.consumesResolve && resolveSpent > 0)
@@ -994,6 +1012,7 @@ function onEnemyDefeated(e) {
   ]);
 
   killFlash(e);
+  if (e.isBoss) shakeArena();
 
   gainXP(xp, e.xpMult !== 1 || comboBonus > 1);
 
@@ -1044,7 +1063,7 @@ function onEnemyDefeated(e) {
 
 function resumeAfterKill() {
 
-  scheduleTurn(doSpawn, turnDelay(BALANCE.spawnDelay * 1000 + 320));
+  scheduleTurn(doSpawn, turnDelay(BALANCE.spawnDelay * 1000 + 140));
 }
 
 
@@ -1084,6 +1103,7 @@ function playerDown() {
   p.poisonCarry = 0;
   p.meter = 0;
   state.combo = 0;
+  state.queuedSkillId = null;
   state.wave = back;
   state.enemies = [];
   state.enemy = null;
@@ -1370,10 +1390,11 @@ function renderSkills(forceRebuild) {
     const overlay = btn.querySelector('.cd-overlay');
     const sweep = btn.querySelector('.cd-sweep');
     const yourTurn = !!state.awaitingInput && state.combatActive;
+    btn.classList.toggle('queued', state.queuedSkillId === skill.id);
     if (skill.basic) {
       btn.classList.toggle('auto-on', yourTurn);
       btn.classList.toggle('auto-off', !yourTurn);
-      btn.disabled = !yourTurn;
+      btn.disabled = !state.combatActive;
 
       costEl.textContent = '';
       return;
@@ -1389,7 +1410,7 @@ function renderSkills(forceRebuild) {
       if (sweep) sweep.style.height = Math.min(100, (skill.cd/maxCd)*100) + '%';
     } else {
       btn.classList.remove('on-cd'); btn.classList.add('ready');
-      btn.disabled = !yourTurn;
+      btn.disabled = !state.combatActive;
 
       costEl.textContent = '';
       overlay.style.display = 'none';
