@@ -1,19 +1,9 @@
-// Screens, intros, HUD, sidebar, stat allocation
-// ---- Screens & setup ----------------------------------------
 function showScreen(id) {
   if (HEADLESS.on) return;
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
-// THE STRAIN A NEW RUN WILL USE, kept separate from state.classId.
-//
-// These were one field, and that was a bug you could hit in ordinary play: pick
-// BIO, later load an Unaugmented save, then NEW GAME -> AUGMENT and press
-// INSTALL, and the run started as Unaugmented while the screen showed BIO.
-//
-// _pendingClass is the MENU's answer and nothing else writes it; state.classId
-// is the LOADED RUN's answer and the menu never reads it. openClassSelect clears
-// the selection on every visit, so a choice belongs to the visit that made it.
+
 let _pendingClass = null;
 
 function claimPendingClass() {
@@ -22,12 +12,8 @@ function claimPendingClass() {
   return id;
 }
 
-// The kit travels the same way the class does, and for the same reason: the
-// menu's answer, claimed once. Null is legal everywhere and means the default,
-// which is what DROP CLEAN and the dev doors take.
 let _pendingKit = null;
-// The one door into _pendingKit from outside this chapter — simulateRun uses it
-// to drive a kit, so measurement can sweep bars the same way it sweeps stats.
+
 function setPendingKit(k) { _pendingKit = Array.isArray(k) ? k.slice() : null; }
 function claimPendingKit() {
   const k = _pendingKit;
@@ -35,9 +21,6 @@ function claimPendingKit() {
   return k;
 }
 
-// Entering strain select always starts from nothing chosen. Re-disabling
-// INSTALL is the load-bearing half: while it stayed enabled between visits it
-// was possible to start a run without making a choice at all.
 function openClassSelect() {
   _pendingClass = null;
   _pendingKit = null;
@@ -58,9 +41,6 @@ function selectClass(id) {
   syncStartBtn();
 }
 
-// Fitting one that is already fitted takes it OFF, and a full bar refuses
-// rather than silently swapping — a swap nobody asked for is how you drop the
-// card you meant to keep.
 function toggleKitSkill(sid) {
   const cls = _pendingClass;
   if (!cls || !kitPool(cls).some(s => s.id === sid)) return;
@@ -72,7 +52,6 @@ function toggleKitSkill(sid) {
   syncStartBtn();
 }
 
-// DROP waits for a full bar, and wears the chosen strain's colour.
 function syncStartBtn() {
   const btn = document.getElementById('start-btn');
   if (!btn) return;
@@ -82,9 +61,6 @@ function syncStartBtn() {
   btn.className = 'ui-btn is-primary' + (id ? ' strain-' + id : '');
 }
 
-// The pool, as cards you fit and unfit. A class whose catalogue is exactly the
-// slot count has no decision to make, so its row states the kit rather than
-// asking for it.
 function renderKitPicker(classId) {
   const el = document.getElementById('kit-picker');
   if (!el) return;
@@ -113,12 +89,6 @@ function renderKitPicker(classId) {
 }
 function recalcPlayerStats(){ if (state.player) applyDerivedStats(state.player); }
 
-// ---- THE KIT ---------------------------------------------------------------
-// A class's `skills` is a CATALOGUE, not a bar. The basic is always fitted (a
-// turn must always have something pressable), and KIT_SLOTS of the rest are
-// chosen before the drop. A class whose catalogue holds exactly KIT_SLOTS
-// optionals has no choice to make and fits all of them, which is why four of
-// the five play exactly as they did.
 const KIT_SLOTS = 3;
 function kitPool(classId) {
   const cls = CLASSES[classId];
@@ -127,9 +97,7 @@ function kitPool(classId) {
 function defaultKit(classId) {
   return kitPool(classId).slice(0, KIT_SLOTS).map(s => s.id);
 }
-// Only ids this class actually owns, capped at the slot count, topped up from
-// the pool if a save is short — a kit is never allowed to arrive malformed and
-// leave the player holding an empty bar.
+
 function normalizeKit(classId, kit) {
   const pool = kitPool(classId).map(s => s.id);
   const out = [];
@@ -147,27 +115,16 @@ function freshPlayer(classId, kit) {
     str:b.str, instinct:b.instinct, speed:b.speed, vit:b.vit,
     dmgMult:1, hpMult:1, apsMult:1,
     hp:0, maxHp:0,
-    // Points moved onto a stat but not yet committed. They are NOT in str /
-    // instinct / speed / vit, so nothing in combat can see them until you
-    // confirm — the sidebar renders them by previewing a copy. See adjustStat.
+
     pending:{ str:0, instinct:0, speed:0, vit:0 },
-    // Basic first, then the fitted three in POOL order rather than click order,
-    // so the same kit always draws the same bar.
+
     skills: cls.skills.filter(s => s.basic || fitted.includes(s.id))
                       .map(s => Object.assign({cd:0}, s)),
-    // The suit's five mounts, all bare. Gear is run-scoped, like everything.
+
     gear: emptyGear(),
-    // thornsGrown starts at 0 for everyone and only sym ever moves it: the
-    // ramp is run-scoped, so a fresh player is a fresh organism.
-    // Modification ids, in the order taken. The patches themselves are
-    // re-applied from these on load (applyTakenMods).
+
     mods: [],
-    // AUTO-ALLOCATION, OFF UNTIL ASKED FOR. All four at zero is MANUAL: points
-    // bank and the +/- place them by hand, which is where a run starts (owner,
-    // 2026-08-03u). Turning any bar up switches the run to automatic and every
-    // point a level grants is spread by these shares instead (autoAllocate).
-    // Relative parts, not percentages that must sum — STR 100 and VIT 100 means
-    // half each.
+
     weights: { str: 0, instinct: 0, speed: 0, vit: 0 },
     allocCarry: { str: 0, instinct: 0, speed: 0, vit: 0 },
     statuses:[], isPlayer:true, meter:0, thornsGrown:0, thornsShedded:0,
@@ -177,16 +134,9 @@ function freshPlayer(classId, kit) {
   return p;
 }
 
-// Every run-scoped field back to its starting value, in ONE place. startGame and
-// continueRun both go through this, so a field cannot be reset in one and
-// forgotten in the other.
-//
-// Zeroing a field is not the same as clearing what it left on screen: anything
-// added to `state` belongs here, and anything that renders from `state` outside
-// the per-turn repaint has to be cleared here too.
 function resetRunState(classId) {
-  stopCombatLoop();              // also cancels a turn or reveal still scheduled
-  abandonDrop(); abandonMods();  // a between-fight card cannot outlive its run
+  stopCombatLoop();
+  abandonDrop(); abandonMods();
   state.classId = classId;
   state.player = null;
   state.enemy = null;
@@ -202,20 +152,16 @@ function resetRunState(classId) {
   state.enemyActions = 0;
   state.turnNo = 0;
   state.damageDealt = 0;
-  // Run-lifetime counters for the result card. turnNo above resets per fight
-  // (the log's T-numbers), so the run's total is its own count; the rest are
-  // tallied at the one site each event actually happens.
+
   state.runTurns = 0;
   state.damageTaken = 0;
   state.critsLanded = 0;
   state.damagePrevented = 0;
-  // THE RUN LEDGER, for the result screen and its COPY block. Four things a
-  // total cannot say: where the damage came from, which buttons were actually
-  // pressed, how big the strain number ever got, and what finally did it.
-  state.dmgBySource = {};      // label -> damage the PLAYER dealt through it
-  state.skillUses = {};        // skill id -> presses that resolved
-  state.peakStrain = 0;        // high-water mark of the strain number
-  state.killedBy = null;       // { name, heavy } — set by the fatal blow
+
+  state.dmgBySource = {};
+  state.skillUses = {};
+  state.peakStrain = 0;
+  state.killedBy = null;
   state.runStart = Date.now();
   state._defeatLock = false;
   state._lastOverkill = 0;
@@ -224,38 +170,26 @@ function resetRunState(classId) {
   state.inScene = false;
   state.rescued = false;
 
-  // The transient combat UI does not rebuild itself: the fighter panels are
-  // replaced by spawnEnemy, but these three only change when something happens
-  // to change them, so a new run inherits whatever the last one left behind.
   updateCombo();
   clearLog();
   clearFloaters();
-  // First line of every transcript. A log pasted into a bug report then carries
-  // the build that produced it without anyone having to remember to add it.
+
   log('RISEN · build ' + BUILD);
 }
 
-// THE ONE WAY INTO A RUN. Both doors — INSTALL and RUN CLEAN — come
-// through here, so the beat before a run is the same beat whichever strain you
-// picked; only the sentence differs.
-//
-// The strain is passed in and captured, never read back off shared state when
-// the timer fires. A delayed start that reads a stored choice is precisely how
-// the wrong strain got launched.
 function playStrainIntro(classId, line) {
   if (!CLASSES[classId]) return;
   leaveMenuTab(); closeSettings();
   const el = document.querySelector('#resist-screen .resist-line');
   if (el) {
     el.textContent = line;
-    // Restart the fade each time (the animation only plays once with fill: forwards).
+
     el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
   }
   showScreen('resist-screen');
-  // Black hold 1.8s, then fade in / hold / fade out over 5s, then a beat -> run.
+
   const t = setTimeout(() => { offerSkip(null); startGame(false, classId); }, 7100);
-  // Skipping goes straight into a playable fight: cancel the transition and
-  // start the run with its reveal already finished.
+
   offerSkip(() => { clearTimeout(t); startGame(true, classId); });
 }
 
@@ -276,17 +210,11 @@ function startGame(skipReveal, classId) {
   showScreen('combat-screen');
   spawnEnemy();
   saveRun();
-  // Staged reveal: arena fades in, hold, then the rest of the UI; combat waits.
-  // skipReveal comes from skipping the RUN CLEAN transition, so one press drops
-  // you all the way into a playable fight rather than into a second fade.
+
   if (skipReveal) { revealCombatNow(); offerSkip(null); startCombatLoop(); }
   else stageCombatReveal(startCombatLoop);
 }
 
-// ---- Skippable intros ----------------------------------------------------
-// The RUN CLEAN transition and the combat fade-in are atmospheric but
-// cost ~10s before you can act, which is tedious when testing. While either is
-// running, a SKIP button is offered that jumps straight to the end state.
 let _skipIntro = null;
 function offerSkip(fn) {
   _skipIntro = fn || null;
@@ -298,13 +226,7 @@ function skipIntro() {
   offerSkip(null);
   if (fn) fn();
 }
-// SPACEBAR, and it means whatever is in front of you. A scene owns it while one
-// is up — finish the line, then walk on, exactly as a click in the panel does,
-// including refusing to walk past a step that is asking you something. Failing
-// that it is SKIP, bound to the offer rather than the button.
-//
-// Inert otherwise, which is the point: it can never scroll the page, re-click a
-// focused button, or leak into combat as an accidental action.
+
 document.addEventListener('keydown', ev => {
   if (ev.code !== 'Space') return;
   if (_scene) { ev.preventDefault(); onScenePanelClick(); return; }
@@ -313,21 +235,11 @@ document.addEventListener('keydown', ev => {
   skipIntro();
 });
 
-// The run's first frame assembles out of the black one piece at a time, arena
-// first. onDone fires once the LAST piece is up, so the fight never begins
-// behind a control still fading in.
-// Timers are tracked so stopCombatLoop() can cancel a pending start (menu, reload, tests).
-//
-// The order and spacing live in CSS as transition-delay under .staged.reveal,
-// so re-ordering the pieces is a CSS edit alone — but REVEAL_LAST_MS has to
-// stay matched to the bottom delay plus its duration, or combat starts early.
-const REVEAL_HOLD_MS = 700;    // black before the arena arrives
-const REVEAL_LAST_MS = 2500;   // sidebar: 1600ms delay + 900ms fade
+const REVEAL_HOLD_MS = 700;
+const REVEAL_LAST_MS = 2500;
 let _revealTimers = [];
 function clearRevealTimers() { _revealTimers.forEach(clearTimeout); _revealTimers = []; }
 
-// Drop the staging entirely: with .staged gone the opacity rules stop applying,
-// so everything is simply visible at once.
 function revealCombatNow() {
   clearRevealTimers();
   const cs = document.getElementById('combat-screen');
@@ -339,20 +251,17 @@ function stageCombatReveal(onDone) {
   if (!cs) { if (onDone) onDone(); return; }
   clearRevealTimers();
   cs.classList.remove('staged', 'reveal');
-  void cs.offsetWidth;                     // restart the arena fade-in
+  void cs.offsetWidth;
   cs.classList.add('staged');
   offerSkip(() => { revealCombatNow(); if (onDone) onDone(); });
   _revealTimers.push(setTimeout(() => {
-    cs.classList.add('reveal');            // arena, header, action panel, sidebar
+    cs.classList.add('reveal');
     _revealTimers.push(setTimeout(() => { offerSkip(null); if (onDone) onDone(); }, REVEAL_LAST_MS));
   }, REVEAL_HOLD_MS));
 }
 
 function getZoneName(wave) { return zoneForWave(wave).label; }
 
-// A one-shot override for the next spawn, so an enemy that arrives outside the
-// wave table (the scientist, out of a scene) still goes through all of
-// spawnEnemy's bookkeeping instead of a second, thinner spawn path.
 let _nextFoe = null;
 
 function spawnEnemy() {
@@ -362,19 +271,14 @@ function spawnEnemy() {
 
   const zn = document.getElementById('zone-name');
   if (zn) zn.textContent = getZoneName(state.wave);
-  // The zone stamp is what lets CSS dress the arena per zone; scenery stays a
-  // class/attr concern, never a re-render, same contract as backdrop-on.
+
   const ac = document.getElementById('arena-card');
   if (ac) {
     ac.dataset.zone = zoneForWave(state.wave).num;
-    // His lab lasts exactly as long as he does.
+
     ac.classList.toggle('scene', !!state.enemy.sceneFoe);
   }
-  // Every wave gets a header, not just bosses and elites. A transcript with
-  // silent waves in it cannot be read back — the reader has no way to tell
-  // which fight a turn belonged to. The second line is the enemy's actual
-  // sheet, which is the thing you want when asking why a fight went badly and
-  // the only place those numbers are ever visible.
+
   const e = state.enemy;
   const tags = enemyTags(e);
   log('WAVE ' + state.wave + ' · ' + e.name + (tags.length ? ' · ' + tags.join(' ') : ''));
@@ -382,34 +286,23 @@ function spawnEnemy() {
     + ' · RATE ' + e.attackSpeed.toFixed(2) + '×'
     + (e.windupEvery ? ' · WINDUP every ' + e.windupEvery + ' (×' + windupMultFor(e) + ')' : '')
     + (e.xpMult !== 1 ? ' · XP ×' + e.xpMult.toFixed(1) : ''));
-  // The fight's question, stated in the transcript the way the plate states
-  // it on screen. REGROW is also WORN from spawn — the badge is up before the
-  // first swing, so the second half of the bar never surprises.
+
   if (e.verb && ENEMY_VERBS[e.verb]) {
     log('TRAIT · ' + ENEMY_VERBS[e.verb].tag + ' — ' + ENEMY_VERBS[e.verb].blurb);
     if (e.verb === 'regrow')
       applyStatus(e, 'regrow', { below: ENEMY_VERBS.regrow.below, power: ENEMY_VERBS.regrow.power });
   }
 
-  // Everything that lands on the fight before the first turn is logged under
-  // that header, in the order it applies, so an enemy that arrives already
-  // wounded is explained rather than just odd.
-  // "not the opening fight of the run". Reads the wave rather than the kill
-  // count — a kill is what advances a wave, so the two say the same thing, and
-  // the wave is a number the save actually keeps.
   if (state.wave > 1) {
     const before = p.hp;
     p.hp = Math.min(p.maxHp, p.hp + Math.floor(healAnchorFor(p) * P().recoverHpFrac));
     if (p.hp > before) logHeal('RECOVER', p, p.hp - before,
       [Math.round(P().recoverHpFrac*100) + '% of ' + logNum(healAnchorFor(p)) + ' between fights']);
-    // Statuses that do not persist are dropped here; say which, or a buff
-    // silently missing from the next fight looks like it stopped working.
+
     const lost = p.statuses.filter(s => { const dd = STATUSES[s.type]; return !(dd && dd.persists); });
     p.statuses = survivingStatuses(p);
     lost.forEach(s => { const dd = STATUSES[s.type]; if (dd) logEvent('− ' + dd.name + ' ended', p, 'fight over'); });
-    // Sym: spines torn off by Shed grow back between fights — the cost is
-    // per-fight, never the run's. Logged, or the number climbing back on its
-    // own would look like a bug.
+
     if (p.thornsShedded > 0) {
       const back = p.thornsShedded;
       p.thornsShedded = 0;
@@ -418,10 +311,6 @@ function spawnEnemy() {
     }
   }
 
-  // Bio: the rot carried off the last corpse takes hold in the new one. After
-  // the between-fight housekeeping so it lands on a fight that has begun, and
-  // priced at the CURRENT sheet — carried stacks are as strong as the hands
-  // that plant them now, not as the ones that grew them.
   if (p.class === 'bio' && p.poisonCarry > 0) {
     const n = p.poisonCarry;
     p.poisonCarry = 0;
@@ -430,22 +319,9 @@ function spawnEnemy() {
     logEvent('THE ROT SPREADS', state.enemy, '×' + n + ' POISON', ['carried from the last host']);
   }
 
-  // THE PLAYER ALWAYS OPENS. Both gauges used to start empty, so any enemy
-  // quicker than you swung before you had acted at all — a UI problem before it
-  // is a balance one, because a kill can level you and the only moment to spend
-  // those points is a turn of your own.
-  //
-  // Implemented as a FULL gauge rather than a special case in the turn loop, so
-  // there is one initiative rule in this game and not two: a full meter reaches
-  // the threshold in zero time, acting spends it back to empty, and the fight
-  // proceeds from two empty gauges.
-  //
-  // ONLY WHEN THE GAUGES WOULD NOT ALREADY GIVE IT TO YOU — unconditionally it
-  // paid a fast player twice. The guarantee is a floor, not a bonus.
   state.player.meter = 0;
   state.enemy.meter = 0;
-  // The same comparison advanceToNextActor makes from empty gauges, ties to the
-  // player. If the enemy is strictly faster it takes the opening, so buy it back.
+
   const tp = 1 / effectiveAps(state.player), te = 1 / effectiveAps(state.enemy);
   if (te < tp - 1e-9) state.player.meter = 1;
   state.fightTurns = 0;
@@ -459,12 +335,10 @@ function spawnEnemy() {
   if (state.enemy.hp <= 0 && !state.enemy._defeated) onEnemyDefeated();
 }
 
-// ---- HUD -----------------------------------------------------
 function updateHud() {
   if (HEADLESS.on) return;
   const p = state.player; if (!p) return;
-  // Level on the left, strain on the right, same type on both — only the
-  // strain word is tinted by class.
+
   document.getElementById('level-badge').textContent = 'LEVEL ' + p.level;
   const strainEl = document.getElementById('strain-word');
   if (strainEl) {
@@ -475,27 +349,20 @@ function updateHud() {
   document.getElementById('xp-fill').style.width = Math.min(100,(p.xp/p.xpNext)*100) + '%';
   const cs = document.getElementById('combat-screen');
   if (cs) cs.dataset.strain = p.class || '';
-  // Soft alert on STATS tab while anything is outstanding — points still to
-  // place, or points placed and waiting on a confirm.
+
   const statsTab = document.querySelector('.sidebar-tab[data-tab="stats"]');
   if (statsTab) statsTab.classList.toggle('points-alert', p.points > 0 || pendingTotal(p) > 0);
   refreshSidebarStats();
   renderSuitPanel();
   renderModPanel();
-  // The dot clears once the queue behind it is empty.
+
   const mark = (tab, on) => {
     const t = document.querySelector('.sidebar-tab[data-tab="' + tab + '"]');
     if (t) t.classList.toggle('tab-alert', !!on);
   };
   mark('suit', !!nextDrop());
   mark('mods', !!nextModOffer());
-  // AND THE FIGHTER CARD, which shows the same HP this just redrew in the
-  // sidebar. updateHud fires on the run-scale beats — a level, a commit, a
-  // resume — and every one of them can move max HP or current HP, so leaving
-  // the card out let a committed Vitality point raise the sidebar's Health
-  // row while the bar above the sprite kept the old number until the next
-  // hit landed. Harmless before the arena exists: updateUnitCard finds no
-  // panel and returns.
+
   updateUnitCard(p);
 }
 
@@ -508,9 +375,7 @@ function updateCombo() {
     el.textContent = state.combo + '× CHAIN';
     el.classList.toggle('hot', state.combo >= 8);
   } else {
-    // Text and class cleared as well as hidden: a hidden element still carries
-    // its contents, and the next thing to show it should not flash the last
-    // run's number before it is overwritten.
+
     el.style.display = 'none';
     el.textContent = '';
     el.classList.remove('hot');
@@ -523,21 +388,16 @@ function gainXP(amount, bonus) {
   floatText(p, amount, bonus ? 'xp-bonus' : 'xp');
   const gained = [];
   while (p.xp >= p.xpNext) {
-    // The grant reads off BALANCE rather than being typed here and again in the
-    // log line, so the number the player is told is the number they get.
+
     const grant = P().pointsPerLevel;
     p.xp -= p.xpNext; p.level++; p.xpNext = xpForLevel(p.level);
     if (autoMode(p)) autoAllocate(p, grant); else p.points += grant;
     recalcPlayerStats();
-    // recalcPlayerStats above has already moved the anchor to the NEW level, so
-    // the level-up heal pays at the size the level you just earned is worth.
+
     p.hp = Math.min(p.maxHp, p.hp + Math.floor(healAnchorFor(p) * P().levelUpHealFrac));
-    // A level is a rare event now (~6 a run), so it announces itself in
-    // the arena, not just on the badge: amber, because a level-up is the XP
-    // family's loudest member — see the floater vocabulary in the CSS.
+
     floatText(p, 'LEVEL ' + p.level, 'xp-bonus');
-    // A strain whose body changes with the level changes it HERE, rather than
-    // waiting for the next pose swap to notice the src had moved.
+
     setCharPose(p, 'ready');
     logEvent('LEVEL ' + p.level, null, '+' + grant + ' points',
              ['next at ' + logNum(p.xpNext) + ' XP']);
@@ -553,8 +413,6 @@ function gainXP(amount, bonus) {
   updateHud();
 }
 
-// Low-level swap: which tab looks active and which panel is visible. No side
-// effects, so leaving a run can park the sidebar without waking the fight.
 function showSidebarTab(tabId) {
   document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tabId));
   document.querySelectorAll('.sidebar-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tabId));
@@ -564,10 +422,6 @@ function activeTabId() {
   return t ? t.dataset.tab : null;
 }
 
-// MENU is an ordinary tab — it does not pause anything. A turn-based fight
-// already waits on awaitingInput whenever it is your move, and the
-// visibilitychange handler below stops the loop if you leave the browser, so
-// there is nothing for a pause to protect.
 let _tabBeforeMenu = 'stats';
 function switchTab(tabId) {
   const from = activeTabId();
@@ -575,11 +429,6 @@ function switchTab(tabId) {
   showSidebarTab(tabId);
 }
 
-// Changing runs: park the sidebar back on STATS so the next run does not open
-// on the menu, and drop any pending SKIP so the button cannot outlive the intro
-// it belonged to. Callers that then start an intro re-offer it afterwards.
-// A queued drop or offer switches the sidebar to its tab and marks it, so the
-// notification lands where the mouse already is instead of over the arena.
 function notifyTab(tabId) {
   if (HEADLESS.on) return;
   showSidebarTab(tabId);
@@ -591,29 +440,17 @@ function leaveMenuTab() {
   showSidebarTab('stats');
   offerSkip(null);
 }
-// ---- Sidebar -------------------------------------------------
+
 const STAT_KEYS = ['str','instinct','speed','vit'];
 
-// ---- Pending allocation --------------------------------------
-// Points land in p.pending first. Nothing in combat reads pending, so an
-// unconfirmed point buys you nothing, and the minus can only take back what is
-// still pending — never a point already committed. Once the pool is empty the
-// plus becomes the confirm, which folds pending into the real stats and locks
-// the row until the next level. It replaced instant, reversible spending, which
-// let a run be re-specced mid-fight to answer whatever was in front of you.
 function pendingTotal(p) {
   const pend = p && p.pending; if (!pend) return 0;
   return STAT_KEYS.reduce((n, k) => n + (pend[k] || 0), 0);
 }
 function pendingOf(p, stat) { return (p && p.pending && p.pending[stat]) || 0; }
-// Confirming is only offered once every point is placed, so there is never a
-// half-spent pool sitting behind a locked panel.
+
 function canConfirmStats(p) { return !!p && p.points <= 0 && pendingTotal(p) > 0; }
 
-// The player as it WOULD be with pending applied, plus optionally one more
-// point on a stat for the hover preview. Always a copy: refreshSidebarStats
-// runs on every turn, and mutating the real player just to read a number back
-// would drift its HP through the ratio rescale in applyDerivedStats.
 function pendingView(p, extraStat) {
   if (!p) return p;
   if (!extraStat && !pendingTotal(p)) return p;
@@ -625,12 +462,9 @@ function pendingView(p, extraStat) {
   return view;
 }
 
-// Fold pending into the real stats. This is the only place a stat point becomes
-// permanent, and the only place combat can see the change.
 function commitStats() {
   const p = state.player; if (!p || !canConfirmStats(p)) return;
-  // Read the allocation BEFORE folding it in — pendingOf is zero afterwards,
-  // which is what made this line print an empty list.
+
   const placed = STAT_KEYS.filter(k => pendingOf(p, k))
     .map(k => k.toUpperCase() + ' +' + pendingOf(p, k)).join(' ');
   STAT_KEYS.forEach(k => { p[k] += pendingOf(p, k); p.pending[k] = 0; });
@@ -639,13 +473,6 @@ function commitStats() {
   updateHud(); renderSkills(); saveRun();
 }
 
-// The readout VALUES alone, split out of refreshSidebarStats so the combat path
-// can keep them honest without dragging the allocation UI along for every hit.
-//
-// THIS EXISTS BECAUSE THE SIDEBAR USED TO LIE: damage and healing redraw the
-// fighter card every exchange, but the sidebar's rows were only rewritten at
-// run-scale beats, so the Health row sat at whatever it read when the wave began
-// while the bar above the sprite told the truth.
 function refreshReadoutValues() {
   if (HEADLESS.on) return;
   const p = state.player; if (!p) return;
@@ -660,24 +487,19 @@ function refreshSidebarStats() {
   const p = state.player; if (!p) return;
   const confirming = canConfirmStats(p);
 
-  // Stat values show what you WOULD have, marked while it is still pending so
-  // an uncommitted number is never mistaken for a real one.
   STAT_KEYS.forEach(k => {
     const el = document.getElementById('stat-' + k);
     if (!el) return;
-    // Fitted gear shows as its own small "+N" beside the allocated value.
+
     const g = gearStat(p, k);
     el.innerHTML = (p[k] + pendingOf(p, k))
       + (g ? '<i class="gear-plus">+' + g + '</i>' : '');
     el.classList.toggle('pending', pendingOf(p, k) > 0);
-    // The bar is the WEIGHT: this stat's share of every point the run earns.
+
     const bar = document.getElementById('bar-' + k);
     if (bar) bar.style.width = Math.round(weightShare(p, k) * 100) + '%';
   });
 
-  // MANUALLY the plus places a point and becomes the confirm when the pool runs
-  // dry; AUTOMATICALLY it nudges the share and the minus is replaced by the
-  // percentage, because in that mode there is nothing to take back.
   const auto = autoMode(p);
   document.querySelectorAll('.side-stat-controls .stat-btn.plus').forEach(b => {
     b.disabled = auto ? (p.weights[b.dataset.stat] || 0) >= 100 : (p.points <= 0 && !confirming);
@@ -694,12 +516,6 @@ function refreshSidebarStats() {
     if (auto) s.textContent = Math.round(weightShare(p, s.dataset.stat) * 100) + '%';
   });
 
-  // Values stay on the COMMITTED sheet. A staged allocation shows up as a
-  // delta beside them — "25  +15" — rather than replacing them with the total,
-  // so what you have and what you are buying are both readable at once.
-
-  // Rows the current strain does not own are hidden outright rather than shown
-  // empty, so the panel never lists a stat that cannot move.
   const rows = readouts(p);
   const shown = {};
   rows.forEach(r => { shown[r.id] = true; });
@@ -713,8 +529,6 @@ function refreshSidebarStats() {
 
   refreshReadoutValues();
 
-  // The staged allocation is the resting state of the delta column; hovering a
-  // plus adds its point on top, and leaving drops back to exactly this.
   renderDeltas(pendingView(p));
   STAT_KEYS.forEach(k => {
     const note = document.getElementById('preview-' + k);
@@ -722,17 +536,11 @@ function refreshSidebarStats() {
   });
 }
 
-// ---- Auto-allocation -----------------------------------------
-// Points land by WEIGHT the moment a level grants them, because placing three
-// points by hand every level is friction the run does not need (owner,
-// 2026-08-03t). Largest-remainder with a running carry, so a 25/25/25/25 split
-// over eleven levels lands 8/8/8/9 rather than losing the fractions.
 const WEIGHT_STEP = 5;
 function weightTotal(p) {
   return STAT_KEYS.reduce((n, k) => n + Math.max(0, (p.weights && p.weights[k]) || 0), 0);
 }
-// All four at zero is the manual sheet; anything above it is automatic. One
-// predicate, so the buttons, the level-up and the save all agree on which.
+
 function autoMode(p) { return !!p && !!p.weights && weightTotal(p) > 0; }
 function weightShare(p, stat) {
   const t = weightTotal(p);
@@ -749,7 +557,7 @@ function autoAllocate(p, points) {
     given[k] = Math.floor(want[k]);
     placed += given[k];
   });
-  // Whatever rounding left over goes to the biggest remainder, one at a time.
+
   while (placed < points) {
     let best = STAT_KEYS[0];
     STAT_KEYS.forEach(k => { if ((want[k]-given[k]) > (want[best]-given[best])) best = k; });
@@ -760,13 +568,6 @@ function autoAllocate(p, points) {
            STAT_KEYS.filter(k => given[k]).map(k => k.toUpperCase() + ' +' + given[k]));
 }
 
-// The bars under each stat ARE the control: drag one to set its weight, or
-// nudge with the plus beside it.
-// Turning the first bar up is the switch to automatic, so whatever is banked or
-// staged lands NOW by the shares just set — otherwise the pool would sit behind
-// a plus that had stopped being an allocate button. Keyed off whether the run
-// was manual when the gesture STARTED, not when it ended: a drag begins at the
-// left edge, which is still zero, and reading the flag then would miss it.
 function flushPoolOnSwitch(p, wasManual) {
   if (!wasManual || weightTotal(p) === 0) return;
   const pool = p.points + pendingTotal(p);
@@ -791,9 +592,6 @@ function adjustWeight(stat, delta) {
   setWeight(stat, (p.weights[stat] || 0) + delta);
 }
 
-// DRAGGING, not clicking at points. Pointer capture, so the bar keeps following
-// the mouse once it leaves the 3px track — which it does immediately, and which
-// made the first version feel like four click targets rather than four sliders.
 let _dragStat = null, _dragWasManual = false;
 function weightAtPointer(ev, el) {
   const box = el.getBoundingClientRect();
@@ -811,8 +609,7 @@ function startWeightDrag(ev, stat) {
   clampWeight(p, stat, weightAtPointer(ev, el));
   refreshSidebarStats();
 }
-// Only the bar redraws per move — no saveRun and no full HUD pass, since a drag
-// is dozens of moves and the release writes the one that counts.
+
 function dragWeight(ev) {
   const p = state.player;
   if (_dragStat === null || !p || !p.weights) return;
@@ -828,9 +625,6 @@ function endWeightDrag() {
   updateHud(); saveRun();
 }
 
-// The two buttons beside each stat mean different things in the two modes:
-// manually they place and take back a point, automatically the plus nudges the
-// share and the minus is gone — its slot is where the percentage reads.
 function statPlus(stat) {
   const p = state.player; if (!p) return;
   if (autoMode(p)) adjustWeight(stat, WEIGHT_STEP); else adjustStat(stat, 1);
@@ -840,10 +634,6 @@ function statMinus(stat) {
   if (autoMode(p)) adjustWeight(stat, -WEIGHT_STEP); else adjustStat(stat, -1);
 }
 
-// Hovering a plus adds its point on top of whatever is already staged, so the
-// delta grows as you allocate: +5, then +10, then +15. Leaving the button falls
-// back to the staged total rather than blanking it — an allocation you already
-// made stays on screen.
 function previewStat(stat, show) {
   const p = state.player; if (!p) return;
   const note = document.getElementById('preview-' + stat);
@@ -851,8 +641,7 @@ function previewStat(stat, show) {
   renderDeltas(hovering ? pendingView(p, stat) : pendingView(p));
 
   if (!note) return;
-  // The note is about THIS point, not the staged stack, so it compares the
-  // sheet with and without the hovered point rather than counting changed rows.
+
   let dead = false;
   if (hovering) {
     const staged = readouts(pendingView(p));
@@ -866,46 +655,25 @@ function previewStat(stat, show) {
 function adjustStat(stat, delta) {
   const p = state.player; if (!p) return;
   if (delta > 0) {
-    // The plus turns into the confirm once the pool is empty, so the same click
-    // target commits the allocation rather than adding a point that isn't there.
+
     if (p.points <= 0) { commitStats(); return; }
     p.points--; p.pending[stat]++;
   } else {
-    // Only pending points come back. A committed stat is committed.
+
     if (pendingOf(p, stat) <= 0) return;
     p.pending[stat]--; p.points++;
   }
-  // No recalcPlayerStats: pending is not in the real stats, so nothing derived
-  // has changed yet. The sidebar previews it off a copy instead.
+
   updateHud(); saveRun();
 }
 
-
-// ---- Scenes ---------------------------------------------------
-// A BEAT BETWEEN FIGHTS, played inside the arena card. Combat is spawn-to-spawn
-// and deliberately quick, so the only way an encounter reads as an EVENT rather
-// than as another enemy is to change what the card is: the room becomes
-// somewhere else, the UI around it steps back, and nothing on screen can be
-// pressed except the scene's own choices.
-//
-// It is data, not code. A scene is a speaker, a portrait, a line per visit and
-// a set of choices — so a second character, or a different thing to say at
-// wave 30 than at wave 5, costs an entry here and nothing else.
-//
-// PLACEHOLDER, and knowingly so: the only choice is to leave. The shape is what
-// is being built, so that whatever this becomes — a trade, a boon with a price,
-// a branch — drops into `choices` without touching the wiring.
 const SCENES = {
   scientist: {
     speaker: 'ROGUE LAB SCIENTIST',
     portrait: 'assets/sprites/rogue lab scientist.png',
-    // What his name is written in. Teal to match his own art — the coat, the
-    // goggles and the room he stands in are all the same cyan.
+
     tint: '#45dfe0',
-    // STEPS, not lines. A step is a sentence plus how it can be left: nothing
-    // at all, which offers a continue, or a set of choices. A choice with no
-    // `act` simply walks to the next step, so branching costs an entry rather
-    // than a mechanism.
+
     steps: [
       { text: '…You are not following the behavioral template...' },
       { text: 'Assets in your series either complete the sweep or stand down for collection. They do not detour.' },
@@ -913,79 +681,43 @@ const SCENES = {
       { text: 'I am authorized to recover this asset by any condition.',
         choices: [{ label: 'wait…' }, { label: 'attack', go: 6 }] },
       { text: '…Language. Coherent.' },
-      // PLACEHOLDER END. The conversation stops here until there is more of it;
-      // MOVE ON is standing in for whatever it becomes.
+
       { text: 'The frame was not specified to support cognition at this level. Tell me what you have been reading, or be recovered in pieces.',
         choices: [{ label: 'MOVE ON', act: 'leave' }] },
-      // 6 — where `attack` goes. A TERMINAL STEP: no continue and no choices,
-      // it says its line and then does the thing itself.
+
       { text: 'So be it…', act: 'fight' }
     ]
   }
 };
 
-// HIS NUMBERS ARE THE FIRST BOSS'S, because that is the fight you have just won
-// or just lost — attacking him is a rematch against the same wall rather than a
-// softer option. He carries his own art and his own venom; nothing else about
-// him needs a table of its own.
 function makeScientistFoe() {
   const e = makeEnemy(BALANCE.bossEvery);
   e.name = 'Rogue Lab Scientist';
   e.artSet = SCIENTIST_SPRITES;
   e.poisonHits = true;
-  e.sceneFoe = true;          // keeps his lab up for the length of the fight
+  e.sceneFoe = true;
   return e;
 }
 
-// THE FIRST BOSS DOES NOT GET TO END THE RUN. It hits for double (see
-// firstBossMult) precisely so it usually wins, and losing to it is the one
-// death in the game with an answer: he pulls you out, you lose the boss and its
-// XP, and you come round on the next wave at half a bar.
-//
-// ONCE ONLY, and the flag rides in the save so a reload cannot re-arm it.
-// It applies in HEADLESS too — it is a rule, not a cutscene, and a rule the sim
-// does not play would break the one invariant that keeps every measured number
-// honest. Only the scene around it is skipped there.
 function rescueAvailable(won) {
   return !won && !state.rescued && state.wave === BALANCE.bossEvery;
 }
 
-// WHICH BOSS HAS SOMETHING WAITING AFTER IT. Still the per-boss hook the
-// scaffolding was built as — a second scene is another wave answered here, not
-// a flag — but there is exactly one conversation written, so it plays at the
-// one boss it was written for.
-//
-// It used to answer every boss, and that was wrong twice over. The scientist is
-// working out that you can talk ("…Language. Coherent."), so you met him for
-// the first time at waves 5, 10, 15, 20, 25, 30, 35 and 40. And makeScientistFoe
-// builds him at bossEvery whatever wave you are on, so taking `attack` at wave
-// 40 was a doubled wave-5 boss paying wave-40 XP — the XP a kill grants reads
-// off state.wave, never off the enemy.
 function sceneAfterWave(wave) {
   if (wave !== BALANCE.bossEvery) return null;
   return 'scientist';
 }
 
-// The veil's own transition, in one place so the JS waits exactly as long as
-// the CSS takes. Out of step in either direction is the abruptness coming back:
-// too short and the swap happens on a visible frame, too long and the card sits
-// dead. Keep it matched to .arena-veil's transition.
 const SCENE_FADE_MS = 700;
-// How long the figure takes to resolve. The dialogue waits it out — keep it
-// matched to .scene-layer's transition.
+
 const SCENE_FIGURE_MS = 1400;
 
-// ---- Playing a scene ------------------------------------------
-// The typing is the only thing here that needs state: a line arrives a
-// character at a time, and every way out of a step waits on it finishing.
 const TYPE_MS = 26;
-// How long a finished line is left standing before a step acts on its own.
-const SCENE_BEAT_MS = 900;
-let _typing = null;    // the line currently arriving
-let _scene = null;     // { def, step, onDone } while a scene is up
 
-// Finish the sentence now. Returns whether there was one to finish, so a click
-// can ask "did that press get used up here".
+const SCENE_BEAT_MS = 900;
+let _typing = null;
+let _scene = null;
+
 function finishTyping() {
   if (!_typing) return false;
   const t = _typing;
@@ -1005,7 +737,7 @@ function typeLine(el, text, done) {
   const cs = document.getElementById('combat-screen');
   if (cs) cs.classList.add('scene-typing');
   const tick = () => {
-    if (_typing !== t) return;                  // superseded, or finished early
+    if (_typing !== t) return;
     t.i++;
     el.textContent = text.slice(0, t.i);
     if (t.i >= text.length) { finishTyping(); return; }
@@ -1014,7 +746,6 @@ function typeLine(el, text, done) {
   t.timer = setTimeout(tick, TYPE_MS);
 }
 
-// One step: he says it, and the way out appears only once he has finished.
 function showSceneStep(i) {
   if (!_scene) return;
   const step = _scene.def.steps[i];
@@ -1025,8 +756,7 @@ function showSceneStep(i) {
   choices.innerHTML = '';
   cont.hidden = true;
   typeLine(document.getElementById('scene-line'), step.text, () => {
-    // A terminal step answers for itself. The beat after the line is the whole
-    // point of it — the words have to land before the room changes.
+
     if (step.act) {
       _revealTimers.push(setTimeout(() => takeSceneChoice(step), SCENE_BEAT_MS));
       return;
@@ -1052,9 +782,6 @@ function takeSceneChoice(c) {
   advanceScene();
 }
 
-// A click in the panel finishes the sentence, and a second walks on — but only
-// where walking on is what the step offers. Buttons stop their own clicks
-// before they reach here.
 function onScenePanelClick() {
   if (finishTyping()) return;
   const step = _scene && _scene.def.steps[_scene.step];
@@ -1067,8 +794,7 @@ function openScene(id, onDone, onBlack) {
   const panel = document.getElementById('scene-panel');
   const card = document.getElementById('arena-card');
   const screen = document.getElementById('combat-screen');
-  // onBlack still has to run with no scene to play it behind — it carries the
-  // rules half of whatever the scene is dressing up, and headless plays rules.
+
   if (HEADLESS.on || !sc || !layer || !panel || !card) {
     if (onBlack) onBlack();
     if (onDone) onDone();
@@ -1086,49 +812,32 @@ function openScene(id, onDone, onBlack) {
   if (portrait) portrait.src = sc.portrait;
   panel.onclick = onScenePanelClick;
 
-  // THROUGH BLACK, NOT ACROSS. The first pass swapped the backdrop on a lit
-  // frame while the old room was still up, which is the abrupt part — a room
-  // does not become another room, it goes dark and you are somewhere else.
-  //
-  // The UI around the card leaves on the same beat as the veil arriving, so the
-  // world recedes and the card blacks out as one movement rather than two.
   const veil = document.getElementById('arena-veil');
   if (screen) screen.classList.add('scene-on');
   if (veil) veil.classList.add('on');
 
-  // Everything that would be seen changing happens while the veil is opaque —
-  // including the caller's own change, which is what onBlack is for.
   _revealTimers.push(setTimeout(() => {
     if (onBlack) onBlack();
     card.classList.add('scene');
     layer.hidden = false;
     void layer.offsetWidth;
     layer.classList.add('in');
-    // He speaks once he is all the way here.
+
     _revealTimers.push(setTimeout(() => {
       panel.hidden = false;
       void panel.offsetWidth;
       panel.classList.add('in');
-      // _scene IS THE INPUT GATE, so it is set here and not when the scene was
-      // asked for. Held at the top of openScene, a spacebar mashed during the
-      // fade walked steps 1, 2 and 3 in a room that was still arriving — and
-      // then the deferred first step landed and dropped it back to 0.
+
       _scene = { def: sc, step: 0, onDone: onDone };
       showSceneStep(0);
     }, SCENE_FIGURE_MS));
-    // A held beat on full black before the lab arrives. Without it the veil
-    // reads as a flicker rather than as a cut.
+
     _revealTimers.push(setTimeout(() => { if (veil) veil.classList.remove('on'); }, 220));
   }, SCENE_FADE_MS));
 }
 
-
-// Everything a scene leaves behind, whichever way it is left — out to the next
-// wave, or sideways into a fight with the man who was talking.
 function teardownScene() {
-  // Headless never opens one, and stopCombatLoop — which a sim calls constantly
-  // — comes through here now. Same guard every other drawing function in the
-  // chapter carries, for the same reason: a sim must not move the screen.
+
   if (HEADLESS.on) return;
   finishTyping();
   _scene = null;
@@ -1141,9 +850,6 @@ function teardownScene() {
   state.inScene = false;
 }
 
-// TALKING STOPS, THE FIGHT DOES NOT MOVE ROOMS. His lab stays up — the card
-// keeps `scene` until a wave that is not him spawns — so the rematch happens
-// where the conversation did rather than cutting back to the corridor.
 function sceneToFight() {
   if (!_scene) return;
   _scene = null;
@@ -1155,25 +861,12 @@ function sceneToFight() {
     state.awaitingSpawn = true;
     state.awaitingInput = false;
     state.pendingEnemyAct = false;
-    // He is spawned behind the black and revealed with it, so the fight opens
-    // on two figures already standing rather than on the room changing under
-    // one of them.
+
     startCombatLoop();
     _revealTimers.push(setTimeout(() => { if (veil) veil.classList.remove('on'); }, 300));
   }, SCENE_FADE_MS));
 }
 
-// THE GATE SHUTS ON THE WAY OUT, NOT AFTER THE FADE. Leaving takes
-// SCENE_FADE_MS, and for that whole window `_scene` was still set and the choice
-// buttons were still in the DOM — so a second press queued a SECOND exit, and
-// every exit fires onDone. After the first boss that onDone is doSpawn, so
-// mashing MOVE ON spawned wave 6 once per press, each spawn re-rolling makeEnemy
-// and consuming the rules RNG. It desynced the seeded replay outright: measured
-// 2026-08-02ag, the on-screen run logged "WAVE 6" a dozen times over while
-// headless logged it once, and every number after that point disagreed.
-//
-// openScene already guards the way IN for the same reason — see the note on
-// _scene there. This is the other half of it.
 function closeScene(onDone) {
   if (!_scene) return;
   _scene = null;
@@ -1181,14 +874,12 @@ function closeScene(onDone) {
   const card = document.getElementById('arena-card');
   const screen = document.getElementById('combat-screen');
   const veil = document.getElementById('arena-veil');
-  // Out the way it came in: black first, then the lab goes and the fight's own
-  // room comes back underneath it.
+
   if (veil) veil.classList.add('on');
   _revealTimers.push(setTimeout(() => {
     teardownScene();
     if (card) card.classList.remove('scene');
-    // The next enemy is spawned behind the veil and revealed with it, so the
-    // wave does not start with a figure appearing out of nothing.
+
     if (onDone) onDone();
     _revealTimers.push(setTimeout(() => { if (veil) veil.classList.remove('on'); }, 260));
   }, SCENE_FADE_MS));

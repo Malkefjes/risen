@@ -1,40 +1,5 @@
-// Suit hardware — slots, rarities, affixes, drops, the suit panel
-// ============================================================
-// ITEMS ARE STAT STICKS AND THAT IS THE DESIGN (owner's call, 2026-08-03o):
-// MODIFICATIONS change what a button does, items grant general power. One
-// system for what you do, one for how much of it you do. Nothing in this file
-// should ever change a rule — if a drop wants to rewrite a press, it is a
-// Modification and it belongs in mods.js.
-//
-// STRUCTURE, after the PoE-shaped spec the owner brought in:
-//
-//   IMPLICIT   fixed to the SLOT, always present, never rolled away. This is
-//              what makes a mount feel like itself before any affix lands.
-//   PREFIXES   STAT POINTS. +STR / +INS / +SPD / +VIT, and hybrids that grant
-//              two at a lower value each.
-//   SUFFIXES   PERCENTAGES. Crit, the three defensive layers, tempo,
-//              healing, XP.
-//
-// The split is already latent in the game — points feed the same pipe as
-// allocation, percentages feed the derived sheet — so formalising it costs
-// nothing and gives the deferred REFINEMENT system something to act on ("this
-// has an open suffix" becomes a real statement).
-//
-// TIERS T1-T5, T1 BEST, AND INVISIBLE. The drop wave sets the ceiling and the
-// roll is weighted toward the top of what is unlocked, so late drops are
-// usually good and a T1 is still a moment — but the tier itself never reaches
-// the card (owner's call): the rolled VALUE already says how good a line is,
-// and a tier beside it is a second number to decode for the same answer.
-//
-// Items are plain JSON: they ride in the save (player.gear) and must stay
-// serializable. Every roll uses Math.random — a drop is a rule, and headless
-// must roll the identical item at the identical point in the stream.
-
 const ITEM_STAT_NAMES = { str: 'STRENGTH', instinct: 'INSTINCT', speed: 'SPEED', vit: 'VITALITY' };
 
-// `home` biases which stat a slot's prefix tends to roll (60%, first prefix
-// only). The IMPLICIT is what actually fixes a slot's identity. Art is the
-// owner's five suit pieces.
 const SLOTS = {
   optics:    { id: 'optics',    name: 'Optics',        label: 'OPTICS',    home: 'instinct', lot: 'O',
                art: 'assets/sprites/mcp helmet.png' },
@@ -48,22 +13,14 @@ const SLOTS = {
                art: 'assets/sprites/mcp boots.png' }
 };
 
-// Rarity is AFFIX COUNT and nothing else — no hidden multipliers. Four lines
-// is the ceiling on purpose: the drop card is read between fights with no
-// inventory to retreat to, so it has to stay scannable in a few seconds.
 const RARITIES = {
   standard:  { id: 'standard',  name: 'STANDARD ISSUE', prefixes: 1, suffixes: 0 },
   refined:   { id: 'refined',   name: 'REFINED',        prefixes: 1, suffixes: 1 },
   prototype: { id: 'prototype', name: 'PROTOTYPE',      prefixes: 2, suffixes: 1 }
 };
 
-// ---- Tiers ------------------------------------------------------
-// Index 0 is T1 (best). A wave unlocks a tier once it reaches its minimum.
 const TIER_MIN_WAVE = [46, 31, 21, 11, 1];
-// Weights from the BEST unlocked tier downward. It has to DESCEND: a bell was
-// tried and it skewed the mid-game badly, because with only three tiers
-// unlocked the peak landed on the two WORST of them. Flat-topped instead —
-// the best two share the weight, the tail falls away.
+
 const TIER_WEIGHTS = [3, 3, 2, 1, 1];
 
 function tiersFor(wave) {
@@ -82,13 +39,7 @@ function rollTier(wave) {
   }
   return avail[avail.length - 1];
 }
-// The tier is NOT shown on a card — see affixLine. It still decides what a
-// line rolls and the bots still price by it; the player reads the value.
 
-// ---- Prefixes: stat points --------------------------------------
-// `groups` is what the no-duplicates rule reads: a hybrid claims BOTH of its
-// stats, so it can never sit beside the single that grants one of them.
-// Tier ranges run T1 first.
 const ITEM_PREFIXES = [
   { id: 'p_str', stats: ['str'],      groups: ['str'],
     tiers: [[7, 10], [6, 9], [5, 7], [3, 5], [2, 3]] },
@@ -98,7 +49,7 @@ const ITEM_PREFIXES = [
     tiers: [[7, 10], [6, 9], [5, 7], [3, 5], [2, 3]] },
   { id: 'p_vit', stats: ['vit'],      groups: ['vit'],
     tiers: [[7, 10], [6, 9], [5, 7], [3, 5], [2, 3]] },
-  // Hybrids: two stats at one rolled value each. Lower per stat, more total.
+
   { id: 'p_str_vit', stats: ['str', 'vit'],      groups: ['str', 'vit'],
     tiers: [[4, 6], [4, 5], [3, 4], [2, 3], [1, 2]] },
   { id: 'p_spd_ins', stats: ['speed', 'instinct'], groups: ['speed', 'instinct'],
@@ -109,12 +60,6 @@ const ITEM_PREFIXES = [
     tiers: [[4, 6], [4, 5], [3, 4], [2, 3], [1, 2]] }
 ];
 
-// ---- Suffixes: percentages --------------------------------------
-// Where each lands in the rules:
-//   critCh / critDmg / evasion / armor / apsBoost / dmgMult
-//                                 applyDerivedStats, folded into the layers
-//   healBoost                     healAnchorFor — every anchored heal
-//   xpBoost                       the kill XP in onEnemyDefeated
 const ITEM_MODS = {
   critCh:    { id: 'critCh',    step: 0.01, text: v => '+' + Math.round(v * 100) + '% crit chance' },
   critDmg:   { id: 'critDmg',   step: 0.05, text: v => '+' + v.toFixed(2) + '× crit damage' },
@@ -145,7 +90,6 @@ const ITEM_SUFFIXES = [
     tiers: [[0.20, 0.26], [0.15, 0.20], [0.11, 0.15], [0.08, 0.11], [0.05, 0.08]] }
 ];
 
-// Which suffixes a slot can carry. A mount only grants what it plausibly could.
 const SLOT_SUFFIXES = {
   optics:    ['s_critCh', 's_critDmg', 's_xpBoost'],
   gauntlets: ['s_dmgMult', 's_critDmg', 's_critCh'],
@@ -154,20 +98,6 @@ const SLOT_SUFFIXES = {
   boots:     ['s_apsBoost', 's_evasion', 's_critCh']
 };
 
-// The slot's own line, always present, roughly half a suffix roll — identity
-// rather than power.
-// ARMOR AND BOOTS GRANT STAT POINTS, not percentages (2026-08-03af, owner's
-// design). Every measurement of the allocation space said the same thing:
-// SPD+VIT won every row for every class, because a bar you can survive on and a
-// rate you can act on are NEEDS, and a need is not a choice. Putting the
-// baseline on the two slots that plainly carry it — plating is what keeps you
-// alive, boots are what make you quick — means the run arrives with its needs
-// mostly met and the four bars are free to say what the build IS. Roll badly and
-// you go fill the gap yourself, which is the decision returning rather than
-// leaving.
-// An implicit is fixed to its slot and always present, so this is reliable in a
-// way a prefix roll is not. Sized against the single-stat prefixes above (7-10
-// at T1) to be the same order: gear supplies the floor, not the build.
 const SLOT_IMPLICIT = {
   optics:    { mod: 'critCh',    tiers: [[0.06, 0.08], [0.05, 0.06], [0.04, 0.05], [0.03, 0.04], [0.02, 0.03]] },
   gauntlets: { mod: 'dmgMult',   tiers: [[0.14, 0.20], [0.11, 0.14], [0.08, 0.11], [0.06, 0.08], [0.04, 0.06]] },
@@ -176,8 +106,6 @@ const SLOT_IMPLICIT = {
   boots:     { stats: ['speed'], tiers: [[9, 13], [7, 10], [6, 8], [4, 6], [2, 4]] }
 };
 
-// Who drops, how often, and what it comes out as. Rarity weights are
-// [standard, refined, prototype]; champions and bosses never roll standard.
 const DROPS = {
   trash:    { chance: 0.08, weights: [75, 25, 0] },
   elite:    { chance: 0.40, weights: [40, 50, 10] },
@@ -185,7 +113,6 @@ const DROPS = {
   boss:     { chance: 1.00, weights: [0, 50, 50] }
 };
 
-// ---- Generation -------------------------------------------------
 function rollRange(range, step) {
   const raw = range[0] + Math.random() * (range[1] - range[0]);
   if (!step) return Math.round(raw);
@@ -204,7 +131,6 @@ function makeItem(wave, rarityId) {
   const slot = SLOTS[slotIds[Math.floor(Math.random() * slotIds.length)]];
   const rar = RARITIES[rarityId] || RARITIES.standard;
 
-  // The implicit: the slot's own line, at its own rolled tier.
   const impDef = SLOT_IMPLICIT[slot.id];
   const impTier = rollTier(wave);
   const implicit = impDef.stats
@@ -212,24 +138,13 @@ function makeItem(wave, rarityId) {
     : { mod: impDef.mod, tier: impTier,
         v: rollRange(impDef.tiers[impTier], ITEM_MODS[impDef.mod].step) };
 
-  // NO DUPLICATE GROUPS, across prefixes and suffixes alike: an affix is only
-  // eligible if none of its groups is already claimed.
-  //
-  // THE IMPLICIT CLAIMS ITS GROUP TOO, which is a deliberate divergence from
-  // the spec this was built off — PoE lets an implicit and an explicit grant
-  // the same thing. Here the drop card is a three-second read with no
-  // inventory behind it, and "+3% armor / +5% armor" spends two of its four
-  // lines saying one thing. Every item now shows two different percentages.
-  // A stat implicit claims its STAT as the group, so the armor slot cannot also
-  // roll a Vitality prefix and spend two of four lines on one number.
   const used = impDef.stats ? impDef.stats.slice() : [impDef.mod];
   const free = a => a.groups.every(g => used.indexOf(g) < 0);
 
   const prefixes = [];
   for (let i = 0; i < rar.prefixes; i++) {
     let pool = ITEM_PREFIXES.filter(free);
-    // The home stat leans the FIRST prefix only, so a slot reads like itself
-    // without ever being locked to one stat.
+
     if (i === 0 && slot.home && Math.random() < 0.6) {
       const homed = pool.filter(a => a.stats.indexOf(slot.home) >= 0);
       if (homed.length) pool = homed;
@@ -254,7 +169,6 @@ function makeItem(wave, rarityId) {
     def.groups.forEach(g => used.push(g));
   }
 
-  // The lot number is deterministic (wave + slot letter): flavour, never a roll.
   return { slot: slot.id, rarity: rar.id, wave, name: slot.name,
            lot: wave + '-' + slot.lot, implicit, prefixes, suffixes };
 }
@@ -268,7 +182,6 @@ function rollDrop(e, wave) {
   return makeItem(wave, rarities[pickWeighted(d.weights)]);
 }
 
-// ---- Reading the suit ------------------------------------------
 function emptyGear() {
   const g = {};
   Object.keys(SLOTS).forEach(k => { g[k] = null; });
@@ -277,20 +190,19 @@ function emptyGear() {
 function gearList(p) {
   return (p && p.gear) ? Object.values(p.gear).filter(Boolean) : [];
 }
-// Stat points from fitted gear — prefixes only. The one seam the derived
-// sheet reads for allocation-style points.
+
 function gearStat(p, key) {
   let n = 0;
   for (const it of gearList(p))
     for (const pre of (it.prefixes || []))
       if (pre.stats.indexOf(key) >= 0) n += pre.v;
-  // ...and the implicit, on the two slots whose own line IS a stat.
+
   for (const it of gearList(p))
     if (it.implicit && it.implicit.stats && it.implicit.stats.indexOf(key) >= 0)
       n += it.implicit.v;
   return n;
 }
-// Summed percentage for one modifier: the implicit plus any suffix granting it.
+
 function gearMod(p, id) {
   let n = 0;
   for (const it of gearList(p)) {
@@ -300,19 +212,12 @@ function gearMod(p, id) {
   return n;
 }
 
-// Naive worth for the bots and nothing else: stat points, with a percentage
-// line counted as a couple of points so a rarity is never worth less than a
-// plain one.
-// Stat points, plus percentage lines priced by TIER rather than counted — a
-// T1 suffix and a T5 suffix are not the same line, and scoring them as one
-// had the bots swapping a good item for a worse one of the same rarity.
 function itemScore(it) {
   if (!it) return 0;
   let n = 0;
   for (const pre of (it.prefixes || [])) n += pre.v * pre.stats.length;
   for (const s of (it.suffixes || [])) n += (5 - s.tier);
-  // A stat implicit is worth its points outright; a percentage one is priced by
-  // tier like the suffixes are.
+
   if (it.implicit) n += it.implicit.stats
     ? it.implicit.v * it.implicit.stats.length
     : (5 - it.implicit.tier) * 0.5;
@@ -322,10 +227,6 @@ function botTakesDrop(p, it) {
   return itemScore(it) > itemScore(p && p.gear ? p.gear[it.slot] : null);
 }
 
-// ---- Display ----------------------------------------------------
-// `tier` is taken and deliberately unused: it stays in the data (generation
-// reads it, itemScore prices by it) and off the card, where "T4" is a second
-// number to decode beside the one that already says how good the line is.
 function affixLine(tier, text) { return text; }
 function itemImplicitLine(it) {
   if (!it || !it.implicit) return '';
@@ -335,7 +236,7 @@ function itemImplicitLine(it) {
   const def = ITEM_MODS[it.implicit.mod];
   return def ? affixLine(it.implicit.tier, def.text(it.implicit.v)) : '';
 }
-// Explicits only — the implicit is rendered in its own block above them.
+
 function itemAffixLines(it) {
   const out = [];
   for (const pre of (it.prefixes || []))
@@ -351,9 +252,6 @@ function itemLogName(it) {
   return RARITIES[it.rarity].name + ' ' + it.name + ' · LOT ' + it.lot;
 }
 
-// Gear restored from a save: only shapes the tables still recognise. An item
-// written before the affix restructure has no `prefixes` and is dropped rather
-// than half-read — the run survives, the gear does not.
 function loadGear(saved) {
   const g = emptyGear();
   if (saved) Object.keys(g).forEach(k => {
@@ -363,14 +261,11 @@ function loadGear(saved) {
   return g;
 }
 
-// Same validation as a fitted item, for the undecided ones a save carries.
 function loadDropQueue(saved) {
   if (!Array.isArray(saved)) return [];
   return saved.filter(it => it && SLOTS[it.slot] && RARITIES[it.rarity] && Array.isArray(it.prefixes));
 }
 
-// ---- Equip / drop flow -----------------------------------------
-// Equip-or-leave, no inventory: fitting replaces the slot, leaving is forever.
 function equipItem(p, it) {
   if (!p || !it || !SLOTS[it.slot]) return;
   if (!p.gear) p.gear = emptyGear();
@@ -384,10 +279,6 @@ function equipItem(p, it) {
   updateHud(); renderSkills();
 }
 
-// QUEUED, NEVER MODAL. A drop lands in the SUIT tab and waits there; the fight
-// carries on. A queue rather than one slot so a second drop can never destroy
-// an undecided first — it is a queue of DECISIONS, not an inventory, since
-// nothing in it is worn or usable until it is fitted.
 function queueDrop(item) {
   (state.dropQueue = state.dropQueue || []).push(item);
   logEvent('RECOVERED', null, itemLogName(item),
@@ -399,7 +290,6 @@ function queueDrop(item) {
 }
 function nextDrop() { return (state.dropQueue && state.dropQueue[0]) || null; }
 
-// take: fit it. Anything else leaves it, and leaving is forever.
 function resolveDrop(take) {
   const q = state.dropQueue || [];
   const item = q.shift();
@@ -410,10 +300,8 @@ function resolveDrop(take) {
   updateHud();
 }
 
-// A run ending or being left behind forfeits whatever was still undecided.
 function abandonDrop() { state.dropQueue = []; }
 
-// ---- UI ---------------------------------------------------------
 function itemCardHtml(it, headline) {
   if (!it) return '<div class="drop-card empty"><div class="drop-card-body">'
     + '<div class="drop-card-head">' + headline + '</div>'
@@ -430,9 +318,7 @@ function itemCardHtml(it, headline) {
     + itemAffixLines(it).map(l => '<div class="drop-affix">' + l + '</div>').join('')
     + '</div></div>';
 }
-// The undecided drop, at the top of the SUIT tab with what it would replace
-// directly underneath — the comparison is the decision, and the arena keeps
-// running behind it.
+
 function renderPendingDrop() {
   if (HEADLESS.on) return;
   const el = document.getElementById('drop-pending');

@@ -1,8 +1,3 @@
-// Dump one run's combat log. The fastest way to see whether a mechanic does
-// what its numbers claim — the log is a transcript, so it should be possible to
-// reconstruct the fight from it alone.
-//
-//   node tools/transcript.mjs [bio|psy|sym|base]
 import { serve, launch } from '../tests/harness.mjs';
 
 const CLS = process.argv[2] || 'bio';

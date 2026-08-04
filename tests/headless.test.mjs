@@ -1,13 +1,3 @@
-// Headless mode must run THE SAME GAME, not a model of it.
-//
-// Everything measured about balance now comes through simulateRun, so the
-// load-bearing assertion here is the equivalence check: seed Math.random, play
-// the same fight headless and on-screen with the same policy, and require the
-// two to agree exactly. If that ever drifts, every balance number this repo
-// produces becomes fiction, silently.
-//
-// The rest guards the two ways a simulation could damage the real game: by
-// writing to the player's save slots, or by moving the UI out from under them.
 const SEED = `() => { window.__seed = 12345;
   Math.random = () => { window.__seed = (window.__seed * 1664525 + 1013904223) >>> 0;
                         return window.__seed / 4294967296; }; }`;
@@ -21,7 +11,6 @@ export default async function ({ page, ok }) {
   ok('the transcript is captured', r.log.length > 20 && r.log[0].startsWith('RISEN'), String(r.log.length));
   ok('an unknown strain returns null', await page.evaluate(() => simulateRun('nope')) === null);
 
-  // stopWhen, so a slice of a run can be measured rather than all of it.
   const sliced = await page.evaluate(() => simulateRun('sym', { stopWhen: s => s.wave > 3 }));
   ok('stopWhen ends the run early', sliced.wave <= 4 && !sliced.won, JSON.stringify({ wave: sliced.wave }));
 
@@ -44,8 +33,6 @@ export default async function ({ page, ok }) {
   ok('a sim draws no floaters', safety.floaters === 0, String(safety.floaters));
   ok('HEADLESS.on is restored afterwards', safety.flagCleared);
 
-  // Cosmetic randomness must not share the rules' RNG stream. Drawing a damage
-  // number used to advance the same sequence the next crit roll reads.
   const streams = await page.evaluate(() => {
     let calls = 0; const real = Math.random;
     Math.random = () => { calls++; return real(); };
@@ -55,30 +42,6 @@ export default async function ({ page, ok }) {
   });
   ok('cosmeticRandom does not consume Math.random', streams === 0, String(streams));
 
-  // ---- the equivalence proof ----
-  // A WHOLE run, not a slice, and both sides read runTurns — the run-level
-  // counter — rather than the per-fight turnNo they used to compare. (That
-  // pairing worked only because a whole run leaves both sides inside the same
-  // fight; a sliced run landed them either side of a spawn reset and reported
-  // a difference that was not one.) Costs ~25s, and it is the assertion the
-  // whole balance-measurement story rests on.
-  // BOTH SIDES MUST PLAY THE SAME POLICY, stated explicitly on each. The
-  // on-screen loop below used to hand-copy the old default bot's one-liner
-  // ("first ready special, else swing"), which matched simulateRun's default
-  // only by coincidence — so changing that default silently made the two sides
-  // play different games and this assertion failed for a reason that had
-  // nothing to do with headless equivalence. Naming the policy on both sides
-  // is what makes the comparison mean what it says.
-  //
-  // THE ON-SCREEN SIDE HAS TO PRESS THROUGH A SCENE, because a scene is UI and
-  // the sim skips it by design (see the note above sceneAfterWave). It is not a
-  // pause the run recovers from on its own: the scientist after the first boss
-  // waits on a click forever, so this side used to stop dead at wave 6 while
-  // headless walked on, and the assertion failed for something that is not a
-  // rules difference at all. The bot takes the FIRST choice at every step,
-  // which is the path that leaves rather than the one that starts a fight —
-  // taking `attack` would spawn an enemy headless never sees, and then the two
-  // sides really would be playing different games.
   const head = await page.evaluate((s) => {
     eval('(' + s + ')()');
     const r = simulateRun('bio', { policy: BOTS.smart.policy, allocate: () => 'vit' });
@@ -88,33 +51,25 @@ export default async function ({ page, ok }) {
   const live = await page.evaluate(async (s) => {
     eval('(' + s + ')()');
     localStorage.clear(); goToMenu(); startGame(true, 'bio'); SETTINGS.fastTurns = true;
-    // A RUNAWAY GUARD, NOT A RUN LENGTH. This loop spends one iteration per
-    // scheduled step, so the ceiling has to sit far above the longest run the
-    // game can produce — when balance changes made runs twice as long, a 40000
-    // cap stopped the on-screen side mid-run and the assertion below reported it
-    // as a divergence, which is the most misleading way this suite can fail.
-    // `capped` is returned so that failure names itself instead.
+
     let capped = true;
     for (let i = 0; i < 400000; i++) {
       if (state.runOver) { capped = false; break; }
       if (state.inScene) {
-        // Exactly what a player does: a press finishes the line, the next one
-        // walks on, and a step that asks something is answered by its buttons.
+
         const btn = document.querySelector('#scene-choices button');
         if (btn) btn.click(); else onScenePanelClick();
       } else if (nextDrop()) {
-        // The same hand the sim uses, so both sides make the identical calls.
-        // Neither decision draws RNG.
+
         resolveDrop(botTakesDrop(state.player, nextDrop()));
       } else if (nextModOffer()) {
         takeMod(botTakesMod(nextModOffer()));
       } else if (state.awaitingInput && state.combatActive) {
         const p = state.player;
-        // A run starts on MANUAL allocation (every weight at zero), so both
-        // sides place their own points — same stat, same order.
+
         if (p.points > 0) adjustStat('vit', 1);
         else if (pendingTotal(p) > 0) commitStats();
-        else playerAct(BOTS.smart.policy(p));   // same hand on the controls
+        else playerAct(BOTS.smart.policy(p));
       }
       await new Promise(r => setTimeout(r, 0));
     }

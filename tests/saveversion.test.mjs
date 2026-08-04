@@ -1,17 +1,10 @@
-// Bumping BALANCE.saveKey must drop older saves rather than migrate them.
-//
-// A save stores raw stats and recomputes the derived sheet on load, so carrying
-// one across a rules change hands back a character allocated under economics
-// that no longer exist. Empty slots are the honest outcome.
 export default async function ({ page, ctx, ok }) {
   await page.evaluate(() => {
     localStorage.clear();
     const mk = (c,w,l) => JSON.stringify({ v:2, classId:c, wave:w, kills:3, bestCombo:2,
       player:{ level:l, str:9, instinct:5, speed:7, vit:8, hp:90, maxHp:160, dmgMult:1,
                hpMult:1, apsMult:1, statuses:[], skillCds:[0,0,0,0] } });
-    // Every retired key the game knows about, whatever they are today — the
-    // suite asks "does a bump drop what came before", not "does it drop v3".
-    // Written from BALANCE.oldSaveKeys so a bump needs no edit here.
+
     BALANCE.oldSaveKeys.forEach((k, i) => localStorage.setItem(k, mk('bio', 2 + i, 2 + i)));
   });
   await page.reload({ waitUntil: 'load' });
@@ -24,19 +17,14 @@ export default async function ({ page, ctx, ok }) {
   ok('retired keys purged', after.keys.length === 0, JSON.stringify(after.keys));
   ok('both slots empty', after.slots.every(s => s === 'empty'), after.slots.join(','));
   ok('LOAD GAME disabled', after.loadDisabled);
-  // BY LABEL, NOT BY POSITION. This used to be `.menu-stack .btn:nth-child(1)`
-  // and broke the moment the title screen was restyled — the suite could no
-  // longer start a run, which reads as a save-format failure rather than as a
-  // renamed class. What the test means is "press NEW GAME", so that is what it
-  // asks for.
+
   await page.click('#title-screen button:has-text("NEW GAME")');
   ok('NEW GAME goes straight to the intro, no picker',
      await page.evaluate(()=>document.querySelector('.screen.active')?.id)==='intro-screen');
-  await page.click('#intro-screen .intro-choice.is-primary');   // by role, not by copy
+  await page.click('#intro-screen .intro-choice.is-primary');
   await page.click('.class-card.bio');
   await page.click('#start-btn');
-  // EVOLVE plays a transition beat before the run. SKIP jumps to a playable
-  // fight; tolerate it being gone already.
+
   await page.locator('#skip-btn').click({ timeout: 2000 }).catch(() => {});
   await page.waitForFunction(()=>state.player&&state.combatActive, null, { timeout: 20000 });
   await page.evaluate(()=>{ state.wave = 5; saveRun(); });

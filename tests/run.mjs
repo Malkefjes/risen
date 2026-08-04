@@ -1,10 +1,3 @@
-// Runs every suite against a freshly served copy of the game.
-//
-//   npm test              all suites
-//   npm test -- hud       only suites whose name contains "hud"
-//
-// Each suite gets its own browser context, so one suite's saves can never
-// leak into another's.
 import { serve, launch, tracker, openGame } from './harness.mjs';
 
 const SUITES = [
@@ -34,14 +27,11 @@ for (const [name, blurb] of picked) {
   } catch (e) {
     crash = e;
   }
-  // Asserted for every suite rather than remembered per suite: a page error is
-  // a failure no matter which behaviour was under test when it happened.
+
   t.ok('no JS errors', errors.length === 0, errors.slice(0, 3).join(' | '));
   if (crash) t.ok('suite ran to completion', false, String(crash).split('\n')[0]);
   await ctx.close();
 
-  // Measurements are not checks and are never counted as either — they are the
-  // numbers the run produced, printed for a human to judge. See tracker().
   const checks = t.rows.filter(r => !r.measure);
   const measures = t.rows.filter(r => r.measure);
   const pass = checks.filter(r => r.pass).length;

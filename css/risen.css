@@ -1,8 +1,3 @@
-/* Fonts are self-hosted — the Google Fonts @import was the game's ONLY
-   external request, and as a render-blocking fetch it could hold the whole
-   page in a washed-out "still loading" state on reload whenever the CDN or
-   the network was slow. font-display: swap means even a missing font file
-   can only ever cost the fallback typeface, never a blank or frozen frame. */
 @font-face { font-family: 'Orbitron'; font-style: normal; font-weight: 400; font-display: swap; src: url('../assets/fonts/orbitron-400.woff2') format('woff2'); }
 @font-face { font-family: 'Orbitron'; font-style: normal; font-weight: 600; font-display: swap; src: url('../assets/fonts/orbitron-600.woff2') format('woff2'); }
 @font-face { font-family: 'Orbitron'; font-style: normal; font-weight: 700; font-display: swap; src: url('../assets/fonts/orbitron-700.woff2') format('woff2'); }
@@ -11,26 +6,9 @@
 @font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 500; font-display: swap; src: url('../assets/fonts/jetbrainsmono-500.woff2') format('woff2'); }
 
 :root {
-  /* THE BODY FACE, in one place. Orbitron is the display face and is named
-     literally wherever something is a label; everything you actually READ —
-     skill descriptions, class blurbs, the transition line, every number on the
-     result screen — inherits this.
 
-     All-Orbitron was tried on build 2026-08-02e and the owner threw it out on
-     sight. Orbitron is a display face — wide, geometric, weak lowercase — so
-     the class blurb and the skill cards read as a wall, and proportional digits
-     make the result screen's columns wobble as the numbers change. */
   --font-body: 'JetBrains Mono', monospace;
 
-  /* One unit of viewport height, indirected so it can be overridden. Everything
-     that sizes itself against the screen goes through this instead of using
-     `vh` directly.
-
-     `vh` assumes the page owns a window whose height means something. Inside a
-     frame that resizes to fit its own content that is a loop: `vh` resolves
-     against the frame, the frame's height comes from the content, and the
-     content is sized in `vh`. Set this to a fixed length (e.g. `--vh: 9px`) in
-     any embed that self-sizes. */
   --vh: 1vh;
 
   --bg: #07090f;
@@ -45,30 +23,16 @@
   --psy: #c084fc;
   --sym: #fb923c;
   --hyd: #38bdf8;
-  /* Unaugmented has no strain tint — it is the plain white the unit names use,
-     which is the point of the class. Aliased rather than copied so it cannot
-     drift from --text. */
+
   --base: var(--text);
-  --base-rgb: 238, 242, 255;   /* --base as bare channels, for rgba() alphas */
+  --base-rgb: 238, 242, 255;
   --enemy: #fb7185;
   --xp: #fbbf24;
-  /* WEAK's own blue. Its own variable rather than a reused strain colour so the
-     status and the keyword in a description can never drift apart. */
+
   --weak: #60a5fa;
 
-  /* ---- STAT COLOURS (eye candy, revertible) --------------------------------
-     One hue per stat in the sidebar. Their OWN variables rather than reusing
-     --psy and --bio, which are the nearest matches: a purple Speed row that
-     literally is psy's colour, and a green Vitality row that is bio's, would
-     tie a stat to a strain it has nothing to do with. Same palette family,
-     different job.
-     Retune the four hues here and the whole feature follows — nothing below
-     hardcodes a colour. To remove it entirely, see the block near
-     .side-stat-row further down. */
   --stat-str: #ff6b6b;      --stat-str-glow: rgba(255,107,107,0.40);
-  /* The ATTACK tile's amber. Its own hue rather than Strength's red: the
-     owner wants the stat red and the tile amber, so the two are named
-     separately instead of one pretending to be the other. */
+
   --stat-atk: #ffa93d;      --stat-atk-glow: rgba(255,169,61,0.40);
   --stat-instinct: #ffd15c; --stat-instinct-glow: rgba(255,209,92,0.40);
   --stat-speed: #b98cff;    --stat-speed-glow: rgba(185,140,255,0.40);
@@ -77,41 +41,18 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* The browser's default focus ring is `outline: auto` — a 3px two-tone ring
-   whose outer band is white, which reads as a stray white border on these dark
-   panels. Replace it rather than delete it: :focus-visible only fires for
-   keyboard focus, so the mouse leaves nothing behind while tabbing still shows
-   where you are. Negative offset keeps the ring inside the element so an
-   ancestor with overflow:hidden (the arena card, skill buttons) can't clip it. */
 button:focus { outline: none; }
 button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
 
-html { font-size: 17.5px; } /* was ~16px — scales all rem text up slightly */
+html { font-size: 17.5px; }
 
-/* Below the width where the two-column combat layout starts to crowd, shrink
-   the whole UI rather than let it collapse. The sidebar staying beside the
-   arena — the fight and your stats on one screen — is worth more than absolute
-   text size, and this is what keeps the game playable in a narrow window or an
-   embedded frame instead of pushing the STATS tab below the fold. */
 @media (max-width: 1200px) {
   html { font-size: clamp(11.5px, 1.45vw, 17.5px); }
 }
 
-/* ---- The room the UI stands in -------------------------------------------
-   The chamber wallpaper behind every screen, as ATMOSPHERE AND NOTHING ELSE. It
-   is the columnless painting on purpose: no focal point to compete with a panel,
-   and its quietest region is the middle, where the densest UI sits.
-
-   ON body ITSELF, not on a body::before layer, and that is not a preference: a
-   background on body PROPAGATES to the canvas when html has none, and the canvas
-   is painted across the whole viewport beneath everything. `fixed` so the room
-   does not scroll with the content.
-
-   THE SCRIM IS THE WHOLE JOB — under a combat screen this has to read as depth
-   and never as detail, so two dark washes take the painting down to a hint. */
 body {
   color: var(--text);
   font-family: var(--font-body);
@@ -126,7 +67,6 @@ body {
   background-color: var(--bg);
 }
 
-
 #app {
   max-width: min(1680px, 96vw);
   margin: 0 auto;
@@ -134,9 +74,6 @@ body {
   min-height: calc(var(--vh) * 100);
 }
 
-/* Content-sized, not viewport-filling. The arena card has a definite height
-   now, so forcing 100vh here would just pool dead space under the action
-   panel — the screen simply ends where the UI ends. */
 #combat-screen.active {
   display: flex;
   flex-direction: column;
@@ -146,13 +83,6 @@ body {
   flex: 1;
 }
 
-/* Fresh-run reveal: the room assembles out of the black one piece at a time,
-   arena first. Classes toggled by stageCombatReveal() on a new run.
-
-   The ORDER lives here as transition-delay rather than in a chain of timers,
-   so the sequence is one list to read and re-order. stageCombatReveal only
-   needs to know when the last piece lands — keep REVEAL_LAST_MS in screens.js
-   matched to the bottom delay plus the duration. */
 #combat-screen.staged .battlefield,
 #combat-screen.staged .combat-header,
 #combat-screen.staged .action-panel,
@@ -161,8 +91,7 @@ body {
 #combat-screen.staged.reveal .combat-header,
 #combat-screen.staged.reveal .action-panel,
 #combat-screen.staged.reveal .sidebar { opacity: 1; transition: opacity 900ms ease; }
-/* The header comes up WITH the arena — it is the frame around it, not a
-   separate beat. The panel and the sidebar still land one at a time. */
+
 #combat-screen.staged.reveal .battlefield,
 #combat-screen.staged.reveal .combat-header { transition-delay: 0ms; }
 #combat-screen.staged.reveal .action-panel  { transition-delay: 800ms; }
@@ -176,12 +105,10 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* TITLE */
 #title-screen { text-align: center; padding-top: 70px; }
 #intro-screen { text-align: center; padding-top: 70px; }
 #load-screen { text-align: center; padding-top: 70px; }
-/* -48px is #app's own vertical padding. A bare 100vh here makes #app 100vh+48
-   and the page scrolls for as long as this screen is up. */
+
 #resist-screen.active { display: flex; align-items: center; justify-content: center; min-height: calc(var(--vh) * 100 - 48px); text-align: center; }
 .resist-line {
   max-width: 640px;
@@ -191,7 +118,7 @@ body {
   line-height: 1.6;
   opacity: 0;
   text-shadow: 0 0 26px rgba(192,132,252,0.4);
-  /* Hold black for 1.8s first, then a slow fade in / long hold / fade out. */
+
   animation: resistFade 5s ease 1.8s forwards;
 }
 @keyframes resistFade {
@@ -232,7 +159,7 @@ body {
   align-items: center;
   justify-content: center;
   min-height: calc(var(--vh) * 100 - 48px);
-  padding-bottom: clamp(56px, 14vh, 170px);   /* sits above true centre */
+  padding-bottom: clamp(56px, 14vh, 170px);
 }
 #load-screen h2 {
   font-family: 'Orbitron', sans-serif;
@@ -244,10 +171,7 @@ body {
 }
 .save-actions { margin-top: clamp(20px, 3.4vh, 34px); }
 .save-list { display: flex; flex-direction: column; gap: 10px; width: min(560px, 92vw); }
-/* A slot is a row, not a button: the body selects the run and the delete
-   control sits beside it, so neither can swallow the other's click.
-   Glass, edge and radius are .ui-btn's; only the border and glow change per
-   strain, the same rule the strain cards follow. */
+
 .save-slot {
   --class-rgb: 238, 242, 255;
   display: flex;
@@ -265,7 +189,7 @@ body {
 .save-slot.strain-psy { --class-rgb: 192, 132, 252; }
 .save-slot.strain-sym { --class-rgb: 251, 146, 60; }
 .save-slot.strain-hyd { --class-rgb: 56, 189, 248; }
-/* base is --text, aliased not copied: unaugmented has no strain tint. */
+
 .save-slot.strain-base { --class-rgb: 238, 242, 255; }
 
 .save-slot-body {
@@ -284,12 +208,9 @@ body {
   border-color: rgba(var(--class-rgb), 0.72);
   box-shadow: 0 0 26px rgba(var(--class-rgb), 0.18);
 }
-/* :has() is recent enough to be worth a fallback — without it the row simply
-   doesn't light, and the body still highlights on its own. */
+
 .save-slot-body:hover { background: rgba(var(--class-rgb), 0.07); }
 
-/* An empty slot stays listed so the count is visible at a glance, but it does
-   not pretend to be clickable. */
 .save-slot.empty { border-style: dashed; border-color: rgba(255,255,255,0.13); }
 .save-slot.empty .save-slot-body { cursor: default; }
 .save-slot.empty:has(.save-slot-body:hover) {
@@ -339,21 +260,9 @@ body {
   transition: color 0.15s ease, background 0.15s ease;
 }
 .save-slot-del:hover { color: var(--accent2); background: rgba(255, 45, 106, 0.10); }
-/* Armed state: the first click asks, the second deletes. See deleteSlot. */
+
 .save-slot-del.armed { color: var(--accent2); background: rgba(255, 45, 106, 0.14); font-size: 0.66rem; }
 
-
-/* Sits under the logo, quiet enough to ignore and present enough to quote in
-   a bug report. The logo's 54px bottom margin is moved here so the tag tucks
-   under it rather than pushing the menu down. */
-/* ---- ui-btn: the shared button ------------------------------------------
-   THE ONE BUTTON THE GAME IS BEING REBUILT ON, screen by screen. .title-btn
-   carries only what is genuinely title-specific and inherits the rest from here,
-   because two copies of a look is how the two drift apart.
-
-   Glass rather than a fill: dark enough to seat a label anywhere in the room,
-   translucent enough that the light behind it still comes through. The variants
-   change BORDER AND GLOW, never size or shape. */
 .ui-btn {
   display: inline-flex;
   align-items: center;
@@ -373,14 +282,7 @@ body {
   transition: background 0.18s ease, border-color 0.18s ease,
               color 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease;
 }
-/* HOVER IS A LIFT, NOT A HUE. The wash and the glow were bio's green while the
-   border was already neutral, so every shared button greened over on hover
-   whatever screen it was on. Both now read --base-rgb, the near-white these
-   edges already use. Alphas sit slightly under the old ones because white
-   carries further than a saturated green at the same value.
-   A button that means something still gets to say so: EVOLVE keeps its strain
-   colour (see #start-btn below), MUTATE its green edge, and the allocation
-   confirm its own. */
+
 .ui-btn:hover {
   background: rgba(var(--base-rgb), 0.10);
   border-color: rgba(var(--base-rgb), 0.75);
@@ -425,21 +327,12 @@ body {
   box-shadow: none;
 }
 
-/* ---- Title screen --------------------------------------------------------
-   FULL-BLEED, AND THAT IS WHY IT IS FIXED. Every other screen lives inside
-   #app, which is centred with a max-width and padding — fine for a UI, fatal
-   for a wallpaper that has to touch all four edges. Taking the title screen out
-   of flow is the whole trick; nothing else on the page changes.
-
-   The art is a separate layer rather than a background on the screen itself, so
-   the scrim that buys text its contrast can sit between the painting and the
-   words instead of being baked into either. */
 #title-screen.active {
   display: flex;
   position: fixed;
   inset: 0;
   z-index: 5;
-  overflow: auto;                 /* a short window scrolls rather than clips */
+  overflow: auto;
 }
 
 .title-art {
@@ -447,12 +340,7 @@ body {
   inset: 0;
   background: #05070a url('../assets/ui/menu-wallpaper.jpg') center / cover no-repeat;
 }
-/* THE SCRIM IS SHAPED, NOT FLAT. The painting is brightest dead centre — a
-   green column that would swallow white text — and quietest on the floor at the
-   bottom. So the top is darkened enough to seat the wordmark, the middle is
-   left almost alone because that is the art doing its job, and the bottom is
-   darkened again to bed the menu. A flat overlay would have cost the picture
-   all of its depth to solve a problem it only has in two places. */
+
 .title-art::after {
   content: '';
   position: absolute;
@@ -480,8 +368,6 @@ body {
 
 .title-mark { text-align: center; }
 
-/* letter-spacing puts its gap AFTER the last letter too, which drags a centred
-   word half a space left. The matching padding-left puts it back. */
 .title-logo {
   --ls: clamp(10px, 2.6vw, 34px);
   margin: 0;
@@ -492,8 +378,7 @@ body {
   letter-spacing: var(--ls);
   padding-left: var(--ls);
   color: #f4fff8;
-  /* Two dark shadows for legibility against the column, then two green glows
-     so the wordmark reads as lit BY the painting rather than pasted onto it. */
+
   text-shadow:
     0 2px 3px rgba(0,0,0,0.95),
     0 6px 30px rgba(0,0,0,0.8),
@@ -508,10 +393,6 @@ body {
                           0 0 48px rgba(125,255,160,0.62), 0 0 108px rgba(125,255,160,0.38); }
 }
 
-/* This line lands on the brightest pixels in the painting — the top of the
-   column — so it needs more than a colour. The stacked dark shadows are a halo
-   that lets thin letterspaced type survive on a light background; at 0.72 alpha
-   with one shadow it was unreadable at every viewport tested. */
 .title-sub {
   margin: clamp(10px, 1.8vh, 20px) 0 0;
   font-size: clamp(0.64rem, 1.5vw, 0.8rem);
@@ -526,15 +407,6 @@ body {
     0 0 34px rgba(125,255,160,0.22);
 }
 
-/* Pushed to the lower third on purpose: that is the reflective floor, the
-   quietest part of the painting, and the only place a stack of buttons can sit
-   without covering something worth looking at. */
-/* SPACED OFF THE HEADER, not pushed to the floor. `margin-top: auto` used to
-   shove this to the bottom of the screen, which left the wordmark stranded at
-   the top with a lot of nothing between them. The gap is explicit now and the
-   slack falls BELOW the menu instead — so the pair reads as one block sitting
-   high in the frame, and the extra room shows more of the floor rather than
-   more empty air in the middle. */
 .title-menu {
   margin-top: clamp(24px, 6vh, 62px);
   margin-bottom: auto;
@@ -544,9 +416,6 @@ body {
   gap: clamp(8px, 1.4vh, 13px);
 }
 
-/* Only what is title-specific: a fixed width so the stack is a column of equal
-   slabs, and type that scales with the viewport because this screen is the one
-   that goes full-bleed. Everything else comes from .ui-btn. */
 .title-btn {
   width: min(330px, 80vw);
   padding: clamp(10px, 1.5vh, 14px) 18px;
@@ -562,9 +431,6 @@ body {
   text-shadow: 0 1px 6px rgba(0,0,0,0.9);
 }
 
-/* A short landscape window (a laptop, a phone on its side) has no room for a
-   7rem wordmark AND four buttons, so the type comes down and the gaps close
-   before anything is allowed to scroll. */
 @media (max-height: 560px) {
   .title-logo { font-size: clamp(2.2rem, 8vh, 3.4rem); }
   .title-body { padding-top: clamp(16px, 4vh, 28px); }
@@ -573,16 +439,6 @@ body {
   .title-sub { margin-top: 6px; }
 }
 
-/* ---- Intro ---------------------------------------------------------------
-   NO PANEL. It had a glass card and the owner took it off: the copy reads
-   perfectly well straight on the room, and a box around it only shrank the
-   painting for no gain. What the card was really buying was contrast, and a
-   text-shadow buys that without drawing a border.
-
-   CENTRED, all of it. It was left-aligned for a pass on the argument that five
-   centred paragraphs is five ragged left edges — true of a UI, and the owner's
-   call is that it is the wrong instinct here: this is a story beat on a
-   symmetrical painting, not a column of copy, and centred is what matches it. */
 .intro-card {
   max-width: 660px;
   margin: clamp(20px, 6vh, 64px) auto clamp(24px, 4.5vh, 44px);
@@ -598,9 +454,7 @@ body {
   color: var(--text);
   text-shadow: 0 2px 14px rgba(0,0,0,0.9), 0 0 30px rgba(238,242,255,0.28);
 }
-/* Brighter than the old muted grey, because muted grey was a colour chosen to
-   sit on a flat dark page and this now sits on a lit room. The stacked dark
-   shadows are the halo doing what the card used to do. */
+
 .intro-body {
   color: rgba(226, 236, 244, 0.88);
   font-size: 0.95rem;
@@ -610,8 +464,7 @@ body {
 }
 .intro-body p { margin: 0 0 14px; }
 .intro-body p:last-child { margin-bottom: 0; }
-/* A rule rather than more whitespace: the closing line is a different KIND of
-   sentence from the paragraphs above it, and the divider says so in one pixel. */
+
 .intro-final {
   margin: clamp(18px, 3vh, 28px) 0 0;
   padding-top: clamp(16px, 2.6vh, 24px);
@@ -624,17 +477,6 @@ body {
   text-shadow: 0 2px 12px rgba(0,0,0,0.9), 0 0 26px rgba(238,242,255,0.35);
 }
 
-/* `OWNER:` the augment door is green is-primary and the clean door the same
-   quiet grey as BACK — styling only; both keep .intro-choice's size. Same size
-   on purpose: the row before this had three buttons at three sizes and the
-   green one read as the answer, the grey one as a warning. (The labels were
-   MUTATE and RESIST MUTATION when this was decided; they are AUGMENT and RUN
-   CLEAN now, and the decision is about the two ROLES, not the words.) */
-/* A GRID, not a flex row, so the two are exactly equal regardless of label
-   length. A flex row sized them to their text and the shorter one read as the
-   smaller choice — which is why the rename from a six-character gap to a
-   two-character one changed nothing here. Folds to one column when there is no
-   room for two. */
 .intro-fork {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -648,16 +490,12 @@ body {
   letter-spacing: 2.4px;
 }
 
-/* `OWNER:` MUTATE is plain green on a 2px edge. Scoped here, not on .ui-btn —
-   every other edge in the game is 1px. Padding drops the pixel the border
-   gains so it stays the same size as RESIST beside it. */
 .intro-choice.is-primary {
   border-width: 2px;
   padding: 14px 19px;
   border-color: rgba(125, 255, 160, 0.70);
 }
 .intro-choice.is-primary:hover { border-color: rgba(125, 255, 160, 0.95); }
-
 
 @media (max-width: 560px) {
   .intro-fork { grid-template-columns: 1fr; max-width: 320px; }
@@ -669,22 +507,13 @@ body {
 }
 .intro-back .ui-btn { padding: 10px 30px; font-size: 0.7rem; }
 
-/* NOT TRANSPARENT ANY MORE, and the room is why. These buttons were see-through
-   over a flat dark page, which was fine when there was nothing behind them.
-   With the chamber running at close to full strength a button can land on a lit
-   floor, and teal-on-bright is the worst contrast pair in the palette — BACK
-   and EVOLVE on the strain select were the first casualties. The backing is
-   dark enough to seat the label anywhere in the room and, on the screens that
-   are still mostly panel, indistinguishable from the transparency it replaced. */
-/* CLASS SELECT. Cards use .ui-btn's glass; only border and glow vary per
-   strain. 300px wide — the description wraps and the card grows on its own. */
 #class-screen.active {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: calc(var(--vh) * 100 - 48px);
-  /* Lifts the block above true centre by half of this. */
+
   padding-bottom: clamp(56px, 14vh, 170px);
 }
 
@@ -694,10 +523,9 @@ body {
   font-size: 1.7rem;
   margin-bottom: clamp(20px, 3.6vh, 38px);
   letter-spacing: 3px;
-  /* The heading sits straight on the wallpaper with no panel under it. */
+
   text-shadow: 0 2px 16px rgba(0,0,0,0.85);
 }
-
 
 .classes {
   display: flex;
@@ -727,7 +555,6 @@ body {
               box-shadow 0.18s ease, transform 0.18s ease;
 }
 
-/* Bare channels: a card needs the hue at several alphas, rgba() can't take a hex var. */
 .class-card.bio { --class-color: var(--bio); --class-rgb: 125, 255, 160; }
 .class-card.psy { --class-color: var(--psy); --class-rgb: 192, 132, 252; }
 .class-card.sym { --class-color: var(--sym); --class-rgb: 251, 146, 60; }
@@ -740,8 +567,6 @@ body {
   transform: translateY(-3px);
 }
 
-/* Face wash is 0.07, weaker than the button's 0.13 — at 0.13 the hue dulled a
-   whole paragraph of --muted grey underneath it. */
 .class-card.selected {
   background: rgba(var(--class-rgb), 0.07);
   border-color: rgba(var(--class-rgb), 0.85);
@@ -784,18 +609,7 @@ body {
   transform: translateY(-4px) scale(1.04);
 }
 
-/* .char-figure derives width and shadow from this — THE ONE NUMBER for how big
-   the strain art reads on the select screen; .class-preview's height above is
-   its box and wants to move with it. */
 .class-preview .char-figure { --sprite-h: clamp(168px, 20vh, 210px); }
-/* NO WIDTH CAP HERE, and that is the whole reason the art sits on its shadow.
-   The strain canvases are 1.83:1 with the figure centred in the middle third
-   and its feet flush to the bottom edge, so at 210px tall the art wants 384px
-   of width — more than a card holds. Capping it to the card made object-fit
-   letterbox the image: it rendered SHORTER than --sprite-h and, being centred,
-   floated clear of the floor plane the shadow is pinned to. Sized by height
-   alone the bottom edge lands on the shadow by construction.
-   What overflows is empty canvas, and .class-card clips it symmetrically. */
 
 .class-name {
   font-family: 'Orbitron', sans-serif;
@@ -828,8 +642,6 @@ body {
 }
 .class-actions .ui-btn { min-width: 190px; }
 
-/* EVOLVE wears the selected strain. Glow follows the border — is-primary's is
-   green, and green under a purple edge names the wrong strain. */
 #start-btn.strain-bio { --class-rgb: 125, 255, 160; }
 #start-btn.strain-psy { --class-rgb: 192, 132, 252; }
 #start-btn.strain-sym { --class-rgb: 251, 146, 60; }
@@ -847,7 +659,6 @@ body {
 }
 #start-btn[class*="strain-"]:focus-visible { outline-color: rgba(var(--class-rgb), 0.9); }
 
-/* Three cards need ~1104px. Below that go to one column, not a 2 + 1 wrap. */
 @media (max-width: 1120px) {
   .classes { flex-direction: column; align-items: center; }
 }
@@ -886,7 +697,7 @@ body {
   transition: width 0.4s ease;
   border-radius: 2px;
 }
-/* Level + XP header at the top of the STATS tab. */
+
 .stats-progress {
   display: flex;
   flex-direction: column;
@@ -898,13 +709,10 @@ body {
 .stats-progress .xp-block { min-width: 0; }
 .stats-progress-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 
-/* Sits at the right end of the level row, opposite LEVEL n. Matches the level
-   badge's type exactly so the two read as one line of the same text; only the
-   strain word carries the class colour. */
 .strain-word {
   font-family: 'Orbitron', sans-serif;
   font-weight: 700;
-  font-size: 0.95rem;   /* matches .side-stat-name, the STRENGTH/SPEED labels */
+  font-size: 0.95rem;
   letter-spacing: 1px;
   text-transform: uppercase;
 }
@@ -914,7 +722,6 @@ body {
 .strain-word.hyd  { color: var(--hyd); }
 .strain-word.base { color: var(--base); }
 
-/* COMBAT HEADER */
 .combat-header {
   display: flex;
   justify-content: space-between;
@@ -943,8 +750,7 @@ body {
   text-transform: uppercase;
   text-align: center;
   margin-bottom: 10px;
-  /* A flex row so the pieces space themselves; the line is assembled from
-     separate coloured spans rather than one string. */
+
   display: flex;
   align-items: center;
   justify-content: center;
@@ -953,15 +759,13 @@ body {
   min-height: 1.2em;
 }
 .turn-now { font-weight: 700; }
-/* Your half is always white, whatever the strain — the line is about whose turn
-   it is, and one steady colour reads faster than one that changes per run. */
+
 .turn-side.you   { color: var(--text); }
 .turn-side.enemy { color: var(--enemy); }
 .turn-sep { color: var(--muted); opacity: 0.5; }
 .turn-upcoming { color: var(--muted); font-size: 0.92em; }
 .turn-arrow { color: var(--muted); opacity: 0.65; }
 
-/* Arena — one shared card */
 .battlefield {
   margin-bottom: 0;
   flex: 0 0 auto;
@@ -969,9 +773,6 @@ body {
   flex-direction: column;
 }
 
-/* End-of-run beats: the moment between the deciding hit and the result screen.
-   Defeat drains the arena of color and light; a win flushes it. The classes
-   are set by endRun and removed when the result screen takes over. */
 #combat-screen.defeat-beat .arena-card {
   filter: grayscale(0.8) brightness(0.65);
   transition: filter 0.7s ease;
@@ -997,37 +798,14 @@ body {
   grid-template-columns: 1fr 1fr;
   gap: 12px 48px;
   align-items: end;
-  /* Definite height instead of "absorb whatever the viewport left over",
-     which grew forever on a tall monitor. 520px is what seats the tallest
-     fighter in the game (a boss stack) with a little air; everything smaller
-     leaves headroom above, and that gap IS the effect, since the card is
-     bottom-anchored to the floor plane. Deliberately a share of the viewport
-     rather than "viewport minus the chrome": the action panel changes height
-     with window width, so subtracting a fixed chrome constant went stale and
-     pushed the page into a scroll on laptops. */
+
   flex: 0 0 auto;
-  /* 52 -> 58vh and the sidebar's share trimmed (see .combat-layout): both
-     moves exist for the zone paintings, which were losing a third of their
-     height to the cover crop. The fighters stay bottom-anchored and the
-     same size (--fig is untouched), so every gained pixel is scenery. */
+
   height: clamp(360px, calc(var(--vh) * 58), 580px);
-  /* Master sprite scale for the arena; every tier below is a ratio of it.
-     A boss is 1.56x this and sits under ~150px of name, bars and padding, so
-     the usable scale is (card - 190) / 1.56 — that fixed overhead is why this
-     is an affine expression and not a plain percentage. The vh term is unchanged
-     from when the boss was 1.69x, so it now carries extra margin. */
+
   --fig: clamp(110px, calc(var(--vh) * 30.7 - 110px), 200px);
 }
 
-/* ---- Zone backdrop (SETTINGS.backdrop) ----
-   ONE PAINTING FOR EVERY ZONE (the owner's corridor banner), opacity-gated by
-   .backdrop-on so OFF is exactly the clean arena. The readability contract:
-     1. VALUE BAND — nothing back here gets brighter than the floor plane;
-     2. FOCUS — the layer is slightly blurred and desaturated;
-     3. CLARITY POCKET — darkest behind the fighters and at the floor line.
-   Versioned filename on purpose: GitHub Pages caches for ~10 minutes, so a
-   swapped painting under the SAME name shows the old one until the cache
-   turns over. Bump the number when the art changes. */
 .arena-backdrop, .arena-haze {
   position: absolute; inset: 0; z-index: 0;
   pointer-events: none;
@@ -1041,9 +819,7 @@ body {
     url('../assets/zones/mpc-1.jpg') center bottom / cover no-repeat;
   filter: blur(1.2px) saturate(0.9) brightness(1.02);
 }
-/* Zone 1's corridor is the unlit version of zone 2's, so it takes a lighter
-   hand: a shallower floor pocket and a touch more brightness, or the treatment
-   that suits a neon room buries this one. */
+
 .arena-card[data-zone="1"] .arena-backdrop {
   background:
     radial-gradient(ellipse 130% 55% at 50% 100%, rgba(4,6,10,0.45) 0%, rgba(4,6,10,0.16) 45%, transparent 75%),
@@ -1071,9 +847,6 @@ body {
 }
 @media (prefers-reduced-motion: reduce) { .arena-haze { animation: none; } }
 
-/* Battleground floor — feet rest on this plane. z-index 1: the floor sits
-   above the backdrop layers (still under the fighters at their own z 1,
-   which follow it in DOM order). */
 .arena-card::before {
   content: '';
   position: absolute;
@@ -1124,7 +897,6 @@ body {
   filter: grayscale(0.85);
 }
 
-/* Fighter panels — info on top, sprite planted on the floor */
 .fighter {
   position: relative;
   width: 100%;
@@ -1142,7 +914,6 @@ body {
 
 .unit { position: relative; }
 
-/* Info stack sits above the sprite */
 .fighter-info {
   display: flex;
   flex-direction: column;
@@ -1153,11 +924,9 @@ body {
 }
 
 .char-figure {
-  /* Set by .arena-card. The class-select preview lives outside the arena and
-     sets --sprite-h itself; the fallback is the last resort for neither. */
+
   --sprite-h: var(--fig, 200px);
-  /* Tracks .char-svg's max-width so the box always bounds the art — a wide
-     strike pose used to overflow the old fixed 200px. */
+
   width: calc(var(--sprite-h) * 1.9);
   height: calc(var(--sprite-h) + 2px);
   position: relative;
@@ -1168,17 +937,14 @@ body {
   will-change: transform;
   z-index: 2;
   margin-bottom: 0;
-  /* feet sit on the floor plane */
+
   padding-bottom: 0;
 }
 
 .char-svg {
   width: auto;
   height: var(--sprite-h);
-  /* Must clear the widest sprite's aspect ratio (the strain art is ~1.83:1).
-     If this clamps, object-fit:contain letterboxes the art — it renders
-     shorter than --sprite-h and, being centred, lifts the feet off the floor
-     plane. Raise this before adding art wider than 1.9:1. */
+
   max-width: calc(var(--sprite-h) * 1.9);
   overflow: visible;
   transition: transform 0.1s ease-out;
@@ -1188,24 +954,10 @@ body {
   object-fit: contain;
 }
 
-/* Size carries threat. A rank-and-file Enforcer is Sonny's equal and stands eye
-   to eye with him; only elites and the Captain loom.
-   Every sprite's solid body fills 98.9-100% of its own canvas, so these ratios
-   are literally how tall each character reads on screen.
-   --foe-art is the ACT's own art scale, set per fighter by createFighterPanel
-   (see ZONE_SPRITES.trashScale) and defaulting to 1. It MULTIPLIES the tier
-   rather than replacing it, so the ladder within an act survives: an elite
-   Experiment still stands taller than a plain one. */
-/* SONNY STANDS AT THE ROSTER'S HEIGHT, not under it. He was the only figure on
-   the plain --fig, so every zone that scaled its rank and file up read as the
-   player being the small one. At 1.15 he is eye to eye with the Enforcer and
-   the Mercenary and a shade under zone 1's Experiment, and the ladder above him
-   is untouched: an elite is his height times the zone's own scale again, and a
-   boss still looms at 1.56. */
 .char-figure.hero      { --sprite-h: calc(var(--fig, 200px) * 1.15); }
 .char-figure.foe       { --sprite-h: calc(var(--fig, 200px) * var(--foe-art, 1)); }
 .char-figure.foe-elite { --sprite-h: calc(var(--fig, 200px) * 1.15 * var(--foe-art, 1)); }
-.char-figure.foe-boss  { --sprite-h: calc(var(--fig, 200px) * 1.56); }   /* the MCP Captain looms */
+.char-figure.foe-boss  { --sprite-h: calc(var(--fig, 200px) * 1.56); }
 
 .char-figure.alive .char-svg {
   animation: idleBob 3.2s ease-in-out infinite;
@@ -1216,21 +968,13 @@ body {
   animation: none;
 }
 
-/* Very subtle weight shift — stays planted on the floor */
 @keyframes idleBob {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-2px); }
 }
 
-/* Art drawn facing right, flipped to face the player — see the `mirror` note in
-   js/sprites.js. Uses the standalone `scale` property rather than
-   transform:scaleX(-1) DELIBERATELY: this element's transform is already spoken
-   for by idleBob and the lunge/recoil keyframes, and a transform here would be
-   overwritten by whichever animation is running. `scale` composes with them
-   instead of competing. */
 .char-figure.art-mirrored .char-svg { scale: -1 1; }
 
-/* Ground shadow under each fighter — aligns with feet on the floor */
 .ground-shadow {
   position: absolute;
   bottom: -2px;
@@ -1250,7 +994,6 @@ body {
   transform: translateX(-50%) scaleX(0.9);
 }
 
-/* Attack lunges — player (left) lunges right, enemy (right) lunges left */
 .char-figure.lunge-right {
   animation: lungeRight 0.28s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
 }
@@ -1269,7 +1012,6 @@ body {
   100% { transform: translateX(0) translateY(0); }
 }
 
-/* Subtle hit recoil */
 .char-figure.recoil-left {
   animation: recoilLeft 0.22s ease-out forwards;
 }
@@ -1288,8 +1030,6 @@ body {
   100% { transform: translateX(0); }
 }
 
-
-/* Impact mark — appears between fighters on contact */
 .impact-mark {
   position: absolute;
   top: 58%;
@@ -1370,11 +1110,6 @@ body {
   z-index: 2;
 }
 
-/* The gap does the work the chips used to. At 5px two plain labels of the same
-   tone sat close enough to read as one phrase — "SPINES 2t THORNS 22" — which
-   is exactly the failure the borders were hiding. Wider, because with nothing
-   drawn around a status the only thing separating it from its neighbour is
-   space. */
 .status-effects {
   display: flex;
   gap: 11px;
@@ -1383,11 +1118,6 @@ body {
   min-height: 20px;
 }
 
-/* Enemy intent — always-visible telegraph of the next move. */
-/* No card, no border: the intent is the icon and the number, floating alone
-   above the name. Its separation from the state row is carried by position
-   and SIZE — it is deliberately the largest text on the enemy panel besides
-   the name, because "what is coming" is the decision the player plays around. */
 .intent-badge {
   display: inline-flex;
   align-items: center;
@@ -1417,18 +1147,6 @@ body {
 }
 @media (prefers-reduced-motion: reduce) { .intent-badge.tone-heavy { animation: none; } }
 
-/* A STATUS IS THE WORD IN ITS OWN COLOUR — no chip, no border, no ground, on
-   EITHER side of the arena. Boxing every condition turned the space under a
-   health bar into a row of competing labels; colour alone tells them apart, and
-   it is the same colour the skill that applied it used.
-
-   The enemy got this treatment first and the player was deliberately left with
-   chips, because its statuses sat beside the old bank pips and needed an edge to
-   read as separate things. That reason retired with sym's wallet: only
-   Unaugmented draws pips at all now, so the row is statuses and nothing else and
-   the boxes were drawing a distinction that no longer exists. One rule, both
-   sides — and anything that renders into this row is a `.status` (THORNS is,
-   see buildStatusesHtml), so it inherits the treatment for free. */
 .status {
   font-size: 0.58rem;
   padding: 2px 0;
@@ -1436,12 +1154,6 @@ body {
   font-weight: 600;
 }
 
-/* One tone per status, named by the `tone` field of its STATUSES entry. The
-   generic buff/debuff pair is the fallback every new entry can use without
-   touching this file — green-ish for something you want, red-ish for something
-   done to you — so adding a status is a data edit, never a CSS edit. Colour
-   only: a tone that reaches for a border or a ground is re-introducing the
-   chip one status at a time. */
 .status.buff { color: var(--bio); }
 .status.debuff { color: var(--enemy); }
 
@@ -1451,27 +1163,13 @@ body {
 .status.stun { color: var(--psy); }
 .status.predator { color: var(--accent); }
 .status.spines { color: var(--sym); }
-/* Hyd's three all wear the strain blue: they are one system. */
+
 .status.pressure { color: var(--hyd); }
-/* var(--base), not a hardcoded white: Unaugmented's word on a skill card is
-   .kw-base, and a badge that is a different white from the word naming it is
-   the same disagreement in miniature. */
+
 .status.resolve { color: var(--base); }
 .status.dread { color: var(--psy); }
 .status.brace { color: var(--base); }
 
-/* THE BANK PIPS ARE GONE, and so is the row that held them. Every strain now
-   runs on one uncapped number worn as a status badge above — a fixed row of six
-   dots cannot draw a number with no ceiling, so the UI was quietly the thing
-   forcing the ceiling to exist. Unaugmented's RESOLVE was the last one left and
-   it reads as a status now like everyone else's. */
-
-/* Floater color is a fixed vocabulary — the color names the EVENT, never the
-   class: dealt damage white, taken damage red, crits gold, XP amber,
-   a tallied number and plain notes muted. Green is nature's: healing ticks up (+) and poison ticks
-   down (−) in the same green — the sign carries the meaning, and the pairing
-   is deliberate (poison IS bio's identity). Nothing else may use green.
-   Class identity lives in the status badges and the UI tint, not the numbers. */
 .float-dmg {
   position: absolute;
   font-family: 'Orbitron', sans-serif;
@@ -1488,19 +1186,15 @@ body {
 .float-dmg.heal { color: #7dffa0; }
 .float-dmg.poison { color: #7dffa0; }
 .float-dmg.xp { color: var(--xp); font-size: 1.05rem; }
-/* A multiplied payout (elite, boss, chain) lands like a crit lands: the juice
-   an elite pays IS the XP, so the bonus number is the celebration. */
+
 .float-dmg.xp-bonus {
   color: var(--xp); font-size: 1.7rem; font-weight: 900;
   text-shadow: 0 2px 8px rgba(0,0,0,0.9), 0 0 16px currentColor;
   animation: floatUpCrit 1.3s ease forwards;
 }
-/* A strain's own number moving — THORNS growing, RESOLVE steadying. Muted on
-   purpose: it happens most turns, so it must read without competing with the
-   damage it caused. */
+
 .float-dmg.tally { color: #eaf2ff; font-size: 0.95rem; letter-spacing: 0.5px; }
-/* EVADE / BLOCK: quiet gray notes — information, not a reward, so they must
-   not compete with damage numbers or read as XP the way they used to. */
+
 .float-dmg.note {
   color: #93a3ba; font-size: 0.9rem; font-weight: 600;
   letter-spacing: 2px; font-style: italic;
@@ -1511,7 +1205,7 @@ body {
   20% { transform: translateY(-10px) scale(1.18); }
   100% { opacity: 0; transform: translateY(-52px) scale(1); }
 }
-/* Crits overshoot: land big, snap back, then drift — the pop IS the message. */
+
 @keyframes floatUpCrit {
   0% { opacity: 1; transform: translateY(0) scale(0.6); }
   16% { transform: translateY(-8px) scale(1.4); }
@@ -1519,16 +1213,6 @@ body {
   100% { opacity: 0; transform: translateY(-56px) scale(1.02); }
 }
 
-/* ---- Panels over the room ------------------------------------------------
-   THE ROOM IS BRIGHT, SO THE PANELS DO THE READING. The first pass had this
-   backwards — a heavily darkened wallpaper under see-through panels — which
-   produced a background too dim to identify and text on a muddy wash. Inverted:
-   the chamber runs near full strength and these three surfaces are nearly solid.
-
-   0.90 rather than 1.0, with a heavy blur, keeps a panel from reading as a slab
-   cut out of the room. The ARENA CARD is deliberately left opaque: it carries
-   its own zone painting, and two paintings in one frame is the one place this
-   would cost more than it buys. */
 .sidebar,
 .action-panel {
   background: rgba(6, 11, 10, 0.68);
@@ -1540,17 +1224,10 @@ body {
               inset 0 0 40px rgba(var(--panel-edge, var(--base-rgb)), 0.05);
 }
 
-/* All three combat panels: the edge and its glow disappear into the panel's own
-   face, so nothing is framed and the backdrop runs to the edge of the card.
-   Transparent rather than the face's colour, because the background paints
-   under the border — a second layer on top would read darker, not identical.
-   The 1px stays so removing the colour cannot move anything. */
 .sidebar,
 .arena-card,
 .action-panel { border-color: transparent; box-shadow: none; }
 
-/* The strain tint has nothing left to colour in combat; the variable stays for
-   anything else reading --panel-edge. */
 #combat-screen[data-strain="bio"] { --panel-edge: 125, 255, 160; }
 #combat-screen[data-strain="psy"] { --panel-edge: 192, 132, 252; }
 #combat-screen[data-strain="sym"] { --panel-edge: 251, 146, 60; }
@@ -1570,30 +1247,20 @@ body {
   border: 1px solid rgba(var(--base-rgb), 0.28);
   border-radius: 6px;
   color: var(--text);
-  /* Deeper at the bottom than the sides because the strain strip lives in that
-     padding: 6px of it is the glow, so an even 11px left the longest card
-     (bio's Fester) with 14px of clear air where the shorter ones had 34. */
+
   padding: 11px 9px 18px;
   cursor: pointer;
   transition: border-color 0.2s, background 0.2s, transform 0.2s, opacity 0.2s;
   text-align: left;
   font-family: var(--font-body);
-  /* A <button> vertically centres its own content, so a card with less text
-     used to sit its name ~17px lower than a full one. Flex column pins the
-     name to the top of every card regardless of description length. */
+
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  /* A floor, not a fixed height: the row stays put across strains and states
-     (bio's cards are naturally the tallest at ~141px, the rest ~124px), but a
-     longer description in future grows the row rather than being clipped. */
+
   min-height: 150px;
 }
 
-/* No accent outline on hover. The neon strip along the bottom already answers
-   "can I press this", in the strain's own colour — an accent border on top of
-   it was a second, differently-coloured answer to the same question. The lift
-   and the lighter ground carry the hover on their own. */
 .skill-btn:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.06);
   border-color: rgba(var(--base-rgb), 0.55);
@@ -1624,8 +1291,6 @@ body {
   position: relative;
 }
 
-/* The turns-remaining number, centred over the whole card while it recharges.
-   Sits above the card text (z-index 2) and the sweep (1). */
 .skill-btn .cd-overlay {
   position: absolute;
   inset: 0;
@@ -1648,22 +1313,11 @@ body {
   background: rgba(255, 255, 255, 0.05);
 }
 
-/* ===== The neon strip along the bottom of a skill card =====
-   Closes the card's shape in the strain's own colour, and doubles as a wordless
-   readiness tell: the card's opacity dims the strip with everything else, so it
-   is bright exactly when the skill is live.
-
-   Two parts, because one would not read. A hard 6px line, plus a bloom rising
-   off it INTO the card — .skill-btn is `overflow: hidden` for the cooldown
-   sweep, so an outward box-shadow gets clipped flat and the glow never appears.
-
-   The strain hook is data-built-for, which renderSkills already sets. */
 .skills[data-built-for="bio"]  { --strain: var(--bio); --strain-glow: rgba(125,255,160,0.55); }
 .skills[data-built-for="psy"]  { --strain: var(--psy); --strain-glow: rgba(192,132,252,0.55); }
 .skills[data-built-for="sym"]  { --strain: var(--sym); --strain-glow: rgba(251,146,60,0.55); }
 .skills[data-built-for="hyd"]  { --strain: var(--hyd); --strain-glow: rgba(56,189,248,0.55); }
-/* Unaugmented's white carries further than a tint at the same alpha, so its
-   bloom is pulled back to sit at the weight of the other three. */
+
 .skills[data-built-for="base"] { --strain: var(--base); --strain-glow: rgba(238,242,255,0.32); }
 
 .skill-btn::after {
@@ -1675,8 +1329,7 @@ body {
   box-shadow: 0 0 8px var(--strain-glow), 0 0 16px var(--strain-glow);
   pointer-events: none;
   transition: box-shadow 0.2s;
-  /* Above the cooldown scrim (3) so a recharging card keeps a defined edge
-     instead of dissolving into the dark. */
+
   z-index: 4;
 }
 .skill-btn::before {
@@ -1688,8 +1341,7 @@ body {
   opacity: 0.6;
   pointer-events: none;
   transition: opacity 0.2s;
-  /* Same layer as .cd-sweep, and painted before it, so the sweep covers the
-     bloom as it drains rather than glowing through it. */
+
   z-index: 1;
 }
 .skill-btn:hover:not(:disabled)::after {
@@ -1705,10 +1357,6 @@ body {
   line-height: 1.25;
 }
 
-/* Pinned to the bottom of the card so every status line sits on one baseline
-   across the row, whatever length the description above it happens to be.
-   The whitespace that leaves on short cards is the point: it reads as spacing
-   rather than as a card that came up short. */
 .skill-cost {
   font-size: 0.72rem;
   color: var(--accent);
@@ -1716,22 +1364,18 @@ body {
   padding-top: 8px;
 }
 
-/* Mechanic names inside a description, coloured by DESC_KEYWORDS. Only the
-   colour changes — the name has to stand out from the sentence around it
-   without becoming a second heading inside the card. */
 .kw-base { color: var(--base); }
 .kw-bio { color: var(--bio); }
 .kw-sym { color: var(--sym); }
 .kw-hyd { color: var(--hyd); }
 .kw-weak { color: var(--weak); }
-/* Matched to the matching status' tone above, so the word on the card and the
-   badge under the health bar are visibly the same thing. */
+
 .kw-bleed { color: var(--enemy); }
 .kw-dread { color: var(--psy); }
 
 .skill-desc {
   font-size: 0.72rem;
-  color: #a8b4c8; /* lighter than --muted for readability */
+  color: #a8b4c8;
   margin-top: 4px;
   line-height: 1.35;
 }
@@ -1740,16 +1384,9 @@ body {
   50% { opacity: 1; }
 }
 
-
-/* ===== COMBAT LAYOUT + SIDEBAR ===== */
 .combat-layout {
   display: grid;
-  /* The floor is in rem, not px, so it shrinks with the root font above —
-     a hard 360px floor stayed put while everything in it got smaller, which
-     is what forced the collapse to one column earlier than it needed to. */
-  /* 28% -> 25.5%: the difference goes to the arena for the zone paintings.
-     The rem floor is what actually guards the sidebar's readability, and it
-     is untouched. */
+
   grid-template-columns: 1fr minmax(20.5rem, 25.5%);
   grid-template-rows: auto 1fr;
   gap: 0 20px;
@@ -1758,9 +1395,7 @@ body {
 }
 .combat-header { grid-column: 1; grid-row: 1; }
 .combat-main   { grid-column: 1; grid-row: 2; }
-/* Level with the arena's top edge; its bottom already meets the action panel's.
-   Below a tall window it spans both rows again — the extra 60px is breathing
-   room the stat rows actually use once the column gets short. */
+
 .sidebar       { grid-column: 2; grid-row: 2; }
 @media (max-height: 850px) {
   .sidebar { grid-row: 1 / -1; }
@@ -1772,9 +1407,7 @@ body {
   flex-direction: column;
   gap: 14px;
 }
-/* The two glass slabs end on the same line: the sidebar already stretches to
-   the row's full height, so the action panel absorbs the column's leftover
-   instead of leaving it as a gap under its own bottom edge. */
+
 .combat-main .action-panel { flex: 1 0 auto; }
 
 .sidebar {
@@ -1793,9 +1426,7 @@ body {
 }
 
 .sidebar-tab {
-  /* Sized by its own label, not an equal share: splitting the row evenly
-     pushed MENU off the edge once the sidebar got narrow. Padding and tracking
-     are in rem so they shrink with the text. */
+
   flex: 1 1 auto;
   min-width: 0;
   white-space: nowrap;
@@ -1821,10 +1452,6 @@ body {
   background: transparent;
 }
 
-/* Floats over whichever intro is running, out of the way in the corner. Sits
-   above the staged fades, which is why it carries its own z-index. */
-/* is-quiet, at the intro BACK button's size. Sits a step below even that —
-   it interrupts a scene, so it should be findable and never inviting. */
 .skip-btn {
   position: fixed;
   right: 26px;
@@ -1870,13 +1497,6 @@ body {
   color: var(--muted);
 }
 
-/* ---- THE THREE THAT DECIDE A FIGHT --------------------------------------
-   Read as figures, not looked up in a list, and sized as three equals because
-   none of them outranks the others. Health and turn rate take the hue of the
-   stat that buys them — green Vitality, purple Speed — so tile and row read as
-   one thing; ATTACK is amber by the owner's choice while Strength stays red.
-   The left rule carries the colour and the number wears it; the label stays
-   muted, because the label is read once and the number is read every turn. */
 .vitals {
   display: flex;
   gap: 0.4rem;
@@ -1900,11 +1520,7 @@ body {
   opacity: 0.8;
   white-space: nowrap;
 }
-/* One size for all three: tiles that disagree about their type size stop
-   reading as equals. The binding constraint is turn rate's "1.18x" against a
-   third of the sidebar — health is a bare number now, so four digits late in a
-   run are still comfortable. Measured at 1.15rem: the widest of the three
-   leaves room to spare in an 83px tile. */
+
 .vital-num {
   display: block;
   margin-top: 0.15rem;
@@ -1916,7 +1532,7 @@ body {
   color: var(--vital, var(--text));
   text-shadow: 0 0 14px var(--vital-glow, transparent);
 }
-/* Same hover preview the derived rows carry, at the size these numbers run. */
+
 .vital .delta {
   font-style: normal;
   font-size: 0.68rem;
@@ -1939,9 +1555,6 @@ body {
   padding: 10px 0;
 }
 
-/* Each stat's share of the biggest of the four. Four bars together read as a
-   BUILD — where this run is leaning — which four numbers in a column do not.
-   Relative rather than absolute because a stat has no ceiling to fill. */
 .side-stat-bar {
   flex: 0 0 100%;
   height: 3px;
@@ -1959,12 +1572,6 @@ body {
   transition: width 0.25s ease;
 }
 
-/* The same bar, now a SLIDER: this stat's share of every point the run earns,
-   dragged along its own row. It keeps the 3px track and the stat's own colour
-   and glow, because it has to read as the same family as the name above it —
-   a thicker, dimmer strip looked like a different control. The hit area is the
-   PADDING: the track paints in the content box alone, so the mouse gets ~17px
-   to grab while the eye still sees 3px. */
 .weight-bar {
   height: 3px;
   padding: 7px 0;
@@ -1973,17 +1580,13 @@ body {
   background-clip: content-box;
   cursor: ew-resize;
   touch-action: none;
-  /* Brighter empty than the readout it replaced: at 0% the track IS the whole
-     control, and a 6% line does not read as something you can grab. */
+
   background-color: rgba(255,255,255,0.11);
 }
 .weight-bar:hover { background-color: rgba(255,255,255,0.22); }
-/* An empty share still shows where the track is; a set one carries the stat's
-   full colour, same as the readout it grew out of. */
+
 .weight-bar i { min-width: 0; }
 
-/* The share, in the slot the minus button vacates when the run goes automatic.
-   Same footprint as the button, so the value beside it does not shift. */
 .weight-pct {
   width: 32px;
   text-align: center;
@@ -1999,9 +1602,7 @@ body {
   font-family: 'Orbitron', sans-serif;
   font-weight: 600;
   font-size: 0.95rem;
-  /* Both of these fall back to exactly what they were before stat colours
-     existed, so the feature is entirely additive: with --stat-color unset the
-     name inherits and the value is --accent, which is the original sheet. */
+
   color: var(--stat-color, inherit);
   text-shadow: var(--stat-name-glow, none);
 }
@@ -2018,21 +1619,11 @@ body {
   font-size: 1.15rem;
   min-width: 32px;
   text-align: center;
-  /* Its OWN variable, not --stat-color: the number stays white while the name
-     takes the hue. See the stat-colours block below. */
+
   color: var(--stat-value-color, var(--accent));
   text-shadow: var(--stat-value-glow, none);
 }
 
-/* ---- STAT COLOURS ---------------------------------------------------------
-   Eye candy, and built to be thrown away: retune the four hues in :root, or
-   delete this block and the four --stat-* pairs there and the rules above fall
-   back to their original values.
-
-   Set as VARIABLES on the row rather than as colours on the name and value
-   directly, which is what keeps `.side-stat-value.pending` winning — it declares
-   a colour outright where this only supplies a default. That pending amber is
-   the only thing telling you a point is placed but not committed. */
 .side-stat-row[data-stat="str"] {
   --stat-color: var(--stat-str);      --stat-glow: var(--stat-str-glow);
 }
@@ -2045,21 +1636,12 @@ body {
 .side-stat-row[data-stat="vit"] {
   --stat-color: var(--stat-vit);      --stat-glow: var(--stat-vit-glow);
 }
-/* THE NUMBER STAYS WHITE. The hue lives on the NAME, the label you read once;
-   the value is a quantity you compare against the other three, and four
-   differently-coloured digits made that harder rather than prettier. The number
-   keeps the row's coloured GLOW, so the association still reads.
 
-   THE NAME GLOWS HARDER THAN THE NUMBER, in two layers rather than one bigger
-   one: the tight 5px puts light at the letter edge so the word reads as lit
-   rather than blurred, and the wide 20px is the bloom around it. */
 .side-stat-row {
   --stat-value-color: var(--text);
   --stat-name-glow: 0 0 5px var(--stat-glow), 0 0 20px var(--stat-glow);
   --stat-value-glow: 0 0 14px var(--stat-glow);
 }
-/* The +/- buttons stay neutral. The colour is there to name the STAT, and
-   tinting its controls too turns one accent into three things competing. */
 
 .derived-block {
   margin-top: 10px;
@@ -2071,9 +1653,6 @@ body {
   gap: 0.4rem;
 }
 
-/* Names a group of rows inside the block. The first one drops its rule — a
-   divider at the very top reads as a box around the header rather than as a
-   line between groups. */
 .derived-block > .derived-subhead:first-child {
   border-top: none;
   padding-top: 0;
@@ -2091,9 +1670,6 @@ body {
   border-top: 1px solid var(--border);
 }
 
-/* These are the numbers the panel exists to show, so they sit a step under the
-   stat names they explain rather than three. One row per line means there is
-   width to spare — the constraint here is legibility, not fit. */
 .derived-item {
   display: flex;
   justify-content: space-between;
@@ -2108,8 +1684,7 @@ body {
   font-weight: 600;
   white-space: nowrap;
 }
-/* The value a point would buy, shown beside the value it replaces so the two
-   can be read against each other rather than remembered. */
+
 .derived-item .delta {
   font-style: normal;
   color: var(--accent);
@@ -2119,9 +1694,6 @@ body {
 }
 .derived-item .delta.on { opacity: 1; }
 
-
-
-/* ---- Settings ---- */
 .setting-row {
   display: flex;
   align-items: center;
@@ -2141,7 +1713,6 @@ body {
 }
 .setting-desc { font-size: 0.7rem; color: var(--muted); max-width: 260px; line-height: 1.5; }
 
-/* Same glass and green as .ui-btn, at switch scale. */
 .toggle {
   width: 50px; height: 26px;
   border: 1px solid rgba(125, 255, 160, 0.28);
@@ -2212,7 +1783,6 @@ body {
   margin-bottom: 22px;
 }
 
-
 .stat-row {
   display: flex;
   align-items: center;
@@ -2274,20 +1844,12 @@ body {
   cursor: not-allowed;
 }
 
-/* Gold outline, same footprint as the minus — the treatment the old MAX button
-   carried, applied to the button that inherited its job. */
 .stat-btn.plus {
   font-family: 'Orbitron', sans-serif;
   font-weight: 700;
   color: var(--xp);
   border-color: rgba(251,191,36,0.4);
-  /* Optical centring. Flexbox centres the FONT BOX, but Orbitron's ascent and
-     descent are not symmetric about its plus, so the glyph lands ~0.066em low
-     — 1.5px here, which reads as visibly off against the minus beside it.
-     Trimming the content box from the bottom lifts the centred line by half
-     the trim, so the padding is twice the error. In em so it survives the root
-     font changing with screen size; box-sizing is border-box, so the button
-     itself does not grow. */
+
   padding-bottom: 0.132em;
 }
 
@@ -2297,26 +1859,17 @@ body {
   background: rgba(251,191,36,0.1);
 }
 
-/* Nothing to spend: drop the gold so a coloured plus always means a point is
-   waiting. This is the only thing that reports the pool now — how many are
-   left is deliberately not shown anywhere. */
 .stat-btn.plus:disabled {
   border-color: var(--border);
   color: var(--muted);
   opacity: 0.5;
 }
 
-/* Every point placed, nothing left to spend: the plus becomes the commit. It
-   goes green rather than gold because it is a different verb — gold has meant
-   "you have something to spend" everywhere else, and this spends nothing.
-   A V, not a check mark: Orbitron has no glyph for U+2713 and would silently
-   fall back to another face, landing a differently-weighted tick beside a
-   button that is still drawing its minus from elsewhere. */
 .stat-btn.plus.confirm {
   color: var(--bio);
   border-color: rgba(125,255,160,0.55);
   background: rgba(125,255,160,0.10);
-  /* A V is not a +, so it does not want the plus's optical nudge. */
+
   padding-bottom: 0;
   animation: pulsePoints 1.5s ease infinite;
 }
@@ -2326,13 +1879,8 @@ body {
   background: rgba(125,255,160,0.18);
 }
 
-/* Gold marks the stat lines you have actually moved. The combat values below
-   are deliberately NOT tinted: they keep showing the committed number and put
-   the staged gain beside it as a delta, so only rows that changed draw the eye
-   — tinting every value gold said "something is pending" in nine places when
-   two of them had moved. */
 .side-stat-value.pending { color: var(--xp); }
-/* Result / Game Over — one card, sized to fit the window without scrolling. */
+
 #result-screen.active {
   display: flex;
   align-items: center;
@@ -2360,19 +1908,6 @@ body {
 .rs-actions { padding: 12px 18px 14px; border-top: 1px solid var(--border); }
 .rs-actions .ui-btn { width: 100%; }
 
-/* A short window trims the card's padding rather than scrolling: the run report
-   is a single glance, and half of it below the fold is not one. */
-
-/* ---- Result screen -------------------------------------------------------
-   SKIMMABLE FIRST. Three tiers of weight, so the eye lands in the right order:
-   the HERO numbers are the only large type, section headings are small caps
-   that can be skipped entirely, and the bars carry proportion by length so a
-   breakdown reads without anyone doing arithmetic.
-
-   --rc is the strain's tint, set once on the card and inherited by every
-   accent inside it. One hue per card rather than a colour per row: the bars
-   are comparing magnitudes of the same thing, so varying their colour would
-   encode a difference that is not there. */
 .rs-card {
   --rc: var(--text);
   max-width: min(880px, 96vw);
@@ -2402,11 +1937,9 @@ body {
 }
 .rs-story { display: block; color: var(--muted); font-size: 0.82rem; line-height: 1.5; }
 .rs-story b { color: var(--text); font-weight: 500; }
-/* The one thing on a loss screen worth pulling the eye: a heavy that landed is
-   a turn you could have answered, and it reads differently from attrition. */
+
 .rs-story b.rs-heavy { color: var(--accent2); }
 
-/* HERO ROW — four numbers, equal width, big enough to read at a glance. */
 .rs-heroes {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -2450,8 +1983,6 @@ body {
   margin: 0 0 8px;
 }
 
-/* The sheet as four cells with a fill under each — the shape of a build is the
-   point, and four bare numbers do not have one. */
 .rs-sheet { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
 .rs-sheet-cell {
   position: relative;
@@ -2487,9 +2018,6 @@ body {
   font-weight: 500; color: var(--text); white-space: nowrap;
 }
 
-/* BARS — label, track, value, share. Fixed label and value columns so the
-   tracks all start and end on the same two lines and lengths are comparable
-   down the column, which is the only reason a bar beats a number here. */
 .rs-bar {
   display: grid;
   grid-template-columns: minmax(0, 64px) minmax(0, 1fr) auto;
@@ -2519,8 +2047,7 @@ body {
   font-family: var(--font-body);
   color: var(--muted); text-align: right; font-size: 0.75rem;
 }
-/* A button nobody pressed is a finding, not a blank — it stays on the list and
-   says zero rather than being dropped for looking untidy. */
+
 .rs-bar-dead .rs-bar-k,
 .rs-bar-dead .rs-bar-v { color: var(--accent2); opacity: 0.75; }
 .rs-bar-dead .rs-bar-track i { background: var(--accent2); opacity: 0.4; }
@@ -2574,22 +2101,12 @@ body {
   .rs-build { text-align: center; }
 }
 
-/* Last resort. Everything above exists so this fires as late as possible:
-   once the sidebar drops below the arena the fight no longer fits on one
-   screen and you have to scroll to reach your stats mid-turn. */
 @media (max-width: 820px) {
   .combat-layout { grid-template-columns: 1fr; }
   .sidebar { min-height: 320px; }
   #app { max-width: 100%; padding: 12px; }
 }
 
-/* ===== DESKTOP SCALE =====
-   The mirror of the 1200px rule at the top of the file: that one shrinks the UI
-   so a narrow window still fits, this one grows it, because a desktop monitor
-   sits further away and the layout was leaving room on the table in both axes.
-   Gated on HEIGHT as well as width — 1536x864 never matches, 2048x1010 does — so
-   a laptop is left alone. It grows through the same two knobs the rest of the
-   file turns: the root font and --vh. */
 @media (min-width: 1700px) and (min-height: 950px) {
   html { font-size: clamp(17.5px, min(2.05vh, 1.02vw), 22px); }
 
@@ -2597,14 +2114,7 @@ body {
 
   .arena-card {
     height: clamp(380px, calc(var(--vh) * 63), 680px);
-    /* Same affine shape as the base rule, opened up to match the taller card.
-       The ceiling is set by the ART, not by the layout: the boss is the one
-       sprite with no resolution headroom (219x256 native, drawn at 1.56x this)
-       and it is already upscaled rather than down. 230 puts him at 359px —
-       1.40x native, against 1.22x today. Everything else still downsamples at
-       this size (strains ~348px native, the Enforcer 460), so the boss is what
-       this number is protecting, and raising it further wants new art rather
-       than a bigger clamp. */
+
     --fig: clamp(110px, calc(var(--vh) * 32 - 110px), 230px);
   }
 }
@@ -2618,30 +2128,18 @@ body {
   .skills { grid-template-columns: 1fr 1fr; }
 }
 
-/* ===== Phase 2 additions: readouts, enemy tags, combo, feedback ===== */
-
-/* The two numbers that decide a build get visual priority over the rest */
 .stat-preview {
   font-size: 0.66rem; color: var(--accent); letter-spacing: 0.4px;
   min-height: 12px; margin-top: 3px; opacity: 0; transition: opacity 0.12s ease;
 }
 .stat-preview.on { opacity: 1; }
 
-/* Enemy identity: archetype and elite modifiers are readable at a glance */
-/* Mods are identity worn as hardware: small metal plates stamped with the
-   affix, tinted per mod, with a glint that sweeps each plate on its own
-   beat. Statuses stay bare words below the bar — the contrast is the point:
-   what an enemy IS gets a plate, what is HAPPENING to it does not. */
 .unit-tags { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin: 5px 0 2px; }
 .unit-tag {
   position: relative; overflow: hidden;
   font-family: 'Orbitron', sans-serif; font-size: 0.55rem; font-weight: 700;
   letter-spacing: 1.2px; padding: 2.5px 8px; border-radius: 4px;
-  /* Letterpress on silver: the word is a dark cut in the metal, and the
-     single bright hairline UNDER each glyph is light from above catching
-     the dent's lower lip — that one shadow is what sells "engraved".
-     The mod's color lives in the metal itself (a tinted cast mixed into
-     the silver), not in the text, so the engraving stays readable. */
+
   --tint: var(--muted);
   color: rgba(8, 12, 20, 0.78);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
@@ -2673,7 +2171,7 @@ body {
 .unit-tag.vampiric { --tint: #f472b6; }
 .unit-tag.venomous { --tint: #7dffa0; }
 .unit-tag.volatile { --tint: #fb923c; }
-/* Verb plates (ENEMY_VERBS) — the fight's question, worn beside the affix. */
+
 .unit-tag.guard    { --tint: #60a5fa; }
 .unit-tag.regrow   { --tint: #34d399; }
 .unit-tag.flurry   { --tint: #fbbf24; }
@@ -2684,13 +2182,12 @@ body {
   text-shadow: 0 0 14px rgba(255,45,106,0.5);
   font-size: 1.05em;
 }
-/* The PoE treatment: an elite is announced by its name turning gold. */
+
 .fighter.elite .unit-name {
   color: var(--xp);
   text-shadow: 0 0 12px rgba(251,191,36,0.35);
 }
 
-/* Health bars get a ghost trail so damage reads as an event, not a number swap */
 .bar-ghost {
   position: absolute; top: 0; left: 0; height: 100%;
   background: rgba(255,255,255,0.28); border-radius: inherit;
@@ -2725,18 +2222,12 @@ body {
 
 .float-dmg.crit {
   font-size: 1.95rem; font-weight: 900;
-  /* Gold, bigger, and its own overshoot animation: a crit must be recognizable
-     from the corner of the eye without reading the number. */
+
   color: var(--xp);
   text-shadow: 0 2px 8px rgba(0,0,0,0.9), 0 0 14px currentColor;
   animation: floatUpCrit 1.3s ease forwards;
 }
-/* A CRIT HEAL STAYS GREEN. Colour names the EVENT, and the event is healing —
-   letting the crit repaint it gold would put a heal in the XP family and break
-   the one rule the floater vocabulary has. It still reads as a crit from the
-   corner of the eye: it keeps the crit's size, weight, glow and overshoot, and
-   the gold CRIT tag rides alongside the number instead of consuming it. The
-   tag is the crit; the colour is the deed. */
+
 .float-dmg.crit.heal { color: #7dffa0; }
 
 .float-dmg .crit-tag {
@@ -2749,21 +2240,15 @@ body {
   text-shadow: 0 1px 4px rgba(0,0,0,0.9);
 }
 
-/* Cooldowns read as a draining well rather than just a number */
 .skill-btn { position: relative; overflow: hidden; }
 .cd-sweep {
   position: absolute; left: 0; bottom: 0; width: 100%; height: 0%;
   background: rgba(0,0,0,0.55); pointer-events: none;
   transition: height 0.1s linear; z-index: 1;
 }
-/* Lifts the card's TEXT above the sweep. .cd-overlay is excluded on purpose:
-   it is a layer, not content, and this rule used to override its
-   `position: absolute` (same specificity, declared later), which dropped it
-   into the flow as a block under the description and grew every card by 31px
-   the moment any skill went on cooldown. */
+
 .skill-btn > *:not(.cd-sweep):not(.cd-overlay) { position: relative; z-index: 2; }
-/* Every skill rests like the basic attack: one plain border, hover and all.
-   The strain strip is what marks a card as live now. */
+
 .skill-btn.ready {
   border-color: #252d3d;
 }
@@ -2771,11 +2256,9 @@ body {
   background: #1a2233;
 }
 
-/* The yellow is the notification on its own — no dot marker. */
 .sidebar-tab.alert { color: var(--xp); border-color: var(--xp); }
 .sidebar-tab.points-alert { color: var(--xp); }
-/* A tab holding an undecided drop or offer. Pulses, because the fight is still
-   running and the notification has to be findable without being read. */
+
 .sidebar-tab.tab-alert { color: var(--xp); border-color: var(--xp); animation: tabAlert 1.6s ease-in-out infinite; }
 @keyframes tabAlert { 0%, 100% { box-shadow: none; } 50% { box-shadow: 0 0 10px rgba(255, 200, 60, 0.35); } }
 
@@ -2786,38 +2269,10 @@ body {
   .level-badge.level-up { transform: none; }
 }
 
-
-/* ===== SCENES ==============================================================
-   AN EVENT INSIDE THE ARENA, not a screen of its own. The card keeps its frame
-   and its place on the page; what changes is the room and who is standing in
-   it. A scene that swapped screens would read as leaving the game, and one
-   that spawned a talker into the fighter slot would read as another enemy.
-
-   THE CARD IS THE PLACE, THE PANEL IS WHAT YOU DO — the same division combat
-   already runs on. So the words and the choices go where the skill cards go,
-   and the card is left as a clean shot of the room with one person in it.
-   Fading the panel and sidebar out was tried first: it bought nothing the
-   blackout was not already doing, and it left the words homeless in the
-   middle of the art. */
-
-/* Both fighter slots empty for the scene. Keeping Sonny in frame was tried and
-   read badly: his card brings a name plate, a health bar and a THORNS badge —
-   combat furniture in a conversation — and the two sprites are drawn at
-   different scales, so he stood knee-high beside his visitor. */
 #combat-screen.scene-on .arena-side { opacity: 0; pointer-events: none; transition: opacity 0.45s ease; }
 
-/* The chain counter belongs to the fight, not to the room. It carries a z-index
-   of 6 to sit over the arena, which put it over the blackout as well — so a
-   "4x CHAIN" rode straight through the cut and stood in the scientist's lab.
-   VISIBILITY, not display: updateCombo writes `display` inline as it shows and
-   hides the meter, and an inline style beats a stylesheet rule — the first
-   attempt at this did nothing at all for exactly that reason. The streak
-   itself is untouched underneath. */
 #combat-screen.scene-on .combo-meter { visibility: hidden; }
 
-/* The skills stay in the layout and go invisible, rather than leaving it. The
-   panel keeps its exact height, so the sidebar beside it does not move and the
-   page does not jump on the way in or out. */
 #combat-screen.scene-on .skills,
 #combat-screen.scene-on .turn-info { visibility: hidden; }
 .action-panel { position: relative; }
@@ -2830,13 +2285,10 @@ body {
   gap: 2px;
 }
 .scene-panel[hidden] { display: none; }
-/* The words come after he has finished arriving, never with him: a speaker and
-   his line appearing together reads as a screen being drawn, one after the
-   other reads as someone showing up and then talking. */
+
 .scene-panel { opacity: 0; transition: opacity 500ms ease; }
 .scene-panel.in { opacity: 1; }
 
-/* The lab. Declared after the per-zone rules so it wins wherever the run is. */
 .arena-card.scene .arena-backdrop {
   background:
     radial-gradient(ellipse 130% 60% at 50% 100%, rgba(4,6,10,0.62) 0%, rgba(4,6,10,0.22) 45%, transparent 75%),
@@ -2845,9 +2297,6 @@ body {
   filter: blur(1.1px) saturate(1) brightness(1.05);
 }
 
-/* Over the room and everyone in it, under nothing. The swap happens while this
-   is opaque, which is the whole reason it exists: a backdrop that changes on a
-   lit frame reads as a bug, and one that changes behind black reads as a cut. */
 .arena-veil {
   position: absolute;
   inset: 0;
@@ -2859,9 +2308,6 @@ body {
 }
 .arena-veil.on { opacity: 1; }
 
-/* HE ARRIVES SLOWLY. The blackout is a cut; this is a figure resolving out of
-   the room behind it, and at 0.6s it read as a pop. Keep SCENE_FIGURE_MS in
-   screens.js matched to this — the words wait on exactly this duration. */
 .scene-layer {
   position: absolute;
   inset: 0;
@@ -2873,10 +2319,6 @@ body {
 .scene-layer[hidden] { display: none; }
 .scene-layer.in { opacity: 1; }
 
-/* STANDING ON THE FLOOR, not floating in the middle of the card. With the words
-   out of the card he gets the whole of it: feet near the bottom edge where the
-   room's floor line is, and centred, because he is the only one in frame and
-   an off-centre single figure reads as waiting for someone to stand opposite. */
 .scene-figure {
   position: absolute;
   left: 50%;
@@ -2890,11 +2332,6 @@ body {
   filter: drop-shadow(0 14px 30px rgba(0,0,0,0.7));
 }
 
-/* THE SPEAKER WEARS THEIR OWN COLOUR, set per scene as --scene-tint (see the
-   `tint` field in SCENES). The scientist is teal because his coat, his goggles
-   and his lab all are; a purple name was the strain palette leaking into
-   somebody who has nothing to do with it. The glow is currentColor, so it
-   follows the tint without a second value to keep in step. */
 .scene-speaker {
   font-family: 'Orbitron', sans-serif;
   font-size: 0.62rem;
@@ -2916,10 +2353,6 @@ body {
 }
 .scene-choices:empty { display: none; }
 
-/* CONTINUE IS NOT A BUTTON. Advancing a conversation is not a decision, and
-   dressing it as one puts it at the same weight as "attack" two lines later.
-   It is a quiet line that brightens under the cursor, and it appears only once
-   he has finished the sentence he is on. */
 .scene-continue {
   margin-top: 16px;
   align-self: flex-start;
@@ -2936,24 +2369,13 @@ body {
 .scene-continue:hover { color: var(--scene-tint, var(--text)); opacity: 1; }
 .scene-continue::after { content: ' \203A\203A'; }
 
-/* The line is typed a character at a time, so it has to hold its own height or
-   the block below it walks up the card as the words arrive. */
 .scene-line { min-height: 3.3em; }
 
-/* While he is still typing, the whole panel is a "finish that sentence" target. */
 #combat-screen.scene-typing .scene-panel { cursor: pointer; }
 
-/* ---- Suit hardware (items) ------------------------------------------------
-   Rarity is a fixed color vocabulary, same idea as the floaters: STANDARD
-   ISSUE is quartermaster gray, REFINED is the Laboratory's teal (the
-   scientist's own cyan — refinement is his department). ANOMALOUS, when it
-   exists, gets its own hue here and nothing else needs touching. */
 .rar-standard { --rar: #aab6c9; --rar-rgb: 170, 182, 201; }
 .rar-refined  { --rar: #45dfe0; --rar-rgb: 69, 223, 224; }
 
-/* A DECISION WAITING IN A TAB, never over the arena — a drop in SUIT, an offer
-   in MODS. Framed and inset so it reads as the thing to answer while the fight
-   carries on behind it. */
 .pending {
   display: none;
   border: 1px solid rgba(255, 200, 60, 0.35);
@@ -2973,13 +2395,12 @@ body {
 .pending-head i { font-style: normal; color: var(--muted); letter-spacing: 1px; }
 .pending-actions { display: flex; gap: 8px; margin-top: 10px; }
 .pending-actions .ui-btn { flex: 1 1 0; width: auto; font-size: 0.66rem; }
-/* Inside a sidebar panel the card has no room for the big art. */
+
 .pending .drop-card { margin-bottom: 8px; padding: 10px 12px 8px; gap: 10px; }
 .pending .drop-art { width: 48px; height: 48px; }
 .pending .drop-name { font-size: 0.82rem; }
 .pending .mod-card { padding: 10px 12px; margin-bottom: 8px; width: 100%; }
 
-/* The drop card */
 .drop-card {
   border: 1px solid rgba(var(--rar-rgb, 170, 182, 201), 0.55);
   border-radius: 6px;
@@ -3005,7 +2426,7 @@ body {
 .drop-lot { color: var(--muted); font-size: 0.68rem; letter-spacing: 1px; }
 .drop-affix, .suit-affix { font-size: 0.78rem; color: rgba(238, 242, 255, 0.82); line-height: 1.6; }
 .drop-empty { color: var(--muted); font-size: 0.78rem; }
-/* The SUIT tab: five mounts, fitted or bare. */
+
 .suit-list { display: flex; flex-direction: column; gap: 10px; }
 .suit-slot {
   border: 1px solid rgba(var(--rar-rgb, 170, 182, 201), 0.4);
@@ -3023,9 +2444,6 @@ body {
 .suit-slot-name { font-size: 0.85rem; margin: 3px 0 4px; }
 .suit-slot.empty .suit-slot-name { color: rgba(238, 242, 255, 0.35); font-size: 0.75rem; }
 
-/* Gear's share of a stat, beside the allocated value in the sidebar. Teal so
-   it reads as the suit's grant, never as a point you placed (pending amber)
-   or one you could take back. */
 .gear-plus {
   font-style: normal;
   color: #45dfe0;
@@ -3034,8 +2452,6 @@ body {
   opacity: 0.9;
 }
 
-/* The owner's item art. The drop card gets the big moment; the suit panel a
-   thumbnail, ghosted when the mount is bare. */
 .drop-card { display: flex; gap: 14px; align-items: center; }
 .drop-card-body { flex: 1 1 0; min-width: 0; }
 .drop-art {
@@ -3055,9 +2471,6 @@ body {
 }
 .suit-thumb.ghost { opacity: 0.22; filter: grayscale(1); }
 
-/* ---- Modifications -------------------------------------------------------
-   The Laboratory's offer. Three cards and a decline, so they are buttons. The
-   run's strain tints the edge. */
 .mod-card {
   --edge: var(--base-rgb);
   text-align: left;
@@ -3091,7 +2504,6 @@ body {
 }
 .mod-text { font-size: 0.8rem; line-height: 1.65; color: rgba(238, 242, 255, 0.86); }
 
-/* The SUIT tab's list of what is already installed. */
 .mod-list { display: flex; flex-direction: column; gap: 8px; }
 .mod-entry {
   border-left: 2px solid rgba(var(--base-rgb), 0.4);
@@ -3100,7 +2512,6 @@ body {
 .mod-entry .mod-name { font-size: 0.62rem; color: var(--text); margin-bottom: 3px; }
 .mod-entry .mod-text { font-size: 0.72rem; line-height: 1.5; color: var(--muted); }
 
-/* Which button a Modification rewrites, beside its name. */
 .mod-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .mod-on {
   font-family: 'Orbitron', sans-serif;
@@ -3110,12 +2521,9 @@ body {
   text-transform: uppercase;
   flex-shrink: 0;
 }
-/* Declining is a real option, and reads as the quietest thing on the card. */
+
 .mod-skip { width: 100%; margin-top: 4px; font-size: 0.66rem; }
 
-/* Zone 4 — the MCP compound in the rain. Darkest of the four backdrops: the
-   endgame is lit by its own warning lamps, so the vignette sits heavier and
-   the image is left cooler than the streets above it. */
 .arena-card[data-zone="4"] .arena-backdrop {
   background:
     radial-gradient(ellipse 130% 60% at 50% 100%, rgba(3,5,9,0.78) 0%, rgba(3,5,9,0.32) 45%, transparent 75%),
@@ -3124,12 +2532,8 @@ body {
   filter: blur(1.2px) saturate(0.88) brightness(0.96);
 }
 
-/* PROTOTYPE — the third rarity. Amber, a step past REFINED's lab teal, so the
-   ladder reads standard grey -> refined teal -> prototype amber at a glance. */
 .rar-prototype { --rar: #fbbf24; --rar-rgb: 251, 191, 36; }
 
-/* The implicit sits above the explicits with a rule under it, the way the
-   slot's own line should read: fixed, not rolled. */
 .drop-implicit, .suit-implicit {
   color: rgba(238, 242, 255, 0.66);
   padding-bottom: 5px;
@@ -3138,18 +2542,10 @@ body {
 }
 .drop-implicit { font-size: 0.78rem; line-height: 1.6; }
 
-/* Tier prefix on every affix line. Monospace column so T1..T5 line up down
-   the card and the eye can scan the tiers alone. */
 .drop-affix, .suit-affix { font-variant-numeric: tabular-nums; }
 
-/* How many of a Modification are stacked, beside its name. */
 .mod-held { font-style: normal; font-size: 0.85em; color: var(--muted); letter-spacing: 0; }
 
-/* ---- KIT PICKER (class select) ----------------------------------------
-   The pool, under the loadout cards. Built on .mod-card's shape — same glass,
-   same per-strain edge — because it is the same object: a card you press to
-   change what your bar does. FITTED is the state that has to read at a glance,
-   so it takes the strain colour outright while the rest stay quiet. */
 .kit-picker { width: 100%; margin-top: clamp(16px, 2.4vh, 26px); display: none; }
 .kit-picker.on { display: block; }
 
@@ -3189,7 +2585,7 @@ body {
   background: rgba(var(--edge), 0.08);
   box-shadow: inset 0 0 22px rgba(var(--edge), 0.07);
 }
-/* A card with no decision behind it: still readable, visibly not a button. */
+
 .kit-card.locked { cursor: default; opacity: 0.72; }
 
 .kit-name {

@@ -1,19 +1,10 @@
-// A NEW RUN MUST NOT INHERIT THE LAST ONE, and every declared sprite must load.
-//
-// Two seams, both invisible while the rules are perfectly correct. Transient UI
-// is cleaned up by whoever put it there, so each new feature is a fresh chance
-// to leave something standing — the scene after the first boss did exactly
-// that, and quitting mid-conversation came up inside the old scene. Art is the
-// same shape of problem: a renamed file breaks one class at one level and
-// nothing notices until it is played.
 export default async function ({ page, ok }) {
-  // Leave a run in the messiest state there is: mid-fight, mid-scene.
+
   await page.evaluate(() => { localStorage.clear(); startGame(true, 'bio'); SETTINGS.fastTurns = true; });
   await page.waitForFunction(() => state.player && state.combatActive);
   await page.evaluate(() => openScene('scientist', () => {}));
   await page.waitForFunction(() => !document.getElementById('scene-panel').hidden, null, { timeout: 15000 });
 
-  // Out through the menu and straight into another run, on another strain.
   await page.evaluate(() => { goToMenu(); startGame(true, 'psy'); });
   await page.waitForFunction(() => state.player && state.combatActive);
   await page.waitForTimeout(400);
@@ -44,10 +35,6 @@ export default async function ({ page, ok }) {
   ok('both fighters are on the card', s.fighters === 2, String(s.fighters));
   ok('the controls came back', s.playable);
 
-  // ---- art ----
-  // Walked off the tables the game itself declares, so a new set is covered by
-  // existing here rather than by being listed. Backdrops are read back out of
-  // the stylesheet, where the only reference to them lives.
   const art = await page.evaluate(async () => {
     const urls = new Set();
     const walk = v => {
@@ -57,7 +44,7 @@ export default async function ({ page, ok }) {
     [ZONE_SPRITES, POSE_SPRITES, PLAYER_SPRITES, SCIENTIST_SPRITES, SCENES, SLOTS].forEach(walk);
     const cssText = [...document.styleSheets]
       .flatMap(sh => { try { return [...sh.cssRules].map(r => r.cssText); } catch { return []; } }).join('\n');
-    // Images only — @font-face lives in the same stylesheet and does not decode.
+
     for (const m of cssText.matchAll(/url\(["']?([^"')]*assets\/[^"')]+\.(?:png|jpe?g|webp|gif|svg))["']?\)/gi)) {
       urls.add(m[1].replace(/^\.\.\//, ''));
     }
