@@ -1,15 +1,15 @@
 const ITEM_STAT_NAMES = { str: 'STRENGTH', instinct: 'INSTINCT', speed: 'SPEED', vit: 'VITALITY' };
 
 const SLOTS = {
-  optics:    { id: 'optics',    name: 'Optics',        label: 'OPTICS',    home: 'instinct', lot: 'O',
+  optics:    { id: 'optics',    name: 'Optics',        label: 'OPTICS',    home: 'instinct',
                art: 'assets/sprites/mcp helmet.png' },
-  gauntlets: { id: 'gauntlets', name: 'Gauntlets',     label: 'GAUNTLETS', home: 'str',      lot: 'G',
+  gauntlets: { id: 'gauntlets', name: 'Gauntlets',     label: 'GAUNTLETS', home: 'str',
                art: 'assets/sprites/mcp gauntlets.png' },
-  armor:     { id: 'armor',     name: 'Body Armor',    label: 'ARMOR',     home: 'vit',      lot: 'A',
+  armor:     { id: 'armor',     name: 'Body Armor',    label: 'ARMOR',     home: 'vit',
                art: 'assets/sprites/mcp body armor.png' },
-  repair:    { id: 'repair',    name: 'Repair Module', label: 'REPAIR',    home: null,       lot: 'R',
+  repair:    { id: 'repair',    name: 'Repair Module', label: 'REPAIR',    home: null,
                art: 'assets/sprites/mcp repair module.png' },
-  boots:     { id: 'boots',     name: 'Boots',         label: 'BOOTS',     home: 'speed',    lot: 'B',
+  boots:     { id: 'boots',     name: 'Boots',         label: 'BOOTS',     home: 'speed',
                art: 'assets/sprites/mcp boots.png' }
 };
 
@@ -109,7 +109,7 @@ function makeUniqueItem(id, wave) {
     : { mod: impDef.mod, tier: impTier,
         v: rollRange(impDef.tiers[impTier], ITEM_MODS[impDef.mod].step) };
   return { slot: slot.id, rarity: 'unique', uniqueId: id, wave, name: u.name,
-           lot: wave + '-' + slot.lot, implicit, prefixes: [], suffixes: [] };
+           implicit, prefixes: [], suffixes: [] };
 }
 
 const TIER_MIN_WAVE = [46, 31, 21, 11, 1];
@@ -320,7 +320,7 @@ function makeItem(wave, rarityId) {
   }
 
   return { slot: slot.id, rarity: rar.id, wave, name: slot.name,
-           lot: wave + '-' + slot.lot, implicit, prefixes, suffixes };
+           implicit, prefixes, suffixes };
 }
 
 function rollBossHaul(wave) {
@@ -441,7 +441,7 @@ function itemAffixLines(it) {
   return out;
 }
 function itemLogName(it) {
-  return RARITIES[it.rarity].name + ' ' + it.name + ' · LOT ' + it.lot;
+  return RARITIES[it.rarity].name + ' ' + it.name;
 }
 
 function loadGear(saved) {
@@ -493,18 +493,16 @@ function resolveDrop(take) { resolveDropAt(0, take); }
 
 function abandonDrop() { state.dropQueue = []; }
 
-function itemCardHtml(it, headline) {
+function itemCardHtml(it) {
   if (!it) return '<div class="drop-card empty"><div class="drop-card-body">'
-    + '<div class="drop-card-head">' + headline + '</div>'
     + '<div class="drop-empty">— the mount is bare —</div></div></div>';
   const s = SLOTS[it.slot];
   const imp = itemImplicitLine(it);
   return '<div class="drop-card rar-' + it.rarity + '">'
     + (s.art ? '<img class="drop-art" src="' + s.art + '" alt="" draggable="false">' : '')
     + '<div class="drop-card-body">'
-    + '<div class="drop-card-head">' + headline + '</div>'
     + '<div class="drop-rarity">' + RARITIES[it.rarity].name + '</div>'
-    + '<div class="drop-name">' + it.name + ' <span class="drop-lot">LOT ' + it.lot + '</span></div>'
+    + '<div class="drop-name">' + it.name + '</div>'
     + (imp ? '<div class="drop-implicit">' + imp + '</div>' : '')
     + itemAffixLines(it).map(l => '<div class="drop-affix">' + l + '</div>').join('')
     + '</div></div>';
@@ -551,13 +549,13 @@ function dropHaulHtml() {
         const worn = p && p.gear ? p.gear[it.slot] : null;
         const deltas = itemDeltas(it);
         return '<div class="haul-row">'
-          + itemCardHtml(it, SLOTS[it.slot].label + ' · RECOVERED')
+          + itemCardHtml(it)
           + (deltas.length
               ? '<div class="drop-deltas">' + deltas.map(d =>
                   '<span class="' + (d.up ? 'up' : 'down') + '">' + d.text + '</span>').join('') + '</div>'
               : '')
           + '<div class="haul-worn">' + (worn
-              ? 'replaces ' + RARITIES[worn.rarity].name + ' ' + worn.name + ' · LOT ' + worn.lot
+              ? 'replaces ' + RARITIES[worn.rarity].name + ' ' + worn.name
               : 'the mount is bare') + '</div>'
           + '<div class="pending-actions">'
           + '<button class="ui-btn" type="button" onclick="resolveDropAt(' + i + ', true)">FIT</button>'
@@ -583,8 +581,8 @@ function renderSuitPanel() {
     const imp = itemImplicitLine(it);
     return '<div class="suit-slot rar-' + it.rarity + '">' + thumb
       + '<div class="suit-slot-body">'
-      + '<div class="suit-slot-label">' + s.label + ' · ' + RARITIES[it.rarity].name + '</div>'
-      + '<div class="suit-slot-name">' + it.name + ' <span class="drop-lot">LOT ' + it.lot + '</span></div>'
+      + '<div class="suit-slot-label">' + RARITIES[it.rarity].name + '</div>'
+      + '<div class="suit-slot-name">' + it.name + '</div>'
       + (imp ? '<div class="suit-affix suit-implicit">' + imp + '</div>' : '')
       + itemAffixLines(it).map(l => '<div class="suit-affix">' + l + '</div>').join('')
       + '</div></div>';

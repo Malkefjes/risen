@@ -2670,13 +2670,6 @@ body {
   background: rgba(var(--rar-rgb, 170, 182, 201), 0.05);
 }
 .drop-card.empty { border-style: dashed; border-color: rgba(255,255,255,0.14); background: none; }
-.drop-card-head {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 0.6rem;
-  letter-spacing: 2px;
-  color: var(--muted);
-  margin-bottom: 8px;
-}
 .drop-rarity {
   font-family: 'Orbitron', sans-serif;
   font-size: 0.66rem;
@@ -2684,7 +2677,6 @@ body {
   color: var(--rar, var(--text));
 }
 .drop-name { font-size: 0.95rem; color: var(--text); margin: 3px 0 8px; }
-.drop-lot { color: var(--muted); font-size: 0.68rem; letter-spacing: 1px; }
 .drop-affix, .suit-affix { font-size: 0.78rem; color: rgba(238, 242, 255, 0.82); line-height: 1.6; }
 .drop-empty { color: var(--muted); font-size: 0.78rem; }
 
