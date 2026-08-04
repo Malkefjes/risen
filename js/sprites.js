@@ -79,6 +79,10 @@ const MCP_SENTINEL_SPRITES = { ready: 'assets/sprites/enemy 4.png', mirror: true
 
 const MCP_RECLAIMER_SPRITES = { ready: 'assets/sprites/boss enemy.png', mirror: true };
 
+const CAMP_SPRITES = {
+  scientist: 'assets/sprites/rogue lab scientist ready.png'
+};
+
 const ZONE_SPRITES = {
   1: { trash: { experiment: EXPERIMENT_SPRITES }, boss: SYMBIOTE_SPRITES,
        trashScale: 1.25 },
@@ -230,6 +234,8 @@ const PRELOADED = [];
   push('assets/ui/menu-wallpaper-chamber.jpg');
   push('assets/ui/menu-wallpaper.jpg');
   push(POSE_SPRITES);
+  push(CAMP_SPRITES);
+  push('assets/zones/camp-1.jpg');
   push('assets/zones/the-laboratory-3.jpg');
   push('assets/zones/mpc-1.jpg');
   [1, 2, 3, 4].forEach(z => push(ZONE_SPRITES[z]));

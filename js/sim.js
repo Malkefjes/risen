@@ -13,7 +13,8 @@ function pumpSteps(limit) {
     const fn = _pendingStep;
     _pendingStep = null;
     fn();
-    if (state.awaitingInput || state.runOver || (state.deaths || 0) > d0 || state.hazardOffer) break;
+    if (state.awaitingInput || state.runOver || (state.deaths || 0) > d0
+        || state.atCamp || state.hazardOffer) break;
   }
   return n;
 }
@@ -170,6 +171,7 @@ function simulateRun(classId, opts) {
       if (opts.each) opts.each(state);
       if (opts.stopWhen && opts.stopWhen(state)) break;
       if (state.hazardOffer) { pickHazard(state.hazardOffer[0]); continue; }
+      if (state.atCamp) { moveOut(); continue; }
       if (!state.awaitingInput) {
         if (!_pendingStep) break;
         continue;

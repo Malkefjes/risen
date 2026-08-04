@@ -185,6 +185,7 @@ function resetRunState(classId) {
   state.queuedSkillId = null;
   state.hazard = null;
   state.hazardOffer = null;
+  state.atCamp = false;
   state.killedBy = null;
   state.runStart = Date.now();
   state._defeatLock = false;
@@ -367,25 +368,133 @@ function spawnEnemy() {
   updateHud(); renderCombat(true); renderSkills(); updateTurnInfo();
 }
 
-function renderHazardOffer() {
+const CAMP_LINES = [
+  'Sit. Nothing follows this far in — the lights hold and the door holds. You are the first thing to come up that corridor in a long while.',
+  'Your breathing has settled. That puts you ahead of most of what comes through here.',
+  'Survey filed this room as a shelter. It was a storeroom. It holds, which is more than the filing ever did.',
+  'You are past where the first team stopped. I would call that good news if I still used the phrase.',
+  'The signal is louder at this depth. You will have noticed. Rest anyway — it does not get quieter further down.',
+  'You reached the source and walked back out of it. I have stopped writing predictions.'
+];
+
+const CAMP_DEEP_LINES = [
+  'The instruments stopped agreeing with each other some time ago. Sit down. I will patch what I can.',
+  'You keep coming back up that corridor and I keep the lights on. That is the arrangement we have.',
+  'Nothing at this depth is catalogued any more. Neither are you, strictly speaking. Rest.'
+];
+
+function campLine(wave) {
+  if (wave <= BALANCE.finalWave)
+    return CAMP_LINES[Math.min(CAMP_LINES.length - 1, Math.max(0, Math.floor(wave / 10) - 1))];
+  return CAMP_DEEP_LINES[Math.floor((wave - BALANCE.finalWave - 1) / 10) % CAMP_DEEP_LINES.length];
+}
+
+function showCamp() {
   if (HEADLESS.on) return;
-  const modal = document.getElementById('hazard-modal');
-  if (!modal) return;
+  const cleared = state.wave - 1;
+  document.getElementById('camp-title').textContent = 'SHELTER · ' + getZoneName(cleared) + ' CLEARED';
+  document.getElementById('camp-sub').textContent =
+    'Wave ' + cleared + ' behind you · next contact at wave ' + state.wave;
+
+  const p = state.player;
+  const fig = document.getElementById('camp-player');
+  if (fig && p) {
+    const set = POSE_SPRITES[p.class] || {};
+    fig.innerHTML = '<img src="' + (set.idle || set.ready || PLAYER_SPRITES[p.class])
+      + '" alt="' + p.class + '" draggable="false">';
+  }
+
+  const line = document.getElementById('camp-line');
+  if (line) {
+    line.textContent = campLine(cleared);
+    line.style.animation = 'none'; void line.offsetWidth; line.style.animation = '';
+  }
+  renderCampPanel();
+  showScreen('camp-screen');
+}
+
+function renderCampPanel() {
+  if (HEADLESS.on) return;
+  const el = document.getElementById('camp-panel');
+  const move = document.getElementById('camp-move');
+  if (!el) return;
   const offer = state.hazardOffer;
-  if (!offer) { modal.classList.remove('show'); return; }
-  if (modal.classList.contains('show')) return;
+  if (!offer) {
+    el.classList.remove('on');
+    el.innerHTML = '';
+    if (move) { move.disabled = false; move.textContent = 'MOVE OUT'; }
+    return;
+  }
   const depth = Math.floor((state.wave - BALANCE.finalWave - 1) / 10) + 1;
-  document.getElementById('hazard-title').textContent = 'DEPTH ' + depth + ' · CHOOSE THE TOLL';
-  document.getElementById('hazard-list').innerHTML = offer.map(id => {
-    const h = HAZARDS[id];
-    return '<button class="hazard-card" type="button" onclick="pickHazard(\'' + id + '\')">'
-      + '<span class="hazard-name">' + h.name + '</span>'
-      + '<span class="hazard-text">' + h.text + '</span>'
-      + '<span class="hazard-reward">+' + Math.round((h.xpMult - 1) * 100) + '% XP</span>'
-      + '</button>';
-  }).join('')
-  + '<div class="hazard-foot">Any toll doubles UNCATALOGUED drops for this Depth.</div>';
-  modal.classList.add('show');
+  el.classList.add('on');
+  el.innerHTML = '<div class="camp-panel-head">DEPTH ' + depth + ' · CHOOSE THE TOLL</div>'
+    + '<div class="hazard-list">'
+    + offer.map(id => {
+        const h = HAZARDS[id];
+        return '<button class="hazard-card" type="button" onclick="pickHazard(\'' + id + '\')">'
+          + '<span class="hazard-name">' + h.name + '</span>'
+          + '<span class="hazard-text">' + h.text + '</span>'
+          + '<span class="hazard-reward">+' + Math.round((h.xpMult - 1) * 100) + '% XP</span>'
+          + '</button>';
+      }).join('')
+    + '</div>'
+    + '<div class="hazard-foot">Any toll doubles UNCATALOGUED drops for this Depth.</div>';
+  if (move) { move.disabled = true; move.textContent = 'CHOOSE A TOLL'; }
+}
+
+function talkToScientist() {
+  if (HEADLESS.on) return;
+  const p = state.player;
+  const line = document.getElementById('camp-line');
+  const el = document.getElementById('camp-panel');
+  if (!p || !el) return;
+  if (el.classList.contains('log-open')) {
+    el.classList.remove('log-open');
+    renderCampPanel();
+    return;
+  }
+  if (line) {
+    line.textContent = 'I keep a log. Habit — nobody reads it but me, and now you.';
+    line.style.animation = 'none'; void line.offsetWidth; line.style.animation = '';
+  }
+  const row = (k, v) => '<div class="camp-log-row"><span>' + k + '</span><b>' + v + '</b></div>';
+  el.classList.add('on', 'log-open');
+  el.innerHTML = '<div class="camp-panel-head">FIELD LOG</div>'
+    + '<div class="camp-log">'
+    + row('Deepest wave', state.wave - 1)
+    + row('Level', p.level)
+    + row('Kills', formatNum(state.kills))
+    + row('Best chain', (state.bestCombo || 0) + '×')
+    + row('Times down', state.deaths || 0)
+    + row('Damage dealt', formatNum(Math.floor(state.damageDealt)))
+    + row('Damage taken', formatNum(Math.floor(state.damageTaken || 0)))
+    + row('Peak ' + (STRAIN_LABEL[p.class] || 'strain'), formatNum(state.peakStrain || 0))
+    + row('Uncatalogued found', (state.uniqueSeen || []).length)
+    + '</div>'
+    + '<button class="ui-btn is-quiet camp-log-close" type="button" onclick="talkToScientist()">CLOSE</button>';
+}
+
+function enterCamp() {
+  const p = state.player;
+  if (!p) return;
+  state.atCamp = true;
+  const before = p.hp;
+  p.hp = p.maxHp;
+  if (p.hp > before)
+    logHeal('FIELD REPAIR', p, p.hp - before, ['patched up at the shelter']);
+  saveRun();
+}
+
+function moveOut() {
+  if (!state.atCamp || state.hazardOffer) return;
+  state.atCamp = false;
+  saveRun();
+  if (HEADLESS.on) { scheduleTurn(doSpawn, 0); return; }
+  const el = document.getElementById('camp-panel');
+  if (el) el.classList.remove('log-open');
+  showScreen('combat-screen');
+  revealCombatNow();
+  startCombatLoop();
 }
 
 function updateHud() {

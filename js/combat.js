@@ -338,7 +338,7 @@ function enemyAct() {
 
 function doSpawn() {
   if (!state.combatActive) return;
-  if (state.hazardOffer) { renderHazardOffer(); scheduleTurn(doSpawn, turnDelay(200)); return; }
+  if (state.atCamp) { showCamp(); return; }
   spawnEnemy();
   if (!state.player || state.player.hp <= 0) return;
   if (!livingEnemies().length) return;
@@ -1061,6 +1061,7 @@ function onEnemyDefeated(e) {
   }
   if (killedWave >= BALANCE.finalWave && killedWave % 10 === 0)
     state.hazardOffer = rollHazardOffer();
+  if (e.isBoss) enterCamp();
   resumeAfterKill();
 }
 

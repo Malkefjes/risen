@@ -500,7 +500,7 @@ function pickHazard(id) {
            [HAZARDS[id].text, 'through wave ' + (state.wave + 9)]);
   saveRun();
   if (HEADLESS.on) return;
-  renderHazardOffer();
+  renderCampPanel();
   updateHud();
 }
 

@@ -1654,8 +1654,173 @@ body {
   transition: width 0.25s ease;
 }
 
-.hazard-modal { max-width: 460px; }
-.hazard-list { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+#camp-screen.active {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(var(--vh) * 100 - 48px);
+}
+
+.camp-layout {
+  display: flex;
+  flex-direction: column;
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  flex: 1;
+}
+
+.camp-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+}
+
+.camp-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--panel);
+  padding: 16px 28px 22px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: end;
+  flex: 0 0 auto;
+  height: clamp(300px, calc(var(--vh) * 46), 470px);
+}
+
+.camp-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 130% 60% at 50% 100%, rgba(4,6,10,0.55) 0%, rgba(4,6,10,0.2) 45%, transparent 75%),
+    linear-gradient(180deg, rgba(7,10,16,0.5) 0%, rgba(7,10,16,0.14) 35%, transparent 65%),
+    url('../assets/zones/camp-1.jpg') center bottom / cover no-repeat;
+  filter: blur(1.1px) saturate(0.95);
+}
+
+.camp-figure {
+  position: relative;
+  z-index: 1;
+  justify-self: center;
+  display: flex;
+  align-items: flex-end;
+  animation: campFadeIn 0.9s ease both;
+}
+.camp-figure img {
+  height: clamp(190px, calc(var(--vh) * 34), 340px);
+  width: auto;
+  display: block;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 12px 26px rgba(0,0,0,0.7));
+  animation: idleBob 3.6s ease-in-out infinite;
+}
+.camp-player img { transform: scaleX(-1); }
+
+.camp-console {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.camp-sub {
+  font-size: 0.78rem;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+}
+
+.camp-npc {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  animation-delay: 0.25s;
+}
+.camp-npc-tag {
+  position: absolute;
+  bottom: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  padding: 4px 10px;
+  border-radius: 3px;
+  color: var(--hyd);
+  background: rgba(4, 10, 18, 0.82);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  opacity: 0;
+  transition: opacity 0.18s;
+  pointer-events: none;
+}
+.camp-npc:hover .camp-npc-tag { opacity: 1; }
+.camp-npc:hover img { filter: drop-shadow(0 12px 26px rgba(0,0,0,0.7)) brightness(1.12); }
+
+@keyframes campFadeIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.camp-dialogue {
+  border-left: 2px solid rgba(56, 189, 248, 0.5);
+  padding: 2px 0 2px 12px;
+}
+.camp-speaker {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  color: var(--hyd);
+  margin-bottom: 6px;
+}
+.camp-line {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: rgba(238, 242, 255, 0.92);
+  animation: campFadeIn 0.7s ease both;
+}
+
+.camp-panel {
+  display: none;
+  padding: 12px 14px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(var(--base-rgb), 0.12);
+}
+.camp-panel.on { display: block; }
+.camp-panel-head {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.7rem;
+  letter-spacing: 2px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.camp-log {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 4px 22px;
+}
+.camp-log-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  font-size: 0.84rem;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.camp-log-row span { color: var(--muted); }
+.camp-log-close { margin-top: 12px; }
+
+.camp-actions { margin-top: auto; display: flex; justify-content: center; }
+.camp-actions .ui-btn { min-width: 240px; }
+
+.hazard-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+}
 .hazard-card {
   display: flex;
   flex-direction: column;

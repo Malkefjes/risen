@@ -170,6 +170,7 @@ function serializeRun() {
     uniqueSeen:(state.uniqueSeen||[]).slice(),
     checkpoint:state.checkpoint||1, deaths:state.deaths||0, won:!!state.won,
     hazard:state.hazard||null, hazardOffer:state.hazardOffer||null,
+    atCamp:!!state.atCamp,
 
     player:{ level:p.level, xp:p.xp, xpNext:p.xpNext, points:p.points + pendingTotal(p),
       str:p.str, instinct:p.instinct, speed:p.speed, vit:p.vit,
@@ -328,6 +329,7 @@ function continueRun(slot){
   state.hazard=(d.hazard && HAZARDS[d.hazard.id])?d.hazard:null;
   state.hazardOffer=Array.isArray(d.hazardOffer)?d.hazardOffer.filter(id => HAZARDS[id]):null;
   if (state.hazardOffer && !state.hazardOffer.length) state.hazardOffer=null;
+  state.atCamp=!!d.atCamp;
   state.damageDealt=d.damageDealt||0;
   state.runTurns=d.runTurns||0; state.damageTaken=d.damageTaken||0;
   state.critsLanded=d.critsLanded||0; state.damagePrevented=d.damagePrevented||0;
@@ -340,7 +342,8 @@ function continueRun(slot){
   showScreen('combat-screen');
   document.getElementById('combat-screen').classList.remove('staged', 'reveal');
   state.combatActive = true;
+  log('RUN RESUMED · slot ' + n + ' · wave ' + state.wave + ' · level ' + p.level);
+  if (state.atCamp) { state.awaitingSpawn = true; showCamp(); return; }
   spawnEnemy();
   startCombatLoop();
-  log('RUN RESUMED · slot ' + n + ' · wave ' + state.wave + ' · level ' + p.level);
 }

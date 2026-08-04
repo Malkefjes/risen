@@ -297,15 +297,40 @@
     </div>
   </div>
 
-  <div id="result-screen" class="screen">
-    <div class="result-stats" id="result-stats"></div>
+  <div id="camp-screen" class="screen">
+    <div class="camp-layout">
+      <div class="combat-header">
+        <div class="zone-name" id="camp-title">SHELTER</div>
+      </div>
+
+      <div class="camp-main">
+        <div class="camp-card">
+          <div class="camp-backdrop"></div>
+          <div class="camp-figure camp-player" id="camp-player"></div>
+          <button class="camp-figure camp-npc" type="button"
+                  onclick="talkToScientist()" title="Speak with him">
+            <img src="assets/sprites/rogue lab scientist ready.png" alt="Rogue Lab Scientist" draggable="false">
+            <span class="camp-npc-tag">SPEAK</span>
+          </button>
+        </div>
+
+        <div class="action-panel camp-console">
+          <div class="camp-sub" id="camp-sub"></div>
+          <div class="camp-dialogue">
+            <div class="camp-speaker">ROGUE LAB SCIENTIST</div>
+            <p class="camp-line" id="camp-line"></p>
+          </div>
+          <div class="camp-panel" id="camp-panel"></div>
+          <div class="camp-actions">
+            <button class="ui-btn is-primary" id="camp-move" onclick="moveOut()">MOVE OUT</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div class="modal-overlay" id="hazard-modal">
-    <div class="modal hazard-modal">
-      <h3 id="hazard-title">CHOOSE THE TOLL</h3>
-      <div class="hazard-list" id="hazard-list"></div>
-    </div>
+  <div id="result-screen" class="screen">
+    <div class="result-stats" id="result-stats"></div>
   </div>
 
   <div class="modal-overlay" id="settings-modal">
