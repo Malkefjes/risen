@@ -37,30 +37,31 @@ const out = await page.evaluate(({ RUNS, ONLY }) => {
       }
       rows.push({ cls, kit,
         names: kit.map(id => CLASSES[cls].skills.find(s => s.id === id).name),
-        p10: at(waves, 0.1), med: med(waves), p90: at(waves, 0.9), wins });
+        p10: at(waves, 0.1), med: med(waves), p90: at(waves, 0.9), breaches: wins });
     }
   }
   return rows;
 }, { RUNS, ONLY });
 
-console.log(`\n${RUNS} runs per kit, even spread, smart bot.  Every number is measured.\n`);
+console.log(`\n${RUNS} first lives per kit, even spread, smart bot.`
+  + `\nDeepest wave before the first death; breached = cleared wave 60 first life.\n`);
 let cls = null;
-for (const r of out.sort((a, b) => a.cls.localeCompare(b.cls) || b.wins - a.wins)) {
+for (const r of out.sort((a, b) => a.cls.localeCompare(b.cls) || b.med - a.med)) {
   if (r.cls !== cls) {
     cls = r.cls;
     const mine = out.filter(x => x.cls === cls);
     console.log(`${cls.toUpperCase()}  —  ${mine.length} kits`);
-    console.log('  kit'.padEnd(46) + 'p10  median  p90   wins');
+    console.log('  kit'.padEnd(46) + 'p10  median  p90   breached');
   }
   console.log('  ' + r.names.join(' · ').padEnd(44)
     + String(r.p10).padStart(4) + String(r.med).padStart(8)
-    + String(r.p90).padStart(6) + String(r.wins + '/' + RUNS).padStart(8));
+    + String(r.p90).padStart(6) + String(r.breaches + '/' + RUNS).padStart(10));
 }
 
 for (const c of [...new Set(out.map(r => r.cls))]) {
   const mine = out.filter(r => r.cls === c);
-  const w = mine.map(r => r.wins), m = mine.map(r => r.med);
-  console.log(`\n${c.toUpperCase()}  best-to-worst: wins ${Math.max(...w)} -> ${Math.min(...w)}`
-    + ` · median wave ${Math.max(...m)} -> ${Math.min(...m)}`);
+  const m = mine.map(r => r.med);
+  console.log(`\n${c.toUpperCase()}  median reach across kits: ${Math.max(...m)} deepest -> ${Math.min(...m)} shallowest`
+    + `  (a narrow spread means the kit choice is cosmetic)`);
 }
 await browser.close(); await server.close();

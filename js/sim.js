@@ -163,10 +163,11 @@ function simulateRun(classId, opts) {
     startGame(true, classId);
     let steps = 0;
 
-    while (!state.runOver && !(state.deaths > 0) && steps++ < maxSteps) {
+    while (!state.runOver && (state.deaths || 0) < (opts.maxDeaths || 1) && steps++ < maxSteps) {
 
       pumpSteps();
       if (state.runOver) break;
+      if (opts.each) opts.each(state);
       if (opts.stopWhen && opts.stopWhen(state)) break;
       if (state.hazardOffer) { pickHazard(state.hazardOffer[0]); continue; }
       if (!state.awaitingInput) {
