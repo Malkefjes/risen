@@ -152,16 +152,43 @@ const ITEM_PREFIXES = [
     tiers: [[4, 6], [4, 5], [3, 4], [2, 3], [1, 2]] }
 ];
 
+const SGN = v => v < 0 ? '−' : '+';
+const PCT = (v, word) => SGN(v) + Math.abs(Math.round(v * 100)) + '% ' + word;
+
 const ITEM_MODS = {
-  critCh:    { id: 'critCh',    step: 0.01, text: v => '+' + Math.round(v * 100) + '% crit chance' },
-  critDmg:   { id: 'critDmg',   step: 0.05, text: v => '+' + v.toFixed(2) + '× crit damage' },
-  evasion:   { id: 'evasion',   step: 0.01, text: v => '+' + Math.round(v * 100) + '% evasion' },
-  armor:     { id: 'armor',     step: 0.01, text: v => '+' + Math.round(v * 100) + '% armor' },
-  healBoost: { id: 'healBoost', step: 0.02, text: v => '+' + Math.round(v * 100) + '% healing' },
-  xpBoost:   { id: 'xpBoost',   step: 0.01, text: v => '+' + Math.round(v * 100) + '% XP' },
-  apsBoost:  { id: 'apsBoost',  step: 0.01, text: v => '+' + Math.round(v * 100) + '% turn rate' },
-  dmgMult:   { id: 'dmgMult',   step: 0.01, text: v => '+' + Math.round(v * 100) + '% attack damage' }
+  critCh:    { id: 'critCh',    step: 0.01, text: v => PCT(v, 'crit chance') },
+  critDmg:   { id: 'critDmg',   step: 0.05, text: v => SGN(v) + Math.abs(v).toFixed(2) + '× crit damage' },
+  evasion:   { id: 'evasion',   step: 0.01, text: v => PCT(v, 'evasion') },
+  armor:     { id: 'armor',     step: 0.01, text: v => PCT(v, 'armor') },
+  healBoost: { id: 'healBoost', step: 0.02, text: v => PCT(v, 'healing') },
+  xpBoost:   { id: 'xpBoost',   step: 0.01, text: v => PCT(v, 'XP') },
+  apsBoost:  { id: 'apsBoost',  step: 0.01, text: v => PCT(v, 'turn rate') },
+  dmgMult:   { id: 'dmgMult',   step: 0.01, text: v => PCT(v, 'attack damage') },
+  maxHp:     { id: 'maxHp',     step: 0.01, text: v => PCT(v, 'max HP') }
 };
+
+const TRADE_CHANCE = 0.45;
+
+const ITEM_TRADEOFFS = [
+  { id: 't_power', groups: ['dmgMult'],
+    up:   { mod: 'dmgMult', tiers: [[0.30, 0.40], [0.23, 0.30], [0.17, 0.23], [0.12, 0.17], [0.08, 0.12]] },
+    down: { mod: 'maxHp',   tiers: [[0.12, 0.16], [0.10, 0.12], [0.08, 0.10], [0.06, 0.08], [0.04, 0.06]] } },
+  { id: 't_rate', groups: ['apsBoost'],
+    up:   { mod: 'apsBoost', tiers: [[0.20, 0.26], [0.15, 0.20], [0.11, 0.15], [0.08, 0.11], [0.05, 0.08]] },
+    down: { mod: 'armor',    tiers: [[0.06, 0.08], [0.05, 0.06], [0.04, 0.05], [0.03, 0.04], [0.02, 0.03]] } },
+  { id: 't_crit', groups: ['critDmg'],
+    up:   { mod: 'critDmg', tiers: [[1.05, 1.40], [0.78, 1.05], [0.55, 0.78], [0.35, 0.55], [0.22, 0.35]] },
+    down: { mod: 'evasion', tiers: [[0.06, 0.08], [0.05, 0.06], [0.04, 0.05], [0.03, 0.04], [0.02, 0.03]] } },
+  { id: 't_aim', groups: ['critCh'],
+    up:   { mod: 'critCh',    tiers: [[0.14, 0.18], [0.11, 0.14], [0.08, 0.11], [0.05, 0.08], [0.03, 0.05]] },
+    down: { mod: 'healBoost', tiers: [[0.20, 0.28], [0.16, 0.20], [0.12, 0.16], [0.08, 0.12], [0.05, 0.08]] } },
+  { id: 't_bulk', groups: ['armor'],
+    up:   { mod: 'armor',    tiers: [[0.15, 0.20], [0.11, 0.15], [0.08, 0.11], [0.05, 0.08], [0.03, 0.05]] },
+    down: { mod: 'apsBoost', tiers: [[0.08, 0.11], [0.06, 0.08], [0.05, 0.06], [0.03, 0.05], [0.02, 0.03]] } },
+  { id: 't_greed', groups: ['xpBoost'],
+    up:   { mod: 'xpBoost', tiers: [[0.38, 0.48], [0.29, 0.38], [0.21, 0.29], [0.15, 0.21], [0.09, 0.15]] },
+    down: { mod: 'dmgMult', tiers: [[0.10, 0.13], [0.08, 0.10], [0.06, 0.08], [0.04, 0.06], [0.03, 0.04]] } }
+];
 
 const ITEM_SUFFIXES = [
   { id: 's_critCh',    mod: 'critCh',    groups: ['critCh'],
@@ -269,6 +296,24 @@ function makeItem(wave, rarityId) {
     def.groups.forEach(g => used.push(g));
   }
 
+  if (rar.id === 'prototype' && Math.random() < TRADE_CHANCE) {
+    const pool = ITEM_TRADEOFFS.filter(free);
+    if (pool.length) {
+      const def = pool[Math.floor(Math.random() * pool.length)];
+      const tier = rollTier(wave);
+      const line = side => {
+        const d = def[side], sign = side === 'down' ? -1 : 1;
+        return d.stats
+          ? { id: def.id, stats: d.stats.slice(), tier, trade: side,
+              v: sign * rollRange(d.tiers[tier], 1) }
+          : { id: def.id, mod: d.mod, tier, trade: side,
+              v: sign * rollRange(d.tiers[tier], ITEM_MODS[d.mod].step) };
+      };
+      suffixes.push(line('up'), line('down'));
+      def.groups.forEach(g => used.push(g));
+    }
+  }
+
   return { slot: slot.id, rarity: rar.id, wave, name: slot.name,
            lot: wave + '-' + slot.lot, implicit, prefixes, suffixes };
 }
@@ -302,9 +347,12 @@ function gearList(p) {
 
 function gearStat(p, key) {
   let n = 0;
-  for (const it of gearList(p))
+  for (const it of gearList(p)) {
     for (const pre of (it.prefixes || []))
       if (pre.stats.indexOf(key) >= 0) n += pre.v;
+    for (const s of (it.suffixes || []))
+      if (s.stats && s.stats.indexOf(key) >= 0) n += s.v;
+  }
 
   for (const it of gearList(p)) {
     if (it.implicit && it.implicit.stats && it.implicit.stats.indexOf(key) >= 0)
@@ -330,7 +378,10 @@ function itemScore(it) {
   if (!it) return 0;
   let n = 0;
   for (const pre of (it.prefixes || [])) n += pre.v * pre.stats.length;
-  for (const s of (it.suffixes || [])) n += (5 - s.tier);
+  for (const s of (it.suffixes || [])) {
+    if (s.stats) { n += s.v * s.stats.length; continue; }
+    n += (s.v < 0 ? -1 : 1) * (5 - s.tier);
+  }
 
   if (it.implicit) n += it.implicit.stats
     ? it.implicit.v * it.implicit.stats.length
@@ -362,6 +413,11 @@ function itemAffixLines(it) {
     out.push(affixLine(pre.tier,
       pre.stats.map(s => '+' + pre.v + ' ' + ITEM_STAT_NAMES[s]).join(', ')));
   for (const s of (it.suffixes || [])) {
+    if (s.stats) {
+      out.push(affixLine(s.tier,
+        s.stats.map(k => SGN(s.v) + Math.abs(s.v) + ' ' + ITEM_STAT_NAMES[k]).join(', ')));
+      continue;
+    }
     const def = ITEM_MODS[s.mod];
     if (def) out.push(affixLine(s.tier, def.text(s.v)));
   }
