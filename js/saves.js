@@ -169,6 +169,7 @@ function serializeRun() {
     modQueue:(state.modQueue||[]).map(o => o.map(m => m.id)),
     uniqueSeen:(state.uniqueSeen||[]).slice(),
     checkpoint:state.checkpoint||1, deaths:state.deaths||0, won:!!state.won,
+    hazard:state.hazard||null, hazardOffer:state.hazardOffer||null,
 
     player:{ level:p.level, xp:p.xp, xpNext:p.xpNext, points:p.points + pendingTotal(p),
       str:p.str, instinct:p.instinct, speed:p.speed, vit:p.vit,
@@ -324,6 +325,9 @@ function continueRun(slot){
   state.deaths=d.deaths||0;
   state.won=!!d.won;
   state.diedAt=0;
+  state.hazard=(d.hazard && HAZARDS[d.hazard.id])?d.hazard:null;
+  state.hazardOffer=Array.isArray(d.hazardOffer)?d.hazardOffer.filter(id => HAZARDS[id]):null;
+  if (state.hazardOffer && !state.hazardOffer.length) state.hazardOffer=null;
   state.damageDealt=d.damageDealt||0;
   state.runTurns=d.runTurns||0; state.damageTaken=d.damageTaken||0;
   state.critsLanded=d.critsLanded||0; state.damagePrevented=d.damagePrevented||0;

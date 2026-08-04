@@ -1,4 +1,4 @@
-const BUILD = '2026-08-04pm8';
+const BUILD = '2026-08-04pm9';
 
 const BALANCE = {
   player: {
@@ -257,6 +257,15 @@ const ELITES = {
 
   venomous: { id:'venomous', tag:'VENOMOUS', xp:1.7, poison:true },
   volatile: { id:'volatile', tag:'VOLATILE', xp:1.8, deathNova:0.14 }
+};
+
+const HAZARDS = {
+  swarm:      { id:'swarm',      name:'SWARM',      text:'Every wave is a full pack of three.', xpMult:1.40 },
+  frenzy:     { id:'frenzy',     name:'FRENZY',     text:'Enemies act 15% faster.', xpMult:1.30 },
+  brutes:     { id:'brutes',     name:'BRUTES',     text:'Enemies hit 20% harder.', xpMult:1.35 },
+  virulent:   { id:'virulent',   name:'VIRULENT',   text:'More elites, and every one of them VENOMOUS.', xpMult:1.35 },
+  charged:    { id:'charged',    name:'CHARGED',    text:'Elites and bosses wind up every second action.', xpMult:1.30 },
+  relentless: { id:'relentless', name:'RELENTLESS', text:'Half recovery between fights.', xpMult:1.30 }
 };
 
 const ZONES = [

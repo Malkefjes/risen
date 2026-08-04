@@ -183,6 +183,8 @@ function resetRunState(classId) {
   state.diedAt = 0;
   state.checkpoint = 1;
   state.queuedSkillId = null;
+  state.hazard = null;
+  state.hazardOffer = null;
   state.killedBy = null;
   state.runStart = Date.now();
   state._defeatLock = false;
@@ -292,7 +294,8 @@ function spawnEnemy() {
   const p = state.player;
 
   const zn = document.getElementById('zone-name');
-  if (zn) zn.textContent = getZoneName(state.wave);
+  const haz = hazardFor(state.wave);
+  if (zn) zn.textContent = getZoneName(state.wave) + (haz ? ' · ' + haz.name : '');
 
   const ac = document.getElementById('arena-card');
   if (ac) {
@@ -319,7 +322,8 @@ function spawnEnemy() {
 
   if (state.wave > 1) {
     const before = p.hp;
-    const recover = P().recoverHpFrac * (hasRule(p, 'bivouac') ? 2 : 1);
+    const recover = P().recoverHpFrac * (hasRule(p, 'bivouac') ? 2 : 1)
+      * (haz && haz.id === 'relentless' ? 0.5 : 1);
     p.hp = Math.min(p.maxHp, p.hp + Math.floor(healAnchorFor(p) * recover));
     if (p.hp > before) logHeal('RECOVER', p, p.hp - before,
       [Math.round(recover*100) + '% of ' + logNum(healAnchorFor(p)) + ' between fights'
@@ -361,6 +365,27 @@ function spawnEnemy() {
   state.awaitingInput = false;
   state.pendingEnemyAct = false;
   updateHud(); renderCombat(true); renderSkills(); updateTurnInfo();
+}
+
+function renderHazardOffer() {
+  if (HEADLESS.on) return;
+  const modal = document.getElementById('hazard-modal');
+  if (!modal) return;
+  const offer = state.hazardOffer;
+  if (!offer) { modal.classList.remove('show'); return; }
+  if (modal.classList.contains('show')) return;
+  const depth = Math.floor((state.wave - BALANCE.finalWave - 1) / 10) + 1;
+  document.getElementById('hazard-title').textContent = 'DEPTH ' + depth + ' · CHOOSE THE TOLL';
+  document.getElementById('hazard-list').innerHTML = offer.map(id => {
+    const h = HAZARDS[id];
+    return '<button class="hazard-card" type="button" onclick="pickHazard(\'' + id + '\')">'
+      + '<span class="hazard-name">' + h.name + '</span>'
+      + '<span class="hazard-text">' + h.text + '</span>'
+      + '<span class="hazard-reward">+' + Math.round((h.xpMult - 1) * 100) + '% XP</span>'
+      + '</button>';
+  }).join('')
+  + '<div class="hazard-foot">Any toll doubles UNCATALOGUED drops for this Depth.</div>';
+  modal.classList.add('show');
 }
 
 function updateHud() {

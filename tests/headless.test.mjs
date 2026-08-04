@@ -55,7 +55,8 @@ export default async function ({ page, ok }) {
     let capped = true;
     for (let i = 0; i < 400000; i++) {
       if (state.runOver || state.deaths > 0) { capped = false; break; }
-      if (state.awaitingInput && state.combatActive) {
+      if (state.hazardOffer) { pickHazard(state.hazardOffer[0]); }
+      else if (state.awaitingInput && state.combatActive) {
         if (nextDrop()) { resolveDrop(botTakesDrop(state.player, nextDrop())); }
         else if (nextModOffer()) { takeMod(botTakesMod(nextModOffer())); }
         else {

@@ -1654,6 +1654,37 @@ body {
   transition: width 0.25s ease;
 }
 
+.hazard-modal { max-width: 460px; }
+.hazard-list { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.hazard-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 45, 106, 0.35);
+  color: var(--text);
+  font-family: var(--font-body);
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+.hazard-card:hover {
+  border-color: rgba(255, 45, 106, 0.8);
+  background: rgba(255, 45, 106, 0.08);
+  transform: translateY(-1px);
+}
+.hazard-name {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--accent2);
+}
+.hazard-text { font-size: 0.85rem; }
+.hazard-reward { font-size: 0.78rem; color: var(--xp); letter-spacing: 0.5px; }
+.hazard-foot { margin-top: 10px; font-size: 0.72rem; color: var(--muted); letter-spacing: 0.4px; }
+
 .stat-hint {
   margin: 0.55rem 0 0.1rem;
   font-size: 0.68rem;

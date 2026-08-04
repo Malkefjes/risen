@@ -333,7 +333,7 @@ function rollDrop(e, wave) {
   const kind = e.isBoss ? 'boss' : e.champion ? 'champion' : e.elite ? 'elite' : 'trash';
   const d = DROPS[kind];
   if (!d) return null;
-  if (d.unique > 0 && Math.random() < d.unique) {
+  if (d.unique > 0 && Math.random() < d.unique * (hazardFor(wave) ? 2 : 1)) {
     const pool = uniquePool(wave);
     if (pool.length) {
       const id = pool[Math.floor(Math.random() * pool.length)];

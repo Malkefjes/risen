@@ -13,7 +13,7 @@ function pumpSteps(limit) {
     const fn = _pendingStep;
     _pendingStep = null;
     fn();
-    if (state.awaitingInput || state.runOver || (state.deaths || 0) > d0) break;
+    if (state.awaitingInput || state.runOver || (state.deaths || 0) > d0 || state.hazardOffer) break;
   }
   return n;
 }
@@ -168,6 +168,7 @@ function simulateRun(classId, opts) {
       pumpSteps();
       if (state.runOver) break;
       if (opts.stopWhen && opts.stopWhen(state)) break;
+      if (state.hazardOffer) { pickHazard(state.hazardOffer[0]); continue; }
       if (!state.awaitingInput) {
         if (!_pendingStep) break;
         continue;

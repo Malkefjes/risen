@@ -477,6 +477,33 @@ function renderDeltas(view) {
   return changed;
 }
 
+function hazardFor(wave) {
+  const h = state.hazard;
+  if (!h || !HAZARDS[h.id]) return null;
+  return (wave >= h.from && wave <= h.until) ? HAZARDS[h.id] : null;
+}
+
+function rollHazardOffer() {
+  const pool = Object.keys(HAZARDS);
+  const out = [];
+  while (out.length < 3 && pool.length)
+    out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+  return out;
+}
+
+function pickHazard(id) {
+  const offer = state.hazardOffer;
+  if (!offer || offer.indexOf(id) < 0) return;
+  state.hazardOffer = null;
+  state.hazard = { id, from: state.wave, until: state.wave + 9 };
+  logEvent('THE TOLL', null, HAZARDS[id].name,
+           [HAZARDS[id].text, 'through wave ' + (state.wave + 9)]);
+  saveRun();
+  if (HEADLESS.on) return;
+  renderHazardOffer();
+  updateHud();
+}
+
 function rollWaveKind(wave) {
   const zone = zoneForWave(wave);
   let isBoss;
@@ -498,8 +525,9 @@ function makeWave(wave) {
   const kind = rollWaveKind(wave);
 
   let size = 1;
+  const haz = hazardFor(wave);
   if (!kind.isBoss && !kind.champ && wave > (zone.soloUntil || 0) && zone.packWeights)
-    size = pickWeighted(zone.packWeights) + 1;
+    size = (haz && haz.id === 'swarm') ? 3 : pickWeighted(zone.packWeights) + 1;
 
   const members = [];
   let eliteTaken = false;
@@ -544,15 +572,18 @@ function makeEnemy(wave, ctx) {
   const bossBump = (isBoss && wave === BALANCE.bossEvery) ? (BALANCE.enemy.firstBossMult || 1) : 1;
   const isFinal = wave === BALANCE.finalWave;
 
+  const haz = hazardFor(wave);
   let elite = null;
   if (!isBoss && (champ || wave > 4) && !(ctx && ctx.noElite)) {
     const keys = Object.keys(ELITES);
 
     const chance = Math.min(zone.eliteChanceCap != null ? zone.eliteChanceCap : E.eliteChanceCap,
       (zone.eliteBaseChance != null ? zone.eliteBaseChance : E.eliteBaseChance)
-        + wave*E.eliteChancePerWave);
+        + wave*E.eliteChancePerWave)
+      + (haz && haz.id === 'virulent' ? 0.25 : 0);
     if (champ || Math.random() < chance) {
       elite = ELITES[keys[Math.floor(Math.random()*keys.length)]];
+      if (haz && haz.id === 'virulent') elite = ELITES.venomous;
     }
   }
 
@@ -587,16 +618,21 @@ function makeEnemy(wave, ctx) {
     artZone: depthBoss ? depthBoss.artZone : (champ && champ.artZone) || face.artZone || zone.num,
     waveNo: wave,
     rosterId: face.id,
-    windupEvery: isBoss ? (isFinal ? E.finalWindupEvery : E.windupEvery) : (elite ? E.eliteWindupEvery : 0),
+    windupEvery: (function () {
+      const wu = isBoss ? (isFinal ? E.finalWindupEvery : E.windupEvery) : (elite ? E.eliteWindupEvery : 0);
+      return (wu && haz && haz.id === 'charged') ? 2 : wu;
+    })(),
 
     maxHp: Math.max(1, Math.round(E.hpBase
       * Math.pow(g, zone.hpExp != null ? zone.hpExp : (E.hpExp != null ? E.hpExp : 1))
       * hpShare
       * (isBoss?E.bossHp:1) * bossBump * (elite&&elite.hpMult?elite.hpMult:1))),
     damage: Math.max(1, Math.round(E.dmgBase * Math.pow(g, E.dmgExp)
-      * dmgMult * dmgShare * (isBoss?E.bossDmg:E.trashDmgMult) * bossBump)),
+      * dmgMult * dmgShare * (isBoss?E.bossDmg:E.trashDmgMult) * bossBump
+      * (haz && haz.id === 'brutes' ? 1.2 : 1))),
     attackSpeed: Math.min(E.apsCap, (E.apsBase + rateTier*E.apsPerTier)
-      * apsMult * (isBoss?E.bossAps:1) * (elite&&elite.apsMult?elite.apsMult:1)),
+      * apsMult * (isBoss?E.bossAps:1) * (elite&&elite.apsMult?elite.apsMult:1))
+      * (haz && haz.id === 'frenzy' ? 1.15 : 1),
     evadeChance: 0,
     critChance: E.crit, critMult: E.critMult,
     xpMult: (isBoss?E.bossXp:1) * (elite?elite.xp:1) * xpShare,

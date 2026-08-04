@@ -338,6 +338,7 @@ function enemyAct() {
 
 function doSpawn() {
   if (!state.combatActive) return;
+  if (state.hazardOffer) { renderHazardOffer(); scheduleTurn(doSpawn, turnDelay(200)); return; }
   spawnEnemy();
   if (!state.player || state.player.hp <= 0) return;
   if (!livingEnemies().length) return;
@@ -1001,12 +1002,14 @@ function onEnemyDefeated(e) {
   const tier = Math.floor((killedWave-1)/5);
   const comboBonus = 1 + Math.min(BALANCE.combo.maxStack, state.combo) * BALANCE.combo.xpPerStack;
   const gearXp = 1 + gearMod(p, 'xpBoost');
+  const haz = hazardFor(killedWave);
   const xp = Math.floor((BALANCE.xp.killBase + killedWave*BALANCE.xp.killWave + tier*BALANCE.xp.killTier)
-    * e.xpMult * comboBonus * gearXp);
+    * e.xpMult * comboBonus * gearXp * (haz ? haz.xpMult : 1));
   logEvent('XP', null, '+' + logNum(xp), [
     e.xpMult !== 1 ? 'enemy ×' + e.xpMult.toFixed(1) : null,
     comboBonus > 1 ? 'chain ×' + comboBonus.toFixed(2) : null,
-    gearXp > 1 ? 'suit ×' + gearXp.toFixed(2) : null
+    gearXp > 1 ? 'suit ×' + gearXp.toFixed(2) : null,
+    haz ? 'toll ×' + haz.xpMult.toFixed(2) : null
   ]);
 
   killFlash(e);
@@ -1056,6 +1059,8 @@ function onEnemyDefeated(e) {
     const offer = offerMods(p);
     if (offer.length) queueMods(offer);
   }
+  if (killedWave >= BALANCE.finalWave && killedWave % 10 === 0)
+    state.hazardOffer = rollHazardOffer();
   resumeAfterKill();
 }
 
