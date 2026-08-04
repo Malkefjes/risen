@@ -1,4 +1,4 @@
-const BUILD = '2026-08-04pm11';
+const BUILD = '2026-08-04pm12';
 
 const BALANCE = {
   player: {
@@ -92,7 +92,7 @@ const BALANCE = {
   },
   enemy: {
 
-    hpBase: 240, tierGrowth: 1.85, withinStep: 0.06,
+    hpBase: 280, tierGrowth: 1.85, withinStep: 0.06,
 
     hpExp: 0.75,
 
@@ -287,7 +287,8 @@ const ZONES = [
     bossVerb: 'guard',
     champion: { at: 15, id: 'lieutenant', name: 'FAUNA-12 Warden' },
     packWeights: [30, 45, 25],
-    growthMult: 3.33, tierGrowth: 2.6, withinStep: 0.06,
+    growthMult: 3.33, tierGrowth: 2.9, withinStep: 0.06,
+    dmgMult: 1.05,
     windupMult: 2.5, eliteWindupMult: 2.0 },
 
   { num: 3, name: 'Survey Camp One', label: 'SURVEY CAMP ONE',
@@ -298,7 +299,8 @@ const ZONES = [
     bossVerb: 'enrage',
     champion: { at: 25, id: 'mercenary', name: 'Survey Veteran' },
     packWeights: [25, 45, 30],
-    growthMult: 11.3, tierGrowth: 2.1, withinStep: 0.04,
+    growthMult: 11.3, tierGrowth: 2.4, withinStep: 0.04,
+    dmgMult: 1.10,
     windupMult: 1.6, eliteWindupMult: 1.2 },
 
   { num: 4, name: 'The Source', label: 'THE SOURCE',
@@ -315,7 +317,7 @@ const ZONES = [
     eliteBaseChance: 0.35, eliteChanceCap: 0.65,
     growthMult: 28.9, tierGrowth: 1.22, withinStep: 0.04,
 
-    dmgMult: 1.13, dmgMultEnd: 1.32,
+    dmgMult: 1.13, dmgMultEnd: 1.45,
     apsMult: 1.00, apsMultEnd: 1.45, hpExp: 0.70,
     windupMult: 1.35, eliteWindupMult: 1.15 }
 ];
