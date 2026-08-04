@@ -1,4 +1,4 @@
-const BUILD = '2026-08-04pm17';
+const BUILD = '2026-08-04pm18';
 
 const BALANCE = {
   player: {
@@ -132,7 +132,7 @@ const BALANCE = {
 
   turnPace: 1,
 
-  saveKey: 'risen_run_v13',
+  saveKey: 'risen_run_v14',
 
   oldSaveKeys: ['risen_run_v3', 'risen_run_v3_s1', 'risen_run_v3_s2',
                 'risen_run_v4', 'risen_run_v4_s1', 'risen_run_v4_s2',
@@ -144,7 +144,9 @@ const BALANCE = {
                 'risen_run_v10', 'risen_run_v10_s0', 'risen_run_v10_s1', 'risen_run_v10_s2',
                 'risen_run_v11', 'risen_run_v11_s0', 'risen_run_v11_s1', 'risen_run_v11_s2',
                 'risen_run_v12', 'risen_run_v12_s0', 'risen_run_v12_s1', 'risen_run_v12_s2',
-                'risen_run_v12_s3', 'risen_run_v12_s4'],
+                'risen_run_v12_s3', 'risen_run_v12_s4',
+                'risen_run_v13', 'risen_run_v13_s0', 'risen_run_v13_s1', 'risen_run_v13_s2',
+                'risen_run_v13_s3', 'risen_run_v13_s4'],
   saveSlots: 4
 };
 
@@ -158,13 +160,13 @@ const CLASSES = {
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
 
-      { id:'slash', name:'Inject', desc:'Deal {power!} damage + {poisonScale%} of what the rot is ticking for. +{poisonStacks} POISON', type:'attack', power:1.0, poison:1, poisonScale:1.0, poisonStacks:(p,s) => poisonStacks(p,s), target:'enemy', basic:true },
+      { id:'inject', name:'Inject', desc:'Deal {power!} damage + {poisonScale%} of what the rot is ticking for. +{poisonStacks} POISON', type:'attack', power:1.0, poison:1, poisonScale:1.0, poisonStacks:(p,s) => poisonStacks(p,s), target:'enemy', basic:true },
 
-      { id:'infest', name:'Distribute', desc:'Deal {power!} damage to EVERY enemy. +{poisonStacks} POISON each. When a host dies, {carry%} of its rot jumps to a living one.', type:'attack', shape:'all', power:0.50, poison:4, poisonStacks:(p,s) => poisonStacks(p,s), carry:BALANCE.player.poisonCarryFrac, target:'enemy', cdTurns:3 },
+      { id:'distribute', name:'Distribute', desc:'Deal {power!} damage to EVERY enemy. +{poisonStacks} POISON each. When a host dies, {carry%} of its rot jumps to a living one.', type:'attack', shape:'all', power:0.50, poison:4, poisonStacks:(p,s) => poisonStacks(p,s), carry:BALANCE.player.poisonCarryFrac, target:'enemy', cdTurns:3 },
 
-      { id:'chitin', name:'Biofilm', desc:'For {duration#turn}: take −{power%} damage. POISON on the enemy ticks twice per turn', type:'buff', buff:'chitin', duration:3, power:0.40, target:'self', cdTurns:4 },
+      { id:'biofilm', name:'Biofilm', desc:'For {duration#turn}: take −{power%} damage. POISON on the enemy ticks twice per turn', type:'buff', buff:'chitin', duration:3, power:0.40, target:'self', cdTurns:4 },
 
-      { id:'miasma', name:'Regenerate', desc:'For {duration#turn}: regenerate {power+} and shed {tickCleanse} POISON each turn. Every enemy is WEAK for {weak.duration#turn}', type:'buff', buff:'regen', duration:5, power:0.20, tickCleanse:1, applies:[{ id:'weak', power:0.25, duration:3 }], target:'self', cdTurns:5 }
+      { id:'regenerate', name:'Regenerate', desc:'For {duration#turn}: regenerate {power+} and shed {tickCleanse} POISON each turn. Every enemy is WEAK for {weak.duration#turn}', type:'buff', buff:'regen', duration:5, power:0.20, tickCleanse:1, applies:[{ id:'weak', power:0.25, duration:3 }], target:'self', cdTurns:5 }
     ]
   },
 
@@ -209,7 +211,7 @@ const CLASSES = {
     skills: [
 
       { id:'latch', name:'Latch', desc:'Deal {power!} damage + {thornsScale%} of your THORNS.', type:'attack', power:1.0, thornsScale:0.55, target:'enemy', basic:true },
-      { id:'spines', name:'Raise Spines', desc:'THORNS ×{power} and pain reflect doubled for {duration#turn}. Every hit taken grows +{growBonus} extra THORNS.', type:'buff', buff:'spines', duration:3, power:2, growBonus:BALANCE.player.thornsSpinesGrow, target:'self', cdTurns:4 },
+      { id:'raisespines', name:'Raise Spines', desc:'THORNS ×{power} and pain reflect doubled for {duration#turn}. Every hit taken grows +{growBonus} extra THORNS.', type:'buff', buff:'spines', duration:3, power:2, growBonus:BALANCE.player.thornsSpinesGrow, target:'self', cdTurns:4 },
 
       { id:'shed', name:'Shed', desc:'Heal {healFrac+}, then tear off up to {capFrac%} of your grown THORNS for {hpPerThorn+} each — only as many as the wound needs. They regrow next fight. Sheds {cleanse} POISON.', type:'heal', healFrac:0.08, shedFuel:true, cleanse:2, hpPerThorn:BALANCE.player.shedHpPerThorn, capFrac:BALANCE.player.shedCapFrac, target:'self', cdTurns:4 },
       { id:'provoke', name:'Provoke', desc:'Bare your guard: EVERY enemy strikes at once and cannot miss. Every spine answers — ×{lashMult} THORNS each. +{growBonus} THORNS, and charged telegraphs spend themselves now.', type:'provoke', growBonus:3, lashMult:1.5, target:'enemy', cdTurns:4 }
@@ -221,10 +223,10 @@ const CLASSES = {
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
 
-      { id:'jab', name:'Strike', desc:'Deal {power!} damage. +{buildsResolve} RESOLVE, and open a wound: +{bleedStacks} BLEED. Every turn, BLEED deals {bleedTick} a stack and loses one.', type:'attack', power:1.0, buildsResolve:1, bleed:1, bleedStacks:p => bleedStacks(p), bleedTick:p => bleedDepth(p), target:'enemy', basic:true },
+      { id:'strike', name:'Strike', desc:'Deal {power!} damage. +{buildsResolve} RESOLVE, and open a wound: +{bleedStacks} BLEED. Every turn, BLEED deals {bleedTick} a stack and loses one.', type:'attack', power:1.0, buildsResolve:1, bleed:1, bleedStacks:p => bleedStacks(p), bleedTick:p => bleedDepth(p), target:'enemy', basic:true },
       { id:'bandage', name:'Bandage', desc:'Heal {healFrac+} and +{resolveHealBonus%} per held RESOLVE. Sheds {cleanse} POISON', type:'heal', healFrac:0.14, resolveHealBonus:0.02, cleanse:2, target:'self', cdTurns:4 },
 
-      { id:'counter', name:'Counterpunch', desc:'Brace for {duration#turn}: −{power%} damage taken, stacking with RESOLVE. A hit taken while braced counters {counterPower!} damage and opens a wound: +{bleedStacks} BLEED', type:'buff', buff:'brace', duration:2, power:0.60, counterPower:1.20, counterBleed:1, bleedStacks:p => bleedStacks(p), holdFor:'windup', target:'self', cdTurns:4 },
+      { id:'counterpunch', name:'Counterpunch', desc:'Brace for {duration#turn}: −{power%} damage taken, stacking with RESOLVE. A hit taken while braced counters {counterPower!} damage and opens a wound: +{bleedStacks} BLEED', type:'buff', buff:'brace', duration:2, power:0.60, counterPower:1.20, counterBleed:1, bleedStacks:p => bleedStacks(p), holdFor:'windup', target:'self', cdTurns:4 },
       { id:'laststand', name:'Last Stand', desc:'Deal {power!} damage, +{perResolvePower!} per RESOLVE spent. Spends {consumeFrac%} of your RESOLVE', type:'attack', power:1.20, perResolvePower:0.40, consumesResolve:true, consumeFrac:0.7, target:'enemy', cdTurns:5 }
     ]
   }

@@ -1,136 +1,136 @@
 const MODIFICATIONS = {
 
   bio: {
-    slash: [
-      { id: 'bio_sl_a', name: 'DOSAGE',      text: '+1 POISON.',
+    inject: [
+      { id: 'bio_inject_a', name: 'DOSAGE',      text: '+1 POISON.',
         add: { poison: 1 } },
-      { id: 'bio_sl_b', name: 'HONED EDGE',  text: '+20% damage.',
+      { id: 'bio_inject_b', name: 'HONED EDGE',  text: '+20% damage.',
         mul: { power: 1.20 } }
     ],
-    infest: [
-      { id: 'bio_in_a', name: 'SATURATION',  text: '+2 POISON.',
+    distribute: [
+      { id: 'bio_distribute_a', name: 'SATURATION',  text: '+2 POISON.',
         add: { poison: 2 } },
-      { id: 'bio_in_b', name: 'RAPID ONSET', text: 'cooldown −1 turn, to a minimum of 2.',
+      { id: 'bio_distribute_b', name: 'RAPID ONSET', text: 'cooldown −1 turn, to a minimum of 2.',
         add: { cdTurns: -1 }, min: { cdTurns: 2 } }
     ],
-    chitin: [
-      { id: 'bio_ch_a', name: 'DENSE PLATING', text: '+8% damage blunted, to a maximum of 70%.',
+    biofilm: [
+      { id: 'bio_biofilm_a', name: 'DENSE PLATING', text: '+8% damage blunted, to a maximum of 70%.',
         add: { power: 0.08 }, max: { power: 0.70 } },
-      { id: 'bio_ch_b', name: 'SET CARAPACE',  text: '+1 turn duration, to a maximum of 4.',
+      { id: 'bio_biofilm_b', name: 'SET CARAPACE',  text: '+1 turn duration, to a maximum of 4.',
         add: { duration: 1 }, max: { duration: 4 } }
     ],
-    miasma: [
-      { id: 'bio_mi_a', name: 'CONCENTRATE',  text: '+5% regeneration per turn, to a maximum of 50%.',
+    regenerate: [
+      { id: 'bio_regenerate_a', name: 'CONCENTRATE',  text: '+5% regeneration per turn, to a maximum of 50%.',
         add: { power: 0.05 }, max: { power: 0.50 } },
-      { id: 'bio_mi_b', name: 'SCRUBBERS',    text: '+1 POISON removed per turn.',
+      { id: 'bio_regenerate_b', name: 'SCRUBBERS',    text: '+1 POISON removed per turn.',
         add: { tickCleanse: 1 } }
     ]
   },
 
   psy: {
     hunt: [
-      { id: 'psy_hu_a', name: 'IMPRINT',      text: '+1 DREAD.',
+      { id: 'psy_hunt_a', name: 'IMPRINT',      text: '+1 DREAD.',
         add: { dread: 1 } },
-      { id: 'psy_hu_b', name: 'CLEAN STRIKE', text: '+20% damage.',
+      { id: 'psy_hunt_b', name: 'CLEAN STRIKE', text: '+20% damage.',
         mul: { power: 1.20 } }
     ],
     terrify: [
-      { id: 'psy_te_a', name: 'PANIC',        text: '+2 DREAD.',
+      { id: 'psy_terrify_a', name: 'PANIC',        text: '+2 DREAD.',
         add: { dread: 2 } },
-      { id: 'psy_te_b', name: 'SUSTAINED',    text: 'cooldown −1 turn, to a minimum of 2.',
+      { id: 'psy_terrify_b', name: 'SUSTAINED',    text: 'cooldown −1 turn, to a minimum of 2.',
         add: { cdTurns: -1 }, min: { cdTurns: 2 } }
     ],
     traumatize: [
-      { id: 'psy_tr_a', name: 'DEEP TRAUMA',  text: '+1 turn of stun, to a maximum of 3.',
+      { id: 'psy_traumatize_a', name: 'DEEP TRAUMA',  text: '+1 turn of stun, to a maximum of 3.',
         add: { stun: 1 }, max: { stun: 3 } },
-      { id: 'psy_tr_b', name: 'LOW THRESHOLD', text: '−1 DREAD required, to a minimum of 1.',
+      { id: 'psy_traumatize_b', name: 'LOW THRESHOLD', text: '−1 DREAD required, to a minimum of 1.',
         add: { dreadNeed: -1 }, min: { dreadNeed: 1 } }
     ],
     kill: [
-      { id: 'psy_ki_a', name: 'APPETITE',     text: '+0.15 damage per DREAD consumed.',
+      { id: 'psy_kill_a', name: 'APPETITE',     text: '+0.15 damage per DREAD consumed.',
         add: { perDreadPower: 0.15 } },
-      { id: 'psy_ki_b', name: 'QUICK FEED',   text: 'cooldown −1 turn, to a minimum of 3.',
+      { id: 'psy_kill_b', name: 'QUICK FEED',   text: 'cooldown −1 turn, to a minimum of 3.',
         add: { cdTurns: -1 }, min: { cdTurns: 3 } }
     ]
   },
 
   hyd: {
     piston: [
-      { id: 'hyd_pi_a', name: 'BORE',        text: '+25% damage.',
+      { id: 'hyd_piston_a', name: 'BORE',        text: '+25% damage.',
         mul: { power: 1.25 } },
-      { id: 'hyd_pi_b', name: 'TWIN STROKE', text: '+1 PRESSURE per hit.',
+      { id: 'hyd_piston_b', name: 'TWIN STROKE', text: '+1 PRESSURE per hit.',
         add: { pressure: 1 } }
     ],
     surge: [
-      { id: 'hyd_su_a', name: 'PRECHARGE',   text: '+3 PRESSURE.',
+      { id: 'hyd_surge_a', name: 'PRECHARGE',   text: '+3 PRESSURE.',
         add: { pressure: 3 } },
-      { id: 'hyd_su_b', name: 'WIDE BORE',   text: '+30% damage.',
+      { id: 'hyd_surge_b', name: 'WIDE BORE',   text: '+30% damage.',
         mul: { power: 1.30 } }
     ],
     dampen: [
-      { id: 'hyd_da_a', name: 'HEAVY GAUGE', text: '+8% reduction, to a maximum of 75%.',
+      { id: 'hyd_dampen_a', name: 'HEAVY GAUGE', text: '+8% reduction, to a maximum of 75%.',
         add: { power: 0.08 }, max: { power: 0.75 } },
-      { id: 'hyd_da_b', name: 'LONG SEAL',   text: '+1 turn.',
+      { id: 'hyd_dampen_b', name: 'LONG SEAL',   text: '+1 turn.',
         add: { duration: 1 } }
     ],
     rupture: [
-      { id: 'hyd_ru_a', name: 'FULL VENT',   text: '+0.04 damage per PRESSURE spent.',
+      { id: 'hyd_rupture_a', name: 'FULL VENT',   text: '+0.04 damage per PRESSURE spent.',
         add: { perPressurePower: 0.04 } },
-      { id: 'hyd_ru_b', name: 'BLOWOUT',     text: '+40% base damage.',
+      { id: 'hyd_rupture_b', name: 'BLOWOUT',     text: '+40% base damage.',
         mul: { power: 1.40 } }
     ]
   },
 
   sym: {
     latch: [
-      { id: 'sym_la_a', name: 'DEEP DRAW',    text: '+10% of your THORNS added to the blow.',
+      { id: 'sym_latch_a', name: 'DEEP DRAW',    text: '+10% of your THORNS added to the blow.',
         add: { thornsScale: 0.10 } },
-      { id: 'sym_la_b', name: 'HARD LATCH',   text: '+20% damage.',
+      { id: 'sym_latch_b', name: 'HARD LATCH',   text: '+20% damage.',
         mul: { power: 1.20 } }
     ],
-    spines: [
-      { id: 'sym_sp_a', name: 'IRON SPINES',  text: '+0.5 to the THORNS multiplier.',
+    raisespines: [
+      { id: 'sym_raisespines_a', name: 'IRON SPINES',  text: '+0.5 to the THORNS multiplier.',
         add: { power: 0.5 } },
-      { id: 'sym_sp_b', name: 'REACTIVE BARBS', text: '+2 THORNS per hit taken while up.',
+      { id: 'sym_raisespines_b', name: 'REACTIVE BARBS', text: '+2 THORNS per hit taken while up.',
         add: { growBonus: 2 } }
     ],
     shed: [
-      { id: 'sym_sh_a', name: 'CLEAN TEAR',   text: '+4% base heal, to a maximum of 30%.',
+      { id: 'sym_shed_a', name: 'CLEAN TEAR',   text: '+4% base heal, to a maximum of 30%.',
         add: { healFrac: 0.04 }, max: { healFrac: 0.30 } },
-      { id: 'sym_sh_b', name: 'DEEP HARVEST', text: '+8% of grown THORNS spendable, to a maximum of 75%.',
+      { id: 'sym_shed_b', name: 'DEEP HARVEST', text: '+8% of grown THORNS spendable, to a maximum of 75%.',
         add: { capFrac: 0.08 }, max: { capFrac: 0.75 } }
     ],
     provoke: [
-      { id: 'sym_pr_a', name: 'BARBED HOST',  text: '+0.4 to the lash multiplier.',
+      { id: 'sym_provoke_a', name: 'BARBED HOST',  text: '+0.4 to the lash multiplier.',
         add: { lashMult: 0.4 } },
-      { id: 'sym_pr_b', name: 'OPEN GUARD',   text: '+2 THORNS growth.',
+      { id: 'sym_provoke_b', name: 'OPEN GUARD',   text: '+2 THORNS growth.',
         add: { growBonus: 2 } }
     ]
   },
 
   base: {
-    jab: [
-      { id: 'base_ja_a', name: 'BRACED FORM', text: '+1 RESOLVE.',
+    strike: [
+      { id: 'base_strike_a', name: 'BRACED FORM', text: '+1 RESOLVE.',
         add: { buildsResolve: 1 } },
-      { id: 'base_ja_b', name: 'CLEAN FORM',  text: '+20% damage.',
+      { id: 'base_strike_b', name: 'CLEAN FORM',  text: '+20% damage.',
         mul: { power: 1.20 } }
     ],
     bandage: [
-      { id: 'base_ba_a', name: 'FIELD SUTURE', text: '+4% base heal, to a maximum of 35%.',
+      { id: 'base_bandage_a', name: 'FIELD SUTURE', text: '+4% base heal, to a maximum of 35%.',
         add: { healFrac: 0.04 }, max: { healFrac: 0.35 } },
-      { id: 'base_ba_b', name: 'PRESSURE',     text: '+1% heal per held RESOLVE, to a maximum of 8%.',
+      { id: 'base_bandage_b', name: 'PRESSURE',     text: '+1% heal per held RESOLVE, to a maximum of 8%.',
         add: { resolveHealBonus: 0.01 }, max: { resolveHealBonus: 0.08 } }
     ],
-    counter: [
-      { id: 'base_co_a', name: 'IRON GUARD',  text: '+1 turn of brace, to a maximum of 4.',
+    counterpunch: [
+      { id: 'base_counterpunch_a', name: 'IRON GUARD',  text: '+1 turn of brace, to a maximum of 4.',
         add: { duration: 1 }, max: { duration: 4 } },
-      { id: 'base_co_b', name: 'HEAVY RETURN', text: '+0.4 counter damage.',
+      { id: 'base_counterpunch_b', name: 'HEAVY RETURN', text: '+0.4 counter damage.',
         add: { counterPower: 0.4 } }
     ],
     laststand: [
-      { id: 'base_ls_a', name: 'BLOOD DEBT',  text: '+0.1 damage per RESOLVE spent.',
+      { id: 'base_laststand_a', name: 'BLOOD DEBT',  text: '+0.1 damage per RESOLVE spent.',
         add: { perResolvePower: 0.1 } },
-      { id: 'base_ls_b', name: 'SECOND WIND', text: 'cooldown −1 turn, to a minimum of 3.',
+      { id: 'base_laststand_b', name: 'SECOND WIND', text: 'cooldown −1 turn, to a minimum of 3.',
         add: { cdTurns: -1 }, min: { cdTurns: 3 } }
     ]
   }
