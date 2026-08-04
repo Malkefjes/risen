@@ -155,12 +155,11 @@ const MODIFICATIONS = {
   }
 };
 
-function modWaves() {
-  const out = [];
-  for (let w = 5; w < BALANCE.finalWave; w += 5) out.push(w);
-  return out;
+function modDueAfter(wave) {
+  if (wave < 5) return false;
+  if (wave < BALANCE.finalWave) return wave % 5 === 0;
+  return wave % 10 === 0;
 }
-function modDueAfter(wave) { return modWaves().indexOf(wave) >= 0; }
 
 const MODS_OFFERED = 3;
 

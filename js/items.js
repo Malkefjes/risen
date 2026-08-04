@@ -104,7 +104,8 @@ function makeUniqueItem(id, wave) {
   const impDef = SLOT_IMPLICIT[slot.id];
   const impTier = rollTier(wave);
   const implicit = impDef.stats
-    ? { stats: impDef.stats.slice(), tier: impTier, v: rollRange(impDef.tiers[impTier], 1) }
+    ? { stats: impDef.stats.slice(), tier: impTier,
+        v: Math.max(1, Math.round(rollRange(impDef.tiers[impTier], 1) * depthStatMult(wave))) }
     : { mod: impDef.mod, tier: impTier,
         v: rollRange(impDef.tiers[impTier], ITEM_MODS[impDef.mod].step) };
   return { slot: slot.id, rarity: 'unique', uniqueId: id, wave, name: u.name,
@@ -119,6 +120,11 @@ function tiersFor(wave) {
   const out = [];
   for (let i = 0; i < TIER_MIN_WAVE.length; i++) if (wave >= TIER_MIN_WAVE[i]) out.push(i);
   return out.length ? out : [TIER_MIN_WAVE.length - 1];
+}
+
+function depthStatMult(wave) {
+  if (wave <= BALANCE.finalWave) return 1;
+  return 1 + 0.2 * Math.ceil((wave - BALANCE.finalWave) / 10);
 }
 function rollTier(wave) {
   const avail = tiersFor(wave);
@@ -235,9 +241,11 @@ const DROPS = {
 function uniquePool(wave) {
   const p = state.player;
   const worn = new Set(gearList(p).map(it => it.uniqueId).filter(Boolean));
+  const eligible = Object.keys(UNIQUES).filter(id =>
+    UNIQUES[id].minWave <= wave && !worn.has(id));
   const seen = new Set(state.uniqueSeen || []);
-  return Object.keys(UNIQUES).filter(id =>
-    UNIQUES[id].minWave <= wave && !worn.has(id) && !seen.has(id));
+  const fresh = eligible.filter(id => !seen.has(id));
+  return fresh.length ? fresh : eligible;
 }
 
 function rollRange(range, step) {
@@ -258,10 +266,12 @@ function makeItem(wave, rarityId) {
   const slot = SLOTS[slotIds[Math.floor(Math.random() * slotIds.length)]];
   const rar = RARITIES[rarityId] || RARITIES.standard;
 
+  const deep = depthStatMult(wave);
   const impDef = SLOT_IMPLICIT[slot.id];
   const impTier = rollTier(wave);
   const implicit = impDef.stats
-    ? { stats: impDef.stats.slice(), tier: impTier, v: rollRange(impDef.tiers[impTier], 1) }
+    ? { stats: impDef.stats.slice(), tier: impTier,
+        v: Math.max(1, Math.round(rollRange(impDef.tiers[impTier], 1) * deep)) }
     : { mod: impDef.mod, tier: impTier,
         v: rollRange(impDef.tiers[impTier], ITEM_MODS[impDef.mod].step) };
 
@@ -280,7 +290,7 @@ function makeItem(wave, rarityId) {
     const def = pool[Math.floor(Math.random() * pool.length)];
     const tier = rollTier(wave);
     prefixes.push({ id: def.id, stats: def.stats.slice(), tier,
-                    v: rollRange(def.tiers[tier]) });
+                    v: Math.max(1, Math.round(rollRange(def.tiers[tier]) * deep)) });
     def.groups.forEach(g => used.push(g));
   }
 
@@ -327,7 +337,8 @@ function rollDrop(e, wave) {
     const pool = uniquePool(wave);
     if (pool.length) {
       const id = pool[Math.floor(Math.random() * pool.length)];
-      (state.uniqueSeen = state.uniqueSeen || []).push(id);
+      state.uniqueSeen = state.uniqueSeen || [];
+      if (state.uniqueSeen.indexOf(id) < 0) state.uniqueSeen.push(id);
       return makeUniqueItem(id, wave);
     }
   }

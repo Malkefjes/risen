@@ -1,6 +1,6 @@
 # RISEN
 
-Turn-based browser roguelite. Personal project. `index.html` + `css/` + `js/` +
+Turn-based browser ARPG. Personal project. `index.html` + `css/` + `js/` +
 `assets/`, no build step; the js files share one global scope and load in order
 (data → items → mods → stats → screens → sim → combat → saves → render → sprites).
 
@@ -26,6 +26,16 @@ Turn-based browser roguelite. Personal project. `index.html` + `css/` + `js/` +
 - **Headless equivalence is a gate.** `simulateRun` is not a second
   implementation — `tests/headless.test.mjs` requires a headless run and an
   on-screen run to match exactly.
+- **Cards never pause combat, and bots resolve them only at the top of a
+  player turn.** A drop or mod resolved anywhere else in a harness loop
+  desyncs headless from live. A human may resolve whenever; their mouse is
+  not the sim's business.
+- **Death respawns, never deletes.** `playerDown()` returns the player to
+  `state.checkpoint` with statuses, piles and cooldowns cleared; levels, gear
+  and mods persist. Only the owner deletes a character.
+- **A wave is one to three enemies.** Members are budget shares
+  (`packHp`/`packDmg`); champions and bosses stay solo. Kill bookkeeping runs
+  per member; the wave-clear block runs once, guarded by `_waveCleared`.
 - **`BUILD` and `BALANCE.saveKey` are independent.** `saveKey` bumps ONLY when
   a change makes an old saved sheet wrong; add the outgoing prefix to
   `oldSaveKeys`. Old saves are dropped, never migrated.
@@ -63,13 +73,17 @@ make a run green.
 
 ## Owner's decisions
 
-- **Hard is the point,** and the frame is REACH plus WIN RATE — how far each
-  class gets, and what percent of runs it wins.
+- **Hard is the point,** and the frame is REACH — the deepest wave a character
+  gets before its first death, plus how often it breaches the source. Death
+  costs the replay from the last boss, never the character.
 - **Simple beats clever.** A mechanic he cannot hold in his head is worse than
   a shallower one he can.
-- **Items are stat sticks; Modifications change behaviour.** Nothing in
-  `js/items.js` may change a rule. Modifications are straight upgrades to one
-  button and they stack — no costs, no downsides.
+- **Base-rarity items are stat sticks; UNCATALOGUED uniques bend exactly one
+  rule each,** declared in the `UNIQUES` table and read through `hasRule` or a
+  skill patch. Prototypes can carry one trade-off pair — a big upside welded to
+  a real cost. If a scalar can rank two items, it is not loot yet.
+  Modifications are straight upgrades to one button and they stack — no costs,
+  no downsides — and keep coming in the Depths, every tenth wave.
 - **Defence is reduction, not chance.** ARMOR (Strength) and EVASION (Speed) on
   one curve, `X / (X + defenseK)`. They multiply. Instinct is offence alone.
 - **Each strain scales best with one stat:** bio STRENGTH, psy SPEED, sym
@@ -81,9 +95,11 @@ make a run green.
 - **Floater colors name the event, never the class:** damage dealt white, taken
   red, crits gold, XP amber, notes gray. Green is nature's alone — healing and
   poison share it, the sign carries the meaning.
-- **The run is 60 waves:** three zones of ten, then a 30-wave endgame. Wave 5 of
-  each zone is a champion, wave 10 a boss. Zone 4 breaks that shape on purpose
-  and is where most runs end. Winning means clearing wave 60.
+- **The run is 60 waves, then the DEPTHS:** three zones of ten, a 30-wave
+  endgame, and past the source an endless run of 10-wave Depths on zone 4's
+  math. Wave 5 of each zone is a champion, wave 10 a boss; every boss kill
+  moves the death checkpoint. Breaching wave 60 is a milestone, not an ending —
+  every character dies somewhere in the Depths, and that wave is its score.
 - **The premise.** Sonny is a scout for OUTWARD SURVEY, dropped from the survey
   vessel *Meridian* onto an unnamed alien world. The first team stopped
   answering and a signal did not. He goes down, and nothing comes back up until
