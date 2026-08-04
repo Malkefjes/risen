@@ -225,7 +225,6 @@ function queueMods(offer) {
            offer.map(m => m.name));
   if (HEADLESS.on) return;
   floatText(state.player, 'SALVAGE', 'tally');
-  notifyTab('mods');
   updateHud();
 }
 function nextModOffer() { return (state.modQueue && state.modQueue[0]) || null; }

@@ -464,13 +464,23 @@ function equipItem(p, it) {
   updateHud(); renderSkills(true);
 }
 
+function isDecisionFree(it) {
+  return it.rarity !== 'unique' && !(it.suffixes || []).some(s => s.trade);
+}
+
 function queueDrop(item) {
+  const p = state.player;
+  if (p && p.gear && !p.gear[item.slot] && isDecisionFree(item)) {
+    logEvent('RECOVERED', null, itemLogName(item), ['bare mount — fitted on the spot']);
+    equipItem(p, item);
+    saveRun();
+    return;
+  }
   (state.dropQueue = state.dropQueue || []).push(item);
   logEvent('RECOVERED', null, itemLogName(item),
            [itemImplicitLine(item)].concat(itemAffixLines(item)));
   if (HEADLESS.on) return;
   floatText(state.player, 'SALVAGE', 'tally');
-  notifyTab('suit');
   updateHud();
 }
 function nextDrop() { return (state.dropQueue && state.dropQueue[0]) || null; }
@@ -504,6 +514,38 @@ function itemCardHtml(it, headline) {
     + '</div></div>';
 }
 
+function itemDeltas(it) {
+  const p = state.player;
+  if (!p || !it) return [];
+  const view = Object.assign({}, p);
+  view.gear = Object.assign({}, p.gear, { [it.slot]: it });
+  applyDerivedStats(view);
+
+  const out = [];
+  const push = (label, d, mag, unit) => {
+    if (!mag) return;
+    out.push({ up: d > 0, text: (d > 0 ? '+' : '−') + mag + (unit || '') + ' ' + label });
+  };
+  const num = d => { const r = Math.round(Math.abs(d)); return r ? formatNum(r) : ''; };
+  const pct = d => { const r = Math.round(Math.abs(d) * 100); return r ? String(r) : ''; };
+
+  const atk = attackDamage(view) - attackDamage(p);
+  push('ATK', atk, num(atk));
+  push('HP', view.maxHp - p.maxHp, num(view.maxHp - p.maxHp));
+  push('CRIT', view.critChance - p.critChance, pct(view.critChance - p.critChance), '%');
+  const cm = view.critMult - p.critMult;
+  push('CRIT DMG', cm, Math.abs(cm) >= 0.005 ? Math.abs(cm).toFixed(2) : '', '×');
+  const rate = (view.attackSpeed - p.attackSpeed) / Math.max(0.01, p.attackSpeed);
+  push('RATE', rate, pct(rate), '%');
+  push('ARMOR', view.armor - p.armor, pct(view.armor - p.armor), '%');
+  push('EVASION', view.evasion - p.evasion, pct(view.evasion - p.evasion), '%');
+  const hb = gearMod(view, 'healBoost') - gearMod(p, 'healBoost');
+  push('HEALING', hb, pct(hb), '%');
+  const xb = gearMod(view, 'xpBoost') - gearMod(p, 'xpBoost');
+  push('XP', xb, pct(xb), '%');
+  return out;
+}
+
 function renderPendingDrop() {
   if (HEADLESS.on) return;
   const el = document.getElementById('drop-pending');
@@ -514,9 +556,14 @@ function renderPendingDrop() {
   const p = state.player;
   const worn = p && p.gear ? p.gear[it.slot] : null;
   const more = (state.dropQueue || []).length - 1;
+  const deltas = itemDeltas(it);
   el.innerHTML = '<div class="pending-head">FIELD RECOVERY'
       + (more > 0 ? ' <i>+' + more + ' waiting</i>' : '') + '</div>'
     + itemCardHtml(it, SLOTS[it.slot].label + ' · RECOVERED')
+    + (deltas.length
+        ? '<div class="drop-deltas">' + deltas.map(d =>
+            '<span class="' + (d.up ? 'up' : 'down') + '">' + d.text + '</span>').join('') + '</div>'
+        : '')
     + itemCardHtml(worn, 'CURRENTLY FITTED')
     + '<div class="pending-actions">'
     + '<button class="ui-btn" type="button" onclick="resolveDrop(true)">FIT</button>'

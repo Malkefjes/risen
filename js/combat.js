@@ -124,7 +124,6 @@ function advanceToNextActor() {
 
 function nextTurn() {
   if (!state.combatActive) return;
-  if (nextDrop() || nextModOffer()) { scheduleTurn(nextTurn, turnDelay(200)); return; }
   const p = state.player;
   if (!p || p.hp <= 0) { playerDown(); return; }
   if (state.awaitingSpawn) { scheduleTurn(doSpawn, turnDelay(BALANCE.spawnDelay * 1000)); return; }
@@ -339,7 +338,6 @@ function enemyAct() {
 
 function doSpawn() {
   if (!state.combatActive) return;
-  if (nextDrop() || nextModOffer()) { scheduleTurn(doSpawn, turnDelay(200)); return; }
   spawnEnemy();
   if (!state.player || state.player.hp <= 0) return;
   if (!livingEnemies().length) return;

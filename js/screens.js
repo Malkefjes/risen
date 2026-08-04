@@ -457,13 +457,6 @@ function switchTab(tabId) {
   showSidebarTab(tabId);
 }
 
-function notifyTab(tabId) {
-  if (HEADLESS.on) return;
-  showSidebarTab(tabId);
-  const t = document.querySelector('.sidebar-tab[data-tab="' + tabId + '"]');
-  if (t) t.classList.add('tab-alert');
-}
-
 function leaveMenuTab() {
   showSidebarTab('stats');
   offerSkip(null);

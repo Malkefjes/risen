@@ -13,8 +13,7 @@ function pumpSteps(limit) {
     const fn = _pendingStep;
     _pendingStep = null;
     fn();
-    if (state.awaitingInput || state.runOver || (state.deaths || 0) > d0
-        || nextDrop() || nextModOffer()) break;
+    if (state.awaitingInput || state.runOver || (state.deaths || 0) > d0) break;
   }
   return n;
 }
@@ -166,20 +165,19 @@ function simulateRun(classId, opts) {
 
     while (!state.runOver && !(state.deaths > 0) && steps++ < maxSteps) {
 
+      pumpSteps();
+      if (state.runOver) break;
+      if (opts.stopWhen && opts.stopWhen(state)) break;
+      if (!state.awaitingInput) {
+        if (!_pendingStep) break;
+        continue;
+      }
       if (nextDrop()) {
         resolveDrop(botTakesDrop(state.player, nextDrop()));
         continue;
       }
       if (nextModOffer()) {
         takeMod(botTakesMod(nextModOffer()));
-        continue;
-      }
-      pumpSteps();
-      if (state.runOver) break;
-      if (opts.stopWhen && opts.stopWhen(state)) break;
-      if (nextDrop() || nextModOffer()) continue;
-      if (!state.awaitingInput) {
-        if (!_pendingStep) break;
         continue;
       }
       const p = state.player;

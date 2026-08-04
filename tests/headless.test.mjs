@@ -55,21 +55,16 @@ export default async function ({ page, ok }) {
     let capped = true;
     for (let i = 0; i < 400000; i++) {
       if (state.runOver || state.deaths > 0) { capped = false; break; }
-      if (state.inScene) {
+      if (state.awaitingInput && state.combatActive) {
+        if (nextDrop()) { resolveDrop(botTakesDrop(state.player, nextDrop())); }
+        else if (nextModOffer()) { takeMod(botTakesMod(nextModOffer())); }
+        else {
+          const p = state.player;
 
-        const btn = document.querySelector('#scene-choices button');
-        if (btn) btn.click(); else onScenePanelClick();
-      } else if (nextDrop()) {
-
-        resolveDrop(botTakesDrop(state.player, nextDrop()));
-      } else if (nextModOffer()) {
-        takeMod(botTakesMod(nextModOffer()));
-      } else if (state.awaitingInput && state.combatActive) {
-        const p = state.player;
-
-        if (p.points > 0) adjustStat('vit', 1);
-        else if (pendingTotal(p) > 0) commitStats();
-        else playerAct(BOTS.smart.policy(p));
+          if (p.points > 0) adjustStat('vit', 1);
+          else if (pendingTotal(p) > 0) commitStats();
+          else playerAct(BOTS.smart.policy(p));
+        }
       }
       await new Promise(r => setTimeout(r, 0));
     }

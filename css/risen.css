@@ -2554,6 +2554,23 @@ body {
 .rar-unique .drop-affix:last-child,
 .rar-unique .suit-affix:last-child { color: var(--rar); }
 
+.drop-deltas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding: 7px 10px;
+  margin: -4px 0 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  background: rgba(6, 11, 10, 0.5);
+  border-radius: 5px;
+}
+
+.drop-deltas .up   { color: #7dffa0; }
+.drop-deltas .down { color: #ff6b8a; }
+
 .drop-implicit, .suit-implicit {
   color: rgba(238, 242, 255, 0.66);
   padding-bottom: 5px;
