@@ -190,6 +190,7 @@
                 <span class="vital-num"><b id="d-turns">—</b><i class="delta" id="p-turns"></i></span>
               </div>
             </div>
+            <div class="stat-hint">Drag a bar to auto-place points by weight — all bars at zero is manual</div>
             <div class="side-stat-row" data-stat="str">
               <div class="side-stat-info" title="Attack damage · armor">
                 <div class="side-stat-name">STRENGTH</div>
@@ -250,6 +251,8 @@
                    onpointerdown="startWeightDrag(event, 'vit')" onpointermove="dragWeight(event)"
                    onpointerup="endWeightDrag(event)" onpointercancel="endWeightDrag(event)"><i id="bar-vit"></i></div>
             </div>
+
+            <div class="stat-commit" id="stat-commit"></div>
 
             <div class="derived-block">
               <div class="derived-subhead">OFFENCE</div>

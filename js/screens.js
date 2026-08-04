@@ -483,6 +483,12 @@ function pendingView(p, extraStat) {
   return view;
 }
 
+function resetPending() {
+  const p = state.player; if (!p) return;
+  STAT_KEYS.forEach(k => { p.points += pendingOf(p, k); p.pending[k] = 0; });
+  updateHud(); saveRun();
+}
+
 function commitStats() {
   const p = state.player; if (!p || !canConfirmStats(p)) return;
 
@@ -523,10 +529,10 @@ function refreshSidebarStats() {
 
   const auto = autoMode(p);
   document.querySelectorAll('.side-stat-controls .stat-btn.plus').forEach(b => {
-    b.disabled = auto ? (p.weights[b.dataset.stat] || 0) >= 100 : (p.points <= 0 && !confirming);
-    b.textContent = !auto && confirming ? 'V' : '+';
-    b.classList.toggle('confirm', !auto && confirming);
-    b.title = !auto && confirming ? 'Confirm allocation — this cannot be undone' : '';
+    b.disabled = auto ? (p.weights[b.dataset.stat] || 0) >= 100 : p.points <= 0;
+    b.textContent = '+';
+    b.classList.remove('confirm');
+    b.title = '';
   });
   document.querySelectorAll('.side-stat-controls .stat-btn.minus').forEach(b => {
     b.style.display = auto ? 'none' : '';
@@ -536,6 +542,24 @@ function refreshSidebarStats() {
     s.style.display = auto ? '' : 'none';
     if (auto) s.textContent = Math.round(weightShare(p, s.dataset.stat) * 100) + '%';
   });
+
+  const strip = document.getElementById('stat-commit');
+  if (strip) {
+    const staged = pendingTotal(p);
+    if (auto || (!staged && p.points <= 0)) {
+      strip.classList.remove('on');
+      strip.innerHTML = '';
+    } else {
+      strip.classList.add('on');
+      strip.innerHTML = '<span>'
+        + (p.points > 0 ? p.points + ' to place' : '')
+        + (p.points > 0 && staged ? ' · ' : '')
+        + (staged ? staged + ' staged' : '')
+        + '</span>'
+        + (confirming ? '<button class="ui-btn" type="button" onclick="commitStats()">CONFIRM</button>' : '')
+        + (staged ? '<button class="ui-btn is-quiet" type="button" onclick="resetPending()">RESET</button>' : '');
+    }
+  }
 
   const rows = readouts(p);
   const shown = {};
@@ -677,7 +701,7 @@ function adjustStat(stat, delta) {
   const p = state.player; if (!p) return;
   if (delta > 0) {
 
-    if (p.points <= 0) { commitStats(); return; }
+    if (p.points <= 0) return;
     p.points--; p.pending[stat]++;
   } else {
 

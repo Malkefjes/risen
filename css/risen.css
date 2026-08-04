@@ -1654,9 +1654,32 @@ body {
   transition: width 0.25s ease;
 }
 
+.stat-hint {
+  margin: 0.55rem 0 0.1rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.4px;
+  color: var(--muted);
+  opacity: 0.75;
+}
+
+.stat-commit { display: none; }
+.stat-commit.on {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 0.7rem;
+  padding: 7px 10px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.045);
+  font-size: 0.8rem;
+  letter-spacing: 0.4px;
+}
+.stat-commit span { flex: 1; color: var(--muted); }
+.stat-commit .ui-btn { padding: 5px 12px; font-size: 0.72rem; }
+
 .weight-bar {
-  height: 3px;
-  padding: 7px 0;
+  height: 5px;
+  padding: 6px 0;
   margin-top: 0;
   box-sizing: content-box;
   background-clip: content-box;
