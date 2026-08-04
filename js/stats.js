@@ -285,8 +285,7 @@ function applyDerivedStats(p) {
   const earned = B.apsGain * above / (above + B.apsHalfPoints);
   p.attackSpeed = Math.min(B.apsCap, (anchor + earned) * p.apsMult * (1 + gearMod(p, 'apsBoost')));
 
-  const newMax = Math.max(1, Math.floor(vit * B.hpPerVit * p.hpMult
-    * Math.max(0.4, 1 + gearMod(p, 'maxHp'))));
+  const newMax = Math.max(1, Math.floor(vit * B.hpPerVit * p.hpMult));
   if (p.maxHp > 0 && p.hp != null) {
 
     p.hp = Math.min(newMax, Math.max(1, p.hp + (newMax - p.maxHp)));

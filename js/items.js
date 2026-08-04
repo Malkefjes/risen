@@ -14,10 +14,10 @@ const SLOTS = {
 };
 
 const RARITIES = {
-  standard:  { id: 'standard',  name: 'STANDARD ISSUE', prefixes: 1, suffixes: 0 },
-  refined:   { id: 'refined',   name: 'REFINED',        prefixes: 1, suffixes: 1 },
-  prototype: { id: 'prototype', name: 'PROTOTYPE',      prefixes: 2, suffixes: 1 },
-  unique:    { id: 'unique',    name: 'UNCATALOGUED',   prefixes: 0, suffixes: 0 }
+  standard:  { id: 'standard',  name: 'STANDARD ISSUE', prefixes: 1 },
+  refined:   { id: 'refined',   name: 'REFINED',        prefixes: 2 },
+  prototype: { id: 'prototype', name: 'PROTOTYPE',      prefixes: 3 },
+  unique:    { id: 'unique',    name: 'UNCATALOGUED',   prefixes: 0 }
 };
 
 const UNIQUES = {
@@ -60,7 +60,7 @@ const UNIQUES = {
   redline: {
     id: 'redline', slot: 'boots', name: 'Redline Servos', minWave: 31,
     mods: { apsBoost: 0.25 }, rule: 'redline', ruleVal: 0.10,
-    ruleText: '+25% turn rate — but you take 10% more damage.' }
+    ruleText: 'The price of the tempo: you take 10% more damage.' }
 };
 
 function uniqueDef(it) {
@@ -169,66 +169,17 @@ const ITEM_MODS = {
   healBoost: { id: 'healBoost', step: 0.02, text: v => PCT(v, 'healing') },
   xpBoost:   { id: 'xpBoost',   step: 0.01, text: v => PCT(v, 'XP') },
   apsBoost:  { id: 'apsBoost',  step: 0.01, text: v => PCT(v, 'turn rate') },
-  dmgMult:   { id: 'dmgMult',   step: 0.01, text: v => PCT(v, 'attack damage') },
-  maxHp:     { id: 'maxHp',     step: 0.01, text: v => PCT(v, 'max HP') }
+  dmgMult:   { id: 'dmgMult',   step: 0.01, text: v => PCT(v, 'attack damage') }
 };
 
-const TRADE_CHANCE = 0.45;
-
-const ITEM_TRADEOFFS = [
-  { id: 't_power', groups: ['dmgMult'],
-    up:   { mod: 'dmgMult', tiers: [[0.30, 0.40], [0.23, 0.30], [0.17, 0.23], [0.12, 0.17], [0.08, 0.12]] },
-    down: { mod: 'maxHp',   tiers: [[0.12, 0.16], [0.10, 0.12], [0.08, 0.10], [0.06, 0.08], [0.04, 0.06]] } },
-  { id: 't_rate', groups: ['apsBoost'],
-    up:   { mod: 'apsBoost', tiers: [[0.20, 0.26], [0.15, 0.20], [0.11, 0.15], [0.08, 0.11], [0.05, 0.08]] },
-    down: { mod: 'armor',    tiers: [[0.06, 0.08], [0.05, 0.06], [0.04, 0.05], [0.03, 0.04], [0.02, 0.03]] } },
-  { id: 't_crit', groups: ['critDmg'],
-    up:   { mod: 'critDmg', tiers: [[1.05, 1.40], [0.78, 1.05], [0.55, 0.78], [0.35, 0.55], [0.22, 0.35]] },
-    down: { mod: 'evasion', tiers: [[0.06, 0.08], [0.05, 0.06], [0.04, 0.05], [0.03, 0.04], [0.02, 0.03]] } },
-  { id: 't_aim', groups: ['critCh'],
-    up:   { mod: 'critCh',    tiers: [[0.14, 0.18], [0.11, 0.14], [0.08, 0.11], [0.05, 0.08], [0.03, 0.05]] },
-    down: { mod: 'healBoost', tiers: [[0.20, 0.28], [0.16, 0.20], [0.12, 0.16], [0.08, 0.12], [0.05, 0.08]] } },
-  { id: 't_bulk', groups: ['armor'],
-    up:   { mod: 'armor',    tiers: [[0.15, 0.20], [0.11, 0.15], [0.08, 0.11], [0.05, 0.08], [0.03, 0.05]] },
-    down: { mod: 'apsBoost', tiers: [[0.08, 0.11], [0.06, 0.08], [0.05, 0.06], [0.03, 0.05], [0.02, 0.03]] } },
-  { id: 't_greed', groups: ['xpBoost'],
-    up:   { mod: 'xpBoost', tiers: [[0.38, 0.48], [0.29, 0.38], [0.21, 0.29], [0.15, 0.21], [0.09, 0.15]] },
-    down: { mod: 'dmgMult', tiers: [[0.10, 0.13], [0.08, 0.10], [0.06, 0.08], [0.04, 0.06], [0.03, 0.04]] } }
-];
-
-const ITEM_SUFFIXES = [
-  { id: 's_critCh',    mod: 'critCh',    groups: ['critCh'],
-    tiers: [[0.09, 0.12], [0.07, 0.09], [0.05, 0.07], [0.03, 0.05], [0.02, 0.03]] },
-  { id: 's_critDmg',   mod: 'critDmg',   groups: ['critDmg'],
-    tiers: [[0.70, 0.95], [0.50, 0.70], [0.35, 0.50], [0.22, 0.35], [0.15, 0.22]] },
-  { id: 's_evasion',   mod: 'evasion',   groups: ['evasion'],
-    tiers: [[0.08, 0.10], [0.06, 0.08], [0.04, 0.06], [0.03, 0.04], [0.02, 0.03]] },
-  { id: 's_armor',     mod: 'armor',     groups: ['armor'],
-    tiers: [[0.10, 0.13], [0.07, 0.10], [0.05, 0.07], [0.03, 0.05], [0.02, 0.03]] },
-  { id: 's_healBoost', mod: 'healBoost', groups: ['healBoost'],
-    tiers: [[0.38, 0.50], [0.28, 0.38], [0.20, 0.28], [0.14, 0.20], [0.08, 0.14]] },
-  { id: 's_xpBoost',   mod: 'xpBoost',   groups: ['xpBoost'],
-    tiers: [[0.25, 0.32], [0.19, 0.25], [0.14, 0.19], [0.10, 0.14], [0.06, 0.10]] },
-  { id: 's_apsBoost',  mod: 'apsBoost',  groups: ['apsBoost'],
-    tiers: [[0.13, 0.17], [0.10, 0.13], [0.07, 0.10], [0.05, 0.07], [0.03, 0.05]] },
-  { id: 's_dmgMult',   mod: 'dmgMult',   groups: ['dmgMult'],
-    tiers: [[0.20, 0.26], [0.15, 0.20], [0.11, 0.15], [0.08, 0.11], [0.05, 0.08]] }
-];
-
-const SLOT_SUFFIXES = {
-  optics:    ['s_critCh', 's_critDmg', 's_xpBoost'],
-  gauntlets: ['s_dmgMult', 's_critDmg', 's_critCh'],
-  armor:     ['s_armor', 's_evasion', 's_healBoost'],
-  repair:    ['s_healBoost', 's_armor', 's_xpBoost'],
-  boots:     ['s_apsBoost', 's_evasion', 's_critCh']
-};
+const IMPLICIT_TIERS = [[9, 13], [7, 10], [6, 8], [4, 6], [2, 4]];
 
 const SLOT_IMPLICIT = {
-  optics:    { mod: 'critCh',    tiers: [[0.06, 0.08], [0.05, 0.06], [0.04, 0.05], [0.03, 0.04], [0.02, 0.03]] },
-  gauntlets: { mod: 'dmgMult',   tiers: [[0.14, 0.20], [0.11, 0.14], [0.08, 0.11], [0.06, 0.08], [0.04, 0.06]] },
-  armor:     { stats: ['vit'],   tiers: [[9, 13], [7, 10], [6, 8], [4, 6], [2, 4]] },
-  repair:    { mod: 'healBoost', tiers: [[0.20, 0.28], [0.16, 0.20], [0.12, 0.16], [0.09, 0.12], [0.06, 0.09]] },
-  boots:     { stats: ['speed'], tiers: [[9, 13], [7, 10], [6, 8], [4, 6], [2, 4]] }
+  optics:    { stats: ['instinct'], tiers: IMPLICIT_TIERS },
+  gauntlets: { stats: ['str'],      tiers: IMPLICIT_TIERS },
+  armor:     { stats: ['vit'],      tiers: IMPLICIT_TIERS },
+  repair:    { stats: ['vit'],      tiers: IMPLICIT_TIERS },
+  boots:     { stats: ['speed'],    tiers: IMPLICIT_TIERS }
 };
 
 const BOSS_HAUL = { min: 2, max: 3, weights: [0, 50, 50], unique: 0.15 };
@@ -264,24 +215,21 @@ function makeItem(wave, rarityId) {
   const deep = depthStatMult(wave);
   const impDef = SLOT_IMPLICIT[slot.id];
   const impTier = rollTier(wave);
-  const implicit = impDef.stats
-    ? { stats: impDef.stats.slice(), tier: impTier,
-        v: Math.max(1, Math.round(rollRange(impDef.tiers[impTier], 1) * deep)) }
-    : { mod: impDef.mod, tier: impTier,
-        v: rollRange(impDef.tiers[impTier], ITEM_MODS[impDef.mod].step) };
+  const implicit = { stats: impDef.stats.slice(), tier: impTier,
+                     v: Math.max(1, Math.round(rollRange(impDef.tiers[impTier], 1) * deep)) };
 
-  const used = impDef.stats ? impDef.stats.slice() : [impDef.mod];
+  const used = impDef.stats.slice();
   const free = a => a.groups.every(g => used.indexOf(g) < 0);
 
   const prefixes = [];
   for (let i = 0; i < rar.prefixes; i++) {
     let pool = ITEM_PREFIXES.filter(free);
 
+    if (!pool.length) pool = ITEM_PREFIXES;
     if (i === 0 && slot.home && Math.random() < 0.6) {
       const homed = pool.filter(a => a.stats.indexOf(slot.home) >= 0);
       if (homed.length) pool = homed;
     }
-    if (!pool.length) break;
     const def = pool[Math.floor(Math.random() * pool.length)];
     const tier = rollTier(wave);
     prefixes.push({ id: def.id, stats: def.stats.slice(), tier,
@@ -289,38 +237,8 @@ function makeItem(wave, rarityId) {
     def.groups.forEach(g => used.push(g));
   }
 
-  const suffixes = [];
-  for (let i = 0; i < rar.suffixes; i++) {
-    const allowed = SLOT_SUFFIXES[slot.id] || [];
-    const pool = ITEM_SUFFIXES.filter(a => allowed.indexOf(a.id) >= 0 && free(a));
-    if (!pool.length) break;
-    const def = pool[Math.floor(Math.random() * pool.length)];
-    const tier = rollTier(wave);
-    suffixes.push({ id: def.id, mod: def.mod, tier,
-                    v: rollRange(def.tiers[tier], ITEM_MODS[def.mod].step) });
-    def.groups.forEach(g => used.push(g));
-  }
-
-  if (rar.id === 'prototype' && Math.random() < TRADE_CHANCE) {
-    const pool = ITEM_TRADEOFFS.filter(free);
-    if (pool.length) {
-      const def = pool[Math.floor(Math.random() * pool.length)];
-      const tier = rollTier(wave);
-      const line = side => {
-        const d = def[side], sign = side === 'down' ? -1 : 1;
-        return d.stats
-          ? { id: def.id, stats: d.stats.slice(), tier, trade: side,
-              v: sign * rollRange(d.tiers[tier], 1) }
-          : { id: def.id, mod: d.mod, tier, trade: side,
-              v: sign * rollRange(d.tiers[tier], ITEM_MODS[d.mod].step) };
-      };
-      suffixes.push(line('up'), line('down'));
-      def.groups.forEach(g => used.push(g));
-    }
-  }
-
   return { slot: slot.id, rarity: rar.id, wave, name: slot.name,
-           implicit, prefixes, suffixes };
+           implicit, prefixes, suffixes: [] };
 }
 
 function rollBossHaul(wave) {
@@ -401,37 +319,37 @@ function itemScore(it) {
   }
   return n;
 }
+
+function itemImplicitLine(it) {
+  if (!it || !it.implicit) return '';
+  if (it.implicit.stats)
+    return it.implicit.stats.map(k => '+' + it.implicit.v + ' ' + ITEM_STAT_NAMES[k]).join(', ');
+  const def = ITEM_MODS[it.implicit.mod];
+  return def ? def.text(it.implicit.v) : '';
+}
 function botTakesDrop(p, it) {
   return itemScore(it) > itemScore(p && p.gear ? p.gear[it.slot] : null);
 }
 
-function affixLine(tier, text) { return text; }
-function itemImplicitLine(it) {
-  if (!it || !it.implicit) return '';
-  if (it.implicit.stats)
-    return affixLine(it.implicit.tier,
-      it.implicit.stats.map(k => '+' + it.implicit.v + ' ' + ITEM_STAT_NAMES[k]).join(', '));
-  const def = ITEM_MODS[it.implicit.mod];
-  return def ? affixLine(it.implicit.tier, def.text(it.implicit.v)) : '';
-}
+const STAT_ORDER = ['str', 'instinct', 'speed', 'vit'];
 
 function itemAffixLines(it) {
-  const out = [];
-  for (const pre of (it.prefixes || []))
-    out.push(affixLine(pre.tier,
-      pre.stats.map(s => '+' + pre.v + ' ' + ITEM_STAT_NAMES[s]).join(', ')));
-  for (const s of (it.suffixes || [])) {
-    if (s.stats) {
-      out.push(affixLine(s.tier,
-        s.stats.map(k => SGN(s.v) + Math.abs(s.v) + ' ' + ITEM_STAT_NAMES[k]).join(', ')));
-      continue;
-    }
-    const def = ITEM_MODS[s.mod];
-    if (def) out.push(affixLine(s.tier, def.text(s.v)));
-  }
+  const tally = {};
+  const add = (k, v) => { tally[k] = (tally[k] || 0) + v; };
+  for (const pre of (it.prefixes || [])) pre.stats.forEach(s => add(s, pre.v));
+  for (const s of (it.suffixes || [])) if (s.stats) s.stats.forEach(k => add(k, s.v));
   const u = uniqueDef(it);
+  if (u) for (const k of Object.keys(u.stats || {})) add(k, u.stats[k]);
+
+  const out = STAT_ORDER.filter(k => tally[k])
+    .map(k => SGN(tally[k]) + Math.abs(tally[k]) + ' ' + ITEM_STAT_NAMES[k]);
+
+  for (const s of (it.suffixes || [])) {
+    if (s.stats) continue;
+    const def = ITEM_MODS[s.mod];
+    if (def) out.push(def.text(s.v));
+  }
   if (u) {
-    for (const k of Object.keys(u.stats || {})) out.push('+' + u.stats[k] + ' ' + ITEM_STAT_NAMES[k]);
     for (const k of Object.keys(u.mods || {})) {
       const def = ITEM_MODS[k];
       if (def) out.push(def.text(u.mods[k]));
