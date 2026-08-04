@@ -232,6 +232,19 @@ function tickTurnStart(unit) {
         ]);
       }
     }
+    // The wall feeding its host — see thornsSiphonFrac. Read off p.thorns, the
+    // live number, for the same reason the ward is.
+    if (unit.class === 'sym' && unit.hp < unit.maxHp && unit.thorns > 0) {
+      const frac = Math.min(P().thornsSiphonCap || 0, unit.thorns * (P().thornsSiphonFrac || 0));
+      const heal = Math.max(1, Math.floor(healAnchorFor(unit) * frac));
+      const before = unit.hp;
+      unit.hp = Math.min(unit.maxHp, unit.hp + heal);
+      floatText(unit, unit.hp - before, 'heal');
+      logHeal('GRAFT', unit, unit.hp - before, [
+        'THORNS ×' + formatNum(unit.thorns),
+        logNum(unit.hp) + '/' + logNum(unit.maxHp)
+      ]);
+    }
     // THE BLEED-OFF — hyd's faucet, and the reason holding the pile is a
     // decision. Same shape as the siphon above, read off what you are carrying.
     if (unit.class === 'hyd' && unit.hp < unit.maxHp) {
@@ -858,6 +871,9 @@ function applyPlayerDamage(p, e, skill) {
   }
   // Resolve (base): landing a hit steadies you.
   if (skill.buildsResolve) gainResolve(p, skill.buildsResolve, skill.name);
+  // Thorns (sym): a hit that grows the wall without being hit for it. Provoke
+  // grows on its own path, before the swing it invites, so this cannot double.
+  if (skill.growBonus) growThorns(p, skill.growBonus, skill.name);
 
   // Hyd packs the lines on every landed attack. Beside poison and dread rather
   // than in the buff branch, because it has to depend on the blow CONNECTING.

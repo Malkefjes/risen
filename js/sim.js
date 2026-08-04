@@ -291,6 +291,7 @@ const BOTS = {
 //
 // opts.policy(player)   -> the skill to use on the player's turn
 // opts.allocate(player) -> which stat to put the next point in
+// opts.kit              -> the optional skills to fit; omitted takes the default
 // opts.keepLog          -> return the transcript as an array of lines
 // opts.stopWhen(state)  -> end early; for measuring a slice of a run rather
 //                          than all of it (an act, the first boss, ...)
@@ -315,6 +316,9 @@ function simulateRun(classId, opts) {
   HEADLESS.log.length = 0;
   _pendingStep = null;
   try {
+    // Cleared rather than left alone when absent: a kit the menu set earlier
+    // must never leak into a measurement that did not ask for one.
+    setPendingKit(opts.kit || null);
     startGame(true, classId);
     let steps = 0;
     // ADVANCE FIRST, THEN ACT. The bot only touches anything while the game is

@@ -156,6 +156,10 @@ function devSkipToZone(classId, zoneNum) {
 
 // DROP CLEAN: a quiet transition beat, then drop into the run as base
 // Sonny. 'base' is named outright rather than leaning on a stored choice.
+// The kit a save was written with. Older saves have none and take the default,
+// which is exactly what they were played on.
+function sp0Kit(d) { return d && d.player && Array.isArray(d.player.kit) ? d.player.kit : null; }
+
 function runClean() {
   playStrainIntro('base', 'You go down in the rig as issued…');
 }
@@ -245,6 +249,10 @@ function serializeRun() {
       // Only the statuses marked to persist — the same set that survives into
       // the next fight, so a reload lands you in the shape a kill left you in.
       statuses:survivingStatuses(p),
+      // THE KIT RIDES AS IDS, and skillCds is positional against it — without
+      // this a save restores cooldowns onto whatever the default bar happens to
+      // be, which is a different bar as soon as a pool grows.
+      kit:p.skills.filter(s => !s.basic).map(s => s.id),
       skillCds:p.skills.map(s => s.cd) } };
 }
 // ---- Save slots -----------------------------------------------
@@ -376,7 +384,7 @@ function continueRun(slot){
   leaveMenuTab(); closeSettings();
   resetRunState(d.classId);
   state.saveSlot = n;
-  const p=freshPlayer(d.classId), sp=d.player;
+  const p=freshPlayer(d.classId, sp0Kit(d)), sp=d.player;
   Object.assign(p,{ level:sp.level||1, xp:sp.xp||0, xpNext:sp.xpNext||xpForLevel(sp.level||1),
     points:sp.points||0, str:sp.str, instinct:sp.instinct, speed:sp.speed, vit:sp.vit,
     dmgMult:sp.dmgMult||1, hpMult:sp.hpMult||1, apsMult:sp.apsMult||1,

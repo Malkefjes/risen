@@ -559,6 +559,32 @@ did not say.
   behind it. Measured after: gear supplies 39% of the stat sheet at wave 30
   (47% before the restructure) and 48% at wave 45, so it was re-shaped rather
   than nerfed.
+- **THE KIT: a class's `skills` is a CATALOGUE, not a bar** (2026-08-03aj, first
+  step of the ARPG plan). The basic is ALWAYS fitted — a turn must always have
+  something pressable — and `KIT_SLOTS` (3) of the rest are chosen on the select
+  screen, so the bar is 4 as it always was. A class whose catalogue holds exactly
+  3 optionals has no decision and fits all of them, which is why four of the five
+  strains play EXACTLY as they did; only GRAFT has a pool (6 for 3, 20 kits).
+  The kit rides in saves as IDS beside `skillCds`, which is positional against
+  it — without that a load restores cooldowns onto whatever the default bar is.
+  Mod offers filter to FITTED buttons, or a third of every offer is a dead card.
+  **GRAFT's pool is three ROLE-PAIRS**, so a slot is a trade and not a ranking:
+  ANSWER provoke/harden, SPENDER shed/impale, FEEDER spines/bristle. Harden is
+  the BRACE sym never had (its telegraph deaths were 25-26% against 1-10% for
+  everyone else) — offered rather than granted, so taking it costs a slot.
+- **`tools/kit-bracket.mjs` ASKS HOW MANY BARS ARE VIABLE, not which is best.**
+  That is the number an ARPG lives on: three kits winning 40% each is a healthier
+  game than one winning 70% while the rest die in zone 2, and a tool that
+  reported only the winner would rate the second one higher. It prints the
+  best-to-worst SPREAD per strain for exactly that reason.
+  **IT EARNED ITSELF ON ITS FIRST RUN.** Measured at 40 runs a kit: every bar
+  carrying SHED won, every bar without it won NOTHING and died by wave 20 — one
+  mandatory pick and two free ones, because Shed was sym's only faucet. Same
+  fault KINETIC had, found the same way. THORNS now drips a capped share of the
+  anchor per turn (`thornsSiphonFrac`), making Shed the big heal rather than the
+  only one. After: Shed-less kits went 0 wins to 0-9, and kits clearing 10+ wins
+  per 40 went 5 to 9. SHED IS STILL THE STRONGEST SINGLE CARD — it is in all ten
+  of the top ten bars — so it is no longer a tax but it is not yet a free choice.
 - **`OWNER:` MODIFICATIONS are STRAIGHT UPGRADES to one button, and they
   STACK** (`js/mods.js`, reworked 2026-08-03q). The first version gave every
   pick a COST so no offer would be automatic. It read well and he skipped most

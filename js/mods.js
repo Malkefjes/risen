@@ -145,6 +145,26 @@ const MODIFICATIONS = {
         add: { lashMult: 0.4 } },
       { id: 'sym_pr_b', name: 'OPEN GUARD',   text: 'Provoke: +2 THORNS growth.',
         add: { growBonus: 2 } }
+    ],
+    // Two per button for the rest of the pool, so a kit built out of the new
+    // three still fills a three-card offer.
+    harden: [
+      { id: 'sym_ha_a', name: 'PLATE STACK',  text: 'Harden: +8% reduction, to a maximum of 75%.',
+        add: { power: 0.08 }, max: { power: 0.75 } },
+      { id: 'sym_ha_b', name: 'SLOW SET',     text: 'Harden: +1 turn.',
+        add: { duration: 1 } }
+    ],
+    impale: [
+      { id: 'sym_im_a', name: 'BARBED POINT', text: 'Impale: +0.3 to the THORNS multiplier.',
+        add: { thornsBurst: 0.3 } },
+      { id: 'sym_im_b', name: 'DRIVEN HOME',  text: 'Impale: +25% damage.',
+        mul: { power: 1.25 } }
+    ],
+    bristle: [
+      { id: 'sym_br_a', name: 'QUICK GROWTH', text: 'Bristle: +3 THORNS.',
+        add: { growBonus: 3 } },
+      { id: 'sym_br_b', name: 'SHARP EDGE',   text: 'Bristle: +30% damage.',
+        mul: { power: 1.30 } }
     ]
   },
 
@@ -237,9 +257,16 @@ function applyTakenMods(p) {
 // Three upgrades from three DIFFERENT buttons. Nothing is filtered out for
 // having been taken — repeats are the point, and an offer that could only ever
 // show new things would run dry and stop being a choice.
+// EQUIPPED BUTTONS ONLY. The catalogue is bigger than the bar now, and an
+// upgrade to a card you did not fit is a dead offer — one of three, on a screen
+// that only appears eleven times a run.
 function offerMods(p) {
   const bySkill = {};
-  for (const m of modsFor(p.class)) (bySkill[m.skill] = bySkill[m.skill] || []).push(m);
+  const fitted = new Set((p.skills || []).map(s => s.id));
+  for (const m of modsFor(p.class)) {
+    if (!fitted.has(m.skill)) continue;
+    (bySkill[m.skill] = bySkill[m.skill] || []).push(m);
+  }
   const skills = Object.keys(bySkill);
   const picked = [];
   while (picked.length < MODS_OFFERED && skills.length) {

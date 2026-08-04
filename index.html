@@ -141,6 +141,11 @@
         <div class="class-info">A live organism fused to the plating, because it dies if it is stored. It feeds on whatever gets through and pays you back in barbs, and it keeps everything it grows for the whole descent. The only loadout that is also cargo.</div>
       </div>
     </div>
+
+    <!-- The kit. Rendered by renderKitPicker so the pool is read off the
+         class table rather than duplicated in markup. -->
+    <div id="kit-picker" class="kit-picker"></div>
+
     <div class="class-actions">
       <button class="ui-btn is-quiet" onclick="goToMenu()">BACK</button>
       <button class="ui-btn is-primary" id="start-btn" onclick="startGameFromSelect()" disabled>DROP</button>

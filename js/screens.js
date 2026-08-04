@@ -22,31 +22,126 @@ function claimPendingClass() {
   return id;
 }
 
+// The kit travels the same way the class does, and for the same reason: the
+// menu's answer, claimed once. Null is legal everywhere and means the default,
+// which is what DROP CLEAN and the dev doors take.
+let _pendingKit = null;
+// The one door into _pendingKit from outside this chapter — simulateRun uses it
+// to drive a kit, so measurement can sweep bars the same way it sweeps stats.
+function setPendingKit(k) { _pendingKit = Array.isArray(k) ? k.slice() : null; }
+function claimPendingKit() {
+  const k = _pendingKit;
+  _pendingKit = null;
+  return k;
+}
+
 // Entering strain select always starts from nothing chosen. Re-disabling
 // INSTALL is the load-bearing half: while it stayed enabled between visits it
 // was possible to start a run without making a choice at all.
 function openClassSelect() {
   _pendingClass = null;
+  _pendingKit = null;
   document.querySelectorAll('.class-card').forEach(c => c.classList.remove('selected'));
   const btn = document.getElementById('start-btn');
   if (btn) { btn.disabled = true; btn.className = 'ui-btn is-primary'; }
+  renderKitPicker(null);
   showScreen('class-screen');
 }
 
 function selectClass(id) {
   if (!CLASSES[id]) return;
   _pendingClass = id;
+  _pendingKit = defaultKit(id);
   document.querySelectorAll('.class-card').forEach(c => c.classList.remove('selected'));
   document.querySelector('.class-card.' + id).classList.add('selected');
+  renderKitPicker(id);
+  syncStartBtn();
+}
+
+// Fitting one that is already fitted takes it OFF, and a full bar refuses
+// rather than silently swapping — a swap nobody asked for is how you drop the
+// card you meant to keep.
+function toggleKitSkill(sid) {
+  const cls = _pendingClass;
+  if (!cls || !kitPool(cls).some(s => s.id === sid)) return;
+  const kit = _pendingKit || (_pendingKit = []);
+  const i = kit.indexOf(sid);
+  if (i >= 0) kit.splice(i, 1);
+  else if (kit.length < KIT_SLOTS) kit.push(sid);
+  renderKitPicker(cls);
+  syncStartBtn();
+}
+
+// DROP waits for a full bar, and wears the chosen strain's colour.
+function syncStartBtn() {
   const btn = document.getElementById('start-btn');
-  btn.disabled = false;
-  // INSTALL takes the chosen strain's colour.
-  btn.className = 'ui-btn is-primary strain-' + id;
+  if (!btn) return;
+  const id = _pendingClass;
+  const ready = !!id && (_pendingKit || []).length === Math.min(KIT_SLOTS, kitPool(id).length);
+  btn.disabled = !ready;
+  btn.className = 'ui-btn is-primary' + (id ? ' strain-' + id : '');
+}
+
+// The pool, as cards you fit and unfit. A class whose catalogue is exactly the
+// slot count has no decision to make, so its row states the kit rather than
+// asking for it.
+function renderKitPicker(classId) {
+  const el = document.getElementById('kit-picker');
+  if (!el) return;
+  if (!classId || !CLASSES[classId]) { el.innerHTML = ''; el.classList.remove('on'); return; }
+  const pool = kitPool(classId), kit = _pendingKit || [];
+  const choosing = pool.length > KIT_SLOTS;
+  const basic = CLASSES[classId].skills.find(s => s.basic);
+  el.classList.add('on');
+  el.innerHTML =
+    '<div class="kit-head"><b>KIT</b><span>' +
+      (choosing ? 'FIT ' + KIT_SLOTS + ' — ' + kit.length + '/' + KIT_SLOTS + ' fitted'
+                : 'fixed for this package') + '</span></div>' +
+    '<div class="kit-cards">' +
+      (basic ? '<div class="kit-card locked strain-' + classId + '">' +
+        '<div class="kit-name">' + basic.name + '<i>ALWAYS</i></div>' +
+        '<div class="kit-desc">' + fmtDesc(basic) + '</div></div>' : '') +
+      pool.map(s => {
+        const on = kit.includes(s.id);
+        return '<button type="button" class="kit-card strain-' + classId
+          + (on ? ' fitted' : '') + (choosing ? '' : ' locked')
+          + '" onclick="toggleKitSkill(\'' + s.id + '\')">'
+          + '<div class="kit-name">' + s.name + (on ? '<i>FITTED</i>' : '') + '</div>'
+          + '<div class="kit-desc">' + fmtDesc(s) + '</div></button>';
+      }).join('') +
+    '</div>';
 }
 function recalcPlayerStats(){ if (state.player) applyDerivedStats(state.player); }
 
-function freshPlayer(classId) {
+// ---- THE KIT ---------------------------------------------------------------
+// A class's `skills` is a CATALOGUE, not a bar. The basic is always fitted (a
+// turn must always have something pressable), and KIT_SLOTS of the rest are
+// chosen before the drop. A class whose catalogue holds exactly KIT_SLOTS
+// optionals has no choice to make and fits all of them, which is why four of
+// the five play exactly as they did.
+const KIT_SLOTS = 3;
+function kitPool(classId) {
+  const cls = CLASSES[classId];
+  return cls ? cls.skills.filter(s => !s.basic) : [];
+}
+function defaultKit(classId) {
+  return kitPool(classId).slice(0, KIT_SLOTS).map(s => s.id);
+}
+// Only ids this class actually owns, capped at the slot count, topped up from
+// the pool if a save is short — a kit is never allowed to arrive malformed and
+// leave the player holding an empty bar.
+function normalizeKit(classId, kit) {
+  const pool = kitPool(classId).map(s => s.id);
+  const out = [];
+  for (const id of (Array.isArray(kit) ? kit : []))
+    if (pool.includes(id) && !out.includes(id) && out.length < KIT_SLOTS) out.push(id);
+  for (const id of pool) { if (out.length >= KIT_SLOTS) break; if (!out.includes(id)) out.push(id); }
+  return out;
+}
+
+function freshPlayer(classId, kit) {
   const cls = CLASSES[classId], b = cls.base;
+  const fitted = normalizeKit(classId, kit || defaultKit(classId));
   const p = {
     id:'player', name:'Sonny', class:classId, level:1, xp:0, xpNext:xpForLevel(1), points:0,
     str:b.str, instinct:b.instinct, speed:b.speed, vit:b.vit,
@@ -56,7 +151,10 @@ function freshPlayer(classId) {
     // instinct / speed / vit, so nothing in combat can see them until you
     // confirm — the sidebar renders them by previewing a copy. See adjustStat.
     pending:{ str:0, instinct:0, speed:0, vit:0 },
-    skills: cls.skills.map(s => Object.assign({cd:0}, s)),
+    // Basic first, then the fitted three in POOL order rather than click order,
+    // so the same kit always draws the same bar.
+    skills: cls.skills.filter(s => s.basic || fitted.includes(s.id))
+                      .map(s => Object.assign({cd:0}, s)),
     // The suit's five mounts, all bare. Gear is run-scoped, like everything.
     gear: emptyGear(),
     // thornsGrown starts at 0 for everyone and only sym ever moves it: the
@@ -170,7 +268,7 @@ function startGame(skipReveal, classId) {
   if (!CLASSES[cls]) return;
   resetRunState(cls);
   state.saveSlot = claimSaveSlot();
-  state.player = freshPlayer(cls);
+  state.player = freshPlayer(cls, claimPendingKit());
   recalcPlayerStats();
   state.player.hp = state.player.maxHp;
   clearSavedRun();

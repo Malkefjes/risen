@@ -37,7 +37,7 @@
 //
 // KEEP SEPARATE FROM BALANCE.saveKey, which answers "are saved runs still
 // valid". Deriving one from the other would wipe every save on a typo fix.
-const BUILD = '2026-08-03ai';
+const BUILD = '2026-08-03aj';
 
 const BALANCE = {
   player: {
@@ -215,6 +215,14 @@ const BALANCE = {
     // saturates just past where a run ends and another thorn keeps paying.
     thornsWardPerPoint: 0.0004,
     thornsWardCap: 0.25,
+    // AND THE WALL FEEDS YOU A LITTLE. Measured 2026-08-03aj on the first kit
+    // sweep: every bar carrying Shed won, every bar without it won NOTHING and
+    // died by wave 20 — so the pool was one mandatory pick and two free ones.
+    // Shed was sym's only faucet, which is the same fault KINETIC had. A drip
+    // off the number the class already grows makes Shed the BIG heal rather
+    // than the only one; capped, because thorns has no ceiling and peaks ~1300.
+    thornsSiphonFrac: 0.00008,  // heal per THORNS per player turn, as a share of the anchor
+    thornsSiphonCap: 0.10,
     thornsSpinesGrow: 2,       // extra growth per hit while Spines is up
     // SHED TAKES ONLY AS MANY THORNS AS THE HEAL NEEDED, capped by the fraction
     // below. A percentage cost against a runaway number would grow without bound
@@ -633,7 +641,16 @@ const CLASSES = {
       // fifth and base every fourth — the most frequent sustain in the game,
       // on the strain that measured strongest, and its cost regrows now too.
       { id:'shed', name:'Shed', desc:'Heal {healFrac+}, then tear off THORNS to heal {hpPerThorn+} more each — they regrow by the next fight. Takes only as many as the wound needs, up to {capFrac%} of what you have grown. Sheds {cleanse} POISON.', type:'heal', healFrac:0.08, shedFuel:true, cleanse:2, hpPerThorn:BALANCE.player.shedHpPerThorn, capFrac:BALANCE.player.shedCapFrac, target:'self', cdTurns:4 },
-      { id:'provoke', name:'Provoke', desc:'Bare your guard: the enemy strikes at once and cannot miss — then every spine answers: ×{lashMult} THORNS as damage. +{growBonus} THORNS, and a charged telegraph comes out now, ordinary or half-strength.', type:'provoke', growBonus:3, lashMult:1.5, target:'enemy', cdTurns:4 }
+      { id:'provoke', name:'Provoke', desc:'Bare your guard: the enemy strikes at once and cannot miss — then every spine answers: ×{lashMult} THORNS as damage. +{growBonus} THORNS, and a charged telegraph comes out now, ordinary or half-strength.', type:'provoke', growBonus:3, lashMult:1.5, target:'enemy', cdTurns:4 },
+      // ---- THE OTHER THREE, and the pool is 6 for 3 slots -------------------
+      // One alternative per ROLE, so a slot is a trade rather than a ranking:
+      // ANSWER provoke/harden, SPENDER shed/impale, FEEDER spines/bristle.
+      // Sym had no BRACE at all — measured 25-26% of its deaths to telegraphs
+      // against 1-10% for everyone else — so harden is the hole, offered rather
+      // than granted. All three derived, none measured.
+      { id:'harden', name:'Harden', desc:'For {duration#turn}: take −{power%} damage.', type:'buff', buff:'harden', duration:2, power:0.45, target:'self', cdTurns:4 },
+      { id:'impale', name:'Impale', desc:'Deal {power!} damage + ×{thornsBurst} your THORNS. Spends nothing.', type:'attack', power:1.2, thornsBurst:1.2, target:'enemy', cdTurns:5 },
+      { id:'bristle', name:'Bristle', desc:'Deal {power!} damage. +{growBonus} THORNS without being hit for them.', type:'attack', power:0.6, growBonus:6, target:'enemy', cdTurns:3 }
     ]
   },
   // Base Sonny, reached via DROP CLEAN. The rig as issued, no package fitted,
@@ -1029,6 +1046,16 @@ const STATUSES = {
     incomingMult: (u, st) => (u && u.isPlayer)
       ? 1 - Math.min(P().pressureWardCap || 0, (st.stacks || 0) * (P().pressureWardPerPoint || 0))
       : 1
+  },
+
+  // Sym's brace. Same shape as DAMPEN and CHITIN, which is also how the smart
+  // bot finds it: an incomingMult under 1 reads as a telegraph answer off the
+  // card, with no class check anywhere.
+  harden: {
+    id:'harden', name:'HARDEN', tone:'spines', kind:'buff',
+    stacking:'replace', defaults:{ duration:2, power:0.45 },
+    label: st => 'HARDEN ' + Math.ceil(st.duration) + 't',
+    incomingMult: (u, st) => 1 - (st.power || 0)
   },
 
   dampen: {
