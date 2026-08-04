@@ -8,11 +8,13 @@ let _pendingStep = null;
 
 function pumpSteps(limit) {
   let n = 0;
+  const d0 = state.deaths || 0;
   while (_pendingStep && n++ < (limit || 10000)) {
     const fn = _pendingStep;
     _pendingStep = null;
     fn();
-    if (state.awaitingInput || state.runOver || nextDrop() || nextModOffer()) break;
+    if (state.awaitingInput || state.runOver || (state.deaths || 0) > d0
+        || nextDrop() || nextModOffer()) break;
   }
   return n;
 }
@@ -162,7 +164,7 @@ function simulateRun(classId, opts) {
     startGame(true, classId);
     let steps = 0;
 
-    while (!state.runOver && steps++ < maxSteps) {
+    while (!state.runOver && !(state.deaths > 0) && steps++ < maxSteps) {
 
       if (nextDrop()) {
         resolveDrop(botTakesDrop(state.player, nextDrop()));
@@ -190,7 +192,8 @@ function simulateRun(classId, opts) {
     }
     const p = state.player;
     return {
-      classId, won: !!state.won, wave: state.wave, kills: state.kills,
+      classId, won: !!state.won, wave: state.diedAt || state.wave,
+      deaths: state.deaths || 0, kills: state.kills,
 
       level: p.level, turns: state.runTurns, damageDealt: Math.floor(state.damageDealt),
       bestCombo: state.bestCombo,

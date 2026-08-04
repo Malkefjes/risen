@@ -54,7 +54,7 @@ export default async function ({ page, ok }) {
 
     let capped = true;
     for (let i = 0; i < 400000; i++) {
-      if (state.runOver) { capped = false; break; }
+      if (state.runOver || state.deaths > 0) { capped = false; break; }
       if (state.inScene) {
 
         const btn = document.querySelector('#scene-choices button');
@@ -74,7 +74,7 @@ export default async function ({ page, ok }) {
       await new Promise(r => setTimeout(r, 0));
     }
     const p = state.player;
-    return { capped, wave: state.wave, level: p.level, kills: state.kills,
+    return { capped, wave: state.diedAt || state.wave, level: p.level, kills: state.kills,
              dmg: Math.floor(state.damageDealt), won: !!state.won, turns: state.runTurns,
              stats: { str: p.str, instinct: p.instinct, speed: p.speed, vit: p.vit },
              derived: { atk: attackDamage(p), maxHp: p.maxHp, rate: +p.attackSpeed.toFixed(2) } };

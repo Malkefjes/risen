@@ -77,7 +77,7 @@ function devSkipToFirstBoss() {
   const gate = BALANCE.bossEvery - 1;
   for (let attempt = 1; attempt <= 20; attempt++) {
     simulateRun(classId, Object.assign({}, BOTS.smart, { stopWhen: s => s.wave > gate }));
-    if (state.runOver || state.wave <= gate) continue;
+    if (state.deaths > 0 || state.wave <= gate) continue;
 
     devEnterCombat('DEV · the bot played waves 1-' + gate + ' (cleared on try ' + attempt
       + ') · handed over at the first boss · level ' + state.player.level);
@@ -93,7 +93,7 @@ function devSkipToZone(classId, zoneNum) {
 
   for (let attempt = 1; attempt <= 20; attempt++) {
     simulateRun(classId, Object.assign({}, BOTS.smart, { stopWhen: s => s.wave > gate }));
-    if (state.runOver || state.wave <= gate) continue;
+    if (state.deaths > 0 || state.wave <= gate) continue;
     devEnterCombat('DEV · the bot played waves 1-' + gate + ' (cleared on try ' + attempt
       + ') · handed over at wave ' + state.wave + ' · level ' + state.player.level);
     return;
@@ -168,6 +168,7 @@ function serializeRun() {
     dropQueue:(state.dropQueue||[]).slice(),
     modQueue:(state.modQueue||[]).map(o => o.map(m => m.id)),
     uniqueSeen:(state.uniqueSeen||[]).slice(),
+    checkpoint:state.checkpoint||1, deaths:state.deaths||0, won:!!state.won,
 
     player:{ level:p.level, xp:p.xp, xpNext:p.xpNext, points:p.points + pendingTotal(p),
       str:p.str, instinct:p.instinct, speed:p.speed, vit:p.vit,
@@ -319,6 +320,10 @@ function continueRun(slot){
     .map(o => (Array.isArray(o)?o:[]).map(id => modById(d.classId, id)).filter(Boolean))
     .filter(o => o.length);
   state.uniqueSeen=Array.isArray(d.uniqueSeen)?d.uniqueSeen.filter(id => UNIQUES[id]):[];
+  state.checkpoint=d.checkpoint||(Math.floor(((d.wave||1)-1)/10)*10+1);
+  state.deaths=d.deaths||0;
+  state.won=!!d.won;
+  state.diedAt=0;
   state.damageDealt=d.damageDealt||0;
   state.runTurns=d.runTurns||0; state.damageTaken=d.damageTaken||0;
   state.critsLanded=d.critsLanded||0; state.damagePrevented=d.damagePrevented||0;

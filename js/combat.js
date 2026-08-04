@@ -126,7 +126,7 @@ function nextTurn() {
   if (!state.combatActive) return;
   if (nextDrop() || nextModOffer()) { scheduleTurn(nextTurn, turnDelay(240)); return; }
   const p = state.player;
-  if (!p || p.hp <= 0) { stopCombatLoop(); endRun(); return; }
+  if (!p || p.hp <= 0) { playerDown(); return; }
   if (state.awaitingSpawn) { scheduleTurn(doSpawn, turnDelay(BALANCE.spawnDelay * 1000)); return; }
   if (!livingEnemies().length) return;
 
@@ -172,19 +172,19 @@ function tickTurnStart(unit) {
       if (livingEnemies().length) scheduleTurn(nextTurn, turnDelay(200));
       return true;
     }
-    stopCombatLoop(); endRun();
+    playerDown();
     return true;
   }
 
   if (unit.isPlayer) {
     for (const e of livingEnemies().slice())
       if (tickStatuses(e, 'inflicted')) onEnemyDefeated(e);
-    if (unit.hp <= 0) { stopCombatLoop(); endRun(); return true; }
+    if (unit.hp <= 0) { playerDown(); return true; }
     if (!livingEnemies().length) return true;
   } else if (unit === livingEnemies()[0]) {
     const p = state.player;
     if (p && p.hp > 0 && tickStatuses(p, 'inflicted')) {
-      stopCombatLoop(); endRun();
+      playerDown();
       return true;
     }
   }
@@ -284,7 +284,7 @@ function enemyAct() {
   if (!state.combatActive) return;
   state.pendingEnemyAct = false;
   const e = state.active, p = state.player;
-  if (!p || p.hp <= 0) { stopCombatLoop(); endRun(); return; }
+  if (!p || p.hp <= 0) { playerDown(); return; }
   if (!e || e.isPlayer || e.hp <= 0 || e._defeated) { scheduleTurn(nextTurn, turnDelay(200)); return; }
 
   if (e.windupEvery > 0 && !e.windup) {
@@ -367,7 +367,7 @@ function enemySwing(e, opts) {
   }
 
   updateUnitCard(p); updateUnitCard(e);
-  if (p.hp <= 0) { stopCombatLoop(); endRun(); return; }
+  if (p.hp <= 0) { playerDown(); return; }
   if (e.hp <= 0 && !e._defeated) onEnemyDefeated(e);
 }
 
@@ -997,7 +997,7 @@ function onEnemyDefeated(e) {
 
   gainXP(xp, e.xpMult !== 1 || comboBonus > 1);
 
-  if (p.hp <= 0) { stopCombatLoop(); endRun(); return; }
+  if (p.hp <= 0) { playerDown(); return; }
 
   const drop = rollDrop(e, killedWave);
   if (drop) queueDrop(drop);
@@ -1013,10 +1013,20 @@ function onEnemyDefeated(e) {
   state._waveCleared = true;
   state.wave = killedWave + 1;
 
-  if (killedWave >= BALANCE.finalWave) {
-    stopCombatLoop();
-    endRun(true);
-    return;
+  if (e.isBoss) state.checkpoint = killedWave + 1;
+
+  if (killedWave >= BALANCE.finalWave && !state.won) {
+    state.won = true;
+    logEvent('SOURCE BREACHED', null, 'all ' + BALANCE.finalWave + ' waves cleared',
+             ['the signal continues', 'DEPTH 1 begins']);
+    if (!HEADLESS.on) {
+      floatText(p, 'SOURCE BREACHED', 'xp-bonus');
+      const cs = document.getElementById('combat-screen');
+      if (cs) {
+        cs.classList.add('won-beat');
+        setTimeout(() => cs.classList.remove('won-beat'), 900);
+      }
+    }
   }
 
   state.awaitingSpawn = true;
@@ -1055,29 +1065,63 @@ function strainNumberNow(p) {
   return 0;
 }
 
-function endRun(won) {
-
-  if (state.runOver) return;
-
-  state.runOver = true;
-  state.won = !!won;
+function playerDown() {
   stopCombatLoop();
-  clearSavedRun();
-  if (HEADLESS.on) return;
+  const p = state.player;
+  if (!p) return;
 
+  state.deaths = (state.deaths || 0) + 1;
+  state.diedAt = state.wave;
+  const back = state.checkpoint || 1;
+  logEvent('DOWN', null, 'wave ' + state.wave, [
+    state.killedBy ? 'killed by ' + state.killedBy.name : null,
+    'recovered to wave ' + back,
+    'death ' + state.deaths
+  ]);
+
+  p.statuses = [];
+  p.skills.forEach(s => { if (!s.basic) s.cd = 0; });
+  p.poisonCarry = 0;
+  p.meter = 0;
+  state.combo = 0;
+  state.wave = back;
+  state.enemies = [];
+  state.enemy = null;
+  state.active = null;
+  state.awaitingSpawn = true;
+  state.awaitingInput = false;
+  state.pendingEnemyAct = false;
+  applyDerivedStats(p);
+  p.hp = p.maxHp;
+  saveRun();
+
+  if (HEADLESS.on) {
+    state.combatActive = true;
+    scheduleTurn(doSpawn, 0);
+    return;
+  }
   updateHud();
-  if (state.player) updateUnitCard(state.player);
+  updateUnitCard(p);
   const combatScreen = document.getElementById('combat-screen');
   if (combatScreen && combatScreen.classList.contains('active')) {
-    combatScreen.classList.add(won ? 'won-beat' : 'defeat-beat');
-    setTimeout(showResultScreen, won ? 900 : 1500);
+    combatScreen.classList.add('defeat-beat');
+    setTimeout(showDownScreen, 1500);
   } else {
-    showResultScreen();
+    showDownScreen();
   }
 }
 
+function continueDescent() {
+  const combatScreen = document.getElementById('combat-screen');
+  if (combatScreen) combatScreen.classList.remove('won-beat', 'defeat-beat');
+  leaveMenuTab();
+  showScreen('combat-screen');
+  revealCombatNow();
+  startCombatLoop();
+}
+
 function waveReached() {
-  return state.won ? BALANCE.finalWave : state.wave;
+  return state.diedAt || state.wave;
 }
 
 const STRAIN_LABEL = { bio:'POISON', psy:'DREAD', sym:'THORNS', hyd:'PRESSURE', base:'RESOLVE' };
@@ -1106,12 +1150,15 @@ function runReport() {
   const pad = (s, n) => String(s) + ' '.repeat(Math.max(0, n - String(s).length));
 
   L.push('RISEN run report — build ' + BUILD);
-  L.push((won ? 'EXTRACTED (won)' : 'LOST') + ' · Wave ' + waveReached() + '/' + BALANCE.finalWave
-         + ' · Zone ' + zone.num + ': ' + zone.name);
+  L.push((won ? 'SOURCE BREACHED' : 'DESCENT IN PROGRESS')
+         + ' · Wave ' + waveReached() + '/' + BALANCE.finalWave
+         + (waveReached() > BALANCE.finalWave ? ' · ' + getZoneName(waveReached())
+                                              : ' · Zone ' + zone.num + ': ' + zone.name)
+         + ' · Downs ' + (state.deaths || 0));
   L.push(CLASSES[p.class].name + ' · Level ' + p.level + ' · ~' + mins + ' min');
   L.push('');
-  if (!won && state.killedBy) {
-    L.push('Killed by: ' + state.killedBy.name
+  if (state.killedBy) {
+    L.push('Last down: ' + state.killedBy.name
            + (state.killedBy.heavy ? ' — TELEGRAPHED HEAVY' : ' — ordinary hit')
            + ' for ' + N(state.killedBy.dmg));
   }
@@ -1175,9 +1222,7 @@ function copyRunReport(btn) {
   done(ok);
 }
 
-function showResultScreen() {
-
-  if (!state.runOver) return;
+function showDownScreen() {
   const won = state.won;
   const combatScreen = document.getElementById('combat-screen');
   if (combatScreen) combatScreen.classList.remove('won-beat', 'defeat-beat');
@@ -1186,17 +1231,15 @@ function showResultScreen() {
   showScreen('result-screen');
 
   const esc = t => String(t).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-  const zone = zoneForWave(waveReached());
 
-  const story = won
-    ? 'All ' + BALANCE.finalWave + ' waves cleared. You reached the source.'
-    : 'Fell on wave ' + state.wave + ' in ' + esc(getZoneName(state.wave))
+  const story = 'Went down on wave ' + waveReached() + ' in ' + esc(getZoneName(waveReached()))
       + (state.killedBy
           ? ' — ' + (state.killedBy.heavy
               ? '<b class="rs-heavy">a telegraphed heavy</b>'
               : 'an ordinary hit')
             + ' from ' + esc(state.killedBy.name) + ' for ' + formatNum(state.killedBy.dmg)
-          : '');
+          : '')
+      + '. Recovered to wave ' + state.wave + '.';
 
   const hero = (label, value, sub) =>
     '<div class="rs-hero"><span class="rs-hero-k">' + label + '</span>' +
@@ -1232,17 +1275,17 @@ function showResultScreen() {
 
   document.getElementById('result-stats').innerHTML =
     '<div class="rs-card ' + p.class + '">' +
-      '<div class="rs-verdict ' + (won ? 'win' : 'lose') + '">' +
-        (won ? 'EXTRACTED' : 'LOST') + '</div>' +
+      '<div class="rs-verdict lose">DOWN</div>' +
       '<div class="rs-head">' +
-        '<span class="rs-class">' + esc(CLASSES[p.class].name) + '</span>' +
+        '<span class="rs-class">' + esc(CLASSES[p.class].name)
+          + (won ? ' · <b class="rs-heavy">SOURCE BREACHED</b>' : '') + '</span>' +
         '<span class="rs-story">' + story + '</span>' +
       '</div>' +
 
       '<div class="rs-heroes">' +
         hero('WAVE', waveReached(), 'of ' + BALANCE.finalWave) +
+        hero('DOWNS', state.deaths || 0, 'back to wave ' + state.wave) +
         hero('LEVEL', p.level, formatNum((p.level - 1) * P().pointsPerLevel) + ' pts') +
-        hero('TURNS', formatNum(state.runTurns || 0), '~' + mins + ' min') +
         hero('KILLS', formatNum(state.kills), (state.bestCombo || 0) + '× chain') +
       '</div>' +
 
@@ -1280,7 +1323,8 @@ function showResultScreen() {
         '<span class="rs-build">build ' + BUILD + '</span>' +
       '</div>' +
       '<div class="rs-actions">' +
-        '<button class="ui-btn is-quiet" onclick="goToMenu()">MAIN MENU</button>' +
+        '<button class="ui-btn is-primary" onclick="continueDescent()">CONTINUE</button>' +
+        '<button class="ui-btn is-quiet" onclick="quitToMenu()">MAIN MENU</button>' +
       '</div>' +
     '</div>';
 }

@@ -179,6 +179,9 @@ function resetRunState(classId) {
   state.uniqueSeen = [];
   state._fightFlags = {};
   state._waveCleared = false;
+  state.deaths = 0;
+  state.diedAt = 0;
+  state.checkpoint = 1;
   state.killedBy = null;
   state.runStart = Date.now();
   state._defeatLock = false;
@@ -275,7 +278,11 @@ function stageCombatReveal(onDone) {
   }, REVEAL_HOLD_MS));
 }
 
-function getZoneName(wave) { return zoneForWave(wave).label; }
+function getZoneName(wave) {
+  if (wave > BALANCE.finalWave)
+    return 'DEPTH ' + (Math.floor((wave - BALANCE.finalWave - 1) / 10) + 1);
+  return zoneForWave(wave).label;
+}
 
 
 function spawnEnemy() {
