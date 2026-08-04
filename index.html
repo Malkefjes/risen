@@ -319,6 +319,10 @@
 
 </div>
 
+<script>
+if ('serviceWorker' in navigator && location.protocol !== 'file:')
+  navigator.serviceWorker.register('sw.js');
+</script>
 <script src="js/data.js"></script>
 <script src="js/items.js"></script>
 <script src="js/mods.js"></script>

@@ -1,0 +1,46 @@
+# Build a portable Windows exe of the game on every push to main and keep it
+# on a rolling "desktop" prerelease. Nobody has to do anything for the newest
+# desktop build to exist; it is a download, not the daily workflow. When the
+# game goes to Steam, the upload step slots in here.
+name: Desktop build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: desktop
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Stage game into shell
+        shell: bash
+        run: |
+          mkdir -p desktop/game
+          cp -r index.html css js assets desktop/game/
+      - name: Build portable exe
+        shell: bash
+        run: |
+          cd desktop
+          npm install --no-audit --no-fund
+          npx electron-builder --win portable --publish never
+      - name: Publish rolling desktop build
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: desktop
+          name: RISEN desktop (rolling)
+          prerelease: true
+          make_latest: false
+          body: Newest desktop build. Portable — download RISEN.exe and double-click. Windows will warn about an unsigned program; that is expected for now.
+          files: desktop/dist/RISEN.exe

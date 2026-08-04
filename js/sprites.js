@@ -217,11 +217,35 @@ document.addEventListener('DOMContentLoaded', () => {
   refreshContinueButton();
 });
 
+const PRELOADED = [];
 (function preloadSprites() {
+  const queue = [];
   const seen = new Set();
-  const walk = v => {
-    if (typeof v === 'string') { if (!seen.has(v)) { seen.add(v); new Image().src = v; } }
-    else if (v && typeof v === 'object') Object.values(v).forEach(walk);
+  const push = v => {
+    if (typeof v === 'string') { if (!seen.has(v)) { seen.add(v); queue.push(v); } }
+    else if (v && typeof v === 'object') Object.values(v).forEach(push);
   };
-  [ZONE_SPRITES, POSE_SPRITES].forEach(walk);
+
+  push(PLAYER_SPRITES);
+  push('assets/ui/menu-wallpaper-chamber.jpg');
+  push('assets/ui/menu-wallpaper.jpg');
+  push(POSE_SPRITES);
+  push('assets/zones/the-laboratory-3.jpg');
+  push('assets/zones/mpc-1.jpg');
+  [1, 2, 3, 4].forEach(z => push(ZONE_SPRITES[z]));
+  push('assets/zones/city-streets-1.jpg');
+  push('assets/zones/mcp-compound-1.jpg');
+  Object.values(SLOTS).forEach(s => push(s.art));
+
+  let i = 0;
+  const next = () => {
+    if (i >= queue.length) return;
+    const im = new Image();
+    PRELOADED.push(im);
+    im.src = queue[i++];
+    const done = () => next();
+    if (im.decode) im.decode().then(done, done);
+    else { im.onload = done; im.onerror = done; }
+  };
+  for (let k = 0; k < 4; k++) next();
 })();

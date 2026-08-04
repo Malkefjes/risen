@@ -1,4 +1,4 @@
-const BUILD = '2026-08-04am';
+const BUILD = '2026-08-04pm';
 
 const BALANCE = {
   player: {

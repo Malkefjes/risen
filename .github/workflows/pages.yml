@@ -32,7 +32,7 @@ jobs:
       - name: Stage site
         run: |
           mkdir _site
-          cp -r index.html css js assets _site/
+          cp -r index.html css js assets sw.js _site/
           V="${GITHUB_SHA::7}"
           sed -i "s|src=\"js/\([a-z]*\)\.js\"|src=\"js/\1.js?v=$V\"|g" _site/index.html
           # Inline the stylesheet into the deployed page. The css fetch was the

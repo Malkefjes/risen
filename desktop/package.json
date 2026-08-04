@@ -1,0 +1,23 @@
+{
+  "name": "risen-desktop",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Desktop shell around the game in the repo root. CI copies the game into desktop/game/ and builds a portable exe on every push to main.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable --publish never"
+  },
+  "devDependencies": {
+    "electron": "^43.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "com.malkefjes.risen",
+    "productName": "RISEN",
+    "directories": { "output": "dist" },
+    "files": ["main.js", "game/**/*"],
+    "win": { "target": "portable" },
+    "portable": { "artifactName": "RISEN.exe" }
+  }
+}
