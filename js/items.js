@@ -451,32 +451,14 @@ function itemCardHtml(it) {
 function itemDeltas(it) {
   const p = state.player;
   if (!p || !it) return [];
-  const view = Object.assign({}, p);
-  view.gear = Object.assign({}, p.gear, { [it.slot]: it });
-  applyDerivedStats(view);
+  const view = { gear: Object.assign({}, p.gear, { [it.slot]: it }) };
 
   const out = [];
-  const push = (label, d, mag, unit) => {
-    if (!mag) return;
-    out.push({ up: d > 0, text: (d > 0 ? '+' : '−') + mag + (unit || '') + ' ' + label });
-  };
-  const num = d => { const r = Math.round(Math.abs(d)); return r ? formatNum(r) : ''; };
-  const pct = d => { const r = Math.round(Math.abs(d) * 100); return r ? String(r) : ''; };
-
-  const atk = attackDamage(view) - attackDamage(p);
-  push('ATK', atk, num(atk));
-  push('HP', view.maxHp - p.maxHp, num(view.maxHp - p.maxHp));
-  push('CRIT', view.critChance - p.critChance, pct(view.critChance - p.critChance), '%');
-  const cm = view.critMult - p.critMult;
-  push('CRIT DMG', cm, Math.abs(cm) >= 0.005 ? Math.abs(cm).toFixed(2) : '', '×');
-  const rate = (view.attackSpeed - p.attackSpeed) / Math.max(0.01, p.attackSpeed);
-  push('RATE', rate, pct(rate), '%');
-  push('ARMOR', view.armor - p.armor, pct(view.armor - p.armor), '%');
-  push('EVASION', view.evasion - p.evasion, pct(view.evasion - p.evasion), '%');
-  const hb = gearMod(view, 'healBoost') - gearMod(p, 'healBoost');
-  push('HEALING', hb, pct(hb), '%');
-  const xb = gearMod(view, 'xpBoost') - gearMod(p, 'xpBoost');
-  push('XP', xb, pct(xb), '%');
+  for (const k of STAT_ORDER) {
+    const d = gearStat(view, k) - gearStat(p, k);
+    if (!d) continue;
+    out.push({ up: d > 0, text: (d > 0 ? '+' : '−') + Math.abs(d) + ' ' + ITEM_STAT_NAMES[k] });
+  }
   return out;
 }
 
