@@ -1,4 +1,4 @@
-const BUILD = '2026-08-05e';
+const BUILD = '2026-08-05f';
 
 const BALANCE = {
   player: {
@@ -130,7 +130,7 @@ const BALANCE = {
 
   turnPace: 1,
 
-  saveKey: 'risen_run_v17',
+  saveKey: 'risen_run_v18',
 
   oldSaveKeys: ['risen_run_v3', 'risen_run_v3_s1', 'risen_run_v3_s2',
                 'risen_run_v4', 'risen_run_v4_s1', 'risen_run_v4_s2',
@@ -150,7 +150,9 @@ const BALANCE = {
                 'risen_run_v15', 'risen_run_v15_s0', 'risen_run_v15_s1', 'risen_run_v15_s2',
                 'risen_run_v15_s3', 'risen_run_v15_s4',
                 'risen_run_v16', 'risen_run_v16_s0', 'risen_run_v16_s1', 'risen_run_v16_s2',
-                'risen_run_v16_s3', 'risen_run_v16_s4'],
+                'risen_run_v16_s3', 'risen_run_v16_s4',
+                'risen_run_v17', 'risen_run_v17_s0', 'risen_run_v17_s1', 'risen_run_v17_s2',
+                'risen_run_v17_s3', 'risen_run_v17_s4'],
   saveSlots: 4
 };
 

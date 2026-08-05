@@ -119,7 +119,7 @@ function freshPlayer(classId, kit) {
     skills: cls.skills.filter(s => s.basic || fitted.includes(s.id))
                       .map(s => Object.assign({cd:0}, s)),
 
-    gear: issueGear(classId),
+    gear: issueGear(),
 
     mods: [],
 

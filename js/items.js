@@ -267,22 +267,20 @@ function emptyGear() {
 }
 
 const PREFIX_FOR_STAT = { str: 'p_str', instinct: 'p_ins', speed: 'p_spd', vit: 'p_vit' };
-const ISSUE_STAT = { bio: 'str', psy: 'speed', sym: 'vit', hyd: 'instinct' };
+const ISSUE_SPREAD = { optics: 'speed', gauntlets: 'vit', armor: 'str', boots: 'instinct' };
 
-function issueGear(classId) {
+function issueGear() {
   const g = emptyGear();
   const tier = TIER_MIN_WAVE.length - 1;
-  const home = ISSUE_STAT[classId];
   for (const sid of Object.keys(SLOTS)) {
     const slot = SLOTS[sid];
     const impDef = SLOT_IMPLICIT[sid];
-    const stats = [slot.home, home || slot.home];
     g[sid] = {
       slot: sid, rarity: 'uncommon', wave: 1, name: slot.name,
-      implicit: { stats: impDef.stats.slice(), tier, v: impDef.tiers[tier][0] },
-      prefixes: stats.map(k => {
+      implicit: { stats: impDef.stats.slice(), tier, v: 1 },
+      prefixes: [slot.home, ISSUE_SPREAD[sid]].map(k => {
         const def = ITEM_PREFIXES.find(a => a.id === PREFIX_FOR_STAT[k]);
-        return { id: def.id, stats: def.stats.slice(), tier, v: def.tiers[tier][0] };
+        return { id: def.id, stats: def.stats.slice(), tier, v: 1 };
       }),
       suffixes: []
     };
