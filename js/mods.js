@@ -2,28 +2,54 @@ const MODIFICATIONS = {
 
   bio: {
     inject: [
-      { id: 'bio_inject_a', name: 'DOSAGE',      text: '+1 POISON.',
-        add: { poison: 1 } },
-      { id: 'bio_inject_b', name: 'HONED EDGE',  text: '+20% damage.',
-        mul: { power: 1.20 } }
+      { id: 'bio_inject_dose',  name: 'DOSAGE',      text: '+2 POISON.',
+        add: { poison: 2 } },
+      { id: 'bio_inject_edge',  name: 'HONED EDGE',  text: '+25% damage.',
+        mul: { power: 1.25 } },
+      { id: 'bio_inject_vir',   name: 'VIRULENCE',   text: '+50% of what the rot is ticking for added to the blow.',
+        add: { poisonScale: 0.50 } },
+      { id: 'bio_inject_leech', name: 'TRANSFUSION', text: 'heal 10% of the damage dealt.',
+        add: { lifesteal: 0.10 } },
+      { id: 'bio_inject_film',  name: 'MEMBRANE',    text: 'each blow leaves a film: −8% damage taken for 1 turn, to a maximum of 40%.',
+        add: { guardFrac: 0.08 }, max: { guardFrac: 0.40 } },
+      { id: 'bio_inject_spore', name: 'SPORE BURST', text: '15% of the damage splashes onto every other enemy, to a maximum of 75%.',
+        add: { splash: 0.15 }, max: { splash: 0.75 } }
     ],
     distribute: [
-      { id: 'bio_distribute_a', name: 'SATURATION',  text: '+2 POISON.',
-        add: { poison: 2 } },
-      { id: 'bio_distribute_b', name: 'RAPID ONSET', text: 'cooldown −1 turn, to a minimum of 2.',
-        add: { cdTurns: -1 }, min: { cdTurns: 2 } }
+      { id: 'bio_distribute_sat',   name: 'SATURATION',  text: '+3 POISON.',
+        add: { poison: 3 } },
+      { id: 'bio_distribute_onset', name: 'RAPID ONSET', text: 'cooldown −1 turn, to a minimum of 1.',
+        add: { cdTurns: -1 }, min: { cdTurns: 1 } },
+      { id: 'bio_distribute_meta',  name: 'METASTASIS',  text: 'when a host dies, 50% of its rot jumps to a living one, up to all of it.',
+        add: { carry: 0.50 }, max: { carry: 1.0 } },
+      { id: 'bio_distribute_cont',  name: 'CONTAGION',   text: '+2% damage per POISON on the target.',
+        add: { perPoisonPower: 0.02 } },
+      { id: 'bio_distribute_fis',   name: 'FISSION',     text: '+25% damage.',
+        mul: { power: 1.25 } }
     ],
     biofilm: [
-      { id: 'bio_biofilm_a', name: 'DENSE PLATING', text: '+8% damage blunted, to a maximum of 70%.',
+      { id: 'bio_biofilm_plate', name: 'DENSE PLATING',  text: '+8% damage blunted, to a maximum of 70%.',
         add: { power: 0.08 }, max: { power: 0.70 } },
-      { id: 'bio_biofilm_b', name: 'SET CARAPACE',  text: '+1 turn duration, to a maximum of 4.',
-        add: { duration: 1 }, max: { duration: 4 } }
+      { id: 'bio_biofilm_set',   name: 'SET CARAPACE',   text: '+1 turn, to a maximum of 5.',
+        add: { duration: 1 }, max: { duration: 5 } },
+      { id: 'bio_biofilm_fever', name: 'FEVER',          text: 'while it holds, POISON ticks one extra time per turn.',
+        add: { tickBonus: 1 } },
+      { id: 'bio_biofilm_shell', name: 'INFECTED SHELL', text: 'while it holds, attackers take +4 POISON.',
+        add: { touchPoison: 4 } },
+      { id: 'bio_biofilm_quick', name: 'QUICK CULTURE',  text: 'cooldown −1 turn, to a minimum of 2.',
+        add: { cdTurns: -1 }, min: { cdTurns: 2 } }
     ],
     regenerate: [
-      { id: 'bio_regenerate_a', name: 'CONCENTRATE',  text: '+5% regeneration per turn, to a maximum of 50%.',
-        add: { power: 0.05 }, max: { power: 0.50 } },
-      { id: 'bio_regenerate_b', name: 'SCRUBBERS',    text: '+1 POISON removed per turn.',
-        add: { tickCleanse: 1 } }
+      { id: 'bio_regenerate_conc',   name: 'CONCENTRATE', text: '+6% regeneration per turn, to a maximum of 60%.',
+        add: { power: 0.06 }, max: { power: 0.60 } },
+      { id: 'bio_regenerate_scrub',  name: 'SCRUBBERS',   text: '+2 POISON shed each turn.',
+        add: { tickCleanse: 2 } },
+      { id: 'bio_regenerate_supp',   name: 'SUPPRESSION', text: 'on cast, every enemy is WEAK for +1 turn.',
+        add: { weakTurns: 1 } },
+      { id: 'bio_regenerate_triage', name: 'TRIAGE',      text: 'on cast, instantly heal 8%, to a maximum of 40%.',
+        add: { burstHeal: 0.08 }, max: { burstHeal: 0.40 } },
+      { id: 'bio_regenerate_long',   name: 'LONG CULTURE', text: '+1 turn, to a maximum of 8.',
+        add: { duration: 1 }, max: { duration: 8 } }
     ]
   },
 
@@ -186,12 +212,38 @@ function offerMods(p) {
   }
   const skills = Object.keys(bySkill);
   const picked = [];
+  const focus = state.focusSkill;
+  if (focus && bySkill[focus]) {
+    const bag = bySkill[focus];
+    picked.push(bag[Math.floor(Math.random() * bag.length)]);
+    skills.splice(skills.indexOf(focus), 1);
+  }
   while (picked.length < MODS_OFFERED && skills.length) {
     const sid = skills.splice(Math.floor(Math.random() * skills.length), 1)[0];
     const bag = bySkill[sid];
     picked.push(bag[Math.floor(Math.random() * bag.length)]);
   }
   return picked;
+}
+
+function setFocus(sid) {
+  state.focusSkill = state.focusSkill === sid ? null : sid;
+  saveRun();
+  renderModList();
+}
+
+function requisitionHtml() {
+  const p = state.player;
+  if (!p) return '';
+  const focused = p.skills.find(s => s.id === state.focusSkill);
+  return '<div class="derived-subhead">REQUISITION</div>'
+    + '<div class="req-row">'
+    + p.skills.map(s => '<button class="req-btn' + (state.focusSkill === s.id ? ' on' : '')
+        + '" type="button" onclick="setFocus(\'' + s.id + '\')">' + s.name.toUpperCase() + '</button>').join('')
+    + '</div>'
+    + '<div class="req-note">' + (focused
+        ? 'salvage always offers one ' + focused.name + ' modification'
+        : 'mark a button and salvage always offers one modification for it') + '</div>';
 }
 
 function queueMods(offer) {
@@ -269,14 +321,18 @@ function renderModList() {
   const p = state.player;
   const taken = (p && p.mods) || [];
   if (!taken.length) {
-    el.innerHTML = '<div class="suit-slot empty"><div class="suit-slot-body">'
+    el.innerHTML = requisitionHtml()
+      + '<div class="derived-subhead">INSTALLED</div>'
+      + '<div class="suit-slot empty"><div class="suit-slot-body">'
       + '<div class="suit-slot-name">NOTHING INSTALLED</div></div></div>';
     return;
   }
 
   const seen = [];
   taken.forEach(id => { if (seen.indexOf(id) < 0) seen.push(id); });
-  el.innerHTML = seen.map(id => {
+  el.innerHTML = requisitionHtml()
+    + '<div class="derived-subhead">INSTALLED</div>'
+    + seen.map(id => {
     const m = modById(p.class, id);
     if (!m) return '';
     const n = taken.filter(x => x === id).length;

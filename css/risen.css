@@ -2758,6 +2758,26 @@ body {
 .mod-text { font-size: 0.8rem; line-height: 1.65; color: rgba(238, 242, 255, 0.86); }
 
 .mod-list { display: flex; flex-direction: column; gap: 8px; }
+
+.req-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.req-btn {
+  flex: 1 1 45%;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.56rem;
+  letter-spacing: 1.5px;
+  padding: 8px 4px;
+  color: var(--muted);
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.req-btn.on {
+  color: var(--text);
+  border-color: rgba(255, 200, 60, 0.55);
+  background: rgba(255, 200, 60, 0.06);
+}
+.req-note { font-size: 0.7rem; color: var(--muted); line-height: 1.5; margin-bottom: 8px; }
 .mod-entry {
   border-left: 2px solid rgba(var(--base-rgb), 0.4);
   padding: 4px 0 4px 10px;

@@ -1,4 +1,4 @@
-const BUILD = '2026-08-05b';
+const BUILD = '2026-08-05c';
 
 const BALANCE = {
   player: {
@@ -27,8 +27,6 @@ const BALANCE = {
 
     ailmentDamageFrac: 0.20,
     thornsFrac: 0.05,
-
-    poisonCarryFrac: 0.5,
 
     poisonPerStr: 2,
 
@@ -132,7 +130,7 @@ const BALANCE = {
 
   turnPace: 1,
 
-  saveKey: 'risen_run_v15',
+  saveKey: 'risen_run_v16',
 
   oldSaveKeys: ['risen_run_v3', 'risen_run_v3_s1', 'risen_run_v3_s2',
                 'risen_run_v4', 'risen_run_v4_s1', 'risen_run_v4_s2',
@@ -148,7 +146,9 @@ const BALANCE = {
                 'risen_run_v13', 'risen_run_v13_s0', 'risen_run_v13_s1', 'risen_run_v13_s2',
                 'risen_run_v13_s3', 'risen_run_v13_s4',
                 'risen_run_v14', 'risen_run_v14_s0', 'risen_run_v14_s1', 'risen_run_v14_s2',
-                'risen_run_v14_s3', 'risen_run_v14_s4'],
+                'risen_run_v14_s3', 'risen_run_v14_s4',
+                'risen_run_v15', 'risen_run_v15_s0', 'risen_run_v15_s1', 'risen_run_v15_s2',
+                'risen_run_v15_s3', 'risen_run_v15_s4'],
   saveSlots: 4
 };
 
@@ -162,13 +162,13 @@ const CLASSES = {
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
 
-      { id:'inject', name:'Inject', desc:'Deal {power!} damage + {poisonScale%} of what the rot is ticking for. +{poisonStacks} POISON', type:'attack', power:1.0, poison:1, poisonScale:1.0, poisonStacks:(p,s) => poisonStacks(p,s), target:'enemy', basic:true },
+      { id:'inject', name:'Inject', desc:'Deal {power!} damage. +{poisonStacks} POISON', type:'attack', power:1.0, poison:1, poisonStacks:(p,s) => poisonStacks(p,s), target:'enemy', basic:true },
 
-      { id:'distribute', name:'Distribute', desc:'Deal {power!} damage to EVERY enemy. +{poisonStacks} POISON each. When a host dies, {carry%} of its rot jumps to a living one.', type:'attack', shape:'all', power:0.50, poison:4, poisonStacks:(p,s) => poisonStacks(p,s), carry:BALANCE.player.poisonCarryFrac, target:'enemy', cdTurns:3 },
+      { id:'distribute', name:'Distribute', desc:'Deal {power!} damage to EVERY enemy. +{poisonStacks} POISON each.', type:'attack', shape:'all', power:0.50, poison:4, poisonStacks:(p,s) => poisonStacks(p,s), target:'enemy', cdTurns:3 },
 
-      { id:'biofilm', name:'Biofilm', desc:'For {duration#turn}: take −{power%} damage. POISON on the enemy ticks twice per turn', type:'buff', buff:'chitin', duration:3, power:0.40, target:'self', cdTurns:4 },
+      { id:'biofilm', name:'Biofilm', desc:'For {duration#turn}: take −{power%} damage.', type:'buff', buff:'chitin', duration:3, power:0.25, target:'self', cdTurns:4 },
 
-      { id:'regenerate', name:'Regenerate', desc:'For {duration#turn}: regenerate {power+} and shed {tickCleanse} POISON each turn. Every enemy is WEAK for {weak.duration#turn}', type:'buff', buff:'regen', duration:5, power:0.20, tickCleanse:1, applies:[{ id:'weak', power:0.25, duration:3 }], target:'self', cdTurns:5 }
+      { id:'regenerate', name:'Regenerate', desc:'For {duration#turn}: regenerate {power+} each turn.', type:'buff', buff:'regen', duration:5, power:0.20, target:'self', cdTurns:5 }
     ]
   },
 
@@ -364,7 +364,8 @@ const STATUSES = {
     onTurnStart(unit, st) {
 
       const foe = unit.isPlayer ? null : state.player;
-      const ticks = (foe && foe.hp > 0 && hasStatus(foe, 'chitin')) ? 2 : 1;
+      const cst = (foe && foe.hp > 0) ? getStatus(foe, 'chitin') : null;
+      const ticks = 1 + (cst ? (cst.tickBonus || 0) : 0);
       for (let i = 0; i < ticks; i++) {
         if (unit.hp <= 0) break;
         const dmg = Math.max(1, Math.floor((st.perStack||1) * (st.stacks||1)));
@@ -374,7 +375,7 @@ const STATUSES = {
         floatText(unit, dmg, 'poison');
         logDamage('POISON', unit, dmg, [
           '×' + (st.stacks||1) + ' @ ' + logNum(st.perStack||1) + '/stack',
-          ticks === 2 ? 'CHITIN: second tick' : null,
+          i > 0 ? 'CHITIN: extra tick' : null,
           logNum(unit.hp) + '/' + logNum(unit.maxHp) + ' left'
         ]);
       }
@@ -385,8 +386,21 @@ const STATUSES = {
 
   chitin: {
     id:'chitin', name:'BIOFILM', tone:'buff', kind:'buff',
-    stacking:'longest', defaults:{ duration:3, power:0.40 },
+    stacking:'longest', defaults:{ duration:3, power:0.25, tickBonus:0, touchPoison:0 },
     label: st => 'CHITIN ' + Math.ceil(st.duration) + 't',
+    incomingMult: (u, st) => 1 - (st.power || 0),
+    onHitTaken(unit, st, ctx) {
+      const e = ctx.attacker;
+      if (!(st.touchPoison > 0) || !e || e.hp <= 0 || e.isPlayer) return;
+      applyStatus(e, 'poison', { stacks: st.touchPoison, perStack: unit.poisonPerStack });
+      floatText(e, '+' + st.touchPoison + ' POISON', 'tally');
+    }
+  },
+
+  film: {
+    id:'film', name:'MEMBRANE', tone:'buff', kind:'buff',
+    stacking:'replace', defaults:{ duration:1, power:0.08 },
+    label: st => 'FILM ' + Math.ceil(st.duration) + 't',
     incomingMult: (u, st) => 1 - (st.power || 0)
   },
 

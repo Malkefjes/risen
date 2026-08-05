@@ -673,6 +673,14 @@ function applyPlayerDamage(p, e, skill, opts) {
 
     notes.push('+' + logNum(t) + ' from THORNS');
   }
+  if (skill.perPoisonPower) {
+    const held = statusStacks(e, 'poison');
+    if (held > 0) {
+      const m = 1 + skill.perPoisonPower * held;
+      dmg *= m;
+      notes.push('POISON ×' + held + ' feeds it ×' + m.toFixed(2));
+    }
+  }
 
   if (Math.random() < e.evadeChance) {
     playAttackAnim(p, e, false, skill);
@@ -742,6 +750,8 @@ function applyPlayerDamage(p, e, skill, opts) {
   }
 
   if (skill.buildsResolve) gainResolve(p, skill.buildsResolve, skill.name);
+
+  if (skill.guardFrac) applyStatus(p, 'film', { duration: 1, power: skill.guardFrac });
 
   if (skill.growBonus) growThorns(p, skill.growBonus, skill.name);
 
@@ -884,6 +894,18 @@ function fireSkill(caster, skill, target) {
     applyStatus(caster, skill.buff, skillStatusOpts(skill));
     applySkillStatuses(caster, skill);
 
+    if (skill.weakTurns)
+      for (const foe of livingEnemies())
+        if (foe.hp > 0) applyStatus(foe, 'weak', { power: 0.25, duration: skill.weakTurns });
+    if (skill.burstHeal) {
+      const amount = Math.max(1, Math.floor(healAnchorFor(caster) * skill.burstHeal));
+      const before = caster.hp;
+      caster.hp = Math.min(caster.maxHp, caster.hp + amount);
+      floatText(caster, amount, 'heal');
+      logHeal(skill.name, caster, caster.hp - before,
+              [Math.round(skill.burstHeal * 100) + '% of ' + logNum(healAnchorFor(caster)),
+               logNum(caster.hp) + '/' + logNum(caster.maxHp)]);
+    }
     if (skill.pressure) gainPressure(caster, skill.pressure);
     playCastAnim(caster, skill);
   } else {
@@ -906,6 +928,21 @@ function fireSkill(caster, skill, target) {
           logHeal('LIFESTEAL', caster, caster.hp - before,
                   [Math.round(skill.lifesteal * 100) + '% of ' + logNum(dealt) + ' dealt',
                    logNum(caster.hp) + '/' + logNum(caster.maxHp)]);
+        }
+        if (skill.splash && targets.length === 1) {
+          for (const o of livingEnemies()) {
+            if (o === t || o.hp <= 0 || o._defeated) continue;
+            const s = Math.max(1, Math.floor(dealt * skill.splash));
+            const ob = o.hp;
+            o.hp = Math.max(0, o.hp - s);
+            creditDamage('Spores', s);
+            if (o.hp <= 0) state._lastOverkill = Math.max(0, s - ob);
+            floatText(o, s, 'damage');
+            logDamage('SPORES', o, s,
+                      [Math.round(skill.splash * 100) + '% of ' + logNum(dealt),
+                       logNum(o.hp) + '/' + logNum(o.maxHp) + ' left']);
+            updateUnitCard(o);
+          }
         }
       }
       if (caster.hp <= 0) break;
@@ -962,20 +999,20 @@ function onEnemyDefeated(e) {
 
   if (p && p.class === 'bio') {
     const left = statusStacks(e, 'poison');
-
-    const frac = p.modCarryFrac != null ? p.modCarryFrac : (P().poisonCarryFrac || 0);
+    let frac = 0;
+    for (const s of p.skills) if ((s.carry || 0) > frac) frac = s.carry;
     const carry = Math.floor(left * frac);
     const host = livingEnemies()[0] || null;
     if (carry > 0 && host) {
       applyStatus(host, 'poison', { stacks: carry, perStack: p.poisonPerStack });
       floatText(host, '+' + carry + ' POISON', 'tally');
       logEvent('THE ROT JUMPS', host, '×' + carry + ' POISON',
-               ['half of ×' + left + ' on the dying host']);
+               [Math.round(frac * 100) + '% of ×' + left + ' on the dying host']);
     } else {
       p.poisonCarry = carry;
       if (carry > 0)
         logEvent('THE ROT HOLDS', null, '×' + carry + ' POISON',
-                 ['half of ×' + left + ' on the body', 'moves to the next host']);
+                 [Math.round(frac * 100) + '% of ×' + left + ' on the body', 'moves to the next host']);
     }
   }
 

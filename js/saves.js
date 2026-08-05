@@ -168,6 +168,7 @@ function serializeRun() {
     dropQueue:(state.dropQueue||[]).slice(),
     modQueue:(state.modQueue||[]).map(o => o.map(m => m.id)),
     uniqueSeen:(state.uniqueSeen||[]).slice(),
+    focusSkill:state.focusSkill||null,
     checkpoint:state.checkpoint||1, deaths:state.deaths||0, won:!!state.won,
     hazard:state.hazard||null, hazardOffer:state.hazardOffer||null,
     atCamp:!!state.atCamp,
@@ -322,6 +323,7 @@ function continueRun(slot){
     .map(o => (Array.isArray(o)?o:[]).map(id => modById(d.classId, id)).filter(Boolean))
     .filter(o => o.length);
   state.uniqueSeen=Array.isArray(d.uniqueSeen)?d.uniqueSeen.filter(id => UNIQUES[id]):[];
+  state.focusSkill=(d.focusSkill && p.skills.some(s => s.id === d.focusSkill))?d.focusSkill:null;
   state.checkpoint=d.checkpoint||(Math.floor(((d.wave||1)-1)/10)*10+1);
   state.deaths=d.deaths||0;
   state.won=!!d.won;

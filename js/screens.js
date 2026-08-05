@@ -175,6 +175,7 @@ function resetRunState(classId) {
   state.skillUses = {};
   state.peakStrain = 0;
   state.uniqueSeen = [];
+  state.focusSkill = null;
   state._fightFlags = {};
   state._waveCleared = false;
   state.deaths = 0;

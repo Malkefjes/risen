@@ -97,6 +97,8 @@ function skillStatusOpts(skill) {
   if (skill.stacks != null) opts.stacks = skill.stacks;
   if (skill.perStack != null) opts.perStack = skill.perStack;
   if (skill.tickCleanse != null) opts.cleanse = skill.tickCleanse;
+  if (skill.tickBonus != null) opts.tickBonus = skill.tickBonus;
+  if (skill.touchPoison != null) opts.touchPoison = skill.touchPoison;
   return opts;
 }
 

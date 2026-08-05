@@ -86,7 +86,12 @@ make a run green.
   with a chance at orange. Every class starts in a full set of UNCOMMON gear
   and COMMON never drops. Modifications are straight
   upgrades to one button and they stack — no costs, no downsides — and keep
-  coming in the Depths, every tenth wave.
+  coming in the Depths, every tenth wave. The build lives in the mods: each
+  button is boiled to its barest read and the old baked-in riders are
+  unbundled into its mod pool, deep enough that all-in on one button — even
+  the basic — covers damage, defense, sustain and packs. A requisitioned
+  button (REQUISITION, mods tab) always gets one of the three offers.
+  Vector is the template; the other four classes still await the boil-down.
 - **Defence is reduction, not chance.** ARMOR (Strength) and EVASION (Speed) on
   one curve, `X / (X + defenseK)`. They multiply. Instinct is offence alone.
 - **Each strain scales best with one stat:** bio STRENGTH, psy SPEED, sym
