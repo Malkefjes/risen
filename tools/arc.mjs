@@ -50,9 +50,6 @@ const out = await page.evaluate((RUNS) => {
         runMins[b] = Math.min(runMins[b], r.min);
         if (firstScare == null && r.min < 0.35) firstScare = w;
       }
-      runMins.forEach((m, b) => {
-        if (bands[b].waves > 0 && m < 1) { /* visited */ }
-      });
       BANDS.forEach((_, b) => {
         const touched = Object.keys(perWave).map(Number).some(w => bandOf(w) === b);
         if (touched) {

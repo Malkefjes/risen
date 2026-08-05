@@ -615,12 +615,12 @@ function pendingOf(p, stat) { return (p && p.pending && p.pending[stat]) || 0; }
 
 function canConfirmStats(p) { return !!p && p.points <= 0 && pendingTotal(p) > 0; }
 
-function pendingView(p, extraStat) {
+function pendingView(p) {
   if (!p) return p;
-  if (!extraStat && !pendingTotal(p)) return p;
+  if (!pendingTotal(p)) return p;
   const view = Object.assign({}, p);
   STAT_KEYS.forEach(k => {
-    view[k] = p[k] + pendingOf(p, k) + (k === extraStat ? 1 : 0);
+    view[k] = p[k] + pendingOf(p, k);
   });
   applyDerivedStats(view);
   return view;
@@ -718,10 +718,6 @@ function refreshSidebarStats() {
   refreshReadoutValues();
 
   renderDeltas(pendingView(p));
-  STAT_KEYS.forEach(k => {
-    const note = document.getElementById('preview-' + k);
-    if (note) { note.textContent = ''; note.classList.remove('on'); }
-  });
 }
 
 const WEIGHT_STEP = 5;
@@ -820,24 +816,6 @@ function statPlus(stat) {
 function statMinus(stat) {
   const p = state.player; if (!p) return;
   if (autoMode(p)) adjustWeight(stat, -WEIGHT_STEP); else adjustStat(stat, -1);
-}
-
-function previewStat(stat, show) {
-  const p = state.player; if (!p) return;
-  const note = document.getElementById('preview-' + stat);
-  const hovering = show && p.points > 0;
-  renderDeltas(hovering ? pendingView(p, stat) : pendingView(p));
-
-  if (!note) return;
-
-  let dead = false;
-  if (hovering) {
-    const staged = readouts(pendingView(p));
-    const withIt = readouts(pendingView(p, stat));
-    dead = !withIt.some((r, i) => staged[i] && staged[i].text !== r.text);
-  }
-  note.textContent = dead ? 'no combat effect' : '';
-  note.classList.toggle('on', dead);
 }
 
 function adjustStat(stat, delta) {

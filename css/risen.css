@@ -724,12 +724,6 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
-.act-name {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 0.78rem;
-  letter-spacing: 2.5px;
-  color: var(--muted);
-}
 .zone-name {
   font-family: 'Orbitron', sans-serif;
   font-size: 1rem;
@@ -2455,12 +2449,6 @@ body {
   .skills { grid-template-columns: 1fr 1fr; }
 }
 
-.stat-preview {
-  font-size: 0.66rem; color: var(--accent); letter-spacing: 0.4px;
-  min-height: 12px; margin-top: 3px; opacity: 0; transition: opacity 0.12s ease;
-}
-.stat-preview.on { opacity: 1; }
-
 .unit-tags { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin: 5px 0 2px; }
 .unit-tag {
   position: relative; overflow: hidden;
@@ -2535,12 +2523,6 @@ body {
 
 .arena-card { position: relative; }
 
-.kill-burst {
-  position: absolute; inset: 0; pointer-events: none; z-index: 5;
-  background: radial-gradient(circle at 72% 50%, rgba(255,255,255,0.30), transparent 42%);
-  animation: killFade 0.4s ease forwards;
-}
-@keyframes killFade { from { opacity: 1; } to { opacity: 0; } }
 .fighter.killed .char-figure { animation: killCollapse 0.34s ease forwards; }
 @keyframes killCollapse {
   0%   { opacity: 1; transform: scale(1); filter: brightness(1); }
@@ -2584,15 +2566,11 @@ body {
   background: #1a2233;
 }
 
-.sidebar-tab.alert { color: var(--xp); border-color: var(--xp); }
 .sidebar-tab.points-alert { color: var(--xp); }
-
-.sidebar-tab.tab-alert { color: var(--xp); border-color: var(--xp); animation: tabAlert 1.6s ease-in-out infinite; }
-@keyframes tabAlert { 0%, 100% { box-shadow: none; } 50% { box-shadow: 0 0 10px rgba(255, 200, 60, 0.35); } }
 
 @media (prefers-reduced-motion: reduce) {
   .combo-meter, .fighter.killed .char-figure,
-  .logo, .skill-btn.ready, .level-badge.level-up, .sidebar-tab.tab-alert { animation: none; }
+  .logo, .skill-btn.ready, .level-badge.level-up { animation: none; }
   .bar-ghost { transition: none; }
   .level-badge.level-up { transform: none; }
 }
@@ -2637,30 +2615,8 @@ body {
 .rar-common   { --rar: #aab6c9; --rar-rgb: 170, 182, 201; }
 .rar-uncommon { --rar: #45dfe0; --rar-rgb: 69, 223, 224; }
 
-.pending {
-  display: none;
-  border: 1px solid rgba(255, 200, 60, 0.35);
-  border-radius: 6px;
-  background: rgba(255, 200, 60, 0.035);
-  padding: 12px 12px 10px;
-  margin-bottom: 14px;
-}
-.pending.on { display: block; }
-.pending-head {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 0.58rem;
-  letter-spacing: 2.4px;
-  color: var(--xp);
-  margin-bottom: 10px;
-}
-.pending-head i { font-style: normal; color: var(--muted); letter-spacing: 1px; }
 .pending-actions { display: flex; gap: 8px; margin-top: 10px; }
 .pending-actions .ui-btn { flex: 1 1 0; width: auto; font-size: 0.66rem; }
-
-.pending .drop-card { margin-bottom: 8px; padding: 10px 12px 8px; gap: 10px; }
-.pending .drop-art { width: 48px; height: 48px; }
-.pending .drop-name { font-size: 0.82rem; }
-.pending .mod-card { padding: 10px 12px; margin-bottom: 8px; width: 100%; }
 
 .drop-card {
   border: 1px solid rgba(var(--rar-rgb, 170, 182, 201), 0.55);
