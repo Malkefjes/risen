@@ -12,10 +12,11 @@ const SLOTS = {
 };
 
 const RARITIES = {
-  standard:  { id: 'standard',  name: 'STANDARD ISSUE', prefixes: 1 },
-  refined:   { id: 'refined',   name: 'REFINED',        prefixes: 2 },
-  prototype: { id: 'prototype', name: 'PROTOTYPE',      prefixes: 3 },
-  unique:    { id: 'unique',    name: 'UNCATALOGUED',   prefixes: 0 }
+  common:    { id: 'common',    name: 'COMMON',    prefixes: 1 },
+  uncommon:  { id: 'uncommon',  name: 'UNCOMMON',  prefixes: 2 },
+  rare:      { id: 'rare',      name: 'RARE',      prefixes: 3 },
+  epic:      { id: 'epic',      name: 'EPIC',      prefixes: 4 },
+  legendary: { id: 'legendary', name: 'LEGENDARY', prefixes: 0 }
 };
 
 const UNIQUES = {
@@ -98,7 +99,7 @@ function makeUniqueItem(id, wave) {
         v: Math.max(1, Math.round(rollRange(impDef.tiers[impTier], 1) * depthStatMult(wave))) }
     : { mod: impDef.mod, tier: impTier,
         v: rollRange(impDef.tiers[impTier], ITEM_MODS[impDef.mod].step) };
-  return { slot: slot.id, rarity: 'unique', uniqueId: id, wave, name: u.name,
+  return { slot: slot.id, rarity: 'legendary', uniqueId: id, wave, name: u.name,
            implicit, prefixes: [], suffixes: [] };
 }
 
@@ -174,10 +175,12 @@ const SLOT_IMPLICIT = {
 const BOSS_HAUL = { min: 2, max: 3 };
 
 const HAUL_BANDS = [
-  { until: 10,       weights: [85, 15,   0], unique: 0    },
-  { until: 20,       weights: [ 0, 85,  15], unique: 0    },
+  { until: 20,       weights: [85, 15,   0], unique: 0    },
+  { until: 40,       weights: [ 0, 85,  15], unique: 0    },
+  { until: 60,       weights: [ 0, 60,  40], unique: 0.08 },
   { until: Infinity, weights: [ 0,  0, 100], unique: 0.12 }
 ];
+const HAUL_RARITIES = ['uncommon', 'rare', 'epic'];
 function haulBand(wave) { return HAUL_BANDS.find(b => wave <= b.until); }
 
 function uniquePool(wave) {
@@ -206,7 +209,7 @@ function pickWeighted(weights) {
 function makeItem(wave, rarityId) {
   const slotIds = Object.keys(SLOTS);
   const slot = SLOTS[slotIds[Math.floor(Math.random() * slotIds.length)]];
-  const rar = RARITIES[rarityId] || RARITIES.standard;
+  const rar = RARITIES[rarityId] || RARITIES.common;
 
   const deep = depthStatMult(wave);
   const impDef = SLOT_IMPLICIT[slot.id];
@@ -240,7 +243,6 @@ function makeItem(wave, rarityId) {
 function rollBossHaul(wave) {
   const d = haulBand(wave);
   const n = BOSS_HAUL.min + Math.floor(Math.random() * (BOSS_HAUL.max - BOSS_HAUL.min + 1));
-  const rarities = ['standard', 'refined', 'prototype'];
   const out = [];
   for (let i = 0; i < n; i++) {
     if (Math.random() < d.unique * (hazardFor(wave) ? 2 : 1)) {
@@ -253,7 +255,7 @@ function rollBossHaul(wave) {
         continue;
       }
     }
-    out.push(makeItem(wave, rarities[pickWeighted(d.weights)]));
+    out.push(makeItem(wave, HAUL_RARITIES[pickWeighted(d.weights)]));
   }
   return out;
 }
@@ -261,6 +263,30 @@ function rollBossHaul(wave) {
 function emptyGear() {
   const g = {};
   Object.keys(SLOTS).forEach(k => { g[k] = null; });
+  return g;
+}
+
+const PREFIX_FOR_STAT = { str: 'p_str', instinct: 'p_ins', speed: 'p_spd', vit: 'p_vit' };
+const ISSUE_STAT = { bio: 'str', psy: 'speed', sym: 'vit', hyd: 'instinct' };
+
+function issueGear(classId) {
+  const g = emptyGear();
+  const tier = TIER_MIN_WAVE.length - 1;
+  const home = ISSUE_STAT[classId];
+  for (const sid of Object.keys(SLOTS)) {
+    const slot = SLOTS[sid];
+    const impDef = SLOT_IMPLICIT[sid];
+    const stats = [slot.home, home || slot.home];
+    g[sid] = {
+      slot: sid, rarity: 'uncommon', wave: 1, name: slot.name,
+      implicit: { stats: impDef.stats.slice(), tier, v: impDef.tiers[tier][0] },
+      prefixes: stats.map(k => {
+        const def = ITEM_PREFIXES.find(a => a.id === PREFIX_FOR_STAT[k]);
+        return { id: def.id, stats: def.stats.slice(), tier, v: def.tiers[tier][0] };
+      }),
+      suffixes: []
+    };
+  }
   return g;
 }
 function gearList(p) {

@@ -2634,8 +2634,8 @@ body {
 
 
 
-.rar-standard { --rar: #aab6c9; --rar-rgb: 170, 182, 201; }
-.rar-refined  { --rar: #45dfe0; --rar-rgb: 69, 223, 224; }
+.rar-common   { --rar: #aab6c9; --rar-rgb: 170, 182, 201; }
+.rar-uncommon { --rar: #45dfe0; --rar-rgb: 69, 223, 224; }
 
 .pending {
   display: none;
@@ -2785,11 +2785,12 @@ body {
   filter: blur(1.2px) saturate(0.88) brightness(0.96);
 }
 
-.rar-prototype { --rar: #fbbf24; --rar-rgb: 251, 191, 36; }
-.rar-unique    { --rar: #ff2d6a; --rar-rgb: 255, 45, 106; }
+.rar-rare      { --rar: #fbbf24; --rar-rgb: 251, 191, 36; }
+.rar-epic      { --rar: #ff2d6a; --rar-rgb: 255, 45, 106; }
+.rar-legendary { --rar: #ff8a2b; --rar-rgb: 255, 138, 43; }
 
-.rar-unique .drop-affix:last-child,
-.rar-unique .suit-affix:last-child { color: var(--rar); }
+.rar-legendary .drop-affix:last-child,
+.rar-legendary .suit-affix:last-child { color: var(--rar); }
 
 .drop-deltas {
   display: flex;

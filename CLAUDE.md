@@ -78,11 +78,13 @@ make a run green.
   costs the replay from the last boss, never the character.
 - **Simple beats clever.** A mechanic he cannot hold in his head is worse than
   a shallower one he can.
-- **An item gives attributes and nothing else; UNCATALOGUED uniques bend
+- **An item gives attributes and nothing else; LEGENDARY uniques bend
   exactly one rule each,** declared in the `UNIQUES` table and read through
   `hasRule` or a skill patch. Rarity is how many attribute lines a piece
-  carries, and the rarity a boss can pay opens up by zone — white, then blue,
-  then yellow with a chance at uncatalogued. Modifications are straight
+  carries — COMMON 1, UNCOMMON 2, RARE 3, EPIC 4, LEGENDARY the rule-bender —
+  and the rarity a boss can pay opens up by zone: blue, then yellow, then pink
+  with a chance at orange. Every class starts in a full set of UNCOMMON gear
+  and COMMON never drops. Modifications are straight
   upgrades to one button and they stack — no costs, no downsides — and keep
   coming in the Depths, every tenth wave.
 - **Defence is reduction, not chance.** ARMOR (Strength) and EVASION (Speed) on

@@ -27,7 +27,7 @@ const out = await page.evaluate((RUNS) => {
         if (b < 0) continue;
         if (l.startsWith('RECOVERED')) {
           rec[b]++;
-          if (l.includes('UNCATALOGUED')) uniques++;
+          if (l.includes('LEGENDARY')) uniques++;
         }
         if (l.startsWith('FITTED')) { fit[b]++; last = wave; }
         if (l.startsWith('LEFT BEHIND')) left[b]++;
@@ -52,7 +52,7 @@ for (const [cls, r] of Object.entries(out)) {
       + (r.fit[i] / RUNS).toFixed(1).padStart(8)
       + (r.left[i] / RUNS).toFixed(1).padStart(7));
   });
-  console.log(' '.repeat(9) + `uncatalogued/life ${r.uniques} · median last fit at wave ${r.medLastFit}`);
+  console.log(' '.repeat(9) + `legendary/life ${r.uniques} · median last fit at wave ${r.medLastFit}`);
 }
 
 await browser.close();

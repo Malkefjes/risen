@@ -119,7 +119,7 @@ function freshPlayer(classId, kit) {
     skills: cls.skills.filter(s => s.basic || fitted.includes(s.id))
                       .map(s => Object.assign({cd:0}, s)),
 
-    gear: emptyGear(),
+    gear: issueGear(classId),
 
     mods: [],
 
@@ -432,7 +432,7 @@ function hazardOfferHtml() {
           + '</button>';
       }).join('')
     + '</div>'
-    + '<div class="hazard-foot">Any toll doubles UNCATALOGUED drops for this Depth.</div>';
+    + '<div class="hazard-foot">Any toll doubles LEGENDARY drops for this Depth.</div>';
 }
 
 function renderCampPanel() {
@@ -484,7 +484,7 @@ function talkToScientist() {
     + row('Damage dealt', formatNum(Math.floor(state.damageDealt)))
     + row('Damage taken', formatNum(Math.floor(state.damageTaken || 0)))
     + row('Peak ' + (STRAIN_LABEL[p.class] || 'strain'), formatNum(state.peakStrain || 0))
-    + row('Uncatalogued found', (state.uniqueSeen || []).length)
+    + row('Legendaries found', (state.uniqueSeen || []).length)
     + '</div>'
     + '<button class="ui-btn is-quiet camp-log-close" type="button" onclick="talkToScientist()">CLOSE</button>';
 }
