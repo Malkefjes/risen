@@ -99,6 +99,9 @@ function skillStatusOpts(skill) {
   if (skill.tickCleanse != null) opts.cleanse = skill.tickCleanse;
   if (skill.tickBonus != null) opts.tickBonus = skill.tickBonus;
   if (skill.touchPoison != null) opts.touchPoison = skill.touchPoison;
+  if (skill.hitHealFrac != null) opts.hitHealFrac = skill.hitHealFrac;
+  if (skill.regenStrike != null) opts.regenStrike = skill.regenStrike;
+  if (skill.regenPerPoison != null) opts.regenPerPoison = skill.regenPerPoison;
   return opts;
 }
 

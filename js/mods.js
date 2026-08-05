@@ -2,12 +2,10 @@ const MODIFICATIONS = {
 
   bio: {
     inject: [
-      { id: 'bio_inject_dose',  name: 'DOSAGE',      text: '+2 POISON.',
-        add: { poison: 2 } },
-      { id: 'bio_inject_edge',  name: 'HONED EDGE',  text: '+25% damage.',
-        mul: { power: 1.25 } },
       { id: 'bio_inject_vir',   name: 'VIRULENCE',   text: '+50% of what the rot is ticking for added to the blow.',
         add: { poisonScale: 0.50 } },
+      { id: 'bio_inject_cat',   name: 'CATALYST',    text: 'each blow makes the rot on the target tick immediately.',
+        add: { procTicks: 1 } },
       { id: 'bio_inject_leech', name: 'TRANSFUSION', text: 'heal 10% of the damage dealt.',
         add: { lifesteal: 0.10 } },
       { id: 'bio_inject_film',  name: 'MEMBRANE',    text: 'each blow leaves a film: −8% damage taken for 1 turn, to a maximum of 40%.',
@@ -16,40 +14,36 @@ const MODIFICATIONS = {
         add: { splash: 0.15 }, max: { splash: 0.75 } }
     ],
     distribute: [
-      { id: 'bio_distribute_sat',   name: 'SATURATION',  text: '+3 POISON.',
-        add: { poison: 3 } },
-      { id: 'bio_distribute_onset', name: 'RAPID ONSET', text: 'cooldown −1 turn, to a minimum of 1.',
-        add: { cdTurns: -1 }, min: { cdTurns: 1 } },
-      { id: 'bio_distribute_meta',  name: 'METASTASIS',  text: 'when a host dies, 50% of its rot jumps to a living one, up to all of it.',
+      { id: 'bio_distribute_meta', name: 'METASTASIS', text: 'when a host dies, 50% of its rot jumps to a living one, up to all of it.',
         add: { carry: 0.50 }, max: { carry: 1.0 } },
-      { id: 'bio_distribute_cont',  name: 'CONTAGION',   text: '+2% damage per POISON on the target.',
+      { id: 'bio_distribute_cont', name: 'CONTAGION',  text: '+2% damage per POISON on the target.',
         add: { perPoisonPower: 0.02 } },
-      { id: 'bio_distribute_fis',   name: 'FISSION',     text: '+25% damage.',
-        mul: { power: 1.25 } }
+      { id: 'bio_distribute_out',  name: 'OUTBREAK',   text: 'every kill hurries it: cooldown −2 turns.',
+        add: { killCd: 2 } },
+      { id: 'bio_distribute_tap',  name: 'TAPROOT',    text: 'heal 8% of the damage dealt.',
+        add: { lifesteal: 0.08 } },
+      { id: 'bio_distribute_wit',  name: 'WITHER',     text: 'every enemy struck is WEAK for +1 turn.',
+        add: { weakOnHit: 1 } }
     ],
     biofilm: [
-      { id: 'bio_biofilm_plate', name: 'DENSE PLATING',  text: '+8% damage blunted, to a maximum of 70%.',
-        add: { power: 0.08 }, max: { power: 0.70 } },
-      { id: 'bio_biofilm_set',   name: 'SET CARAPACE',   text: '+1 turn, to a maximum of 5.',
-        add: { duration: 1 }, max: { duration: 5 } },
       { id: 'bio_biofilm_fever', name: 'FEVER',          text: 'while it holds, POISON ticks one extra time per turn.',
         add: { tickBonus: 1 } },
       { id: 'bio_biofilm_shell', name: 'INFECTED SHELL', text: 'while it holds, attackers take +4 POISON.',
         add: { touchPoison: 4 } },
-      { id: 'bio_biofilm_quick', name: 'QUICK CULTURE',  text: 'cooldown −1 turn, to a minimum of 2.',
-        add: { cdTurns: -1 }, min: { cdTurns: 2 } }
+      { id: 'bio_biofilm_cloud', name: 'SPORE CLOUD',    text: 'casting it seeds +3 POISON in every enemy.',
+        add: { castPoison: 3 } },
+      { id: 'bio_biofilm_abs',   name: 'ABSORPTION',     text: 'while it holds, every hit taken heals 5% of the frame, to a maximum of 15%.',
+        add: { hitHealFrac: 0.05 }, max: { hitHealFrac: 0.15 } }
     ],
     regenerate: [
-      { id: 'bio_regenerate_conc',   name: 'CONCENTRATE', text: '+6% regeneration per turn, to a maximum of 60%.',
-        add: { power: 0.06 }, max: { power: 0.60 } },
-      { id: 'bio_regenerate_scrub',  name: 'SCRUBBERS',   text: '+2 POISON shed each turn.',
-        add: { tickCleanse: 2 } },
       { id: 'bio_regenerate_supp',   name: 'SUPPRESSION', text: 'on cast, every enemy is WEAK for +1 turn.',
         add: { weakTurns: 1 } },
       { id: 'bio_regenerate_triage', name: 'TRIAGE',      text: 'on cast, instantly heal 8%, to a maximum of 40%.',
         add: { burstHeal: 0.08 }, max: { burstHeal: 0.40 } },
-      { id: 'bio_regenerate_long',   name: 'LONG CULTURE', text: '+1 turn, to a maximum of 8.',
-        add: { duration: 1 }, max: { duration: 8 } }
+      { id: 'bio_regenerate_sep',    name: 'SEPSIS',      text: 'the current enemy takes whatever you regenerate as damage.',
+        add: { regenStrike: 1 } },
+      { id: 'bio_regenerate_blood',  name: 'CULTURED BLOOD', text: 'regeneration grows +2% per POISON on the current enemy.',
+        add: { regenPerPoison: 0.02 } }
     ]
   },
 

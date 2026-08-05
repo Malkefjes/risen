@@ -1,4 +1,4 @@
-const BUILD = '2026-08-05c';
+const BUILD = '2026-08-05d';
 
 const BALANCE = {
   player: {
@@ -130,7 +130,7 @@ const BALANCE = {
 
   turnPace: 1,
 
-  saveKey: 'risen_run_v16',
+  saveKey: 'risen_run_v17',
 
   oldSaveKeys: ['risen_run_v3', 'risen_run_v3_s1', 'risen_run_v3_s2',
                 'risen_run_v4', 'risen_run_v4_s1', 'risen_run_v4_s2',
@@ -148,7 +148,9 @@ const BALANCE = {
                 'risen_run_v14', 'risen_run_v14_s0', 'risen_run_v14_s1', 'risen_run_v14_s2',
                 'risen_run_v14_s3', 'risen_run_v14_s4',
                 'risen_run_v15', 'risen_run_v15_s0', 'risen_run_v15_s1', 'risen_run_v15_s2',
-                'risen_run_v15_s3', 'risen_run_v15_s4'],
+                'risen_run_v15_s3', 'risen_run_v15_s4',
+                'risen_run_v16', 'risen_run_v16_s0', 'risen_run_v16_s1', 'risen_run_v16_s2',
+                'risen_run_v16_s3', 'risen_run_v16_s4'],
   saveSlots: 4
 };
 
@@ -386,14 +388,28 @@ const STATUSES = {
 
   chitin: {
     id:'chitin', name:'BIOFILM', tone:'buff', kind:'buff',
-    stacking:'longest', defaults:{ duration:3, power:0.25, tickBonus:0, touchPoison:0 },
+    stacking:'longest', defaults:{ duration:3, power:0.25, tickBonus:0, touchPoison:0, hitHealFrac:0 },
     label: st => 'CHITIN ' + Math.ceil(st.duration) + 't',
     incomingMult: (u, st) => 1 - (st.power || 0),
     onHitTaken(unit, st, ctx) {
       const e = ctx.attacker;
-      if (!(st.touchPoison > 0) || !e || e.hp <= 0 || e.isPlayer) return;
-      applyStatus(e, 'poison', { stacks: st.touchPoison, perStack: unit.poisonPerStack });
-      floatText(e, '+' + st.touchPoison + ' POISON', 'tally');
+      if (st.touchPoison > 0 && e && e.hp > 0 && !e.isPlayer) {
+        applyStatus(e, 'poison', { stacks: st.touchPoison, perStack: unit.poisonPerStack });
+        floatText(e, '+' + st.touchPoison + ' POISON', 'tally');
+      }
+      if (st.hitHealFrac > 0 && unit.hp > 0 && ctx.damage > 0) {
+        const heal = Math.max(1, Math.floor(unit.maxHp * st.hitHealFrac));
+        const before = unit.hp;
+        unit.hp = Math.min(unit.maxHp, unit.hp + heal);
+        if (unit.hp > before) {
+          floatText(unit, unit.hp - before, 'heal');
+          logHeal('ABSORPTION', unit, unit.hp - before, [
+            Math.round(st.hitHealFrac * 100) + '% of frame per hit taken',
+            logNum(unit.hp) + '/' + logNum(unit.maxHp)
+          ]);
+          updateUnitCard(unit);
+        }
+      }
     }
   },
 
@@ -601,17 +617,40 @@ const STATUSES = {
       if (unit.hp <= 0) return false;
 
       cleansePoison(unit, st.cleanse || 0, 'REGEN');
-      if (unit.hp >= unit.maxHp) return false;
 
-      const heal = Math.max(1, Math.floor(healAnchorFor(unit) * (st.power||0)));
-      const before = unit.hp;
-      unit.hp = Math.min(unit.maxHp, unit.hp + heal);
-      floatText(unit, heal, 'heal');
-      logHeal('REGEN', unit, unit.hp - before, [
-        Math.round((st.power||0)*100) + '% of ' + logNum(healAnchorFor(unit)),
-        logNum(unit.hp) + '/' + logNum(unit.maxHp)
-      ]);
-      updateUnitCard(unit);
+      const host = (unit.isPlayer && state.enemy && state.enemy.hp > 0 && !state.enemy._defeated)
+        ? state.enemy : null;
+      let power = st.power || 0;
+      const rot = (st.regenPerPoison && host) ? statusStacks(host, 'poison') : 0;
+      if (rot > 0) power += st.regenPerPoison * rot;
+      const heal = Math.max(1, Math.floor(healAnchorFor(unit) * power));
+
+      if (unit.hp < unit.maxHp) {
+        const before = unit.hp;
+        unit.hp = Math.min(unit.maxHp, unit.hp + heal);
+        floatText(unit, heal, 'heal');
+        logHeal('REGEN', unit, unit.hp - before, [
+          Math.round(power*100) + '% of ' + logNum(healAnchorFor(unit)),
+          rot > 0 ? 'the rot ×' + rot + ' feeds it' : null,
+          logNum(unit.hp) + '/' + logNum(unit.maxHp)
+        ]);
+        updateUnitCard(unit);
+      }
+
+      if (st.regenStrike && host) {
+        const dmg = Math.max(1, Math.floor(heal * st.regenStrike));
+        const before = host.hp;
+        host.hp = Math.max(0, host.hp - dmg);
+        creditDamage('Sepsis', dmg);
+        if (host.hp <= 0) state._lastOverkill = Math.max(0, dmg - before);
+        floatText(host, dmg, 'damage');
+        logDamage('SEPSIS', host, dmg, [
+          'mirrors ' + logNum(heal) + ' regenerated',
+          logNum(host.hp) + '/' + logNum(host.maxHp) + ' left'
+        ]);
+        updateUnitCard(host);
+        if (host.hp <= 0) onEnemyDefeated(host);
+      }
       return false;
     }
   }

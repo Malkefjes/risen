@@ -760,6 +760,16 @@ function applyPlayerDamage(p, e, skill, opts) {
 
     applyStatus(e, 'poison', { stacks: poisonStacks(p, skill), perStack: p.poisonPerStack });
 
+  if (skill.procTicks && e.hp > 0) {
+    const pst = getStatus(e, 'poison');
+    if (pst) for (let i = 0; i < skill.procTicks; i++) {
+      if (e.hp <= 0) break;
+      STATUSES.poison.onTurnStart(e, pst);
+    }
+  }
+  if (skill.weakOnHit && e.hp > 0)
+    applyStatus(e, 'weak', { power: 0.25, duration: skill.weakOnHit });
+
   if (skill.bleed && p.class === 'base' && e.hp > 0)
 
     applyStatus(e, 'bleed', { stacks: bleedStacks(p), perStack: bleedDepth(p) });
@@ -897,6 +907,10 @@ function fireSkill(caster, skill, target) {
     if (skill.weakTurns)
       for (const foe of livingEnemies())
         if (foe.hp > 0) applyStatus(foe, 'weak', { power: 0.25, duration: skill.weakTurns });
+    if (skill.castPoison && caster.isPlayer)
+      for (const foe of livingEnemies())
+        if (foe.hp > 0) applyStatus(foe, 'poison',
+          { stacks: poisonStacks(caster, { poison: skill.castPoison }), perStack: caster.poisonPerStack });
     if (skill.burstHeal) {
       const amount = Math.max(1, Math.floor(healAnchorFor(caster) * skill.burstHeal));
       const before = caster.hp;
@@ -993,6 +1007,13 @@ function onEnemyDefeated(e) {
   ]);
 
   devour(p, statusStacks(e, 'dread'), 'drunk from the dying');
+
+  if (p) for (const s of p.skills) {
+    if (!(s.killCd > 0) || !(s.cd > 0)) continue;
+    s.cd = Math.max(0, s.cd - s.killCd);
+    logEvent(s.name, null, 'cooldown −' + s.killCd + 't', ['OUTBREAK, the kill hurries it']);
+    renderSkills();
+  }
 
   if (p && p.hp > 0 && hasRule(p, 'hasteKill'))
     applyStatus(p, 'haste', { duration: 2, power: 0.30 });
