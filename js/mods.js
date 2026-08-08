@@ -8,7 +8,7 @@ const MODIFICATIONS = {
         add: { procTicks: 1 } },
       { id: 'bio_inject_leech', name: 'TRANSFUSION', text: 'heal 10% of the damage dealt.',
         add: { lifesteal: 0.10 } },
-      { id: 'bio_inject_film',  name: 'MEMBRANE',    text: 'each blow leaves a film: −8% damage taken for 1 turn, to a maximum of 40%.',
+      { id: 'bio_inject_film',  name: 'MEMBRANE',    text: 'each blow leaves a film: −8% damage taken for 1 second, to a maximum of 40%.',
         add: { guardFrac: 0.08 }, max: { guardFrac: 0.40 } },
       { id: 'bio_inject_spore', name: 'SPORE BURST', text: '15% of the damage splashes onto every other enemy, to a maximum of 75%.',
         add: { splash: 0.15 }, max: { splash: 0.75 } }
@@ -18,15 +18,15 @@ const MODIFICATIONS = {
         add: { carry: 0.50 }, max: { carry: 1.0 } },
       { id: 'bio_distribute_cont', name: 'CONTAGION',  text: '+2% damage per POISON on the target.',
         add: { perPoisonPower: 0.02 } },
-      { id: 'bio_distribute_out',  name: 'OUTBREAK',   text: 'every kill hurries it: cooldown −2 turns.',
+      { id: 'bio_distribute_out',  name: 'OUTBREAK',   text: 'every kill hurries it: cooldown −2 seconds.',
         add: { killCd: 2 } },
       { id: 'bio_distribute_tap',  name: 'TAPROOT',    text: 'heal 8% of the damage dealt.',
         add: { lifesteal: 0.08 } },
-      { id: 'bio_distribute_wit',  name: 'WITHER',     text: 'every enemy struck is WEAK for +1 turn.',
+      { id: 'bio_distribute_wit',  name: 'WITHER',     text: 'every enemy struck is WEAK for +1 second.',
         add: { weakOnHit: 1 } }
     ],
     biofilm: [
-      { id: 'bio_biofilm_fever', name: 'FEVER',          text: 'while it holds, POISON ticks one extra time per turn.',
+      { id: 'bio_biofilm_fever', name: 'FEVER',          text: 'while it holds, POISON ticks one extra time per second.',
         add: { tickBonus: 1 } },
       { id: 'bio_biofilm_shell', name: 'INFECTED SHELL', text: 'while it holds, attackers take +4 POISON.',
         add: { touchPoison: 4 } },
@@ -36,7 +36,7 @@ const MODIFICATIONS = {
         add: { hitHealFrac: 0.05 }, max: { hitHealFrac: 0.15 } }
     ],
     regenerate: [
-      { id: 'bio_regenerate_supp',   name: 'SUPPRESSION', text: 'on cast, every enemy is WEAK for +1 turn.',
+      { id: 'bio_regenerate_supp',   name: 'SUPPRESSION', text: 'on cast, every enemy is WEAK for +1 second.',
         add: { weakTurns: 1 } },
       { id: 'bio_regenerate_triage', name: 'TRIAGE',      text: 'on cast, instantly heal 8%, to a maximum of 40%.',
         add: { burstHeal: 0.08 }, max: { burstHeal: 0.40 } },
@@ -57,11 +57,11 @@ const MODIFICATIONS = {
     terrify: [
       { id: 'psy_terrify_a', name: 'PANIC',        text: '+2 DREAD.',
         add: { dread: 2 } },
-      { id: 'psy_terrify_b', name: 'SUSTAINED',    text: 'cooldown −1 turn, to a minimum of 2.',
-        add: { cdTurns: -1 }, min: { cdTurns: 2 } }
+      { id: 'psy_terrify_b', name: 'SUSTAINED',    text: 'cooldown −1 second, to a minimum of 2.',
+        add: { cdSecs: -1 }, min: { cdSecs: 2 } }
     ],
     traumatize: [
-      { id: 'psy_traumatize_a', name: 'DEEP TRAUMA',  text: '+1 turn of stun, to a maximum of 3.',
+      { id: 'psy_traumatize_a', name: 'DEEP TRAUMA',  text: '+1 second of stun, to a maximum of 3.',
         add: { stun: 1 }, max: { stun: 3 } },
       { id: 'psy_traumatize_b', name: 'LOW THRESHOLD', text: '−1 DREAD required, to a minimum of 1.',
         add: { dreadNeed: -1 }, min: { dreadNeed: 1 } }
@@ -69,8 +69,8 @@ const MODIFICATIONS = {
     kill: [
       { id: 'psy_kill_a', name: 'APPETITE',     text: '+0.15 damage per DREAD consumed.',
         add: { perDreadPower: 0.15 } },
-      { id: 'psy_kill_b', name: 'QUICK FEED',   text: 'cooldown −1 turn, to a minimum of 3.',
-        add: { cdTurns: -1 }, min: { cdTurns: 3 } }
+      { id: 'psy_kill_b', name: 'QUICK FEED',   text: 'cooldown −1 second, to a minimum of 3.',
+        add: { cdSecs: -1 }, min: { cdSecs: 3 } }
     ]
   },
 
@@ -90,7 +90,7 @@ const MODIFICATIONS = {
     dampen: [
       { id: 'hyd_dampen_a', name: 'HEAVY GAUGE', text: '+8% reduction, to a maximum of 75%.',
         add: { power: 0.08 }, max: { power: 0.75 } },
-      { id: 'hyd_dampen_b', name: 'LONG SEAL',   text: '+1 turn.',
+      { id: 'hyd_dampen_b', name: 'LONG SEAL',   text: '+1 second.',
         add: { duration: 1 } }
     ],
     rupture: [
@@ -142,7 +142,7 @@ const MODIFICATIONS = {
         add: { resolveHealBonus: 0.01 }, max: { resolveHealBonus: 0.08 } }
     ],
     counterpunch: [
-      { id: 'base_counterpunch_a', name: 'IRON GUARD',  text: '+1 turn of brace, to a maximum of 4.',
+      { id: 'base_counterpunch_a', name: 'IRON GUARD',  text: '+1 second of brace, to a maximum of 4.',
         add: { duration: 1 }, max: { duration: 4 } },
       { id: 'base_counterpunch_b', name: 'HEAVY RETURN', text: '+0.4 counter damage.',
         add: { counterPower: 0.4 } }
@@ -150,8 +150,8 @@ const MODIFICATIONS = {
     laststand: [
       { id: 'base_laststand_a', name: 'BLOOD DEBT',  text: '+0.1 damage per RESOLVE spent.',
         add: { perResolvePower: 0.1 } },
-      { id: 'base_laststand_b', name: 'SECOND WIND', text: 'cooldown −1 turn, to a minimum of 3.',
-        add: { cdTurns: -1 }, min: { cdTurns: 3 } }
+      { id: 'base_laststand_b', name: 'SECOND WIND', text: 'cooldown −1 second, to a minimum of 3.',
+        add: { cdSecs: -1 }, min: { cdSecs: 3 } }
     ]
   }
 };

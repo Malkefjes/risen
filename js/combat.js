@@ -1,17 +1,20 @@
+const SIM_DT = 0.1;
+
 function startCombatLoop() {
   stopCombatLoop();
   state.combatActive = true;
-  updateTurnInfo();
-  if (state.awaitingInput) { renderSkills(); scheduleAutoAct(); return; }
-  if (state.pendingEnemyAct) { scheduleTurn(enemyAct, turnDelay(200)); return; }
-  if (state.awaitingSpawn)   { scheduleTurn(doSpawn, turnDelay(160)); return; }
-  scheduleTurn(nextTurn, 30);
+  updateTurnInfo(); renderSkills();
+  if (HEADLESS.on) return;
+  const batch = SETTINGS.fastTurns ? 400 : 1;
+  const ms = SETTINGS.fastTurns ? 0 : SIM_DT * 1000;
+  state.tickTimer = setInterval(() => {
+    for (let i = 0; i < batch && state.combatActive && !state.atCamp; i++) combatTick(SIM_DT);
+  }, ms);
 }
 function stopCombatLoop() {
   state.combatActive = false;
-  _pendingStep = null;
   clearRevealTimers();
-  if (state.turnTimer) { clearTimeout(state.turnTimer); state.turnTimer = null; }
+  if (state.tickTimer) { clearInterval(state.tickTimer); state.tickTimer = null; }
 }
 
 function livingEnemies() {
@@ -36,292 +39,202 @@ function retarget() {
   return next;
 }
 
-const turnDelay = ms => Math.round(ms * BALANCE.turnPace);
-
-function scheduleAutoAct() {
-  if (HEADLESS.on) return;
-  scheduleTurn(() => {
-    if (state.combatActive && state.awaitingInput && state.player)
-      playerAct(BOTS.smart.policy(state.player));
-  }, turnDelay(350));
-}
-
-function scheduleTurn(fn, ms) {
-
-  if (HEADLESS.on) { _pendingStep = fn; return; }
-  if (SETTINGS.fastTurns) ms = 0;
-  if (state.turnTimer) clearTimeout(state.turnTimer);
-  state.turnTimer = setTimeout(() => { state.turnTimer = null; fn(); }, ms);
-}
-
 function updateTurnInfo() {
   if (HEADLESS.on) return;
   const ti = document.getElementById('turn-info');
   if (!ti) return;
-  const plain = txt => { ti.textContent = txt; };
-  if (!state.combatActive) return plain('STANDING BY');
-  if (state.awaitingSpawn) return plain('INCOMING');
-
-  const packSize = (state.enemies || []).length;
-  const unitWord = u => {
-    if (!u || u.isPlayer) return 'YOU';
-    const word = u.isBoss ? 'BOSS' : 'ENEMY';
-    if (packSize < 2) return word;
-    return word + '·' + ((state.enemies || []).indexOf(u) + 1);
-  };
-  const add = (text, cls) => {
-    const s = document.createElement('span');
-    if (cls) s.className = cls;
-    s.textContent = text;
-    ti.appendChild(s);
-    return s;
-  };
-  const side = (text, who) => add(text, 'turn-side ' + (who === 'you' ? 'you' : 'enemy'));
-
-  ti.textContent = '';
-
-  if (state.active && !state.active.isPlayer) {
-    side(unitWord(state.active) + ' TURN', 'foe').classList.add('turn-now');
-  } else {
-    side('RIG TURN', 'you').classList.add('turn-now');
-  }
-
-  const fc = forecastTurns(3);
-  if (!fc.length) return;
-  add('·', 'turn-sep');
-  add('UPCOMING:', 'turn-upcoming');
-  fc.forEach((u, i) => {
-    if (i) add('→', 'turn-arrow');
-    side(unitWord(u), u.isPlayer ? 'you' : 'foe');
-  });
+  if (!state.combatActive) { ti.textContent = 'STANDING BY'; return; }
+  if (state.awaitingSpawn) { ti.textContent = 'INCOMING'; return; }
+  const n = livingEnemies().length;
+  ti.textContent = 'CONTACT' + (n > 1 ? ' · PACK ×' + n : '');
 }
 
-function forecastTurns(n) {
-  const p = state.player;
+function skillPeriod(s) { return s.basic ? 1 : (s.cdSecs || 1); }
+
+function skillWants(p, s) {
+  if (s.target !== 'self' && !livingEnemies().length) return false;
+  if (s.type === 'heal' && p.hp >= p.maxHp) return false;
+  return true;
+}
+
+function focusTarget() {
   const foes = livingEnemies();
-  if (!p || p.hp <= 0 || !foes.length) return [];
-  const rows = [p].concat(foes).map(u => ({ u, m: u.meter || 0, s: effectiveAps(u) }));
-
-  const out = [];
-  for (let i = 0; i < n; i++) {
-    let best = null, bestT = Infinity;
-    for (const r of rows) {
-      const t = (1 - r.m) / r.s;
-      if (t < bestT - 1e-9) { bestT = t; best = r; }
-      else if (Math.abs(t - bestT) < 1e-9 && r.u.isPlayer) best = r;
-    }
-    for (const r of rows) r.m += bestT * r.s;
-    best.m -= 1;
-    out.push(best.u);
-  }
-  return out;
+  if (!foes.length) { setTarget(null); return null; }
+  const focus = foes.reduce((a, b) => (b.hp < a.hp ? b : a));
+  setTarget(focus);
+  return focus;
 }
 
-function advanceToNextActor() {
-  const units = [state.player].concat(livingEnemies()).filter(u => u && u.hp > 0 && !u._defeated);
-  if (!units.length) return null;
-  let best = null, bestT = Infinity;
-  for (const u of units) {
-    const t = (1 - (u.meter || 0)) / effectiveAps(u);
-    if (t < bestT - 1e-9) { bestT = t; best = u; }
-    else if (Math.abs(t - bestT) < 1e-9 && u.isPlayer) best = u;
-  }
-  for (const u of units) u.meter = (u.meter || 0) + bestT * effectiveAps(u);
-  best.meter -= 1;
-  return best;
-}
-
-function nextTurn() {
-  if (!state.combatActive) return;
+function combatTick(dt) {
+  if (!state.combatActive || state.atCamp) return;
   const p = state.player;
-  if (!p || p.hp <= 0) { playerDown(); return; }
-  if (state.awaitingSpawn) { scheduleTurn(doSpawn, turnDelay(BALANCE.spawnDelay * 1000)); return; }
-  if (!livingEnemies().length) return;
+  if (!p) return;
+  if (p.hp <= 0) { playerDown(); return; }
+  const d0 = state.deaths || 0;
 
-  const actor = advanceToNextActor();
-  if (!actor) return;
-  state.active = actor;
-
-  state.turnNo++;
-  logTurn(actor);
-
-  if (tickTurnStart(actor)) return;
-
-  const stun = getStatus(actor, 'stun');
-  if (stun) {
-    stun.duration--;
-
-    logEvent('STUNNED', actor, 'turn lost',
-             [stun.duration > 0 ? Math.ceil(stun.duration) + 't left' : 'last turn']);
-    if (stun.duration <= 0) removeStatus(actor, 'stun', 'duration spent');
-    updateUnitCard(actor); updateTurnInfo(); renderSkills();
-    scheduleTurn(nextTurn, turnDelay(260));
+  if (state.awaitingSpawn) {
+    state.spawnWait = (state.spawnWait != null ? state.spawnWait : BALANCE.spawnDelay) - dt;
+    if (state.spawnWait > 0) return;
+    state.spawnWait = null;
+    doSpawn();
     return;
   }
+  if (!livingEnemies().length) return;
 
-  if (actor.isPlayer) {
-    state.awaitingInput = true;
-    state.pendingEnemyAct = false;
-    retarget();
-    setCharPose(actor, 'ready');
-    scheduleAutoAct();
-  } else {
-    state.awaitingInput = false;
-    state.pendingEnemyAct = true;
-    setCharPose(state.player, 'ready');
-    scheduleTurn(enemyAct, turnDelay(150));
+  state.tickAcc = (state.tickAcc || 0) + dt;
+  while (state.tickAcc >= 1 - 1e-9) {
+    state.tickAcc -= 1;
+    secondTick();
+    if (!state.combatActive || state.atCamp || state.awaitingSpawn) return;
+    if ((state.deaths || 0) > d0) return;
+    if (!livingEnemies().length) return;
   }
-  updateTurnInfo(); renderSkills();
+
+  const rate = effectiveAps(p);
+  for (const s of p.skills) {
+    s.charge = (s.charge || 0) + dt * rate;
+    const period = skillPeriod(s);
+    if (s.charge < period) continue;
+    if (!skillWants(p, s)) { s.charge = period; continue; }
+    s.charge -= period;
+    fireReadySkill(p, s);
+    if (!state.combatActive || state.atCamp) return;
+    if ((state.deaths || 0) > d0 || p.hp <= 0) return;
+    if (state.awaitingSpawn || !livingEnemies().length) break;
+  }
+
+  if (state.awaitingSpawn || !livingEnemies().length) { renderSkills(); updateTurnInfo(); return; }
+
+  for (const e of livingEnemies().slice()) {
+    if (hasStatus(e, 'stun')) continue;
+    e.swingCharge = (e.swingCharge || 0) + dt * effectiveAps(e);
+    while (e.swingCharge >= 1) {
+      e.swingCharge -= 1;
+      enemyTurn(e);
+      if (!state.combatActive || (state.deaths || 0) > d0) return;
+      if (state.awaitingSpawn) { renderSkills(); updateTurnInfo(); return; }
+      if (e.hp <= 0 || e._defeated) break;
+    }
+  }
+  renderSkills();
 }
 
-function tickTurnStart(unit) {
-  if (tickStatuses(unit)) {
-    if (!unit.isPlayer) {
-      onEnemyDefeated(unit);
-      if (livingEnemies().length) scheduleTurn(nextTurn, turnDelay(150));
-      return true;
-    }
-    playerDown();
-    return true;
+function secondTick() {
+  const p = state.player;
+  state.fightTurns++;
+  state.runTurns = (state.runTurns || 0) + 1;
+
+  const sn = strainNumberNow(p);
+  if (sn > (state.peakStrain || 0)) state.peakStrain = sn;
+
+  if (tickStatuses(p)) { playerDown(); return; }
+  if (tickStatuses(p, 'inflicted')) { playerDown(); return; }
+  for (const e of livingEnemies().slice()) {
+    if (tickStatuses(e)) { onEnemyDefeated(e); continue; }
+    if (tickStatuses(e, 'inflicted')) onEnemyDefeated(e);
+  }
+  if (p.hp <= 0) { playerDown(); return; }
+
+  for (const e of livingEnemies()) {
+    const st = getStatus(e, 'stun');
+    if (!st) continue;
+    st.duration--;
+    if (st.duration <= 0) removeStatus(e, 'stun', 'duration spent');
+    updateUnitCard(e);
   }
 
-  if (unit.isPlayer) {
-    for (const e of livingEnemies().slice())
-      if (tickStatuses(e, 'inflicted')) onEnemyDefeated(e);
-    if (unit.hp <= 0) { playerDown(); return true; }
-    if (!livingEnemies().length) return true;
-  } else if (unit === livingEnemies()[0]) {
-    const p = state.player;
-    if (p && p.hp > 0 && tickStatuses(p, 'inflicted')) {
-      playerDown();
-      return true;
-    }
+  if (p.regen > 0 && p.hp < p.maxHp) {
+    const heal = Math.max(1, Math.floor(healAnchorFor(p) * p.regen));
+    const before = p.hp;
+    p.hp = Math.min(p.maxHp, p.hp + heal);
+    floatText(p, p.hp - before, 'heal');
+    logHeal('RECOVERY', p, p.hp - before,
+            [Math.round(p.regen * 100) + '% of ' + logNum(healAnchorFor(p)) + ' per second']);
   }
 
-  if (!unit.isPlayer && unit.verb === 'enrage') {
-    unit._enrageTicks = (unit._enrageTicks || 0) + 1;
-    const V = ENEMY_VERBS.enrage;
-    if (unit._enrageTicks % V.every === 0) {
-      applyStatus(unit, 'enrage', { stacks: 1, power: V.perStack });
-      floatText(unit, 'ENRAGED', 'note');
-    }
-  }
-
-  if (unit.isPlayer) {
-    unit.skills.forEach(s => { if (!s.basic && s.cd > 0) s.cd--; });
-    state.fightTurns++;
-    state.runTurns = (state.runTurns || 0) + 1;
-
-    const sn = strainNumberNow(unit);
-    if (sn > (state.peakStrain || 0)) state.peakStrain = sn;
-
-    if (unit.regen > 0 && unit.hp < unit.maxHp) {
-      const heal = Math.max(1, Math.floor(healAnchorFor(unit) * unit.regen));
-      const before = unit.hp;
-      unit.hp = Math.min(unit.maxHp, unit.hp + heal);
-      floatText(unit, unit.hp - before, 'heal');
-      logHeal('RECOVERY', unit, unit.hp - before,
-              [Math.round(unit.regen * 100) + '% of ' + logNum(healAnchorFor(unit)) + ' per turn']);
-    }
-
-    if (unit.class === 'psy' && unit.hp < unit.maxHp) {
-      const stacks = livingEnemies().reduce((n, e) => n + statusStacks(e, 'dread'), 0);
-      if (stacks > 0) {
-        const heal = Math.max(1, Math.floor(healAnchorFor(unit) * (P().dreadSiphonFrac || 0) * stacks));
-        const before = unit.hp;
-        unit.hp = Math.min(unit.maxHp, unit.hp + heal);
-        floatText(unit, unit.hp - before, 'heal');
-        logHeal('SIPHON', unit, unit.hp - before, [
-          'DREAD ×' + stacks,
-          logNum(unit.hp) + '/' + logNum(unit.maxHp)
-        ]);
-      }
-    }
-
-    if (unit.class === 'sym' && unit.hp < unit.maxHp && unit.thorns > 0) {
-      const frac = Math.min(P().thornsSiphonCap || 0, unit.thorns * (P().thornsSiphonFrac || 0));
-      const heal = Math.max(1, Math.floor(healAnchorFor(unit) * frac));
-      const before = unit.hp;
-      unit.hp = Math.min(unit.maxHp, unit.hp + heal);
-      floatText(unit, unit.hp - before, 'heal');
-      logHeal('GRAFT', unit, unit.hp - before, [
-        'THORNS ×' + formatNum(unit.thorns),
-        logNum(unit.hp) + '/' + logNum(unit.maxHp)
+  if (p.class === 'psy' && p.hp < p.maxHp) {
+    const stacks = livingEnemies().reduce((n, e) => n + statusStacks(e, 'dread'), 0);
+    if (stacks > 0) {
+      const heal = Math.max(1, Math.floor(healAnchorFor(p) * (P().dreadSiphonFrac || 0) * stacks));
+      const before = p.hp;
+      p.hp = Math.min(p.maxHp, p.hp + heal);
+      floatText(p, p.hp - before, 'heal');
+      logHeal('SIPHON', p, p.hp - before, [
+        'DREAD ×' + stacks,
+        logNum(p.hp) + '/' + logNum(p.maxHp)
       ]);
     }
+  }
 
-    if (unit.class === 'hyd' && unit.hp < unit.maxHp) {
-      const held = statusStacks(unit, 'pressure');
-      if (held > 0) {
-        const frac = Math.min(P().pressureSiphonCap || 0, held * (P().pressureSiphonFrac || 0));
-        const heal = Math.max(1, Math.floor(healAnchorFor(unit) * frac));
-        const before = unit.hp;
-        unit.hp = Math.min(unit.maxHp, unit.hp + heal);
-        floatText(unit, unit.hp - before, 'heal');
-        logHeal('BLEED-OFF', unit, unit.hp - before, [
-          'PRESSURE ×' + held,
-          logNum(unit.hp) + '/' + logNum(unit.maxHp)
-        ]);
-      }
+  if (p.class === 'sym' && p.hp < p.maxHp && p.thorns > 0) {
+    const frac = Math.min(P().thornsSiphonCap || 0, p.thorns * (P().thornsSiphonFrac || 0));
+    const heal = Math.max(1, Math.floor(healAnchorFor(p) * frac));
+    const before = p.hp;
+    p.hp = Math.min(p.maxHp, p.hp + heal);
+    floatText(p, p.hp - before, 'heal');
+    logHeal('GRAFT', p, p.hp - before, [
+      'THORNS ×' + formatNum(p.thorns),
+      logNum(p.hp) + '/' + logNum(p.maxHp)
+    ]);
+  }
+
+  if (p.class === 'hyd' && p.hp < p.maxHp) {
+    const held = statusStacks(p, 'pressure');
+    if (held > 0) {
+      const frac = Math.min(P().pressureSiphonCap || 0, held * (P().pressureSiphonFrac || 0));
+      const heal = Math.max(1, Math.floor(healAnchorFor(p) * frac));
+      const before = p.hp;
+      p.hp = Math.min(p.maxHp, p.hp + heal);
+      floatText(p, p.hp - before, 'heal');
+      logHeal('BLEED-OFF', p, p.hp - before, [
+        'PRESSURE ×' + held,
+        logNum(p.hp) + '/' + logNum(p.maxHp)
+      ]);
     }
   }
-  updateUnitCard(unit);
-  return false;
+  updateUnitCard(p);
 }
 
-function playerAct(skill) {
-  const p = state.player;
-  if (!state.combatActive || !state.awaitingInput) return;
-  if (!p || p.hp <= 0 || !skill) return;
-  if (!skill.basic && skill.cd > 0) return;
+function fireReadySkill(p, skill) {
   const needsEnemy = skill.target !== 'self';
-  if (needsEnemy && !retarget()) return;
-
-  state.awaitingInput = false;
-
+  const target = needsEnemy ? focusTarget() : p;
+  if (!target) return;
   state.skillUses = state.skillUses || {};
   state.skillUses[skill.id] = (state.skillUses[skill.id] || 0) + 1;
   if (!HEADLESS.on) flashSkillButton(skill);
-  fireSkill(p, skill, needsEnemy ? state.enemy : p);
-  updateTurnInfo(); renderSkills();
-
-  if (p.hp <= 0) return;
-  if (state.awaitingSpawn || !livingEnemies().length) return;
-  scheduleTurn(nextTurn, turnDelay(100));
+  setCharPose(p, 'ready');
+  fireSkill(p, skill, target);
 }
 
-function enemyAct() {
-  if (!state.combatActive) return;
-  state.pendingEnemyAct = false;
-  const e = state.active, p = state.player;
-  if (!p || p.hp <= 0) { playerDown(); return; }
-  if (!e || e.isPlayer || e.hp <= 0 || e._defeated) { scheduleTurn(nextTurn, turnDelay(120)); return; }
-
+function enemyTurn(e) {
+  const p = state.player;
+  if (!p || p.hp <= 0 || e.hp <= 0 || e._defeated) return;
   e.actionCount = (e.actionCount || 0) + 1;
 
-  const V = ENEMY_VERBS.flurry;
-  if (e.verb === 'flurry' && e.actionCount % V.every === 0) {
-    for (let i = 0; i < V.hits; i++) {
+  if (e.verb === 'enrage') {
+    const EV = ENEMY_VERBS.enrage;
+    if (e.actionCount % EV.every === 0) {
+      applyStatus(e, 'enrage', { stacks: 1, power: EV.perStack });
+      floatText(e, 'ENRAGED', 'note');
+    }
+  }
+
+  const FV = ENEMY_VERBS.flurry;
+  if (e.verb === 'flurry' && e.actionCount % FV.every === 0) {
+    for (let i = 0; i < FV.hits; i++) {
       if (!state.combatActive || p.hp <= 0 || e.hp <= 0 || e._defeated) break;
-      enemySwing(e, { scale: V.scale });
+      enemySwing(e, { scale: FV.scale });
     }
   } else {
     enemySwing(e);
   }
-  updateTurnInfo(); renderSkills();
-
-  if (p.hp <= 0) return;
-  if (state.awaitingSpawn) return;
-  scheduleTurn(nextTurn, turnDelay(120));
 }
 
 function doSpawn() {
   if (!state.combatActive) return;
   if (state.atCamp) { showCamp(); return; }
   spawnEnemy();
-  if (!state.player || state.player.hp <= 0) return;
-  if (!livingEnemies().length) return;
-  scheduleTurn(nextTurn, turnDelay(160));
+  updateTurnInfo();
 }
 
 function enemySwing(e, opts) {
@@ -771,9 +684,6 @@ function spendHeldPiles(p, skill) {
 
 function fireSkill(caster, skill, target) {
   if (!caster || !skill || !target) return;
-  if (!skill.basic && skill.cd > 0) return;
-  const fullCd = (!skill.basic && skill.cdTurns) ? skill.cdTurns : 0;
-  if (fullCd) skill.cd = fullCd;
 
   if (skill.selfDmgFrac) {
     const cost = Math.max(1, Math.floor(caster.hp * skill.selfDmgFrac));
@@ -882,10 +792,10 @@ function fireSkill(caster, skill, target) {
     }
     if (hold && landed) spendHeldPiles(caster, skill);
     bankLanded = landed;
-    if (!landed && fullCd) {
+    if (!landed && !skill.basic) {
 
-      skill.cd = 1;
-      logEvent(skill.name, null, 'cooldown reduced to 1t', ['attack missed']);
+      skill.charge = Math.max(skill.charge || 0, skillPeriod(skill) - 1);
+      logEvent(skill.name, null, 'cooldown reduced to 1s', ['attack missed']);
     }
   }
 
@@ -917,7 +827,7 @@ function onEnemyDefeated(e) {
   updateCombo();
 
   logEvent('DEFEATED', e, null, [
-    state.turnNo + ' turns',
+    state.fightTurns + 's in',
     state.enemyActions + ' enemy actions',
     chained ? 'CHAIN ' + state.combo + '×'
             : 'CHAIN reset (over ' + BALANCE.combo.maxEnemyActionsPerKill + ')',
@@ -927,9 +837,11 @@ function onEnemyDefeated(e) {
   devour(p, statusStacks(e, 'dread'), 'drunk from the dying');
 
   if (p) for (const s of p.skills) {
-    if (!(s.killCd > 0) || !(s.cd > 0)) continue;
-    s.cd = Math.max(0, s.cd - s.killCd);
-    logEvent(s.name, null, 'cooldown −' + s.killCd + 't', ['OUTBREAK, the kill hurries it']);
+    if (!(s.killCd > 0) || s.basic) continue;
+    const period = skillPeriod(s);
+    if ((s.charge || 0) >= period) continue;
+    s.charge = Math.min(period, (s.charge || 0) + s.killCd);
+    logEvent(s.name, null, 'cooldown −' + s.killCd + 's', ['OUTBREAK, the kill hurries it']);
     renderSkills();
   }
 
@@ -1016,8 +928,6 @@ function onEnemyDefeated(e) {
   }
 
   state.awaitingSpawn = true;
-  state.awaitingInput = false;
-  state.pendingEnemyAct = false;
   saveRun();
   updateTurnInfo(); renderSkills();
 
@@ -1032,8 +942,7 @@ function onEnemyDefeated(e) {
 }
 
 function resumeAfterKill() {
-
-  scheduleTurn(doSpawn, turnDelay(BALANCE.spawnDelay * 1000 + 140));
+  state.spawnWait = BALANCE.spawnDelay;
 }
 
 
@@ -1069,24 +978,21 @@ function playerDown() {
   ]);
 
   p.statuses = [];
-  p.skills.forEach(s => { if (!s.basic) s.cd = 0; });
+  p.skills.forEach(s => { s.charge = 0; });
   p.poisonCarry = 0;
-  p.meter = 0;
   state.combo = 0;
   state.wave = back;
   state.enemies = [];
   state.enemy = null;
-  state.active = null;
   state.awaitingSpawn = true;
-  state.awaitingInput = false;
-  state.pendingEnemyAct = false;
+  state.spawnWait = BALANCE.spawnDelay;
+  state.tickAcc = 0;
   applyDerivedStats(p);
   p.hp = p.maxHp;
   saveRun();
 
   if (HEADLESS.on) {
     state.combatActive = true;
-    scheduleTurn(doSpawn, 0);
     return;
   }
   updateHud();
@@ -1280,7 +1186,7 @@ function showDownScreen() {
           '<div class="rs-stats">' +
             stat('Attack damage', formatNum(attackDamage(p))) +
             stat('Max HP', formatNum(p.maxHp)) +
-            stat('Turn rate', p.attackSpeed.toFixed(2) + '×') +
+            stat('Rate', p.attackSpeed.toFixed(2) + '×') +
             stat('Peak ' + (STRAIN_LABEL[p.class] || 'strain'), formatNum(state.peakStrain || 0)) +
           '</div>' +
         '</section>' +
@@ -1340,6 +1246,7 @@ function renderSkills(forceRebuild) {
     });
   }
 
+  const rate = Math.max(0.05, effectiveAps(p));
   p.skills.forEach(skill => {
     const btn = container.querySelector('.skill-btn[data-skill-id="' + skill.id + '"]');
     if (!btn) return;
@@ -1352,31 +1259,20 @@ function renderSkills(forceRebuild) {
     const costEl = btn.querySelector('.skill-cost');
     const overlay = btn.querySelector('.cd-overlay');
     const sweep = btn.querySelector('.cd-sweep');
-    const yourTurn = !!state.awaitingInput && state.combatActive;
-    if (skill.basic) {
-      btn.classList.toggle('auto-on', yourTurn);
-      btn.classList.toggle('auto-off', !yourTurn);
-      btn.disabled = !state.combatActive;
+    costEl.textContent = '';
 
-      costEl.textContent = '';
-      return;
-    }
-    const maxCd = skill.cdTurns;
-    if (skill.cd > 0) {
-      btn.classList.add('on-cd'); btn.classList.remove('ready');
-      btn.disabled = true;
+    const period = skillPeriod(skill);
+    const charge = Math.min(period, skill.charge || 0);
+    const frac = period > 0 ? charge / period : 1;
+    btn.classList.toggle('charging', frac < 1);
+    if (sweep) sweep.style.height = (frac * 100).toFixed(1) + '%';
 
-      costEl.textContent = '';
+    if (!skill.basic && frac < 1) {
+      const wall = (period - charge) / rate;
       overlay.style.display = 'flex';
-      overlay.textContent = skill.cd;
-      if (sweep) sweep.style.height = Math.min(100, (skill.cd/maxCd)*100) + '%';
+      overlay.textContent = wall >= 9.95 ? Math.ceil(wall) + 's' : wall.toFixed(1) + 's';
     } else {
-      btn.classList.remove('on-cd'); btn.classList.add('ready');
-      btn.disabled = !state.combatActive;
-
-      costEl.textContent = '';
       overlay.style.display = 'none';
-      if (sweep) sweep.style.height = '0%';
     }
   });
 }

@@ -189,16 +189,15 @@ function survivingStatuses(unit) {
 let state = {
   classId:null, player:null, enemy:null, enemies:[], wave:1,
   kills:0,
-  combatActive:false, turnTimer:null,
+  combatActive:false, tickTimer:null, tickAcc:0,
 
   saveSlot:1,
-  awaitingSpawn:false, awaitingInput:false, active:null, pendingEnemyAct:false,
+  awaitingSpawn:false, spawnWait:null,
 
   dropQueue:[], modQueue:[],
   combo:0, fightTurns:0, enemyActions:0, bestCombo:0,
   runOver:false, won:false,
 
-  turnNo:0,
   runStart:0, damageDealt:0, _defeatLock:false, _lastOverkill:0
 };
 
@@ -626,7 +625,7 @@ function makeEnemy(wave, ctx) {
     critChance: E.crit, critMult: E.critMult,
     xpMult: (isBoss?E.bossXp:1) * (elite?elite.xp:1) * xpShare,
     dropMult: (size > 1 && !elite) ? 1 / size : 1,
-    hp:0, statuses:[], meter:0, stunImmune:false,
+    hp:0, statuses:[], swingCharge:0, stunImmune:false,
     actionCount:0,
     _defeated:false, _statusKey:''
   };

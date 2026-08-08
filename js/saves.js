@@ -192,7 +192,7 @@ function serializeRun() {
       statuses:survivingStatuses(p),
 
       kit:p.skills.filter(s => !s.basic).map(s => s.id),
-      skillCds:p.skills.map(s => s.cd) } };
+      skillCds:p.skills.map(s => s.basic ? 0 : Math.max(0, skillPeriod(s) - (s.charge || 0))) } };
 }
 
 const slotKey = n => BALANCE.saveKey + '_s' + n;
@@ -313,7 +313,7 @@ function continueRun(slot){
       .filter(s => s && STATUSES[s.type])
       .map(s => STATUSES[s.type].permanent ? Object.assign({}, s, { duration: Infinity }) : s);
   if (Array.isArray(sp.skillCds))
-    p.skills.forEach((s,i) => { if (!s.basic) s.cd = sp.skillCds[i] || 0; });
+    p.skills.forEach((s,i) => { if (!s.basic) s.charge = Math.max(0, skillPeriod(s) - (sp.skillCds[i] || 0)); });
 
   state.wave=d.wave||1;
 

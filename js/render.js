@@ -51,7 +51,7 @@ function statusLabel(def, st, unit) {
   const d = Math.ceil(st.duration || 0);
   return def.name
     + ((st.stacks || 1) > 1 ? ' ×' + st.stacks : '')
-    + (isFinite(d) ? '  ' + d + 't' : '');
+    + (isFinite(d) ? '  ' + d + 's' : '');
 }
 function buildStatusesHtml(unit) {
 
@@ -344,9 +344,6 @@ function logStatus(unit, st, gone) {
            unit);
 }
 
-function logTurn(unit) {
-  log('T' + state.turnNo + ' · ' + logName(unit).toUpperCase());
-}
 function clearLog(){ if (HEADLESS.on) HEADLESS.log.length = 0; }
 
 document.addEventListener('visibilitychange', () => {

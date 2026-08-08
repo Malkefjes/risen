@@ -26,10 +26,11 @@ Turn-based browser ARPG. Personal project. `index.html` + `css/` + `js/` +
 - **Headless equivalence is a gate.** `simulateRun` is not a second
   implementation — `tests/headless.test.mjs` requires a headless run and an
   on-screen run to match exactly.
-- **Cards never pause combat, and bots resolve them only at the top of a
-  player turn.** A drop or mod resolved anywhere else in a harness loop
-  desyncs headless from live. A human may resolve whenever; their mouse is
-  not the sim's business.
+- **Combat is a fixed-timestep sim.** `combatTick(SIM_DT)` is the only thing
+  that advances a fight — live it runs on an interval, headless in a loop.
+  A harness mutates state only between ticks or while parked at camp;
+  anything else desyncs headless from live. Wall-clock time never enters
+  the rules.
 - **Death respawns, never deletes.** `playerDown()` returns the player to
   `state.checkpoint` with statuses, piles and cooldowns cleared; levels, gear
   and mods persist. Only the owner deletes a character.
@@ -39,9 +40,10 @@ Turn-based browser ARPG. Personal project. `index.html` + `css/` + `js/` +
 - **`BUILD` and `BALANCE.saveKey` are independent.** `saveKey` bumps ONLY when
   a change makes an old saved sheet wrong; add the outgoing prefix to
   `oldSaveKeys`. Old saves are dropped, never migrated.
-- **The player sheet is the anchor:** 5/5/5/5, 25 damage, 100 HP, 1.00 turn
-  rate. Every stat is `(5 + points) / 5` times its starting value. Enemies are
-  fitted to it.
+- **The player sheet is the anchor:** 5/5/5/5, 25 damage, 100 HP, 1.00 rate.
+  Every stat is `(5 + points) / 5` times its starting value. RATE multiplies
+  how fast every ability charges; enemy rate is swings per second. Enemies
+  are fitted to the sheet.
 - **Read the wave count off `BALANCE.finalWave`,** never a literal.
 - **Uncapped number, bounded effect.** Each strain runs on one uncapped status
   (bio POISON, psy DREAD, sym THORNS, hyd PRESSURE, base RESOLVE). Effects that

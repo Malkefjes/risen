@@ -159,7 +159,7 @@ const ITEM_MODS = {
   armor:     { id: 'armor',     step: 0.01, text: v => PCT(v, 'armor') },
   healBoost: { id: 'healBoost', step: 0.02, text: v => PCT(v, 'healing') },
   xpBoost:   { id: 'xpBoost',   step: 0.01, text: v => PCT(v, 'XP') },
-  apsBoost:  { id: 'apsBoost',  step: 0.01, text: v => PCT(v, 'turn rate') },
+  apsBoost:  { id: 'apsBoost',  step: 0.01, text: v => PCT(v, 'rate') },
   dmgMult:   { id: 'dmgMult',   step: 0.01, text: v => PCT(v, 'attack damage') }
 };
 

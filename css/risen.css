@@ -1306,7 +1306,11 @@ body {
   min-height: 150px;
 }
 
-.skill-btn:disabled { opacity: 0.35; }
+.skill-btn.charging .skill-name,
+.skill-btn.charging .skill-desc {
+  opacity: 0.45;
+  filter: saturate(0.4);
+}
 
 .skill-btn.fired {
   animation: skillFired 0.5s ease-out;
@@ -1329,28 +1333,13 @@ body {
   .skill-btn.fired { animation: none; }
 }
 
-.skill-btn.basic {
-  opacity: 1;
-}
-.skill-btn.basic.auto-off {
-  opacity: 0.55;
-}
-
-.skill-btn.on-cd {
-  opacity: 0.5;
-  position: relative;
-}
-
 .skill-btn .cd-overlay {
   position: absolute;
-  inset: 0;
-  background: rgba(7, 9, 15, 0.55);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  top: 7px;
+  right: 9px;
   font-family: 'Orbitron', sans-serif;
   font-weight: 700;
-  font-size: 1.8rem;
+  font-size: 0.85rem;
   color: var(--accent);
   text-shadow: 0 2px 10px rgba(0,0,0,0.8);
   pointer-events: none;
@@ -2530,21 +2519,20 @@ body {
 .skill-btn { position: relative; overflow: hidden; }
 .cd-sweep {
   position: absolute; left: 0; bottom: 0; width: 100%; height: 0%;
-  background: rgba(0,0,0,0.55); pointer-events: none;
+  background: linear-gradient(to top, rgba(var(--base-rgb), 0.07), rgba(var(--base-rgb), 0.14));
+  border-top: 2px solid var(--strain, var(--accent));
+  box-shadow: 0 -2px 10px var(--strain-glow);
+  pointer-events: none;
   transition: height 0.1s linear; z-index: 1;
 }
 
 .skill-btn > *:not(.cd-sweep):not(.cd-overlay) { position: relative; z-index: 2; }
 
-.skill-btn.ready {
-  border-color: #252d3d;
-}
-
 .sidebar-tab.points-alert { color: var(--xp); }
 
 @media (prefers-reduced-motion: reduce) {
   .combo-meter, .fighter.killed .char-figure,
-  .logo, .skill-btn.ready, .level-badge.level-up { animation: none; }
+  .logo, .level-badge.level-up { animation: none; }
   .bar-ghost { transition: none; }
   .level-badge.level-up { transform: none; }
 }

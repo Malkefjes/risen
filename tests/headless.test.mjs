@@ -44,7 +44,7 @@ export default async function ({ page, ok }) {
 
   const head = await page.evaluate((s) => {
     eval('(' + s + ')()');
-    const r = simulateRun('bio', { policy: BOTS.smart.policy, weights: { vit: 100 } });
+    const r = simulateRun('bio', { weights: { vit: 100 } });
     return { wave: r.wave, level: r.level, kills: r.kills, dmg: r.damageDealt,
              won: r.won, turns: r.turns, stats: r.stats, derived: r.derived };
   }, SEED);

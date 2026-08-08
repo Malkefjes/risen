@@ -1,4 +1,4 @@
-const BUILD = '2026-08-08c';
+const BUILD = '2026-08-08d';
 
 const BALANCE = {
   player: {
@@ -115,9 +115,7 @@ const BALANCE = {
   bossEvery: 10,
 
   finalWave: 60,
-  spawnDelay: 0.16,
-
-  turnPace: 1,
+  spawnDelay: 1,
 
   saveKey: 'risen_run_v18',
 
@@ -157,11 +155,11 @@ const CLASSES = {
 
       { id:'inject', name:'Inject', desc:'Deal {power!} damage. +{poisonStacks} POISON', type:'attack', power:1.0, poison:1, poisonStacks:(p,s) => poisonStacks(p,s), target:'enemy', basic:true },
 
-      { id:'distribute', name:'Distribute', desc:'Deal {power!} damage to EVERY enemy. +{poisonStacks} POISON each.', type:'attack', shape:'all', power:0.50, poison:4, poisonStacks:(p,s) => poisonStacks(p,s), target:'enemy', cdTurns:3 },
+      { id:'distribute', name:'Distribute', desc:'Deal {power!} damage to EVERY enemy. +{poisonStacks} POISON each.', type:'attack', shape:'all', power:0.50, poison:4, poisonStacks:(p,s) => poisonStacks(p,s), target:'enemy', cdSecs:3 },
 
-      { id:'biofilm', name:'Biofilm', desc:'For {duration#turn}: take −{power%} damage.', type:'buff', buff:'chitin', duration:3, power:0.25, target:'self', cdTurns:4 },
+      { id:'biofilm', name:'Biofilm', desc:'For {duration#sec}: take −{power%} damage.', type:'buff', buff:'chitin', duration:3, power:0.25, target:'self', cdSecs:4 },
 
-      { id:'regenerate', name:'Regenerate', desc:'For {duration#turn}: regenerate {power+} each turn.', type:'buff', buff:'regen', duration:5, power:0.20, target:'self', cdTurns:5 }
+      { id:'regenerate', name:'Regenerate', desc:'For {duration#sec}: regenerate {power+} each second.', type:'buff', buff:'regen', duration:5, power:0.20, target:'self', cdSecs:5 }
     ]
   },
 
@@ -172,10 +170,10 @@ const CLASSES = {
 
       { id:'hunt', name:'Hunt', desc:'Deal {power!} damage. +{dreadStacks} DREAD', type:'attack', power:1.0, dread:1, dreadStacks:(p,s) => dreadStacks(p,s), target:'enemy', basic:true },
 
-      { id:'terrify', name:'Terrify', desc:'Deal {power!} damage to EVERY enemy and plant +{dreadStacks} DREAD in each. Every stack slows them and opens their guard.', type:'attack', shape:'all', power:0.50, dread:4, dreadStacks:(p,s) => dreadStacks(p,s), target:'enemy', cdTurns:3 },
-      { id:'traumatize', name:'Traumatize', desc:'Deal {power!} damage. Against {dreadNeed}+ DREAD the mind breaks: stunned for {stun#turn}.', type:'attack', power:0.95, stun:1, dreadNeed:3, target:'enemy', cdTurns:4 },
+      { id:'terrify', name:'Terrify', desc:'Deal {power!} damage to EVERY enemy and plant +{dreadStacks} DREAD in each. Every stack slows them and opens their guard.', type:'attack', shape:'all', power:0.50, dread:4, dreadStacks:(p,s) => dreadStacks(p,s), target:'enemy', cdSecs:3 },
+      { id:'traumatize', name:'Traumatize', desc:'Deal {power!} damage. Against {dreadNeed}+ DREAD the mind breaks: stunned for {stun#sec}.', type:'attack', power:0.95, stun:1, dreadNeed:3, target:'enemy', cdSecs:4 },
 
-      { id:'kill', name:'Kill', desc:'Deal {killTotal} damage. Tears away HALF the enemy’s DREAD — +{perDreadPower!} damage and {feedPerDread+} healed for each. Sheds {cleanse} POISON.', type:'attack', power:2.00, perDreadPower:0.60, consumesDread:true, consumeFrac:0.5, feedPerDread:BALANCE.player.dreadFeedFrac, cleanse:2, target:'enemy', cdTurns:5,
+      { id:'kill', name:'Kill', desc:'Deal {killTotal} damage. Tears away HALF the enemy’s DREAD — +{perDreadPower!} damage and {feedPerDread+} healed for each. Sheds {cleanse} POISON.', type:'attack', power:2.00, perDreadPower:0.60, consumesDread:true, consumeFrac:0.5, feedPerDread:BALANCE.player.dreadFeedFrac, cleanse:2, target:'enemy', cdSecs:5,
         killTotal: (p, s) => {
           const e = state.enemy;
           const held = (e && e.hp > 0 && !e._defeated) ? statusStacks(e, 'dread') : 0;
@@ -192,11 +190,11 @@ const CLASSES = {
 
       { id:'piston', name:'Piston', desc:'Deal {power!} damage. +{gain} PRESSURE', type:'attack', power:1.25, pressure:BALANCE.player.pressurePerHit, gain:pressureGain, target:'enemy', basic:true },
 
-      { id:'surge', name:'Surge', desc:'Deal {power!} damage. +{gain} PRESSURE', type:'attack', power:1.7, pressure:10, gain:pressureGain, target:'enemy', cdTurns:3 },
+      { id:'surge', name:'Surge', desc:'Deal {power!} damage. +{gain} PRESSURE', type:'attack', power:1.7, pressure:10, gain:pressureGain, target:'enemy', cdSecs:3 },
 
-      { id:'dampen', name:'Dampen', desc:'For {duration#turn}: take \u2212{power%} damage and regenerate {regen.power+} each turn.', type:'buff', buff:'dampen', duration:3, power:0.45, applies:[{ id:'regen', power:0.25, duration:3 }], target:'self', cdTurns:4 },
+      { id:'dampen', name:'Dampen', desc:'For {duration#sec}: take \u2212{power%} damage and regenerate {regen.power+} each second.', type:'buff', buff:'dampen', duration:3, power:0.45, applies:[{ id:'regen', power:0.25, duration:3 }], target:'self', cdSecs:4 },
 
-      { id:'rupture', name:'Rupture', desc:'Vent everything into EVERY enemy: {power!} damage +{perPressurePower!} per PRESSURE spent. Always CRITS.', type:'attack', shape:'all', power:1.4, alwaysCrit:true, consumesPressure:true, perPressurePower:0.16, target:'enemy', cdTurns:5 }
+      { id:'rupture', name:'Rupture', desc:'Vent everything into EVERY enemy: {power!} damage +{perPressurePower!} per PRESSURE spent. Always CRITS.', type:'attack', shape:'all', power:1.4, alwaysCrit:true, consumesPressure:true, perPressurePower:0.16, target:'enemy', cdSecs:5 }
     ]
   },
 
@@ -206,10 +204,10 @@ const CLASSES = {
     skills: [
 
       { id:'latch', name:'Latch', desc:'Deal {power!} damage + {thornsScale%} of your THORNS.', type:'attack', power:1.0, thornsScale:0.55, target:'enemy', basic:true },
-      { id:'raisespines', name:'Raise Spines', desc:'THORNS ×{power} and pain reflect doubled for {duration#turn}. Every hit taken grows +{growBonus} extra THORNS.', type:'buff', buff:'spines', duration:3, power:2, growBonus:BALANCE.player.thornsSpinesGrow, target:'self', cdTurns:4 },
+      { id:'raisespines', name:'Raise Spines', desc:'THORNS ×{power} and pain reflect doubled for {duration#sec}. Every hit taken grows +{growBonus} extra THORNS.', type:'buff', buff:'spines', duration:3, power:2, growBonus:BALANCE.player.thornsSpinesGrow, target:'self', cdSecs:4 },
 
-      { id:'shed', name:'Shed', desc:'Heal {healFrac+}, then tear off up to {capFrac%} of your grown THORNS for {hpPerThorn+} each — only as many as the wound needs. They regrow next fight. Sheds {cleanse} POISON.', type:'heal', healFrac:0.08, shedFuel:true, cleanse:2, hpPerThorn:BALANCE.player.shedHpPerThorn, capFrac:BALANCE.player.shedCapFrac, target:'self', cdTurns:4 },
-      { id:'provoke', name:'Provoke', desc:'Bare your guard: EVERY enemy strikes at once and cannot miss. Every spine answers — ×{lashMult} THORNS each. +{growBonus} THORNS, and charged telegraphs spend themselves now.', type:'provoke', growBonus:3, lashMult:1.5, target:'enemy', cdTurns:4 }
+      { id:'shed', name:'Shed', desc:'Heal {healFrac+}, then tear off up to {capFrac%} of your grown THORNS for {hpPerThorn+} each — only as many as the wound needs. They regrow next fight. Sheds {cleanse} POISON.', type:'heal', healFrac:0.08, shedFuel:true, cleanse:2, hpPerThorn:BALANCE.player.shedHpPerThorn, capFrac:BALANCE.player.shedCapFrac, target:'self', cdSecs:4 },
+      { id:'provoke', name:'Provoke', desc:'Bare your guard: EVERY enemy strikes at once and cannot miss. Every spine answers — ×{lashMult} THORNS each. +{growBonus} THORNS.', type:'provoke', growBonus:3, lashMult:1.5, target:'enemy', cdSecs:4 }
     ]
   },
 
@@ -218,11 +216,11 @@ const CLASSES = {
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
 
-      { id:'strike', name:'Strike', desc:'Deal {power!} damage. +{buildsResolve} RESOLVE, and open a wound: +{bleedStacks} BLEED. Every turn, BLEED deals {bleedTick} a stack and loses one.', type:'attack', power:1.0, buildsResolve:1, bleed:1, bleedStacks:p => bleedStacks(p), bleedTick:p => bleedDepth(p), target:'enemy', basic:true },
-      { id:'bandage', name:'Bandage', desc:'Heal {healFrac+} and +{resolveHealBonus%} per held RESOLVE. Sheds {cleanse} POISON', type:'heal', healFrac:0.14, resolveHealBonus:0.02, cleanse:2, target:'self', cdTurns:4 },
+      { id:'strike', name:'Strike', desc:'Deal {power!} damage. +{buildsResolve} RESOLVE, and open a wound: +{bleedStacks} BLEED. Every second, BLEED deals {bleedTick} a stack and loses one.', type:'attack', power:1.0, buildsResolve:1, bleed:1, bleedStacks:p => bleedStacks(p), bleedTick:p => bleedDepth(p), target:'enemy', basic:true },
+      { id:'bandage', name:'Bandage', desc:'Heal {healFrac+} and +{resolveHealBonus%} per held RESOLVE. Sheds {cleanse} POISON', type:'heal', healFrac:0.14, resolveHealBonus:0.02, cleanse:2, target:'self', cdSecs:4 },
 
-      { id:'counterpunch', name:'Counterpunch', desc:'Brace for {duration#turn}: −{power%} damage taken, stacking with RESOLVE. A hit taken while braced counters {counterPower!} damage and opens a wound: +{bleedStacks} BLEED', type:'buff', buff:'brace', duration:2, power:0.60, counterPower:1.20, counterBleed:1, bleedStacks:p => bleedStacks(p), target:'self', cdTurns:4 },
-      { id:'laststand', name:'Last Stand', desc:'Deal {power!} damage, +{perResolvePower!} per RESOLVE spent. Spends {consumeFrac%} of your RESOLVE', type:'attack', power:1.20, perResolvePower:0.40, consumesResolve:true, consumeFrac:0.7, target:'enemy', cdTurns:5 }
+      { id:'counterpunch', name:'Counterpunch', desc:'Brace for {duration#sec}: −{power%} damage taken, stacking with RESOLVE. A hit taken while braced counters {counterPower!} damage and opens a wound: +{bleedStacks} BLEED', type:'buff', buff:'brace', duration:2, power:0.60, counterPower:1.20, counterBleed:1, bleedStacks:p => bleedStacks(p), target:'self', cdSecs:4 },
+      { id:'laststand', name:'Last Stand', desc:'Deal {power!} damage, +{perResolvePower!} per RESOLVE spent. Spends {consumeFrac%} of your RESOLVE', type:'attack', power:1.20, perResolvePower:0.40, consumesResolve:true, consumeFrac:0.7, target:'enemy', cdSecs:5 }
     ]
   }
 };
@@ -230,13 +228,13 @@ const CLASSES = {
 const ENEMY_VERBS = {
 
   regrow: { id:'regrow', tag:'REGROW', below:0.5, power:0.06,
-            blurb:'below half HP, knits 6% of its frame each of its turns' },
+            blurb:'below half HP, knits 6% of its frame each second' },
 
   flurry: { id:'flurry', tag:'FLURRY', every:2, hits:2, scale:0.65,
-            blurb:'every 2nd action strikes twice at 65%' },
+            blurb:'every 2nd swing strikes twice at 65%' },
 
   enrage: { id:'enrage', tag:'ENRAGE', every:3, perStack:0.12,
-            blurb:'every 3rd of its turns, swings harden +12% forever' }
+            blurb:'every 3rd swing hardens it +12% forever' }
 };
 const CHAMPION_VERBS = ['regrow', 'flurry', 'enrage'];
 
@@ -364,7 +362,7 @@ const STATUSES = {
   chitin: {
     id:'chitin', name:'BIOFILM', tone:'buff', kind:'buff',
     stacking:'longest', defaults:{ duration:3, power:0.25, tickBonus:0, touchPoison:0, hitHealFrac:0 },
-    label: st => 'CHITIN ' + Math.ceil(st.duration) + 't',
+    label: st => 'CHITIN ' + Math.ceil(st.duration) + 's',
     incomingMult: (u, st) => 1 - (st.power || 0),
     onHitTaken(unit, st, ctx) {
       const e = ctx.attacker;
@@ -391,7 +389,7 @@ const STATUSES = {
   film: {
     id:'film', name:'MEMBRANE', tone:'buff', kind:'buff',
     stacking:'replace', defaults:{ duration:1, power:0.08 },
-    label: st => 'FILM ' + Math.ceil(st.duration) + 't',
+    label: st => 'FILM ' + Math.ceil(st.duration) + 's',
     incomingMult: (u, st) => 1 - (st.power || 0)
   },
 
@@ -429,7 +427,7 @@ const STATUSES = {
     id:'spines', name:'SPINES', tone:'spines', kind:'buff',
 
     stacking:'amplify', defaults:{ duration:3, power:2 }, persists:true,
-    label: st => 'SPINES ' + Math.ceil(st.duration) + 't',
+    label: st => 'SPINES ' + Math.ceil(st.duration) + 's',
     thornsMult: (u, st) => st.power || 1,
 
     onHitTaken(unit, st, ctx) {
@@ -451,14 +449,14 @@ const STATUSES = {
   harden: {
     id:'harden', name:'HARDEN', tone:'spines', kind:'buff',
     stacking:'replace', defaults:{ duration:2, power:0.45 },
-    label: st => 'HARDEN ' + Math.ceil(st.duration) + 't',
+    label: st => 'HARDEN ' + Math.ceil(st.duration) + 's',
     incomingMult: (u, st) => 1 - (st.power || 0)
   },
 
   dampen: {
     id:'dampen', name:'DAMPEN', tone:'pressure', kind:'buff',
     stacking:'replace', defaults:{ duration:2, power:0.45 },
-    label: st => 'DAMPEN ' + Math.ceil(st.duration) + 't',
+    label: st => 'DAMPEN ' + Math.ceil(st.duration) + 's',
     incomingMult: (u, st) => 1 - (st.power || 0)
   },
 
@@ -471,7 +469,7 @@ const STATUSES = {
   brace: {
     id:'brace', name:'BRACE', tone:'brace', kind:'buff',
     stacking:'replace', defaults:{ duration:1, power:0.60, counter:1.20 },
-    label: st => 'BRACE ' + Math.ceil(st.duration) + 't',
+    label: st => 'BRACE ' + Math.ceil(st.duration) + 's',
 
     onHitTaken(unit, st, ctx) {
       const e = ctx.attacker;
@@ -538,7 +536,7 @@ const STATUSES = {
   predator: {
     id:'predator', name:'PREDATOR', tone:'predator', kind:'buff',
     stacking:'replace', defaults:{ duration:5, power:1.45 }, persists:true,
-    label: st => 'PREDATOR ' + Math.ceil(st.duration) + 't',
+    label: st => 'PREDATOR ' + Math.ceil(st.duration) + 's',
     outgoingMult: (u, st) => st.power || 1
   },
 
@@ -551,43 +549,43 @@ const STATUSES = {
   weak: {
     id:'weak', name:'WEAK', tone:'weak', kind:'debuff',
     stacking:'longest', defaults:{ duration:2, power:0.25 },
-    label: st => 'WEAK ' + Math.ceil(st.duration) + 't',
+    label: st => 'WEAK ' + Math.ceil(st.duration) + 's',
     outgoingMult: (u, st) => 1 - (st.power || 0)
   },
   vulnerable: {
     id:'vulnerable', name:'VULNERABLE', tone:'debuff', kind:'debuff',
     stacking:'longest', defaults:{ duration:2, power:0.30 },
-    label: st => 'VULN ' + Math.ceil(st.duration) + 't',
+    label: st => 'VULN ' + Math.ceil(st.duration) + 's',
     incomingMult: (u, st) => 1 + (st.power || 0)
   },
   empower: {
     id:'empower', name:'EMPOWER', tone:'buff', kind:'buff',
     stacking:'longest', defaults:{ duration:2, power:0.25 },
-    label: st => 'EMPOWER ' + Math.ceil(st.duration) + 't',
+    label: st => 'EMPOWER ' + Math.ceil(st.duration) + 's',
     outgoingMult: (u, st) => 1 + (st.power || 0)
   },
   fortify: {
     id:'fortify', name:'FORTIFY', tone:'buff', kind:'buff',
     stacking:'longest', defaults:{ duration:2, power:0.25 },
-    label: st => 'FORTIFY ' + Math.ceil(st.duration) + 't',
+    label: st => 'FORTIFY ' + Math.ceil(st.duration) + 's',
     incomingMult: (u, st) => 1 - (st.power || 0)
   },
   haste: {
     id:'haste', name:'HASTE', tone:'buff', kind:'buff',
     stacking:'longest', defaults:{ duration:2, power:0.30 },
-    label: st => 'HASTE ' + Math.ceil(st.duration) + 't',
+    label: st => 'HASTE ' + Math.ceil(st.duration) + 's',
     apsMult: (u, st) => 1 + (st.power || 0)
   },
   slow: {
     id:'slow', name:'SLOW', tone:'debuff', kind:'debuff',
     stacking:'longest', defaults:{ duration:2, power:0.30 },
-    label: st => 'SLOW ' + Math.ceil(st.duration) + 't',
+    label: st => 'SLOW ' + Math.ceil(st.duration) + 's',
     apsMult: (u, st) => 1 - (st.power || 0)
   },
   regen: {
     id:'regen', name:'REGEN', tone:'buff', kind:'buff',
     stacking:'longest', defaults:{ duration:3, power:0.05, cleanse:0 },
-    label: st => 'REGEN ' + Math.ceil(st.duration) + 't',
+    label: st => 'REGEN ' + Math.ceil(st.duration) + 's',
     onTurnStart(unit, st) {
       if (unit.hp <= 0) return false;
 

@@ -117,7 +117,7 @@ function freshPlayer(classId, kit) {
     pending:{ str:0, instinct:0, speed:0, vit:0 },
 
     skills: cls.skills.filter(s => s.basic || fitted.includes(s.id))
-                      .map(s => Object.assign({cd:0}, s)),
+                      .map(s => Object.assign({charge:0}, s)),
 
     gear: issueGear(),
 
@@ -125,7 +125,7 @@ function freshPlayer(classId, kit) {
 
     weights: { str: 0, instinct: 0, speed: 0, vit: 0 },
     allocCarry: { str: 0, instinct: 0, speed: 0, vit: 0 },
-    statuses:[], isPlayer:true, meter:0, thornsGrown:0, thornsShedded:0,
+    statuses:[], isPlayer:true, thornsGrown:0, thornsShedded:0,
     poisonCarry:0, _statusKey:''
   };
   p.basicSkill = p.skills.find(s => s.basic) || p.skills[0];
@@ -135,11 +135,11 @@ function freshPlayer(classId, kit) {
 function rebuildSkills(p) {
   if (!p || !CLASSES[p.class]) return;
   const kit = p.skills.filter(s => !s.basic).map(s => s.id);
-  const cds = {};
-  p.skills.forEach(s => { cds[s.id] = s.cd || 0; });
+  const charges = {};
+  p.skills.forEach(s => { charges[s.id] = s.charge || 0; });
   p.skills = CLASSES[p.class].skills
     .filter(s => s.basic || kit.includes(s.id))
-    .map(s => Object.assign({ cd: cds[s.id] || 0 }, s));
+    .map(s => Object.assign({ charge: charges[s.id] || 0 }, s));
   p.basicSkill = p.skills.find(s => s.basic) || p.skills[0];
   applyTakenMods(p);
   applyGearPatches(p);
@@ -155,15 +155,13 @@ function resetRunState(classId) {
   state.wave = 1;
   state.kills = 0;
   state.awaitingSpawn = false;
-  state.awaitingInput = false;
-  state.pendingEnemyAct = false;
-  state.active = null;
+  state.spawnWait = null;
+  state.tickAcc = 0;
   state.combo = 0;
   state.bestCombo = 0;
   state.fightTurns = 0;
   state.enemyActions = 0;
   state.actionsSinceKill = 0;
-  state.turnNo = 0;
   state.damageDealt = 0;
 
   state.runTurns = 0;
@@ -349,21 +347,13 @@ function spawnEnemy() {
     logEvent('THE ROT SPREADS', state.enemy, '×' + n + ' POISON', ['carried from the last host']);
   }
 
-  state.player.meter = 0;
-  pack.forEach(e => { e.meter = 0; });
-
-  const tp = 1 / effectiveAps(state.player);
-  const te = Math.min.apply(null, pack.map(e => 1 / effectiveAps(e)));
-  if (te < tp - 1e-9) state.player.meter = 1;
   state.fightTurns = 0;
   state.enemyActions = 0;
   state.actionsSinceKill = 0;
-  state.turnNo = 0;
+  state.tickAcc = 0;
   state._fightFlags = {};
   state._waveCleared = false;
   state.awaitingSpawn = false;
-  state.awaitingInput = false;
-  state.pendingEnemyAct = false;
   updateHud(); renderCombat(true); renderSkills(); updateTurnInfo();
 }
 
@@ -502,8 +492,10 @@ function enterCamp() {
 function moveOut() {
   if (!state.atCamp || campBusy()) return;
   state.atCamp = false;
+  state.awaitingSpawn = true;
+  state.spawnWait = BALANCE.spawnDelay;
   saveRun();
-  if (HEADLESS.on) { scheduleTurn(doSpawn, 0); return; }
+  if (HEADLESS.on) { state.combatActive = true; return; }
   const el = document.getElementById('camp-panel');
   if (el) el.classList.remove('log-open');
   showScreen('combat-screen');
