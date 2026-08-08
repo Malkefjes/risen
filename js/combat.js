@@ -24,8 +24,6 @@ function setTarget(e) {
   if (state.enemy === e) return;
   state.enemy = e || null;
   if (HEADLESS.on) return;
-  document.querySelectorAll('#enemy-slot .fighter').forEach(f =>
-    f.classList.toggle('targeted', !!e && f.dataset.unitId === e.id));
   renderSkills();
   refreshReadoutValues();
 }
@@ -44,8 +42,7 @@ function updateTurnInfo() {
   if (!ti) return;
   if (!state.combatActive) { ti.textContent = 'STANDING BY'; return; }
   if (state.awaitingSpawn) { ti.textContent = 'INCOMING'; return; }
-  const n = livingEnemies().length;
-  ti.textContent = 'CONTACT' + (n > 1 ? ' · PACK ×' + n : '');
+  ti.textContent = livingEnemies().length ? 'CONTACT' : 'INCOMING';
 }
 
 function skillPeriod(s) { return s.cdSecs || 1; }

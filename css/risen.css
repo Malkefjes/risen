@@ -895,27 +895,6 @@ body {
 
 #enemy-slot .fighter { flex: 1 1 0; min-width: 0; }
 
-#enemy-side { --packscale: 1; }
-#enemy-side[data-pack="2"] { --packscale: 0.82; }
-#enemy-side[data-pack="3"] { --packscale: 0.68; }
-
-#enemy-side[data-pack="2"] .unit-name,
-#enemy-side[data-pack="3"] .unit-name { font-size: 0.95rem; }
-
-#enemy-side[data-pack="2"] .fighter,
-#enemy-side[data-pack="3"] .fighter { cursor: pointer; }
-
-#enemy-side[data-pack="2"] .fighter.targeted::after,
-#enemy-side[data-pack="3"] .fighter.targeted::after {
-  content: '';
-  position: absolute;
-  inset: -8px -2px -4px;
-  border: 1px solid rgba(251, 113, 133, 0.5);
-  border-radius: 12px;
-  box-shadow: inset 0 0 16px rgba(251, 113, 133, 0.12);
-  pointer-events: none;
-  z-index: 3;
-}
 
 #enemy-slot .fighter.dead {
   opacity: 0.3;
@@ -980,8 +959,8 @@ body {
 }
 
 .char-figure.hero      { --sprite-h: calc(var(--fig, 200px) * 1.15); }
-.char-figure.foe       { --sprite-h: calc(var(--fig, 200px) * var(--foe-art, 1) * var(--packscale, 1)); }
-.char-figure.foe-elite { --sprite-h: calc(var(--fig, 200px) * 1.15 * var(--foe-art, 1) * var(--packscale, 1)); }
+.char-figure.foe       { --sprite-h: calc(var(--fig, 200px) * var(--foe-art, 1)); }
+.char-figure.foe-elite { --sprite-h: calc(var(--fig, 200px) * 1.15 * var(--foe-art, 1)); }
 .char-figure.foe-boss  { --sprite-h: calc(var(--fig, 200px) * 1.56); }
 
 .char-figure.alive .char-svg {

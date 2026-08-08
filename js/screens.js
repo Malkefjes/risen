@@ -301,7 +301,7 @@ function spawnEnemy() {
   }
 
   const pack = state.enemies;
-  log('WAVE ' + state.wave + (pack.length > 1 ? ' · PACK ×' + pack.length : ''));
+  log('WAVE ' + state.wave);
   pack.forEach(e => {
     const tags = enemyTags(e);
     log(e.name + (tags.length ? ' · ' + tags.join(' ') : '')

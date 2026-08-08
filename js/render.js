@@ -7,8 +7,6 @@ function renderCombat(forceFull) {
   else updateUnitCard(state.player);
 
   const foes = state.enemies || [];
-  const side = document.getElementById('enemy-side');
-  if (side) side.dataset.pack = foes.length;
   const have = Array.from(es.querySelectorAll('.fighter'));
   const same = !forceFull && have.length === foes.length
     && foes.every((e, i) => have[i].dataset.unitId === e.id);
@@ -112,12 +110,6 @@ function createFighterPanel(unit) {
     + (!unit.isBoss && unit.elite ? ' elite' : '');
   div.dataset.unitId = unit.id;
   unit._statusKey = '';
-  if (!unit.isPlayer) {
-    div.classList.toggle('targeted', state.enemy === unit);
-    div.addEventListener('click', () => {
-      if (unit.hp > 0 && !unit._defeated) setTarget(unit);
-    });
-  }
   const colorClass = unit.isPlayer ? unit.class : 'enemy';
   const type = unit.isBoss ? 'boss' : (unit.isPlayer ? 'player' : 'enemy');
   const pct = Math.max(0, (unit.hp/Math.max(1,unit.maxHp))*100);

@@ -1,4 +1,4 @@
-const BUILD = '2026-08-08m';
+const BUILD = '2026-08-08n';
 
 const BALANCE = {
   player: {
@@ -103,10 +103,7 @@ const BALANCE = {
     firstBossMult: 1.0,
     trashDmgMult: 1.45,
 
-    eliteBaseChance: 0.16, eliteChancePerWave: 0.006, eliteChanceCap: 0.40,
-
-    packHp:  { 2: 0.58, 3: 0.42 },
-    packDmg: { 2: 0.55, 3: 0.40 }
+    eliteBaseChance: 0.16, eliteChancePerWave: 0.006, eliteChanceCap: 0.40
   },
 
   xp: { firstCost: 58, base: 485, pow: 2, powScale: 35,
@@ -247,7 +244,6 @@ const ELITES = {
 };
 
 const HAZARDS = {
-  swarm:      { id:'swarm',      name:'SWARM',      text:'Every wave is a full pack of three.', xpMult:1.40 },
   frenzy:     { id:'frenzy',     name:'FRENZY',     text:'Enemies act 15% faster.', xpMult:1.30 },
   brutes:     { id:'brutes',     name:'BRUTES',     text:'Enemies hit 20% harder.', xpMult:1.35 },
   virulent:   { id:'virulent',   name:'VIRULENT',   text:'More elites, and every one of them VENOMOUS.', xpMult:1.35 },
@@ -262,16 +258,14 @@ const ZONES = [
     enemies: [{ id: 'experiment', name: 'FAUNA-01 Skitter' }],
     bossName: 'Sporemother',
     bossVerb: 'regrow',
-    champion: { at: 5, id: 'experiment', name: 'FAUNA-01 Apex' },
-    soloUntil: 4, packWeights: [55, 45, 0] },
+    champion: { at: 5, id: 'experiment', name: 'FAUNA-01 Apex' } },
 
   { num: 2, name: 'The Bloom', label: 'THE BLOOM',
     startWave: 11, endWave: 20,
     enemies: [{ id: 'enforcer', name: 'FAUNA-12 Husk' }],
     bossName: 'Bulwark',
     bossVerb: 'regrow',
-    champion: { at: 15, id: 'lieutenant', name: 'FAUNA-12 Warden' },
-    packWeights: [30, 45, 25] },
+    champion: { at: 15, id: 'lieutenant', name: 'FAUNA-12 Warden' } },
 
   { num: 3, name: 'Survey Camp One', label: 'SURVEY CAMP ONE',
     startWave: 21, endWave: 30,
@@ -279,8 +273,7 @@ const ZONES = [
     bossName: 'Survey Chief',
 
     bossVerb: 'enrage',
-    champion: { at: 25, id: 'mercenary', name: 'Survey Veteran' },
-    packWeights: [25, 45, 30] },
+    champion: { at: 25, id: 'mercenary', name: 'Survey Veteran' } },
 
   { num: 4, name: 'The Source', label: 'THE SOURCE',
     startWave: 31, endWave: 60,
@@ -292,7 +285,6 @@ const ZONES = [
     randomRoster: true,
     rollBossVerb: true,
     bossSegment: 10, extraBossChance: 0.12,
-    packWeights: [15, 45, 40],
     eliteBaseChance: 0.35, eliteChanceCap: 0.65 }
 ];
 function zoneForWave(wave) {

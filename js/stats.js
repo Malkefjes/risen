@@ -524,23 +524,8 @@ function rollWaveKind(wave) {
 }
 
 function makeWave(wave) {
-  const zone = zoneForWave(wave);
   const kind = rollWaveKind(wave);
-
-  let size = 1;
-  const haz = hazardFor(wave);
-  if (!kind.isBoss && !kind.champ && wave > (zone.soloUntil || 0) && zone.packWeights)
-    size = (haz && haz.id === 'swarm') ? 3 : pickWeighted(zone.packWeights) + 1;
-
-  const members = [];
-  let eliteTaken = false;
-  for (let i = 0; i < size; i++) {
-    const e = makeEnemy(wave, { isBoss: kind.isBoss, champ: kind.champ,
-                                size, index: i, noElite: eliteTaken });
-    if (e.elite) eliteTaken = true;
-    members.push(e);
-  }
-  return members;
+  return [makeEnemy(wave, { isBoss: kind.isBoss, champ: kind.champ })];
 }
 
 function makeEnemy(wave, ctx) {
@@ -558,17 +543,13 @@ function makeEnemy(wave, ctx) {
   const kind = ctx || rollWaveKind(wave);
   const isBoss = kind.isBoss;
   const champ = kind.champ || null;
-  const size = (ctx && ctx.size) || 1;
-  const hpShare  = size > 1 ? (E.packHp[size]  || 1) : 1;
-  const dmgShare = size > 1 ? (E.packDmg[size] || 1) : 1;
-  const xpShare  = size > 1 ? 1 / size : 1;
 
   const bossBump = (isBoss && wave === BALANCE.bossEvery) ? (BALANCE.enemy.firstBossMult || 1) : 1;
   const isFinal = wave === BALANCE.finalWave;
 
   const haz = hazardFor(wave);
   let elite = null;
-  if (!isBoss && (champ || wave > 4) && !(ctx && ctx.noElite)) {
+  if (!isBoss && (champ || wave > 4)) {
     const keys = Object.keys(ELITES);
 
     const chance = Math.min(zone.eliteChanceCap != null ? zone.eliteChanceCap : E.eliteChanceCap,
@@ -598,7 +579,7 @@ function makeEnemy(wave, ctx) {
     : (isBoss ? (depthBoss ? depthBoss.name : zone.bossName) : face.name) + rankTag;
 
   const e = {
-    id: 'enemy-' + wave + '-' + ((ctx && ctx.index) || 0) + '-' + Math.floor(Math.random()*99999),
+    id: 'enemy-' + wave + '-' + Math.floor(Math.random()*99999),
     name, class:'enemy', isPlayer:false, isBoss, isFinal, elite, rank,
     champion: !!champ,
 
@@ -613,18 +594,16 @@ function makeEnemy(wave, ctx) {
     waveNo: wave,
     rosterId: face.id,
     maxHp: Math.max(1, Math.round(E.hpBase * hpCurve
-      * hpShare
       * (isBoss?E.bossHp:1) * bossBump * (elite&&elite.hpMult?elite.hpMult:1))),
     damage: Math.max(1, Math.round(E.dmgBase * dmgCurve
-      * dmgShare * (isBoss?E.bossDmg:E.trashDmgMult) * bossBump
+      * (isBoss?E.bossDmg:E.trashDmgMult) * bossBump
       * (haz && haz.id === 'brutes' ? 1.2 : 1))),
     attackSpeed: Math.min(E.apsCap, (E.apsBase + (wave-1)*E.apsPerWave)
       * (isBoss?E.bossAps:1) * (elite&&elite.apsMult?elite.apsMult:1))
       * (haz && haz.id === 'frenzy' ? 1.15 : 1),
     evadeChance: 0,
     critChance: E.crit, critMult: E.critMult,
-    xpMult: (isBoss?E.bossXp:1) * (elite?elite.xp:1) * xpShare,
-    dropMult: (size > 1 && !elite) ? 1 / size : 1,
+    xpMult: (isBoss?E.bossXp:1) * (elite?elite.xp:1),
     hp:0, statuses:[], swingCharge:0, stunImmune:false,
     actionCount:0,
     _defeated:false, _statusKey:''

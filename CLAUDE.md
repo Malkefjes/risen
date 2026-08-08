@@ -34,9 +34,8 @@ Turn-based browser ARPG. Personal project. `index.html` + `css/` + `js/` +
 - **Death respawns, never deletes.** `playerDown()` returns the player to
   `state.checkpoint` with statuses, piles and cooldowns cleared; levels, gear
   and mods persist. Only the owner deletes a character.
-- **A wave is one to three enemies.** Members are budget shares
-  (`packHp`/`packDmg`); champions and bosses stay solo. Kill bookkeeping runs
-  per member; the wave-clear block runs once, guarded by `_waveCleared`.
+- **A wave is a single enemy.** Kill bookkeeping and the wave-clear block are
+  separate; the wave-clear block runs once, guarded by `_waveCleared`.
 - **`BUILD` and `BALANCE.saveKey` are independent.** `saveKey` bumps ONLY when
   a change makes an old saved sheet wrong; add the outgoing prefix to
   `oldSaveKeys`. Old saves are dropped, never migrated.
