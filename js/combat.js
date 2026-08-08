@@ -239,7 +239,6 @@ function enemySwing(e, opts) {
   const p = state.player;
   if (!p || p.hp <= 0) return;
   state.enemyActions = (state.enemyActions || 0) + 1;
-  state.actionsSinceKill = (state.actionsSinceKill || 0) + 1;
   const dealt = applyEnemyDamage(e, p, (opts && opts.scale) || 1, opts);
   if (dealt > 0) playAttackAnim(e, p, true);
 
@@ -817,18 +816,9 @@ function onEnemyDefeated(e) {
 
   state.kills++;
 
-  const chained = (state.actionsSinceKill || 0) <= BALANCE.combo.maxEnemyActionsPerKill;
-  state.actionsSinceKill = 0;
-  if (chained) state.combo++;
-  else state.combo = 1;
-  if (state.combo > state.bestCombo) state.bestCombo = state.combo;
-  updateCombo();
-
   logEvent('DEFEATED', e, null, [
     state.fightTurns + 's in',
     state.enemyActions + ' enemy actions',
-    chained ? 'CHAIN ' + state.combo + '×'
-            : 'CHAIN reset (over ' + BALANCE.combo.maxEnemyActionsPerKill + ')',
     overkill > 0 ? 'overkill ' + logNum(overkill) : null
   ]);
 
@@ -877,14 +867,12 @@ function onEnemyDefeated(e) {
   }
 
   const tier = Math.floor((killedWave-1)/5);
-  const comboBonus = 1 + Math.min(BALANCE.combo.maxStack, state.combo) * BALANCE.combo.xpPerStack;
   const gearXp = 1 + gearMod(p, 'xpBoost');
   const haz = hazardFor(killedWave);
   const xp = Math.floor((BALANCE.xp.killBase + killedWave*BALANCE.xp.killWave + tier*BALANCE.xp.killTier)
-    * e.xpMult * comboBonus * gearXp * (haz ? haz.xpMult : 1));
+    * e.xpMult * gearXp * (haz ? haz.xpMult : 1));
   logEvent('XP', null, '+' + logNum(xp), [
     e.xpMult !== 1 ? 'enemy ×' + e.xpMult.toFixed(1) : null,
-    comboBonus > 1 ? 'chain ×' + comboBonus.toFixed(2) : null,
     gearXp > 1 ? 'suit ×' + gearXp.toFixed(2) : null,
     haz ? 'toll ×' + haz.xpMult.toFixed(2) : null
   ]);
@@ -978,7 +966,6 @@ function playerDown() {
   p.statuses = [];
   p.skills.forEach(s => { s.charge = 0; });
   p.poisonCarry = 0;
-  state.combo = 0;
   state.wave = back;
   state.enemies = [];
   state.enemy = null;
@@ -1068,7 +1055,6 @@ function runReport() {
   L.push('');
   L.push('Turns ' + N(state.runTurns || 0)
          + ' · Kills ' + N(state.kills)
-         + ' · Best chain ' + (state.bestCombo || 0) + 'x'
          + ' · Crits ' + N(state.critsLanded || 0)
          + ' · Prevented ' + N(state.damagePrevented || 0));
   L.push('Damage dealt ' + N(Math.floor(state.damageDealt))
@@ -1174,7 +1160,7 @@ function showDownScreen() {
         hero('WAVE', waveReached(), 'of ' + BALANCE.finalWave) +
         hero('DOWNS', state.deaths || 0, 'back to wave ' + state.wave) +
         hero('LEVEL', p.level, formatNum((p.level - 1) * P().pointsPerLevel) + ' pts') +
-        hero('KILLS', formatNum(state.kills), (state.bestCombo || 0) + '× chain') +
+        hero('KILLS', formatNum(state.kills)) +
       '</div>' +
 
       '<div class="rs-body">' +

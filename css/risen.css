@@ -2477,16 +2477,6 @@ body {
 .bar-fill { position: relative; z-index: 1; }
 .bar-text { position: relative; z-index: 2; }
 
-.combo-meter {
-  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
-  font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 0.95rem;
-  letter-spacing: 2px; color: var(--xp); z-index: 6; pointer-events: none;
-  text-shadow: 0 0 16px rgba(251,191,36,0.5);
-  animation: comboPop 0.25s ease;
-}
-.combo-meter.hot { color: var(--accent2); text-shadow: 0 0 20px rgba(255,45,106,0.6); }
-@keyframes comboPop { from { transform: translateX(-50%) scale(1.35); } to { transform: translateX(-50%) scale(1); } }
-
 .arena-card { position: relative; }
 
 .fighter.killed .char-figure { animation: killCollapse 0.34s ease forwards; }
@@ -2531,7 +2521,7 @@ body {
 .sidebar-tab.points-alert { color: var(--xp); }
 
 @media (prefers-reduced-motion: reduce) {
-  .combo-meter, .fighter.killed .char-figure,
+  .fighter.killed .char-figure,
   .logo, .level-badge.level-up { animation: none; }
   .bar-ghost { transition: none; }
   .level-badge.level-up { transform: none; }

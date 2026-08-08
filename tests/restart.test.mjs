@@ -4,7 +4,6 @@ export default async function ({ page, ok }) {
   await page.waitForFunction(() => state.player && state.combatActive);
   await page.evaluate(() => {
     const q = document.getElementById('camp-panel'); if (q) q.classList.add('on');
-    const cm = document.getElementById('combo-meter'); if (cm) cm.style.display = 'block';
   });
 
   const fresh = await page.evaluate(() => {
@@ -20,8 +19,7 @@ export default async function ({ page, ok }) {
     const shown = sel => [...document.querySelectorAll(sel)].every(e => getComputedStyle(e).visibility !== 'hidden');
     return {
       leftovers: [
-        (document.getElementById('camp-panel') || {}).classList?.contains('on') && 'an open camp panel',
-        (document.getElementById('combo-meter') || {}).style?.display === 'block' && 'the combo meter'
+        (document.getElementById('camp-panel') || {}).classList?.contains('on') && 'an open camp panel'
       ].filter(Boolean),
       fighters: document.querySelectorAll('#arena-card .fighter').length,
       playable: lit('.arena-side') && shown('.skills') && shown('.turn-info')

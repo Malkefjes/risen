@@ -60,7 +60,6 @@ function simulateRun(classId, opts) {
       deaths: state.deaths || 0, kills: state.kills,
 
       level: p.level, turns: state.runTurns, damageDealt: Math.floor(state.damageDealt),
-      bestCombo: state.bestCombo,
       stats: { str: p.str, instinct: p.instinct, speed: p.speed, vit: p.vit },
       derived: { atk: attackDamage(p), maxHp: p.maxHp, rate: +p.attackSpeed.toFixed(2) },
       steps,

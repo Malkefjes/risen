@@ -1,4 +1,4 @@
-const BUILD = '2026-08-08j';
+const BUILD = '2026-08-08l';
 
 const BALANCE = {
   player: {
@@ -111,7 +111,6 @@ const BALANCE = {
 
   xp: { firstCost: 58, base: 485, pow: 2, powScale: 35,
         killBase: 46, killWave: 15, killTier: 36 },
-  combo: { maxEnemyActionsPerKill: 3, xpPerStack: 0.05, maxStack: 20 },
   bossEvery: 10,
 
   finalWave: 60,

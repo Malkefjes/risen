@@ -195,7 +195,7 @@ let state = {
   awaitingSpawn:false, spawnWait:null,
 
   dropQueue:[], modQueue:[],
-  combo:0, fightTurns:0, enemyActions:0, bestCombo:0,
+  fightTurns:0, enemyActions:0,
   runOver:false, won:false,
 
   runStart:0, damageDealt:0, _defeatLock:false, _lastOverkill:0

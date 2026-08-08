@@ -157,11 +157,8 @@ function resetRunState(classId) {
   state.awaitingSpawn = false;
   state.spawnWait = null;
   state.tickAcc = 0;
-  state.combo = 0;
-  state.bestCombo = 0;
   state.fightTurns = 0;
   state.enemyActions = 0;
-  state.actionsSinceKill = 0;
   state.damageDealt = 0;
 
   state.runTurns = 0;
@@ -189,7 +186,6 @@ function resetRunState(classId) {
   state.runOver = false;
   state.won = false;
 
-  updateCombo();
   clearLog();
   clearFloaters();
   if (!HEADLESS.on) {
@@ -349,7 +345,6 @@ function spawnEnemy() {
 
   state.fightTurns = 0;
   state.enemyActions = 0;
-  state.actionsSinceKill = 0;
   state._fightFlags = {};
   state._waveCleared = false;
   state.awaitingSpawn = false;
@@ -467,7 +462,6 @@ function talkToScientist() {
     + row('Deepest wave', state.wave - 1)
     + row('Level', p.level)
     + row('Kills', formatNum(state.kills))
-    + row('Best chain', (state.bestCombo || 0) + '×')
     + row('Times down', state.deaths || 0)
     + row('Damage dealt', formatNum(Math.floor(state.damageDealt)))
     + row('Damage taken', formatNum(Math.floor(state.damageTaken || 0)))
@@ -527,21 +521,6 @@ function updateHud() {
   updateUnitCard(p);
 }
 
-function updateCombo() {
-  if (HEADLESS.on) return;
-  const el = document.getElementById('combo-meter');
-  if (!el) return;
-  if (state.combo >= 2) {
-    el.style.display = 'block';
-    el.textContent = state.combo + '× CHAIN';
-    el.classList.toggle('hot', state.combo >= 8);
-  } else {
-
-    el.style.display = 'none';
-    el.textContent = '';
-    el.classList.remove('hot');
-  }
-}
 
 function gainXP(amount) {
   const p = state.player;
