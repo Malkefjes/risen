@@ -1,4 +1,4 @@
-const BUILD = '2026-08-08h';
+const BUILD = '2026-08-08i';
 
 const BALANCE = {
   player: {
@@ -90,8 +90,8 @@ const BALANCE = {
   },
   enemy: {
 
-    hpBase: 280, hpRate: 1.0549, depthHpRate: 1.0282,
-    dmgBase: 8, dmgRate: 1.0862, depthDmgRate: 1.0406,
+    hpBase: 700, hpRate: 1.0549, depthHpRate: 1.0282,
+    dmgBase: 12, dmgRate: 1.0862, depthDmgRate: 1.0406,
 
     apsBase: 1.00,
     apsPerWave: 0.0195,
