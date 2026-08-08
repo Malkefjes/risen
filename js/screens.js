@@ -350,7 +350,6 @@ function spawnEnemy() {
   state.fightTurns = 0;
   state.enemyActions = 0;
   state.actionsSinceKill = 0;
-  state.tickAcc = 0;
   state._fightFlags = {};
   state._waveCleared = false;
   state.awaitingSpawn = false;
