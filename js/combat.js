@@ -51,9 +51,8 @@ function updateTurnInfo() {
 function skillPeriod(s) { return s.basic ? 1 : (s.cdSecs || 1); }
 
 function skillWants(p, s) {
-  if (s.target !== 'self' && !livingEnemies().length) return false;
-  if (s.type === 'heal' && p.hp >= p.maxHp) return false;
-  return true;
+  if (s.type === 'heal') return p.hp < p.maxHp;
+  return livingEnemies().length > 0;
 }
 
 function focusTarget() {
@@ -73,20 +72,20 @@ function combatTick(dt) {
 
   if (state.awaitingSpawn) {
     state.spawnWait = (state.spawnWait != null ? state.spawnWait : BALANCE.spawnDelay) - dt;
-    if (state.spawnWait > 0) return;
-    state.spawnWait = null;
-    doSpawn();
-    return;
+    if (state.spawnWait <= 0) { state.spawnWait = null; doSpawn(); }
+    if (state.atCamp || !state.combatActive) return;
   }
-  if (!livingEnemies().length) return;
 
-  state.tickAcc = (state.tickAcc || 0) + dt;
-  while (state.tickAcc >= 1 - 1e-9) {
-    state.tickAcc -= 1;
-    secondTick();
-    if (!state.combatActive || state.atCamp || state.awaitingSpawn) return;
-    if ((state.deaths || 0) > d0) return;
-    if (!livingEnemies().length) return;
+  const fighting = !state.awaitingSpawn && livingEnemies().length > 0;
+  if (fighting) {
+    state.tickAcc = (state.tickAcc || 0) + dt;
+    while (state.tickAcc >= 1 - 1e-9) {
+      state.tickAcc -= 1;
+      secondTick();
+      if (!state.combatActive || state.atCamp || state.awaitingSpawn) return;
+      if ((state.deaths || 0) > d0) return;
+      if (!livingEnemies().length) return;
+    }
   }
 
   const rate = effectiveAps(p);
