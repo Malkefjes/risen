@@ -1,4 +1,4 @@
-const BUILD = '2026-08-08b';
+const BUILD = '2026-08-08c';
 
 const BALANCE = {
   player: {
@@ -90,15 +90,11 @@ const BALANCE = {
   },
   enemy: {
 
-    hpBase: 280, tierGrowth: 1.85, withinStep: 0.06,
-
-    hpExp: 0.75,
-
-    dmgBase: 8, dmgExp: 1.00,
+    hpBase: 280, hpRate: 1.0549, depthHpRate: 1.0282,
+    dmgBase: 8, dmgRate: 1.0862, depthDmgRate: 1.0406,
 
     apsBase: 1.00,
-
-    apsPerTier: 0.070,
+    apsPerWave: 0.0195,
     apsCap: 2.15,
     crit: 0.10, critMult: 1.5,
 
@@ -270,8 +266,7 @@ const ZONES = [
     bossName: 'Sporemother',
     bossVerb: 'regrow',
     champion: { at: 5, id: 'experiment', name: 'FAUNA-01 Apex' },
-    soloUntil: 4, packWeights: [55, 45, 0],
-    growthMult: 1, tierGrowth: 2.4, withinStep: 0.08 },
+    soloUntil: 4, packWeights: [55, 45, 0] },
 
   { num: 2, name: 'The Bloom', label: 'THE BLOOM',
     startWave: 11, endWave: 20,
@@ -279,9 +274,7 @@ const ZONES = [
     bossName: 'Bulwark',
     bossVerb: 'regrow',
     champion: { at: 15, id: 'lieutenant', name: 'FAUNA-12 Warden' },
-    packWeights: [30, 45, 25],
-    growthMult: 3.33, tierGrowth: 2.9, withinStep: 0.06,
-    dmgMult: 1.05 },
+    packWeights: [30, 45, 25] },
 
   { num: 3, name: 'Survey Camp One', label: 'SURVEY CAMP ONE',
     startWave: 21, endWave: 30,
@@ -290,9 +283,7 @@ const ZONES = [
 
     bossVerb: 'enrage',
     champion: { at: 25, id: 'mercenary', name: 'Survey Veteran' },
-    packWeights: [25, 45, 30],
-    growthMult: 11.3, tierGrowth: 2.4, withinStep: 0.04,
-    dmgMult: 1.10 },
+    packWeights: [25, 45, 30] },
 
   { num: 4, name: 'The Source', label: 'THE SOURCE',
     startWave: 31, endWave: 60,
@@ -305,11 +296,7 @@ const ZONES = [
     rollBossVerb: true,
     bossSegment: 10, extraBossChance: 0.12,
     packWeights: [15, 45, 40],
-    eliteBaseChance: 0.35, eliteChanceCap: 0.65,
-    growthMult: 28.9, tierGrowth: 1.22, withinStep: 0.04,
-
-    dmgMult: 1.13, dmgMultEnd: 1.45,
-    apsMult: 1.00, apsMultEnd: 1.45, hpExp: 0.70 }
+    eliteBaseChance: 0.35, eliteChanceCap: 0.65 }
 ];
 function zoneForWave(wave) {
   return ZONES.find(a => wave >= a.startWave && wave <= a.endWave) || ZONES[ZONES.length - 1];

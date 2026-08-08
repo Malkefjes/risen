@@ -549,21 +549,12 @@ function makeEnemy(wave, ctx) {
   const zone = zoneForWave(wave);
 
   const w = wave - zone.startWave;
-  const tier = Math.floor(w/5), within = w%5;
+  const tier = Math.floor(w/5);
 
-  const rateTier = Math.floor((wave - 1) / 5);
-  const g = Math.pow(zone.tierGrowth || E.tierGrowth, tier)
-          * (1 + within*(zone.withinStep != null ? zone.withinStep : E.withinStep))
-          * (zone.growthMult || 1);
-
-  const zoneSpan = Math.max(1, zone.endWave - zone.startWave);
-  const zoneT = Math.min(1, Math.max(0, (wave - zone.startWave) / zoneSpan));
-  const rampMult = (from, to) => {
-    const a = from || 1;
-    return to == null ? a : a + (to - a) * zoneT;
-  };
-  const dmgMult = rampMult(zone.dmgMult, zone.dmgMultEnd);
-  const apsMult = rampMult(zone.apsMult, zone.apsMultEnd);
+  const base = Math.min(wave, BALANCE.finalWave) - 1;
+  const deep = Math.max(0, wave - BALANCE.finalWave);
+  const hpCurve  = Math.pow(E.hpRate, base)  * Math.pow(E.depthHpRate, deep);
+  const dmgCurve = Math.pow(E.dmgRate, base) * Math.pow(E.depthDmgRate, deep);
 
   const kind = ctx || rollWaveKind(wave);
   const isBoss = kind.isBoss;
@@ -622,15 +613,14 @@ function makeEnemy(wave, ctx) {
     artZone: depthBoss ? depthBoss.artZone : (champ && champ.artZone) || face.artZone || zone.num,
     waveNo: wave,
     rosterId: face.id,
-    maxHp: Math.max(1, Math.round(E.hpBase
-      * Math.pow(g, zone.hpExp != null ? zone.hpExp : (E.hpExp != null ? E.hpExp : 1))
+    maxHp: Math.max(1, Math.round(E.hpBase * hpCurve
       * hpShare
       * (isBoss?E.bossHp:1) * bossBump * (elite&&elite.hpMult?elite.hpMult:1))),
-    damage: Math.max(1, Math.round(E.dmgBase * Math.pow(g, E.dmgExp)
-      * dmgMult * dmgShare * (isBoss?E.bossDmg:E.trashDmgMult) * bossBump
+    damage: Math.max(1, Math.round(E.dmgBase * dmgCurve
+      * dmgShare * (isBoss?E.bossDmg:E.trashDmgMult) * bossBump
       * (haz && haz.id === 'brutes' ? 1.2 : 1))),
-    attackSpeed: Math.min(E.apsCap, (E.apsBase + rateTier*E.apsPerTier)
-      * apsMult * (isBoss?E.bossAps:1) * (elite&&elite.apsMult?elite.apsMult:1))
+    attackSpeed: Math.min(E.apsCap, (E.apsBase + (wave-1)*E.apsPerWave)
+      * (isBoss?E.bossAps:1) * (elite&&elite.apsMult?elite.apsMult:1))
       * (haz && haz.id === 'frenzy' ? 1.15 : 1),
     evadeChance: 0,
     critChance: E.crit, critMult: E.critMult,
