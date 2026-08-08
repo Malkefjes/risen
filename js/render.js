@@ -202,10 +202,7 @@ function playAttackAnim(caster, target, hit, skill) {
     fig.classList.remove('lunging', lunge);
     if (hasPoseSet(caster)) setCharPose(caster, 'ready');
   }, 260);
-  if (hit && target) {
-    setTimeout(()=>spawnImpact(caster), 80);
-    setTimeout(()=>playRecoil(target), 95);
-  }
+  if (hit && target) setTimeout(()=>playRecoil(target), 95);
 }
 
 function playCastAnim(unit, skill) {
@@ -230,23 +227,6 @@ function triggerHeal(unit) {
   fig.style.filter='brightness(1.3)';
   setTimeout(()=>{ fig.style.filter=''; }, 170);
 }
-function spawnImpact(caster) {
-  if (HEADLESS.on) return;
-  const arena=document.getElementById('arena-card'); if(!arena) return;
-  const color = caster.isPlayer
-    ? (caster.class==='bio'?'#7dffa0':caster.class==='psy'?'#c084fc':caster.class==='sym'?'#fb923c':'#eaf2ff')
-    : '#fb7185';
-  const el=document.createElement('div');
-  el.className='impact-mark';
-  el.innerHTML='<svg viewBox="0 0 56 28" xmlns="http://www.w3.org/2000/svg">'
-    +'<line x1="4" y1="14" x2="52" y2="14" stroke="'+color+'" stroke-width="2.5" stroke-linecap="round" opacity="0.9"/>'
-    +'<line x1="12" y1="8" x2="44" y2="20" stroke="'+color+'" stroke-width="1.6" stroke-linecap="round" opacity="0.55"/>'
-    +'<line x1="12" y1="20" x2="44" y2="8" stroke="'+color+'" stroke-width="1.6" stroke-linecap="round" opacity="0.55"/>'
-    +'<circle cx="28" cy="14" r="5" fill="none" stroke="'+color+'" stroke-width="1.8" opacity="0.7"/></svg>';
-  arena.appendChild(el);
-  setTimeout(()=>el.remove(), 380);
-}
-
 let _cosmeticSeed = 1;
 function cosmeticRandom() {
   _cosmeticSeed = (_cosmeticSeed * 1664525 + 1013904223) >>> 0;
