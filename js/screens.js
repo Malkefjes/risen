@@ -487,6 +487,7 @@ function enterCamp() {
   if (p.hp > before)
     logHeal('FIELD REPAIR', p, p.hp - before, ['patched up at the shelter']);
   saveRun();
+  if (!HEADLESS.on) setTimeout(() => { if (state.atCamp) showCamp(); }, 800);
 }
 
 function moveOut() {

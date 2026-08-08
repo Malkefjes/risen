@@ -5,11 +5,10 @@ function startCombatLoop() {
   state.combatActive = true;
   updateTurnInfo(); renderSkills();
   if (HEADLESS.on) return;
-  const batch = SETTINGS.fastTurns ? 400 : 1;
-  const ms = SETTINGS.fastTurns ? 0 : SIM_DT * 1000;
   state.tickTimer = setInterval(() => {
+    const batch = SETTINGS.fastTurns ? 400 : 1;
     for (let i = 0; i < batch && state.combatActive && !state.atCamp; i++) combatTick(SIM_DT);
-  }, ms);
+  }, SIM_DT * 1000);
 }
 function stopCombatLoop() {
   state.combatActive = false;
