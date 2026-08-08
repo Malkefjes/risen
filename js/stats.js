@@ -622,11 +622,6 @@ function makeEnemy(wave, ctx) {
     artZone: depthBoss ? depthBoss.artZone : (champ && champ.artZone) || face.artZone || zone.num,
     waveNo: wave,
     rosterId: face.id,
-    windupEvery: (function () {
-      const wu = isBoss ? (isFinal ? E.finalWindupEvery : E.windupEvery) : (elite ? E.eliteWindupEvery : 0);
-      return (wu && haz && haz.id === 'charged') ? 2 : wu;
-    })(),
-
     maxHp: Math.max(1, Math.round(E.hpBase
       * Math.pow(g, zone.hpExp != null ? zone.hpExp : (E.hpExp != null ? E.hpExp : 1))
       * hpShare
@@ -642,7 +637,7 @@ function makeEnemy(wave, ctx) {
     xpMult: (isBoss?E.bossXp:1) * (elite?elite.xp:1) * xpShare,
     dropMult: (size > 1 && !elite) ? 1 / size : 1,
     hp:0, statuses:[], meter:0, stunImmune:false,
-    actionCount:0, windup:false,
+    actionCount:0,
     _defeated:false, _statusKey:''
   };
   e.hp = e.maxHp;

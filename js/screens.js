@@ -313,7 +313,6 @@ function spawnEnemy() {
     log(e.name + (tags.length ? ' · ' + tags.join(' ') : '')
       + ' · HP ' + logNum(e.maxHp) + ' · DMG ' + logNum(e.damage)
       + ' · RATE ' + e.attackSpeed.toFixed(2) + '×'
-      + (e.windupEvery ? ' · WINDUP every ' + e.windupEvery + ' (×' + windupMultFor(e) + ')' : '')
       + (e.xpMult !== 1 ? ' · XP ×' + e.xpMult.toFixed(1) : ''));
 
     if (e.verb && ENEMY_VERBS[e.verb]) {

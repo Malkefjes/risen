@@ -21,17 +21,6 @@ function enemyIntent(e) {
   if (!e || e.isPlayer || e.hp <= 0 || e._defeated) return null;
   if (hasStatus(e, 'stun'))
     return { kind:'stunned', icon:'💫', label:'Stunned', tone:'stunned' };
-  if (e.windup) {
-
-    const spoiled = !!e.windupSpoiled;
-    const mult = windupMultFor(e) * (spoiled ? (BALANCE.enemy.windupSpoilFrac || 1) : 1);
-    return { kind:'heavy', icon:'💥', label: spoiled ? 'Spoiled' : 'Heavy',
-             dmg: Math.max(1, Math.floor(e.damage * mult)), tone:'heavy' };
-  }
-  if (e.windupEvery > 0 && ((e.actionCount || 0) + 1) % e.windupEvery === 0)
-
-    return { kind:'charge', icon:'⚡', label:'Winding up', tone:'charge',
-             riders: e.verb === 'guard' ? ['🛡'] : [] };
   const riders = [];
   if (e.elite && e.elite.poison) riders.push('☠');
   if (e.elite && e.elite.lifesteal) riders.push('🩸');
@@ -192,10 +181,10 @@ function impactHit(target, dmg, isCrit) {
   else if (share >= 0.10) hitStop(50);
 }
 
-function impactTaken(p, dmg, heavy) {
+function impactTaken(p, dmg) {
   if (HEADLESS.on || !(dmg > 0)) return;
   const share = dmg / Math.max(1, p.maxHp);
-  if (heavy || share >= 0.20) { shakeArena(); hitStop(80); }
+  if (share >= 0.20) { shakeArena(); hitStop(80); }
   else if (share >= 0.10) hitStop(45);
 }
 function getFigureForUnit(unit){ const p=getFighterPanel(unit); return p?p.querySelector('.char-figure'):null; }

@@ -297,26 +297,10 @@ function enemyAct() {
   if (!p || p.hp <= 0) { playerDown(); return; }
   if (!e || e.isPlayer || e.hp <= 0 || e._defeated) { scheduleTurn(nextTurn, turnDelay(120)); return; }
 
-  if (e.windupEvery > 0 && !e.windup) {
-    e.actionCount = (e.actionCount || 0) + 1;
-    if (e.actionCount % (e.windupEvery || BALANCE.enemy.windupEvery) === 0) {
-      e.windup = true;
-      e.windupSpoiled = false;
-      logEvent('WINDUP', e, 'next strike ×' + windupMultFor(e),
-               ['action ' + e.actionCount + ' of every ' + e.windupEvery]);
-
-      if (e.verb === 'guard')
-        applyStatus(e, 'fortify', { duration: 1, power: ENEMY_VERBS.guard.power });
-      const fig = getFigureForUnit(e);
-      if (fig) fig.style.filter = 'brightness(1.35)';
-      updateUnitCard(e); updateTurnInfo(); renderSkills();
-      scheduleTurn(nextTurn, turnDelay(480));
-      return;
-    }
-  }
+  e.actionCount = (e.actionCount || 0) + 1;
 
   const V = ENEMY_VERBS.flurry;
-  if (e.verb === 'flurry' && !e.windup && e.actionCount % V.every === 0) {
+  if (e.verb === 'flurry' && e.actionCount % V.every === 0) {
     for (let i = 0; i < V.hits; i++) {
       if (!state.combatActive || p.hp <= 0 || e.hp <= 0 || e._defeated) break;
       enemySwing(e, { scale: V.scale });
@@ -340,31 +324,12 @@ function doSpawn() {
   scheduleTurn(nextTurn, turnDelay(160));
 }
 
-function windupMultFor(e) {
-  const E = BALANCE.enemy;
-  const zone = (e && e.zone) ? ZONES.find(z => z.num === e.zone) : null;
-  if (e && e.elite && !e.isBoss)
-    return (zone && zone.eliteWindupMult) || E.eliteWindupMult || E.windupMult;
-  return (zone && zone.windupMult) || E.windupMult;
-}
-
 function enemySwing(e, opts) {
   const p = state.player;
   if (!p || p.hp <= 0) return;
   state.enemyActions = (state.enemyActions || 0) + 1;
   state.actionsSinceKill = (state.actionsSinceKill || 0) + 1;
-  let mult = 1;
-  let spoiled = false;
-  if (e.windup && !(opts && opts.ordinary)) {
-
-    spoiled = !!e.windupSpoiled;
-    mult = windupMultFor(e) * (spoiled ? (BALANCE.enemy.windupSpoilFrac || 1) : 1);
-    e.windup = false;
-    e.windupSpoiled = false;
-    const fig = getFigureForUnit(e);
-    if (fig) fig.style.filter = '';
-  }
-  const dealt = applyEnemyDamage(e, p, mult * ((opts && opts.scale) || 1), Object.assign({}, opts, { spoiled }));
+  const dealt = applyEnemyDamage(e, p, (opts && opts.scale) || 1, opts);
   if (dealt > 0) playAttackAnim(e, p, true);
 
   if (e.elite && e.elite.lifesteal && dealt > 0) {
@@ -457,26 +422,7 @@ function shedForHeal(p, skill, already, notes, critMult) {
 function provokeSwing(p, e, skill) {
   if (!e || e.hp <= 0 || e._defeated) return;
 
-  let ordinary = true;
-  if (e.windup && !e.stunImmune) {
-    e.windup = false;
-    e.windupSpoiled = false;
-    const fig = getFigureForUnit(e);
-    if (fig) fig.style.filter = '';
-    e.stunImmune = true;
-    floatText(e, 'BAITED', 'note');
-    logEvent('BAITED', e, 'windup spent early', ['stagger resist now armed']);
-  } else if (e.windup) {
-
-    e.stunImmune = false;
-    e.windupSpoiled = true;
-    ordinary = false;
-    floatText(e, 'SPOILED', 'note');
-    logEvent('CHARGE SPOILED', e, 'dragged out early, and smaller',
-             ['resist consumed', '×' + BALANCE.enemy.windupSpoilFrac + ' of the telegraph']);
-  }
-
-  enemySwing(e, { unevadable: true, ordinary });
+  enemySwing(e, { unevadable: true });
 
   if (skill.lashMult && p.hp > 0 && e.hp > 0 && !e._defeated) {
     const lash = Math.max(1, Math.floor(getThornsDamage(p) * skill.lashMult));
@@ -498,11 +444,7 @@ function provokeSwing(p, e, skill) {
 function applyEnemyDamage(e, p, mult, opts) {
 
   const notes = [];
-
-  const heavyN = mult % 1 ? mult.toFixed(1) : mult;
-  const label = (mult && mult > 1)
-    ? ((opts && opts.spoiled ? 'SPOILED ×' : 'HEAVY ×') + heavyN)
-    : 'Attack';
+  const label = 'Attack';
   notes.push(...statusNotes(e, 'outgoingMult', { target: p }));
   let dmg = Math.max(1, Math.floor(e.damage * (mult || 1) * statusMult(e, 'outgoingMult', { target: p })));
   if (opts && opts.unevadable) notes.push('GUARD BARED');
@@ -555,7 +497,7 @@ function applyEnemyDamage(e, p, mult, opts) {
   p.hp = Math.max(0, p.hp - dmg);
   state.damageTaken = (state.damageTaken || 0) + dmg;
 
-  if (p.hp <= 0) state.killedBy = { name: e ? e.name : 'unknown', heavy: mult > 1, dmg };
+  if (p.hp <= 0) state.killedBy = { name: e ? e.name : 'unknown', dmg };
   logDamage(label, p, dmg, notes.concat([logNum(p.hp) + '/' + logNum(p.maxHp) + ' left']));
 
   if (p.class === 'psy' && e && e.hp > 0)
@@ -569,7 +511,7 @@ function applyEnemyDamage(e, p, mult, opts) {
 
   statusEach(p, 'onHitTaken', { attacker: e, damage: dmg });
   floatText(p, dmg, 'damage');
-  impactTaken(p, dmg, mult > 1);
+  impactTaken(p, dmg);
 
   let thorns = getThornsDamage(p);
   const tNotes = [];
@@ -786,32 +728,14 @@ function applyPlayerDamage(p, e, skill, opts) {
         return dmg;
       }
     }
-    if (e.windup && !e.stunImmune) {
-
-      e.windup = false;
-      e.windupSpoiled = false;
-      const fig = getFigureForUnit(e);
-      if (fig) fig.style.filter = '';
-      e.stunImmune = true;
-      floatText(e, 'INTERRUPTED', 'note');
-      logEvent('INTERRUPT', e, 'windup broken', ['stagger resist now armed']);
-    } else if (e.windup && e.stunImmune) {
+    if (e.stunImmune) {
 
       e.stunImmune = false;
-      e.windupSpoiled = true;
-      floatText(e, 'SPOILED', 'note');
-      logEvent('CHARGE SPOILED', e, 'the charge holds, and it is smaller',
-               ['resist consumed', '×' + BALANCE.enemy.windupSpoilFrac + ' of the telegraph']);
+      floatText(e, 'RESISTED', 'note');
+      logEvent('STAGGER RESISTED', e, 'no stun', ['resist consumed']);
     } else {
-      if (e.stunImmune) {
-
-        e.stunImmune = false;
-        floatText(e, 'RESISTED', 'note');
-        logEvent('STAGGER RESISTED', e, 'no stun', ['resist consumed']);
-      } else {
-        applyStatus(e, 'stun', { duration: stunTurns });
-        e.stunImmune = true;
-      }
+      applyStatus(e, 'stun', { duration: stunTurns });
+      e.stunImmune = true;
     }
   }
   return dmg;
@@ -1223,9 +1147,7 @@ function runReport() {
   L.push(CLASSES[p.class].name + ' · Level ' + p.level + ' · ~' + mins + ' min');
   L.push('');
   if (state.killedBy) {
-    L.push('Last down: ' + state.killedBy.name
-           + (state.killedBy.heavy ? ' — TELEGRAPHED HEAVY' : ' — ordinary hit')
-           + ' for ' + N(state.killedBy.dmg));
+    L.push('Last down: ' + state.killedBy.name + ' for ' + N(state.killedBy.dmg));
   }
   L.push('Sheet: STR ' + p.str + ' · INS ' + p.instinct + ' · SPD ' + p.speed + ' · VIT ' + p.vit
          + '  ->  ' + N(attackDamage(p)) + ' dmg · ' + N(p.maxHp) + ' HP · '
@@ -1299,10 +1221,7 @@ function showDownScreen() {
 
   const story = 'Went down on wave ' + waveReached() + ' in ' + esc(getZoneName(waveReached()))
       + (state.killedBy
-          ? ' — ' + (state.killedBy.heavy
-              ? '<b class="rs-heavy">a telegraphed heavy</b>'
-              : 'an ordinary hit')
-            + ' from ' + esc(state.killedBy.name) + ' for ' + formatNum(state.killedBy.dmg)
+          ? ' — hit by ' + esc(state.killedBy.name) + ' for ' + formatNum(state.killedBy.dmg)
           : '')
       + '. Recovered to wave ' + state.wave + '.';
 

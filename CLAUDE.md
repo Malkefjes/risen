@@ -46,10 +46,9 @@ Turn-based browser ARPG. Personal project. `index.html` + `css/` + `js/` +
 - **Uncapped number, bounded effect.** Each strain runs on one uncapped status
   (bio POISON, psy DREAD, sym THORNS, hyd PRESSURE, base RESOLVE). Effects that
   would end the game if unbounded are capped; the counts never are.
-- **Skills declare how they want to be played.** The bot reads `stun`,
-  `type:'provoke'`, `holdFor:'windup'`, or a `buff` whose status has
-  `incomingMult < 1` to find a telegraph answer. Add a declared field rather
-  than a class check in `js/sim.js`.
+- **Skills declare how they want to be played.** The bot reads declared fields
+  (`healFrac`, `shape:'all'`, the `consumes*` spender fields) to decide what to
+  press. Add a declared field rather than a class check in `js/sim.js`.
 - **A class's `skills` is a catalogue, not a bar.** The basic is always fitted;
   `KIT_SLOTS` of the rest are chosen at select. Saves carry the kit as ids
   because `skillCds` is positional against it. Mod offers filter to fitted

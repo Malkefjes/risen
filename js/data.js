@@ -1,4 +1,4 @@
-const BUILD = '2026-08-08a';
+const BUILD = '2026-08-08b';
 
 const BALANCE = {
   player: {
@@ -107,13 +107,6 @@ const BALANCE = {
     firstBossMult: 1.0,
     trashDmgMult: 1.45,
 
-    windupEvery: 3, windupMult: 4.0,
-    finalWindupEvery: 2,
-    eliteWindupEvery: 3,
-
-    eliteWindupMult: 3.0,
-
-    windupSpoilFrac: 0.5,
     eliteBaseChance: 0.16, eliteChancePerWave: 0.006, eliteChanceCap: 0.40,
 
     packHp:  { 2: 0.58, 3: 0.42 },
@@ -232,16 +225,13 @@ const CLASSES = {
       { id:'strike', name:'Strike', desc:'Deal {power!} damage. +{buildsResolve} RESOLVE, and open a wound: +{bleedStacks} BLEED. Every turn, BLEED deals {bleedTick} a stack and loses one.', type:'attack', power:1.0, buildsResolve:1, bleed:1, bleedStacks:p => bleedStacks(p), bleedTick:p => bleedDepth(p), target:'enemy', basic:true },
       { id:'bandage', name:'Bandage', desc:'Heal {healFrac+} and +{resolveHealBonus%} per held RESOLVE. Sheds {cleanse} POISON', type:'heal', healFrac:0.14, resolveHealBonus:0.02, cleanse:2, target:'self', cdTurns:4 },
 
-      { id:'counterpunch', name:'Counterpunch', desc:'Brace for {duration#turn}: −{power%} damage taken, stacking with RESOLVE. A hit taken while braced counters {counterPower!} damage and opens a wound: +{bleedStacks} BLEED', type:'buff', buff:'brace', duration:2, power:0.60, counterPower:1.20, counterBleed:1, bleedStacks:p => bleedStacks(p), holdFor:'windup', target:'self', cdTurns:4 },
+      { id:'counterpunch', name:'Counterpunch', desc:'Brace for {duration#turn}: −{power%} damage taken, stacking with RESOLVE. A hit taken while braced counters {counterPower!} damage and opens a wound: +{bleedStacks} BLEED', type:'buff', buff:'brace', duration:2, power:0.60, counterPower:1.20, counterBleed:1, bleedStacks:p => bleedStacks(p), target:'self', cdTurns:4 },
       { id:'laststand', name:'Last Stand', desc:'Deal {power!} damage, +{perResolvePower!} per RESOLVE spent. Spends {consumeFrac%} of your RESOLVE', type:'attack', power:1.20, perResolvePower:0.40, consumesResolve:true, consumeFrac:0.7, target:'enemy', cdTurns:5 }
     ]
   }
 };
 
 const ENEMY_VERBS = {
-
-  guard:  { id:'guard',  tag:'GUARD',  power:0.5,
-            blurb:'braces while winding up: takes −50% until the heavy lands' },
 
   regrow: { id:'regrow', tag:'REGROW', below:0.5, power:0.06,
             blurb:'below half HP, knits 6% of its frame each of its turns' },
@@ -252,7 +242,7 @@ const ENEMY_VERBS = {
   enrage: { id:'enrage', tag:'ENRAGE', every:3, perStack:0.12,
             blurb:'every 3rd of its turns, swings harden +12% forever' }
 };
-const CHAMPION_VERBS = ['guard', 'regrow', 'flurry', 'enrage'];
+const CHAMPION_VERBS = ['regrow', 'flurry', 'enrage'];
 
 const ELITES = {
 
@@ -268,7 +258,6 @@ const HAZARDS = {
   frenzy:     { id:'frenzy',     name:'FRENZY',     text:'Enemies act 15% faster.', xpMult:1.30 },
   brutes:     { id:'brutes',     name:'BRUTES',     text:'Enemies hit 20% harder.', xpMult:1.35 },
   virulent:   { id:'virulent',   name:'VIRULENT',   text:'More elites, and every one of them VENOMOUS.', xpMult:1.35 },
-  charged:    { id:'charged',    name:'CHARGED',    text:'Elites and bosses wind up every second action.', xpMult:1.30 },
   relentless: { id:'relentless', name:'RELENTLESS', text:'Half recovery between fights.', xpMult:1.30 }
 };
 
@@ -288,12 +277,11 @@ const ZONES = [
     startWave: 11, endWave: 20,
     enemies: [{ id: 'enforcer', name: 'FAUNA-12 Husk' }],
     bossName: 'Bulwark',
-    bossVerb: 'guard',
+    bossVerb: 'regrow',
     champion: { at: 15, id: 'lieutenant', name: 'FAUNA-12 Warden' },
     packWeights: [30, 45, 25],
     growthMult: 3.33, tierGrowth: 2.9, withinStep: 0.06,
-    dmgMult: 1.05,
-    windupMult: 2.5, eliteWindupMult: 2.0 },
+    dmgMult: 1.05 },
 
   { num: 3, name: 'Survey Camp One', label: 'SURVEY CAMP ONE',
     startWave: 21, endWave: 30,
@@ -304,8 +292,7 @@ const ZONES = [
     champion: { at: 25, id: 'mercenary', name: 'Survey Veteran' },
     packWeights: [25, 45, 30],
     growthMult: 11.3, tierGrowth: 2.4, withinStep: 0.04,
-    dmgMult: 1.10,
-    windupMult: 1.6, eliteWindupMult: 1.2 },
+    dmgMult: 1.10 },
 
   { num: 4, name: 'The Source', label: 'THE SOURCE',
     startWave: 31, endWave: 60,
@@ -322,8 +309,7 @@ const ZONES = [
     growthMult: 28.9, tierGrowth: 1.22, withinStep: 0.04,
 
     dmgMult: 1.13, dmgMultEnd: 1.45,
-    apsMult: 1.00, apsMultEnd: 1.45, hpExp: 0.70,
-    windupMult: 1.35, eliteWindupMult: 1.15 }
+    apsMult: 1.00, apsMultEnd: 1.45, hpExp: 0.70 }
 ];
 function zoneForWave(wave) {
   return ZONES.find(a => wave >= a.startWave && wave <= a.endWave) || ZONES[ZONES.length - 1];

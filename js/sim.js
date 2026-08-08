@@ -37,34 +37,6 @@ function rotateAllocate(p) {
   return ROTATE_STATS[p._alloc];
 }
 
-function softensIncoming(s) {
-  const def = s.buff && STATUSES[s.buff];
-  if (!def || typeof def.incomingMult !== 'function') return false;
-
-  return def.incomingMult(null, Object.assign({}, def.defaults, { power: s.power })) < 1;
-}
-function isAnswer(s) {
-  return !!(s.stun || s.type === 'provoke' || s.holdFor === 'windup' || softensIncoming(s));
-}
-
-function answerConnects(s, p, e) {
-  if (s.stun) {
-    if (s.dreadNeed && statusStacks(e, 'dread') < s.dreadNeed) return false;
-    return true;
-  }
-  if (s.type === 'provoke') {
-    let incoming = 0;
-    for (const f of livingEnemies())
-      incoming += f.windup && f.stunImmune
-        ? (f.damage || 0) * windupMultFor(f) * (BALANCE.enemy.windupSpoilFrac || 1)
-        : (f.damage || 0);
-    return incoming * 1.5 < p.hp;
-  }
-
-  const next = forecastTurns(1)[0];
-  return !!next && !next.isPlayer;
-}
-
 const SMART = {
   healLands: 0.80,
   healPanic: 0.35,
@@ -117,27 +89,16 @@ function smartPolicy(p) {
   const basic = p.skills.find(s => s.basic) || p.skills[0];
   if (!foes.length) return basic;
 
-  const winding = foes.filter(f => f.windup);
-  if (winding.length) {
-    const heavy = winding.reduce((a, b) => ((b.damage || 0) > (a.damage || 0) ? b : a));
-    setTarget(heavy);
-    const answer = ready.filter(isAnswer).find(s => answerConnects(s, p, heavy));
-    if (answer) return answer;
-  }
-
   const focus = foes.reduce((a, b) => (b.hp < a.hp ? b : a));
   setTarget(focus);
   const e = state.enemy;
 
-  const neverTelegraphs = !foes.some(f => f.windupEvery > 0);
-  const pool = neverTelegraphs ? ready : ready.filter(s => !isAnswer(s));
-
   if (foes.length > 1) {
-    const aoe = pool.find(s => s.shape === 'all' && worthPressing(s, p, e));
+    const aoe = ready.find(s => s.shape === 'all' && worthPressing(s, p, e));
     if (aoe) return aoe;
   }
 
-  return pool.find(s => worthPressing(s, p, e)) || basic;
+  return ready.find(s => worthPressing(s, p, e)) || basic;
 }
 
 const BOTS = {
