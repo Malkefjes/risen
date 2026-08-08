@@ -1,23 +1,24 @@
 export default async function ({ page, ok }) {
 
-  await page.evaluate(() => { localStorage.clear(); startGame(true, 'bio'); SETTINGS.fastTurns = true; });
+  await page.evaluate(() => { localStorage.clear(); startGame(true, 'bio'); });
   await page.waitForFunction(() => state.player && state.combatActive);
   await page.evaluate(() => {
     const q = document.getElementById('camp-panel'); if (q) q.classList.add('on');
     const cm = document.getElementById('combo-meter'); if (cm) cm.style.display = 'block';
   });
 
-  await page.evaluate(() => { goToMenu(); startGame(true, 'psy'); });
+  const fresh = await page.evaluate(() => {
+    goToMenu(); startGame(true, 'psy');
+    const p = state.player;
+    return { wave: state.wave, level: p.level, cls: p.class, full: p.hp === p.maxHp };
+  });
   await page.waitForFunction(() => state.player && state.combatActive);
   await page.waitForTimeout(400);
 
   const s = await page.evaluate(() => {
-    const vis = el => !!el && !el.hidden;
     const lit = sel => [...document.querySelectorAll(sel)].every(e => getComputedStyle(e).opacity !== '0');
     const shown = sel => [...document.querySelectorAll(sel)].every(e => getComputedStyle(e).visibility !== 'hidden');
-    const p = state.player;
     return {
-      wave: state.wave, level: p.level, cls: p.class, full: p.hp === p.maxHp,
       leftovers: [
         (document.getElementById('camp-panel') || {}).classList?.contains('on') && 'an open camp panel',
         (document.getElementById('combo-meter') || {}).style?.display === 'block' && 'the combo meter'
@@ -29,8 +30,8 @@ export default async function ({ page, ok }) {
 
   ok('the new run kept nothing from the old one', s.leftovers.length === 0, s.leftovers.join(', '));
   ok('it is a first wave, not a resumed one',
-     s.wave === 1 && s.level === 1 && s.full && s.cls === 'psy',
-     `wave ${s.wave} · level ${s.level} · ${s.cls}${s.full ? '' : ' · not at full HP'}`);
+     fresh.wave === 1 && fresh.level === 1 && fresh.full && fresh.cls === 'psy',
+     `wave ${fresh.wave} · level ${fresh.level} · ${fresh.cls}${fresh.full ? '' : ' · not at full HP'}`);
   ok('both fighters are on the card', s.fighters === 2, String(s.fighters));
   ok('the controls came back', s.playable);
 

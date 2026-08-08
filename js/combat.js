@@ -2,7 +2,7 @@ function startCombatLoop() {
   stopCombatLoop();
   state.combatActive = true;
   updateTurnInfo();
-  if (state.awaitingInput) { renderSkills(); return; }
+  if (state.awaitingInput) { renderSkills(); scheduleAutoAct(); return; }
   if (state.pendingEnemyAct) { scheduleTurn(enemyAct, turnDelay(200)); return; }
   if (state.awaitingSpawn)   { scheduleTurn(doSpawn, turnDelay(160)); return; }
   scheduleTurn(nextTurn, 30);
@@ -37,6 +37,15 @@ function retarget() {
 }
 
 const turnDelay = ms => Math.round(ms * BALANCE.turnPace);
+
+function scheduleAutoAct() {
+  if (HEADLESS.on) return;
+  scheduleTurn(() => {
+    if (state.combatActive && state.awaitingInput && state.player)
+      playerAct(BOTS.smart.policy(state.player));
+  }, turnDelay(350));
+}
+
 function scheduleTurn(fn, ms) {
 
   if (HEADLESS.on) { _pendingStep = fn; return; }
@@ -74,7 +83,7 @@ function updateTurnInfo() {
   if (state.active && !state.active.isPlayer) {
     side(unitWord(state.active) + ' TURN', 'foe').classList.add('turn-now');
   } else {
-    side('YOUR TURN', 'you').classList.add('turn-now');
+    side('RIG TURN', 'you').classList.add('turn-now');
   }
 
   const fc = forecastTurns(3);
@@ -155,14 +164,7 @@ function nextTurn() {
     state.pendingEnemyAct = false;
     retarget();
     setCharPose(actor, 'ready');
-    const qid = state.queuedSkillId;
-    state.queuedSkillId = null;
-    if (qid && !HEADLESS.on) {
-      const q = actor.skills.find(s => s.id === qid);
-      if (q) scheduleTurn(() => {
-        if (state.combatActive && state.awaitingInput) playerAct(q);
-      }, 70);
-    }
+    scheduleAutoAct();
   } else {
     state.awaitingInput = false;
     state.pendingEnemyAct = true;
@@ -269,16 +271,8 @@ function tickTurnStart(unit) {
 
 function playerAct(skill) {
   const p = state.player;
-  if (!state.combatActive) return;
-  if (!state.awaitingInput) {
-    if (p && p.hp > 0 && skill && (skill.basic || skill.cd <= 0) && livingEnemies().length) {
-      state.queuedSkillId = skill.id;
-      renderSkills();
-    }
-    return;
-  }
+  if (!state.combatActive || !state.awaitingInput) return;
   if (!p || p.hp <= 0 || !skill) return;
-  state.queuedSkillId = null;
   if (!skill.basic && skill.cd > 0) return;
   const needsEnemy = skill.target !== 'self';
   if (needsEnemy && !retarget()) return;
@@ -287,6 +281,7 @@ function playerAct(skill) {
 
   state.skillUses = state.skillUses || {};
   state.skillUses[skill.id] = (state.skillUses[skill.id] || 0) + 1;
+  if (!HEADLESS.on) flashSkillButton(skill);
   fireSkill(p, skill, needsEnemy ? state.enemy : p);
   updateTurnInfo(); renderSkills();
 
@@ -977,7 +972,6 @@ function fireSkill(caster, skill, target) {
     if (e2 && e2.hp <= 0 && !e2._defeated) onEnemyDefeated(e2);
 }
 
-function selectSkill(skill) { playerAct(skill); }
 
 function onEnemyDefeated(e) {
   e = e || state.enemy;
@@ -1155,7 +1149,6 @@ function playerDown() {
   p.poisonCarry = 0;
   p.meter = 0;
   state.combo = 0;
-  state.queuedSkillId = null;
   state.wave = back;
   state.enemies = [];
   state.enemy = null;
@@ -1424,7 +1417,6 @@ function renderSkills(forceRebuild) {
         + '<div class="skill-cost"></div>'
         + '<div class="cd-sweep"></div>'
         + '<div class="cd-overlay" style="display:none"></div>';
-      btn.addEventListener('click', ev => { ev.preventDefault(); playerAct(skill); });
       container.appendChild(btn);
     });
   }
@@ -1442,7 +1434,6 @@ function renderSkills(forceRebuild) {
     const overlay = btn.querySelector('.cd-overlay');
     const sweep = btn.querySelector('.cd-sweep');
     const yourTurn = !!state.awaitingInput && state.combatActive;
-    btn.classList.toggle('queued', state.queuedSkillId === skill.id);
     if (skill.basic) {
       btn.classList.toggle('auto-on', yourTurn);
       btn.classList.toggle('auto-off', !yourTurn);
@@ -1471,18 +1462,17 @@ function renderSkills(forceRebuild) {
   });
 }
 
+function flashSkillButton(skill) {
+  const btn = document.querySelector('#skills .skill-btn[data-skill-id="' + skill.id + '"]');
+  if (!btn) return;
+  btn.classList.remove('fired');
+  void btn.offsetWidth;
+  btn.classList.add('fired');
+}
+
 document.addEventListener('pointerup', ev => {
   const el = ev.target;
   if (!el || !el.closest) return;
   const btn = el.closest('button');
   if (btn) btn.blur();
-});
-
-document.addEventListener('keydown', ev => {
-  const n = parseInt(ev.key, 10);
-  if (!(n >= 1 && n <= 4)) return;
-  const p = state.player;
-  if (!p || !state.combatActive) return;
-
-  if (p.skills[n - 1]) selectSkill(p.skills[n - 1]);
 });

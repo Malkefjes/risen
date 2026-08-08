@@ -181,7 +181,6 @@ function resetRunState(classId) {
   state.deaths = 0;
   state.diedAt = 0;
   state.checkpoint = 1;
-  state.queuedSkillId = null;
   state.hazard = null;
   state.hazardOffer = null;
   state.atCamp = false;

@@ -44,13 +44,14 @@ export default async function ({ page, ok }) {
 
   const head = await page.evaluate((s) => {
     eval('(' + s + ')()');
-    const r = simulateRun('bio', { policy: BOTS.smart.policy, allocate: () => 'vit' });
+    const r = simulateRun('bio', { policy: BOTS.smart.policy, weights: { vit: 100 } });
     return { wave: r.wave, level: r.level, kills: r.kills, dmg: r.damageDealt,
              won: r.won, turns: r.turns, stats: r.stats, derived: r.derived };
   }, SEED);
   const live = await page.evaluate(async (s) => {
     eval('(' + s + ')()');
     localStorage.clear(); goToMenu(); startGame(true, 'bio'); SETTINGS.fastTurns = true;
+    state.player.weights.vit = 100;
 
     let capped = true;
     for (let i = 0; i < 400000; i++) {
@@ -60,13 +61,6 @@ export default async function ({ page, ok }) {
         else if (nextModOffer()) { takeMod(botTakesMod(nextModOffer())); }
         else if (state.hazardOffer) { pickHazard(state.hazardOffer[0]); }
         else { moveOut(); }
-      }
-      else if (state.awaitingInput && state.combatActive) {
-        const p = state.player;
-
-        if (p.points > 0) adjustStat('vit', 1);
-        else if (pendingTotal(p) > 0) commitStats();
-        else playerAct(BOTS.smart.policy(p));
       }
       await new Promise(r => setTimeout(r, 0));
     }

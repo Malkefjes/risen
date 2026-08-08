@@ -162,6 +162,7 @@ function simulateRun(classId, opts) {
 
     setPendingKit(opts.kit || null);
     startGame(true, classId);
+    if (opts.weights) Object.assign(state.player.weights, opts.weights);
     let steps = 0;
 
     while (!state.runOver && (state.deaths || 0) < (opts.maxDeaths || 1) && steps++ < maxSteps) {

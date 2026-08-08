@@ -1303,7 +1303,8 @@ body {
   color: var(--text);
 
   padding: 11px 9px 18px;
-  cursor: pointer;
+  pointer-events: none;
+  cursor: default;
   transition: border-color 0.2s, background 0.2s, transform 0.2s, opacity 0.2s;
   text-align: left;
   font-family: var(--font-body);
@@ -1315,48 +1316,38 @@ body {
   min-height: 150px;
 }
 
-.skill-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(var(--base-rgb), 0.55);
-  transform: translateY(-2px);
-}
+.skill-btn:disabled { opacity: 0.35; }
 
-.skill-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
-.skill-btn.queued {
-  border-color: rgba(var(--base-rgb), 0.85);
-  box-shadow: 0 0 0 1px rgba(var(--base-rgb), 0.45), 0 0 16px rgba(var(--base-rgb), 0.22);
-  animation: queuedPulse 0.9s ease-in-out infinite;
+.skill-btn.fired {
+  animation: skillFired 0.5s ease-out;
 }
-@keyframes queuedPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.72; }
+@keyframes skillFired {
+  0% {
+    border-color: rgba(var(--base-rgb), 0.95);
+    box-shadow: 0 0 0 1px rgba(var(--base-rgb), 0.6), 0 0 20px rgba(var(--base-rgb), 0.35);
+    background: rgba(255, 255, 255, 0.09);
+  }
+  100% {
+    border-color: rgba(var(--base-rgb), 0.28);
+    box-shadow: none;
+    background: rgba(6, 11, 10, 0.52);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   #arena-card.shake { animation: none; }
-  .skill-btn.queued { animation: none; }
+  .skill-btn.fired { animation: none; }
 }
 
 .skill-btn.basic {
   opacity: 1;
-  cursor: pointer;
-}
-.skill-btn.basic:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(var(--base-rgb), 0.55);
-  transform: translateY(-2px);
 }
 .skill-btn.basic.auto-off {
   opacity: 0.55;
 }
-.skill-btn.basic.auto-off:hover {
-  opacity: 0.8;
-}
 
 .skill-btn.on-cd {
   opacity: 0.5;
-  cursor: not-allowed;
   position: relative;
 }
 
@@ -1413,10 +1404,6 @@ body {
 
   z-index: 1;
 }
-.skill-btn:hover:not(:disabled)::after {
-  box-shadow: 0 0 14px var(--strain-glow), 0 0 30px var(--strain-glow);
-}
-.skill-btn:hover:not(:disabled)::before { opacity: 1; }
 
 .skill-name {
   font-family: 'Orbitron', sans-serif;
@@ -2561,9 +2548,6 @@ body {
 
 .skill-btn.ready {
   border-color: #252d3d;
-}
-.skill-btn.ready:hover {
-  background: #1a2233;
 }
 
 .sidebar-tab.points-alert { color: var(--xp); }

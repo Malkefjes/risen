@@ -1,6 +1,6 @@
 export default async function ({ page, ok }) {
   await page.evaluate(() => {
-    localStorage.clear(); startGame(true, 'bio'); SETTINGS.fastTurns = true;
+    localStorage.clear(); startGame(true, 'bio');
 
     gainXP(state.player.xpNext);
   });
@@ -23,13 +23,16 @@ export default async function ({ page, ok }) {
   for (let i = 0; i < 16; i++) {
     await page.evaluate(() => {
 
-      if (nextDrop()) { resolveDrop(false); return; }
-      if (nextModOffer()) { takeMod(botTakesMod(nextModOffer())); return; }
-      if (!state.awaitingInput || !state.combatActive) return;
+      if (state.atCamp) {
+        if (nextDrop()) resolveDrop(false);
+        else if (nextModOffer()) takeMod(botTakesMod(nextModOffer()));
+        else if (state.hazardOffer) pickHazard(state.hazardOffer[0]);
+        else moveOut();
+        return;
+      }
       const p = state.player;
       if (p.points > 0) { adjustStat('vit', 1); return; }
-      if (pendingTotal(p) > 0) { commitStats(); return; }
-      playerAct(p.skills.find(s => s.basic) || p.skills[0]);
+      if (pendingTotal(p) > 0) commitStats();
     });
     await page.waitForTimeout(420);
     const s = await read();
