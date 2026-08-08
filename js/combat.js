@@ -48,7 +48,7 @@ function updateTurnInfo() {
   ti.textContent = 'CONTACT' + (n > 1 ? ' · PACK ×' + n : '');
 }
 
-function skillPeriod(s) { return s.basic ? 1 : (s.cdSecs || 1); }
+function skillPeriod(s) { return s.cdSecs || 1; }
 
 function skillWants(p, s) {
   if (s.type === 'heal') return p.hp < p.maxHp;

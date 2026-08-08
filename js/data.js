@@ -1,4 +1,4 @@
-const BUILD = '2026-08-08g';
+const BUILD = '2026-08-08h';
 
 const BALANCE = {
   player: {
@@ -153,13 +153,13 @@ const CLASSES = {
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
 
-      { id:'inject', name:'Inject', desc:'Deal {power!} damage. +{poisonStacks} POISON', type:'attack', power:1.0, poison:1, poisonStacks:(p,s) => poisonStacks(p,s), target:'enemy', basic:true },
+      { id:'inject', name:'Inject', desc:'Deal {power!} damage. +{poisonStacks} POISON', type:'attack', power:1.0, poison:1, poisonStacks:(p,s) => poisonStacks(p,s), target:'enemy', cdSecs:3, basic:true },
 
-      { id:'distribute', name:'Distribute', desc:'Deal {power!} damage to EVERY enemy. +{poisonStacks} POISON each.', type:'attack', shape:'all', power:0.50, poison:4, poisonStacks:(p,s) => poisonStacks(p,s), target:'enemy', cdSecs:3 },
+      { id:'distribute', name:'Distribute', desc:'Deal {power!} damage to EVERY enemy. +{poisonStacks} POISON each.', type:'attack', shape:'all', power:0.50, poison:4, poisonStacks:(p,s) => poisonStacks(p,s), target:'enemy', cdSecs:4 },
 
-      { id:'biofilm', name:'Biofilm', desc:'For {duration#sec}: take −{power%} damage.', type:'buff', buff:'chitin', duration:3, power:0.25, target:'self', cdSecs:4 },
+      { id:'biofilm', name:'Biofilm', desc:'For {duration#sec}: take −{power%} damage.', type:'buff', buff:'chitin', duration:3, power:0.25, target:'self', cdSecs:5 },
 
-      { id:'regenerate', name:'Regenerate', desc:'For {duration#sec}: regenerate {power+} each second.', type:'buff', buff:'regen', duration:5, power:0.20, target:'self', cdSecs:5 }
+      { id:'regenerate', name:'Regenerate', desc:'For {duration#sec}: regenerate {power+} each second.', type:'buff', buff:'regen', duration:5, power:0.20, target:'self', cdSecs:6 }
     ]
   },
 
@@ -168,12 +168,12 @@ const CLASSES = {
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
 
-      { id:'hunt', name:'Hunt', desc:'Deal {power!} damage. +{dreadStacks} DREAD', type:'attack', power:1.0, dread:1, dreadStacks:(p,s) => dreadStacks(p,s), target:'enemy', basic:true },
+      { id:'hunt', name:'Hunt', desc:'Deal {power!} damage. +{dreadStacks} DREAD', type:'attack', power:1.0, dread:1, dreadStacks:(p,s) => dreadStacks(p,s), target:'enemy', cdSecs:3, basic:true },
 
-      { id:'terrify', name:'Terrify', desc:'Deal {power!} damage to EVERY enemy and plant +{dreadStacks} DREAD in each. Every stack slows them and opens their guard.', type:'attack', shape:'all', power:0.50, dread:4, dreadStacks:(p,s) => dreadStacks(p,s), target:'enemy', cdSecs:3 },
-      { id:'traumatize', name:'Traumatize', desc:'Deal {power!} damage. Against {dreadNeed}+ DREAD the mind breaks: stunned for {stun#sec}.', type:'attack', power:0.95, stun:1, dreadNeed:3, target:'enemy', cdSecs:4 },
+      { id:'terrify', name:'Terrify', desc:'Deal {power!} damage to EVERY enemy and plant +{dreadStacks} DREAD in each. Every stack slows them and opens their guard.', type:'attack', shape:'all', power:0.50, dread:4, dreadStacks:(p,s) => dreadStacks(p,s), target:'enemy', cdSecs:4 },
+      { id:'traumatize', name:'Traumatize', desc:'Deal {power!} damage. Against {dreadNeed}+ DREAD the mind breaks: stunned for {stun#sec}.', type:'attack', power:0.95, stun:1, dreadNeed:3, target:'enemy', cdSecs:5 },
 
-      { id:'kill', name:'Kill', desc:'Deal {killTotal} damage. Tears away HALF the enemy’s DREAD — +{perDreadPower!} damage and {feedPerDread+} healed for each. Sheds {cleanse} POISON.', type:'attack', power:2.00, perDreadPower:0.60, consumesDread:true, consumeFrac:0.5, feedPerDread:BALANCE.player.dreadFeedFrac, cleanse:2, target:'enemy', cdSecs:5,
+      { id:'kill', name:'Kill', desc:'Deal {killTotal} damage. Tears away HALF the enemy’s DREAD — +{perDreadPower!} damage and {feedPerDread+} healed for each. Sheds {cleanse} POISON.', type:'attack', power:2.00, perDreadPower:0.60, consumesDread:true, consumeFrac:0.5, feedPerDread:BALANCE.player.dreadFeedFrac, cleanse:2, target:'enemy', cdSecs:6,
         killTotal: (p, s) => {
           const e = state.enemy;
           const held = (e && e.hp > 0 && !e._defeated) ? statusStacks(e, 'dread') : 0;
@@ -188,13 +188,13 @@ const CLASSES = {
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
 
-      { id:'piston', name:'Piston', desc:'Deal {power!} damage. +{gain} PRESSURE', type:'attack', power:1.25, pressure:BALANCE.player.pressurePerHit, gain:pressureGain, target:'enemy', basic:true },
+      { id:'piston', name:'Piston', desc:'Deal {power!} damage. +{gain} PRESSURE', type:'attack', power:1.25, pressure:BALANCE.player.pressurePerHit, gain:pressureGain, target:'enemy', cdSecs:3, basic:true },
 
-      { id:'surge', name:'Surge', desc:'Deal {power!} damage. +{gain} PRESSURE', type:'attack', power:1.7, pressure:10, gain:pressureGain, target:'enemy', cdSecs:3 },
+      { id:'surge', name:'Surge', desc:'Deal {power!} damage. +{gain} PRESSURE', type:'attack', power:1.7, pressure:10, gain:pressureGain, target:'enemy', cdSecs:4 },
 
-      { id:'dampen', name:'Dampen', desc:'For {duration#sec}: take \u2212{power%} damage and regenerate {regen.power+} each second.', type:'buff', buff:'dampen', duration:3, power:0.45, applies:[{ id:'regen', power:0.25, duration:3 }], target:'self', cdSecs:4 },
+      { id:'dampen', name:'Dampen', desc:'For {duration#sec}: take \u2212{power%} damage and regenerate {regen.power+} each second.', type:'buff', buff:'dampen', duration:3, power:0.45, applies:[{ id:'regen', power:0.25, duration:3 }], target:'self', cdSecs:5 },
 
-      { id:'rupture', name:'Rupture', desc:'Vent everything into EVERY enemy: {power!} damage +{perPressurePower!} per PRESSURE spent. Always CRITS.', type:'attack', shape:'all', power:1.4, alwaysCrit:true, consumesPressure:true, perPressurePower:0.16, target:'enemy', cdSecs:5 }
+      { id:'rupture', name:'Rupture', desc:'Vent everything into EVERY enemy: {power!} damage +{perPressurePower!} per PRESSURE spent. Always CRITS.', type:'attack', shape:'all', power:1.4, alwaysCrit:true, consumesPressure:true, perPressurePower:0.16, target:'enemy', cdSecs:6 }
     ]
   },
 
@@ -203,11 +203,11 @@ const CLASSES = {
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
 
-      { id:'latch', name:'Latch', desc:'Deal {power!} damage + {thornsScale%} of your THORNS.', type:'attack', power:1.0, thornsScale:0.55, target:'enemy', basic:true },
-      { id:'raisespines', name:'Raise Spines', desc:'THORNS ×{power} and pain reflect doubled for {duration#sec}. Every hit taken grows +{growBonus} extra THORNS.', type:'buff', buff:'spines', duration:3, power:2, growBonus:BALANCE.player.thornsSpinesGrow, target:'self', cdSecs:4 },
+      { id:'latch', name:'Latch', desc:'Deal {power!} damage + {thornsScale%} of your THORNS.', type:'attack', power:1.0, thornsScale:0.55, target:'enemy', cdSecs:3, basic:true },
+      { id:'raisespines', name:'Raise Spines', desc:'THORNS ×{power} and pain reflect doubled for {duration#sec}. Every hit taken grows +{growBonus} extra THORNS.', type:'buff', buff:'spines', duration:3, power:2, growBonus:BALANCE.player.thornsSpinesGrow, target:'self', cdSecs:5 },
 
-      { id:'shed', name:'Shed', desc:'Heal {healFrac+}, then tear off up to {capFrac%} of your grown THORNS for {hpPerThorn+} each — only as many as the wound needs. They regrow next fight. Sheds {cleanse} POISON.', type:'heal', healFrac:0.08, shedFuel:true, cleanse:2, hpPerThorn:BALANCE.player.shedHpPerThorn, capFrac:BALANCE.player.shedCapFrac, target:'self', cdSecs:4 },
-      { id:'provoke', name:'Provoke', desc:'Bare your guard: EVERY enemy strikes at once and cannot miss. Every spine answers — ×{lashMult} THORNS each. +{growBonus} THORNS.', type:'provoke', growBonus:3, lashMult:1.5, target:'enemy', cdSecs:4 }
+      { id:'shed', name:'Shed', desc:'Heal {healFrac+}, then tear off up to {capFrac%} of your grown THORNS for {hpPerThorn+} each — only as many as the wound needs. They regrow next fight. Sheds {cleanse} POISON.', type:'heal', healFrac:0.08, shedFuel:true, cleanse:2, hpPerThorn:BALANCE.player.shedHpPerThorn, capFrac:BALANCE.player.shedCapFrac, target:'self', cdSecs:5 },
+      { id:'provoke', name:'Provoke', desc:'Bare your guard: EVERY enemy strikes at once and cannot miss. Every spine answers — ×{lashMult} THORNS each. +{growBonus} THORNS.', type:'provoke', growBonus:3, lashMult:1.5, target:'enemy', cdSecs:5 }
     ]
   },
 
@@ -216,11 +216,11 @@ const CLASSES = {
     base: { str: 5, instinct: 5, speed: 5, vit: 5 },
     skills: [
 
-      { id:'strike', name:'Strike', desc:'Deal {power!} damage. +{buildsResolve} RESOLVE, and open a wound: +{bleedStacks} BLEED. Every second, BLEED deals {bleedTick} a stack and loses one.', type:'attack', power:1.0, buildsResolve:1, bleed:1, bleedStacks:p => bleedStacks(p), bleedTick:p => bleedDepth(p), target:'enemy', basic:true },
-      { id:'bandage', name:'Bandage', desc:'Heal {healFrac+} and +{resolveHealBonus%} per held RESOLVE. Sheds {cleanse} POISON', type:'heal', healFrac:0.14, resolveHealBonus:0.02, cleanse:2, target:'self', cdSecs:4 },
+      { id:'strike', name:'Strike', desc:'Deal {power!} damage. +{buildsResolve} RESOLVE, and open a wound: +{bleedStacks} BLEED. Every second, BLEED deals {bleedTick} a stack and loses one.', type:'attack', power:1.0, buildsResolve:1, bleed:1, bleedStacks:p => bleedStacks(p), bleedTick:p => bleedDepth(p), target:'enemy', cdSecs:3, basic:true },
+      { id:'bandage', name:'Bandage', desc:'Heal {healFrac+} and +{resolveHealBonus%} per held RESOLVE. Sheds {cleanse} POISON', type:'heal', healFrac:0.14, resolveHealBonus:0.02, cleanse:2, target:'self', cdSecs:5 },
 
-      { id:'counterpunch', name:'Counterpunch', desc:'Brace for {duration#sec}: −{power%} damage taken, stacking with RESOLVE. A hit taken while braced counters {counterPower!} damage and opens a wound: +{bleedStacks} BLEED', type:'buff', buff:'brace', duration:2, power:0.60, counterPower:1.20, counterBleed:1, bleedStacks:p => bleedStacks(p), target:'self', cdSecs:4 },
-      { id:'laststand', name:'Last Stand', desc:'Deal {power!} damage, +{perResolvePower!} per RESOLVE spent. Spends {consumeFrac%} of your RESOLVE', type:'attack', power:1.20, perResolvePower:0.40, consumesResolve:true, consumeFrac:0.7, target:'enemy', cdSecs:5 }
+      { id:'counterpunch', name:'Counterpunch', desc:'Brace for {duration#sec}: −{power%} damage taken, stacking with RESOLVE. A hit taken while braced counters {counterPower!} damage and opens a wound: +{bleedStacks} BLEED', type:'buff', buff:'brace', duration:2, power:0.60, counterPower:1.20, counterBleed:1, bleedStacks:p => bleedStacks(p), target:'self', cdSecs:5 },
+      { id:'laststand', name:'Last Stand', desc:'Deal {power!} damage, +{perResolvePower!} per RESOLVE spent. Spends {consumeFrac%} of your RESOLVE', type:'attack', power:1.20, perResolvePower:0.40, consumesResolve:true, consumeFrac:0.7, target:'enemy', cdSecs:6 }
     ]
   }
 };
