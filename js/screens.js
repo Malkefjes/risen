@@ -543,10 +543,9 @@ function updateCombo() {
   }
 }
 
-function gainXP(amount, bonus) {
+function gainXP(amount) {
   const p = state.player;
   p.xp += amount;
-  floatText(p, amount, bonus ? 'xp-bonus' : 'xp');
   const gained = [];
   while (p.xp >= p.xpNext) {
 
@@ -556,8 +555,6 @@ function gainXP(amount, bonus) {
     recalcPlayerStats();
 
     p.hp = Math.min(p.maxHp, p.hp + Math.floor(healAnchorFor(p) * P().levelUpHealFrac));
-
-    floatText(p, 'LEVEL ' + p.level, 'xp-bonus');
 
     setCharPose(p, 'ready');
     logEvent('LEVEL ' + p.level, null, '+' + grant + ' points',

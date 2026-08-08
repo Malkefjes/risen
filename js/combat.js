@@ -892,7 +892,7 @@ function onEnemyDefeated(e) {
   killFlash(e);
   if (e.isBoss) shakeArena();
 
-  gainXP(xp, e.xpMult !== 1 || comboBonus > 1);
+  gainXP(xp);
 
   if (p.hp <= 0) { playerDown(); return; }
 
